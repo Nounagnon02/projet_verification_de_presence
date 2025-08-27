@@ -1,0 +1,48 @@
+# render.yaml
+services:
+  - type: web
+    name: laravel-app
+    runtime: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_URL
+        value: https://your-app.onrender.com
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromService:
+          type: postgres
+          name: laravel-database
+          property: host
+      - key: DB_PORT
+        fromService:
+          type: postgres
+          name: laravel-database
+          property: port
+      - key: DB_DATABASE
+        fromService:
+          type: postgres
+          name: laravel-database
+          property: database
+      - key: DB_USERNAME
+        fromService:
+          type: postgres
+          name: laravel-database
+          property: user
+      - key: DB_PASSWORD
+        fromService:
+          type: postgres
+          name: laravel-database
+          property: password
+    autoDeploy: true
+
+  - type: postgres
+    name: laravel-database
+    plan: free
+    databaseName: laravel_prod
+    ipAllowList: []
