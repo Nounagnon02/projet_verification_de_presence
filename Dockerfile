@@ -14,7 +14,7 @@ WORKDIR /var/www
 # Installer les dépendances pour PostgreSQL
 RUN apt-get update && apt-get install -y \
     zip unzip curl git libxml2-dev libzip-dev libpng-dev libjpeg-dev libonig-dev \
-    libpq-dev postgresql-client  # ← Ajouter PostgreSQL
+    libpq-dev postgresql-client netcat-openbsd  # ← Ajouter netcat
 
 # Installer les extensions PHP (ajouter pgsql)
 RUN docker-php-ext-install pdo pdo_mysql pdo_pgsql pgsql mbstring exif pcntl bcmath gd zip
@@ -42,8 +42,26 @@ RUN php artisan key:generate
 
 EXPOSE 8000
 
-# Script de démarrage avec attente PostgreSQL
-COPY docker/wait-for-postgres.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/wait-for-postgres.sh
+# Créer le script d'attente directement dans le Dockerfile
+RUN echo '#!/bin/sh\n\
+\n\
+set -e\n\
+\n\
+# Attendre que PostgreSQL soit disponible\n\
+echo "⏳ Waiting for PostgreSQL to be ready..."\n\
+while ! nc -z $DB_HOST $DB_PORT; do\n\
+  sleep 2\n\
+  echo "Still waiting for PostgreSQL on $DB_HOST:$DB_PORT..."\n\
+done\n\
+\n\
+echo "✅ PostgreSQL is ready!"\n\
+\n\
+# Exécuter les migrations\n\
+php artisan migrate --force\n\
+\n\
+# Démarrer l\'application\n\
+exec php artisan serve --host=0.0.0.0 --port=8000\n\
+' > /usr/local/bin/start.sh && \
+    chmod +x /usr/local/bin/start.sh
 
-CMD ["/usr/local/bin/wait-for-postgres.sh", "php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+CMD ["/usr/local/bin/start.sh"]
