@@ -1,14 +1,10 @@
+# render.yaml
 services:
   - type: web
-    name: laravel-app
-    runtime: php
+    name: laravel-docker-app
+    runtime: docker
+    dockerfilePath: Dockerfile
     plan: free
-    buildCommand: |
-      composer install --no-dev --optimize-autoloader
-      php artisan optimize:clear
-      php artisan optimize
-    startCommand: |
-      php artisan serve --host=0.0.0.0 --port=8000
     envVars:
       - key: APP_ENV
         value: production
@@ -16,5 +12,20 @@ services:
         value: false
       - key: LOG_CHANNEL
         value: stderr
-    envVars:
-      - fromGroup: laravel-env
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - Dockerfile
+        - docker/**
+        - app/**
+        - bootstrap/**
+        - config/**
+        - database/**
+        - public/**
+        - resources/**
+        - routes/**
+        - storage/**
+        - vendor/**
+        - .env
+        - composer.json
+        - composer.lock
