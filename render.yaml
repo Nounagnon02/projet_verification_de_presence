@@ -20,10 +20,7 @@ services:
           name: laravel-database
           property: host
       - key: DB_PORT
-        fromService:
-          type: postgres
-          name: laravel-database
-          property: port
+        value: 5432
       - key: DB_DATABASE
         fromService:
           type: postgres
