@@ -1,75 +1,37 @@
-# Dockerfile
-# Étape 1 : Build de l'application
-FROM php:8.3-apache AS builder
+# Stage 1 - Build Frontend (Vite)
+FROM node:18 AS frontend
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
 
-# Installer les dépendances système
+# Stage 2 - Backend (Laravel + PHP + Composer)
+FROM php:8.2-fpm AS backend
+
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    zip \
-    unzip \
-    libzip-dev \
-    default-mysql-client \
-    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+    git curl unzip libpq-dev libonig-dev libzip-dev zip \
+    && docker-php-ext-install pdo pdo_mysql mbstring zip
 
-# Installer Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Install Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Définir le répertoire de travail
-WORKDIR /var/www/html
+WORKDIR /var/www
 
-# Copier les fichiers de configuration
+# Copy app files
 COPY . .
 
-# Installer les dépendances PHP et optimiser l'autoloader
-RUN composer install --no-dev --no-interaction --optimize-autoloader
+# Copy built frontend from Stage 1
+COPY --from=frontend /app/public/dist ./public/dist
 
-# Configurer les permissions
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/storage \
-    && chmod -R 755 /var/www/html/bootstrap/cache
+# Install PHP dependencies
+RUN composer install --no-dev --optimize-autoloader
 
-# Étape 2 : Image de production
-FROM php:8.3-apache
+# Laravel setup
+RUN php artisan config:clear && \
+    php artisan route:clear && \
+    php artisan view:clear
 
-# Metadata
-LABEL maintainer="Votre Nom <votre.email@example.com>"
-LABEL description="Application Laravel avec Apache"
+CMD ["php-fpm"]
 
-# Installer les extensions PHP nécessaires
-RUN apt-get update && apt-get install -y \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    libzip-dev \
-    default-mysql-client \
-    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Activer le module Apache rewrite
-RUN a2enmod rewrite
-
-# Copier la configuration Apache
-COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
-
-# Copier l'application buildée depuis l'étape builder
-COPY --from=builder /var/www/html /var/www/html
-
-# Configurer les permissions
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/storage \
-    && chmod -R 755 /var/www/html/bootstrap/cache
-
-# Exposer le port 80
-EXPOSE 80
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost/ || exit 1
-
-# Commande de démarrage
-CMD ["apache2-foreground"]
