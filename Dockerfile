@@ -31,6 +31,9 @@ COPY --chown=www-data:www-data . /var/www
 # Copier les assets buildés depuis l'étape Node.js
 COPY --from=node-builder /app/public/build /var/www/public/build
 
+# S'assurer que le fichier .env existe (copier depuis .env.example si nécessaire)
+RUN if [ ! -f /var/www/.env ]; then cp /var/www/.env.example /var/www/.env; fi
+
 # Installer les dépendances PHP
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
@@ -99,6 +102,13 @@ RUN echo '#!/bin/bash\n\
 set -e\n\
 \n\
 echo "🚀 Starting Laravel application..."\n\
+cd /var/www\n\
+\n\
+# Vérifier que le fichier .env existe\n\
+if [ ! -f .env ]; then\n\
+    echo "⚠️  .env file not found, copying from .env.example"\n\
+    cp .env.example .env\n\
+fi\n\
 \n\
 # Attendre que PostgreSQL soit disponible\n\
 if [ ! -z "$DB_HOST" ] && [ ! -z "$DB_PORT" ]; then\n\
@@ -111,21 +121,23 @@ if [ ! -z "$DB_HOST" ] && [ ! -z "$DB_PORT" ]; then\n\
 fi\n\
 \n\
 # Générer la clé d'\''application si nécessaire\n\
-if [ -z "$APP_KEY" ]; then\n\
+if ! grep -q "^APP_KEY=base64:" .env; then\n\
+    echo "🔑 Generating application key..."\n\
     php artisan key:generate --force\n\
 fi\n\
 \n\
+# Vérifier la configuration\n\
+echo "🔧 Checking configuration..."\n\
+php artisan config:clear\n\
+\n\
 # Optimiser Laravel pour la production\n\
+echo "⚡ Optimizing for production..."\n\
 php artisan config:cache\n\
 php artisan route:cache\n\
 php artisan view:cache\n\
 \n\
 # Exécuter les migrations\n\
 echo "📊 Running database migrations..."\n\
-php artisan migrate --force\n\
-\n\
-# Créer les tables de sessions si nécessaire\n\
-php artisan session:table 2>/dev/null || true\n\
 php artisan migrate --force\n\
 \n\
 echo "🎉 Application ready!"\n\
