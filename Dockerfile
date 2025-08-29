@@ -28,8 +28,9 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Activer mod_rewrite pour Apache
 RUN a2enmod rewrite
 
-# Configuration Apache
-RUN echo '<VirtualHost *:80>\n\
+# Configuration Apache pour Render (PORT dynamique)
+RUN echo 'Listen ${PORT}\n\
+<VirtualHost *:${PORT}>\n\
     DocumentRoot /var/www/html/public\n\
     <Directory /var/www/html/public>\n\
         AllowOverride All\n\
@@ -45,20 +46,17 @@ COPY . /var/www/html/
 # Copier les assets buildés
 COPY --from=node-builder /app/public/build /var/www/html/public/build
 
-# Créer le fichier .env s'il n'existe pas
-RUN if [ ! -f /var/www/html/.env ]; then \
-        echo "Creating .env file from environment variables" && \
-        echo "APP_NAME=Laravel" > /var/www/html/.env && \
-        echo "APP_ENV=production" >> /var/www/html/.env && \
-        echo "APP_DEBUG=false" >> /var/www/html/.env && \
-        echo "APP_URL=https://projet-verification-de-presence-3.onrender.com" >> /var/www/html/.env && \
-        echo "LOG_CHANNEL=single" >> /var/www/html/.env && \
-        echo "LOG_LEVEL=error" >> /var/www/html/.env && \
-        echo "DB_CONNECTION=pgsql" >> /var/www/html/.env && \
-        echo "SESSION_DRIVER=database" >> /var/www/html/.env && \
-        echo "CACHE_STORE=database" >> /var/www/html/.env && \
-        echo "QUEUE_CONNECTION=database" >> /var/www/html/.env; \
-    fi
+# Créer le fichier .env à partir des variables d'environnement
+RUN echo "APP_NAME=Laravel\n\
+APP_ENV=production\n\
+APP_DEBUG=false\n\
+APP_URL=https://projet-verification-de-presence-3.onrender.com\n\
+LOG_CHANNEL=stderr\n\
+LOG_LEVEL=error\n\
+DB_CONNECTION=pgsql\n\
+SESSION_DRIVER=database\n\
+CACHE_STORE=database\n\
+QUEUE_CONNECTION=database" > /var/www/html/.env
 
 # Installer les dépendances PHP
 RUN composer install --no-dev --optimize-autoloader --no-interaction
@@ -69,12 +67,12 @@ RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 /var/www/html/storage \
     && chmod -R 775 /var/www/html/bootstrap/cache
 
-# Script de démarrage
+# Script de démarrage adapté pour Render
 RUN echo '#!/bin/bash\n\
 set -e\n\
 cd /var/www/html\n\
 \n\
-# Attendre PostgreSQL\n\
+# Attendre PostgreSQL si DB_HOST est défini\n\
 if [ ! -z "$DB_HOST" ]; then\n\
     echo "Waiting for PostgreSQL..."\n\
     while ! nc -z $DB_HOST $DB_PORT 2>/dev/null; do\n\
@@ -83,31 +81,32 @@ if [ ! -z "$DB_HOST" ]; then\n\
     echo "PostgreSQL is ready!"\n\
 fi\n\
 \n\
-# Générer la clé si nécessaire\n\
-if [ -z "$APP_KEY" ] || ! grep -q "APP_KEY=base64:" .env; then\n\
+# Générer la clé application si absente\n\
+if [ -z "$(grep \"APP_KEY=base64:\" .env)" ]; then\n\
     php artisan key:generate --force\n\
+    echo "Application key generated!"\n\
 fi\n\
 \n\
-# Nettoyer et optimiser\n\
+# Exécuter les migrations\n\
+php artisan migrate --force\n\
+\n\
+# Nettoyer les caches\n\
 php artisan config:clear\n\
 php artisan cache:clear\n\
 php artisan view:clear\n\
-php artisan route:clear\n\
 \n\
-# Migrations\n\
-php artisan migrate --force\n\
-\n\
-# Cache pour production\n\
+# Créer les caches pour production\n\
 php artisan config:cache\n\
 php artisan route:cache\n\
 php artisan view:cache\n\
 \n\
-echo "Application ready!"\n\
+echo "Application is ready!"\n\
 \n\
-# Démarrer Apache\n\
-apache2-foreground\n\
+# Démarrer Apache sur le port dynamique de Render\n\
+exec apache2-foreground\n\
 ' > /usr/local/bin/start.sh && chmod +x /usr/local/bin/start.sh
 
-EXPOSE 80
+# Render utilise le port via variable d'environnement
+EXPOSE 10000
 
 CMD ["/usr/local/bin/start.sh"]
