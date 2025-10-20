@@ -1,10 +1,25 @@
 ### Step 1: Node.js for frontend (Vite)
 FROM node:18 AS node-builder
 WORKDIR /app
+
+# Copier les fichiers de configuration
 COPY package*.json ./
+COPY postcss.config.js ./
+COPY tailwind.config.js ./
+COPY vite.config.js ./
+
+# Installer les dépendances
 RUN npm install
-COPY . .
+
+# Copier les sources
+COPY resources/ ./resources/
+COPY public/ ./public/
+
+# Build des assets
 RUN npm run build
+
+# Vérifier que le build a réussi
+RUN ls -la public/build/ && cat public/build/manifest.json
 
 ### Step 2: PHP for Laravel backend with PostgreSQL
 FROM php:8.3-apache
@@ -42,8 +57,13 @@ RUN echo '<VirtualHost *:80>\n\
 # Copier tous les fichiers du projet
 COPY . /var/www/html/
 
-# Copier les assets buildés
+# Copier les assets buildés depuis le stage node-builder
 COPY --from=node-builder /app/public/build /var/www/html/public/build
+
+# S'assurer que le manifest existe
+RUN if [ ! -f /var/www/html/public/build/manifest.json ]; then \
+        echo "Warning: Vite manifest not found. Assets may not load correctly."; \
+    fi
 
 # Créer le fichier .env s'il n'existe pas
 RUN if [ ! -f /var/www/html/.env ]; then \
@@ -103,6 +123,14 @@ php artisan route:clear\n\
 php artisan config:cache\n\
 php artisan route:cache\n\
 php artisan view:cache\n\
+\n\
+# Vérifier les assets\n\
+if [ ! -f public/build/manifest.json ]; then\n\
+    echo "ERROR: Vite manifest not found!"\n\
+    ls -la public/build/ || echo "Build directory not found"\n\
+else\n\
+    echo "Assets found successfully"\n\
+fi\n\
 \n\
 echo "Application ready!"\n\
 \n\
