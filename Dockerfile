@@ -57,13 +57,13 @@ RUN echo '<VirtualHost *:80>\n\
 # Copier tous les fichiers du projet
 COPY . /var/www/html/
 
-# Copier les assets buildés depuis le stage node-builder
+# Supprimer l'ancien build s'il existe et copier le nouveau
+RUN rm -rf /var/www/html/public/build
 COPY --from=node-builder /app/public/build /var/www/html/public/build
 
-# S'assurer que le manifest existe
-RUN if [ ! -f /var/www/html/public/build/manifest.json ]; then \
-        echo "Warning: Vite manifest not found. Assets may not load correctly."; \
-    fi
+# Vérifier que les assets sont présents
+RUN ls -la /var/www/html/public/build/ && \
+    cat /var/www/html/public/build/manifest.json
 
 # Créer le fichier .env s'il n'existe pas
 RUN if [ ! -f /var/www/html/.env ]; then \
