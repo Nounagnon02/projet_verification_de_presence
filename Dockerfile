@@ -88,14 +88,16 @@ if [ -z "$APP_KEY" ] || ! grep -q "APP_KEY=base64:" .env; then\n\
     php artisan key:generate --force\n\
 fi\n\
 \n\
-# Nettoyer et optimiser\n\
+# Nettoyer la configuration seulement\n\
 php artisan config:clear\n\
-php artisan cache:clear\n\
+\n\
+# Migrations AVANT les opérations de cache\n\
+php artisan migrate --force\n\
+\n\
+# Maintenant on peut nettoyer le cache\n\
+php artisan cache:clear || echo "Cache clear failed, continuing..."\n\
 php artisan view:clear\n\
 php artisan route:clear\n\
-\n\
-# Migrations\n\
-php artisan migrate --force\n\
 \n\
 # Cache pour production\n\
 php artisan config:cache\n\
