@@ -6,6 +6,10 @@ use App\Http\Controllers\PresenceController;
 
 Route::get('/', function () {
     return view('welcome');
+})->name('welcome');
+
+Route::get('/home', function () {
+    return view('welcome');
 })->name('home');
 
 /*Route::get('/dashboard', function () {

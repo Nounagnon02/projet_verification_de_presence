@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Illuminate\Auth\Events\Registered;
+use Illuminate\Support\Facades\Log;
 
 
 class AuthenticatedSessionController extends Controller
@@ -29,12 +30,20 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $request->authenticate();
+        try {
+            $request->authenticate();
+            $request->session()->regenerate();
 
-        $request->session()->regenerate();
+            // Rediriger vers le tableau de bord approprié
+            return redirect()->intended(route('dashboard', absolute: false));
+        } catch (\Exception $e) {
+            // Log l'erreur pour le débogage
+            Log::error('Erreur de connexion: ' . $e->getMessage());
 
-        // Rediriger vers le tableau de bord approprié
-        return redirect()->intended(route('dashboard', absolute: false));
+            return back()->withErrors([
+                'email' => 'Une erreur est survenue lors de la connexion. Veuillez réessayer.',
+            ])->withInput($request->except('password'));
+        }
     }
 
     /**

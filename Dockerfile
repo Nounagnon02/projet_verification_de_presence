@@ -90,53 +90,9 @@ RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 /var/www/html/storage \
     && chmod -R 775 /var/www/html/bootstrap/cache
 
-# Script de démarrage
-RUN echo '#!/bin/bash\n\
-set -e\n\
-cd /var/www/html\n\
-\n\
-# Créer le fichier .env s'\''il n'\''existe pas\n\
-if [ ! -f .env ]; then\n\
-    echo "Creating .env file from .env.example..."\n\
-    cp .env.example .env || echo "APP_NAME=Laravel" > .env\n\
-fi\n\
-\n\
-# Attendre PostgreSQL\n\
-if [ ! -z "$DB_HOST" ]; then\n\
-    echo "Waiting for PostgreSQL..."\n\
-    while ! nc -z $DB_HOST ${DB_PORT:-5432} 2>/dev/null; do\n\
-        sleep 2\n\
-    done\n\
-    echo "PostgreSQL is ready!"\n\
-fi\n\
-\n\
-# Générer la clé d'\''application si nécessaire\n\
-if [ -z "$APP_KEY" ] || ! grep -q "APP_KEY=base64:" .env; then\n\
-    echo "Generating application key..."\n\
-    php artisan key:generate --force\n\
-fi\n\
-\n\
-# Caches et optimisations\n\
-php artisan config:clear\n\
-php artisan migrate --force\n\
-php artisan cache:clear || echo "Cache clear failed, continuing..."\n\
-php artisan view:clear\n\
-php artisan route:clear\n\
-php artisan config:cache\n\
-php artisan route:cache\n\
-php artisan view:cache\n\
-\n\
-# Vérifier les assets Vite\n\
-if [ -f public/build/manifest.json ]; then\n\
-    echo "✓ Vite assets found successfully"\n\
-else\n\
-    echo "WARNING: Vite manifest not found at public/build/manifest.json"\n\
-    ls -la public/build/ || echo "Build directory not found"\n\
-fi\n\
-\n\
-echo "Application ready!"\n\
-apache2-foreground\n\
-' > /usr/local/bin/start.sh && chmod +x /usr/local/bin/start.sh
+# Copier et configurer le script de démarrage
+COPY start.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
 
 EXPOSE 80
 
