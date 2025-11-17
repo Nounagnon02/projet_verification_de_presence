@@ -62,6 +62,9 @@ WORKDIR /var/www/html
 # Copier les fichiers de l'application
 COPY --chown=www-data:www-data . .
 
+# Créer le fichier .env à partir de .env.example
+RUN if [ -f .env.example ]; then cp .env.example .env; else echo "APP_NAME=Laravel" > .env; fi
+
 # Copier les assets buildés depuis le stage Node.js
 COPY --from=node-builder --chown=www-data:www-data /app/public/build ./public/build
 
@@ -79,6 +82,13 @@ RUN echo '#!/bin/bash\n\
 set -e\n\
 cd /var/www/html\n\
 \n\
+# Créer le fichier .env s'\''il n'\''existe pas\n\
+if [ ! -f .env ]; then\n\
+    echo "Creating .env file from .env.example..."\n\
+    cp .env.example .env || echo "APP_NAME=Laravel" > .env\n\
+fi\n\
+\n\
+# Attendre PostgreSQL\n\
 if [ ! -z "$DB_HOST" ]; then\n\
     echo "Waiting for PostgreSQL..."\n\
     while ! nc -z $DB_HOST ${DB_PORT:-5432} 2>/dev/null; do\n\
@@ -87,10 +97,13 @@ if [ ! -z "$DB_HOST" ]; then\n\
     echo "PostgreSQL is ready!"\n\
 fi\n\
 \n\
+# Générer la clé d'\''application si nécessaire\n\
 if [ -z "$APP_KEY" ] || ! grep -q "APP_KEY=base64:" .env; then\n\
+    echo "Generating application key..."\n\
     php artisan key:generate --force\n\
 fi\n\
 \n\
+# Caches et optimisations\n\
 php artisan config:clear\n\
 php artisan migrate --force\n\
 php artisan cache:clear || echo "Cache clear failed, continuing..."\n\
@@ -100,14 +113,13 @@ php artisan config:cache\n\
 php artisan route:cache\n\
 php artisan view:cache\n\
 \n\
+# Vérifier les assets Vite\n\
 if [ ! -f public/build/manifest.json ]; then\n\
     echo "ERROR: Vite manifest not found!"\n\
     ls -la public/build/ || echo "Build directory not found"\n\
     exit 1\n\
 else\n\
     echo "Assets found successfully"\n\
-    echo "Manifest content:"\n\
-    cat public/build/manifest.json\n\
 fi\n\
 \n\
 echo "Application ready!"\n\
