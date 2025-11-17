@@ -5,8 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PresenceController;
 
 Route::get('/', function () {
-    return view('auth.login');
-});
+    return view('welcome');
+})->name('home');
 
 /*Route::get('/dashboard', function () {
     return view('dashboard');
