@@ -19,8 +19,12 @@ COPY public ./public
 # Build des assets avec Vite pour production
 RUN npm run build
 
-# Vérifier que le manifest a été créé
-RUN if [ ! -f public/build/manifest.json ]; then \
+# Copier le manifest depuis .vite/ vers la racine (Vite 7+)
+RUN if [ -f public/build/.vite/manifest.json ]; then \
+        echo "Copying Vite manifest from .vite subdirectory..."; \
+        cp public/build/.vite/manifest.json public/build/manifest.json; \
+    fi && \
+    if [ ! -f public/build/manifest.json ]; then \
         echo "ERROR: Vite build failed - manifest.json not found!"; \
         ls -la public/build/ || echo "Build directory missing"; \
         exit 1; \
@@ -123,12 +127,11 @@ php artisan route:cache\n\
 php artisan view:cache\n\
 \n\
 # Vérifier les assets Vite\n\
-if [ ! -f public/build/manifest.json ]; then\n\
-    echo "ERROR: Vite manifest not found!"\n\
-    ls -la public/build/ || echo "Build directory not found"\n\
-    exit 1\n\
+if [ -f public/build/manifest.json ]; then\n\
+    echo "✓ Vite assets found successfully"\n\
 else\n\
-    echo "Assets found successfully"\n\
+    echo "WARNING: Vite manifest not found at public/build/manifest.json"\n\
+    ls -la public/build/ || echo "Build directory not found"\n\
 fi\n\
 \n\
 echo "Application ready!"\n\
