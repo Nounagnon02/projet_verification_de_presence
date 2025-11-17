@@ -3,9 +3,11 @@ FROM node:20-alpine AS node-builder
 
 WORKDIR /app
 
-# Copier les fichiers de dépendances
+# Copier tous les fichiers de configuration nécessaires
 COPY package*.json ./
 COPY vite.config.js ./
+COPY postcss.config.js ./
+COPY tailwind.config.js ./
 
 # Installer les dépendances Node.js
 RUN npm ci
@@ -16,6 +18,13 @@ COPY public ./public
 
 # Build des assets avec Vite pour production
 RUN npm run build
+
+# Vérifier que le manifest a été créé
+RUN if [ ! -f public/build/manifest.json ]; then \
+        echo "ERROR: Vite build failed - manifest.json not found!"; \
+        ls -la public/build/ || echo "Build directory missing"; \
+        exit 1; \
+    fi
 
 # Stage 2: PHP Application
 FROM php:8.3-apache
