@@ -39,17 +39,27 @@ class LoginRequest extends FormRequest
      */
     public function authenticate(): void
     {
-        $this->ensureIsNotRateLimited();
+        try {
+            $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
+            if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+                RateLimiter::hit($this->throttleKey());
 
+                throw ValidationException::withMessages([
+                    'email' => 'Ces identifiants ne correspondent pas à nos enregistrements.',
+                ]);
+            }
+
+            RateLimiter::clear($this->throttleKey());
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            \Log::error('Erreur d\'authentification: ' . $e->getMessage());
+            
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
+                'email' => 'Une erreur technique est survenue. Veuillez réessayer plus tard.',
             ]);
         }
-
-        RateLimiter::clear($this->throttleKey());
     }
 
     /**
