@@ -9,8 +9,10 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Illuminate\Http\Response;
 use Illuminate\Auth\Events\Registered;
 use App\Models\Presence;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class PresenceController extends Controller
 {
@@ -86,11 +88,12 @@ class PresenceController extends Controller
         return redirect()->route('dashboardV')->with('verification_error', 'Désolé, ' . $nometprenoms . ' n\'est pas enregistré(e) dans votre groupe.');
     }
 
-    public function statistiques(Request $request): View
+    public function statistiques(Request $request)
     {
         $userGroup = Auth::user()->group;
         $date = $request->input('date', now()->toDateString());
         $search = $request->input('search');
+        $export = $request->input('export');
 
         // Récupérer les présences pour le groupe de l'utilisateur
         $query = Presence::with(['member' => function($query) use ($userGroup) {
@@ -115,6 +118,12 @@ class PresenceController extends Controller
         $totalMembres = Member::where('group', $userGroup)->count();
         $totalPresent = $presences->count();
         $tauxPresence = $totalMembres > 0 ? round(($totalPresent / $totalMembres) * 100, 2) : 0;
+
+        // Si export PDF demandé
+        if ($export === 'pdf') {
+            $pdf = Pdf::loadView('pdf.statistiques', compact('presences', 'totalPresent', 'totalMembres', 'tauxPresence', 'date', 'search', 'userGroup'));
+            return $pdf->download('statistiques-presence-' . $date . '.pdf');
+        }
 
         return view('statistiques', compact('presences', 'totalPresent', 'totalMembres', 'tauxPresence', 'date', 'search'));
     }
