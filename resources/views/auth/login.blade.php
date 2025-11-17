@@ -1,4 +1,4 @@
-<x-auth-layout>
+<x-guest-layout>
     <div class="text-center mb-6 sm:mb-8">
         <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Connexion</h2>
         <p class="text-gray-600 text-sm sm:text-base">Accédez à votre espace de gestion</p>
@@ -68,4 +68,4 @@
             </div>
         </div>
     </form>
-</x-auth-layout>
+</x-guest-layout>
