@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\QrCode;
-use App\Models\Member;
+use App\Models\member;
 use App\Models\Presence;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +17,7 @@ class QrCodeController extends Controller
             'event_date' => $request->date ?? today(),
             'event_name' => $request->event_name,
             'created_by' => Auth::id(),
-            'expires_at' => now()->addHours(24)
+            'expires_at' => now()->addHours(1)
         ]);
 
         $url = route('qr.scan', $qrCode->code);
@@ -29,19 +29,19 @@ class QrCodeController extends Controller
     public function scan($code)
     {
         $qrCode = QrCode::where('code', $code)->first();
-        
+
         if (!$qrCode || !$qrCode->isValid()) {
             return redirect()->route('dashboard')->with('error', 'QR Code invalide ou expiré');
         }
 
-        $members = Member::all();
+        $members = member::all();
         return view('qr.scan', compact('qrCode', 'members'));
     }
 
     public function markPresence(Request $request, $code)
     {
         $qrCode = QrCode::where('code', $code)->first();
-        
+
         if (!$qrCode || !$qrCode->isValid()) {
             return response()->json(['error' => 'QR Code invalide'], 400);
         }
