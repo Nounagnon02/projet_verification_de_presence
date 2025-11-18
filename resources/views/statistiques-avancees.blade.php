@@ -18,8 +18,8 @@
                             <option value="30" {{ $periode == '30' ? 'selected' : '' }}>30 derniers jours</option>
                             <option value="90" {{ $periode == '90' ? 'selected' : '' }}>90 derniers jours</option>
                             <option value="120" {{ $periode == '120' ? 'selected' : '' }}>120 derniers jours</option>
-                            <option value="" {{ $periode == '30' ? 'selected' : '' }}>30 derniers jours</option>
-                            <option value="90" {{ $periode == '90' ? 'selected' : '' }}>90 derniers jours</option>
+                            <option value="385" {{ $periode == '385' ? 'selected' : '' }}>385 derniers jours</option>
+                            <option value="770" {{ $periode == '770' ? 'selected' : '' }}>770 derniers jours</option>
                         </select>
                     </form>
                 </div>
