@@ -1,0 +1,31 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('presences', function (Blueprint $table) {
+            $table->text('signature')->nullable();
+            $table->string('qr_code_id')->nullable();
+            $table->string('verification_method')->default('manual');
+            $table->timestamp('signed_at')->nullable();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('presences', function (Blueprint $table) {
+            $table->dropColumn(['signature', 'qr_code_id', 'verification_method', 'signed_at']);
+        });
+    }
+};

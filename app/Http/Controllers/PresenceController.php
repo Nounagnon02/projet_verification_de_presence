@@ -75,6 +75,7 @@ class PresenceController extends Controller
             'members' => 'required|array|min:1',
             'members.*.name' => 'required|string|max:255',
             'members.*.phone' => 'required|string|max:20|unique:members,phone',
+            'members.*.rgpd_consent' => 'required|accepted',
         ]);
 
         $userGroup = Auth::user()->group;
@@ -86,6 +87,9 @@ class PresenceController extends Controller
                 'phone' => $memberData['phone'],
                 'group' => $userGroup,
                 'users_id' => Auth::id(),
+                'rgpd_consent' => true,
+                'rgpd_consent_at' => now(),
+                'consent_method' => 'oral'
             ]);
             $count++;
         }
@@ -97,11 +101,13 @@ class PresenceController extends Controller
     {
         $request->validate([
             'presences' => 'array',
-            'presences.*' => 'exists:members,id'
+            'presences.*' => 'exists:members,id',
+            'signature' => 'nullable|string'
         ]);
 
         $userGroup = Auth::user()->group;
         $memberIds = $request->input('presences', []);
+        $signature = $request->input('signature');
         $today = now()->toDateString();
         $currentTime = now()->toTimeString();
         
@@ -110,11 +116,14 @@ class PresenceController extends Controller
             // Vérifier que le membre appartient au groupe
             $member = Member::where('id', $memberId)->where('group', $userGroup)->first();
             if ($member) {
-                Presence::firstOrCreate([
+                Presence::updateOrCreate([
                     'member_id' => $memberId,
                     'date' => $today,
                 ], [
                     'time' => $currentTime,
+                    'signature' => $signature,
+                    'verification_method' => 'manual',
+                    'signed_at' => $signature ? now() : null
                 ]);
                 $count++;
             }
@@ -160,7 +169,14 @@ class PresenceController extends Controller
             return $pdf->download('statistiques-presence-' . $date . '.pdf');
         }
 
-        return view('statistiques', compact('presences', 'totalPresent', 'totalMembres', 'tauxPresence', 'date', 'search'));
+        // Audit trail récent
+        $auditLogs = \App\Models\AuditLog::with('user')
+            ->where('model_type', 'App\\Models\\Presence')
+            ->latest()
+            ->take(5)
+            ->get();
+            
+        return view('statistiques', compact('presences', 'totalPresent', 'totalMembres', 'tauxPresence', 'date', 'search', 'auditLogs'));
     }
 
     public function statistiquesAvancees(Request $request)
@@ -275,5 +291,57 @@ class PresenceController extends Controller
         $membre->delete();
 
         return redirect()->route('membres')->with('success', 'Membre supprimé avec succès!');
+    }
+
+    public function comparaisonPeriodes(Request $request)
+    {
+        $userGroup = Auth::user()->group;
+        $type = $request->input('type', 'mois'); // mois, semaine, annee
+        
+        $dateActuelle = now();
+        
+        switch($type) {
+            case 'semaine':
+                $debutActuel = $dateActuelle->startOfWeek()->toDateString();
+                $finActuel = $dateActuelle->endOfWeek()->toDateString();
+                $debutPrecedent = $dateActuelle->subWeek()->startOfWeek()->toDateString();
+                $finPrecedent = $dateActuelle->endOfWeek()->toDateString();
+                break;
+            case 'annee':
+                $debutActuel = $dateActuelle->startOfYear()->toDateString();
+                $finActuel = $dateActuelle->endOfYear()->toDateString();
+                $debutPrecedent = $dateActuelle->subYear()->startOfYear()->toDateString();
+                $finPrecedent = $dateActuelle->endOfYear()->toDateString();
+                break;
+            default: // mois
+                $debutActuel = $dateActuelle->startOfMonth()->toDateString();
+                $finActuel = $dateActuelle->endOfMonth()->toDateString();
+                $debutPrecedent = $dateActuelle->subMonth()->startOfMonth()->toDateString();
+                $finPrecedent = $dateActuelle->endOfMonth()->toDateString();
+        }
+        
+        $presencesActuelles = Presence::whereHas('member', function($query) use ($userGroup) {
+                $query->where('group', $userGroup);
+            })
+            ->whereBetween('date', [$debutActuel, $finActuel])
+            ->count();
+            
+        $presencesPrecedentes = Presence::whereHas('member', function($query) use ($userGroup) {
+                $query->where('group', $userGroup);
+            })
+            ->whereBetween('date', [$debutPrecedent, $finPrecedent])
+            ->count();
+            
+        $evolution = $presencesPrecedentes > 0 ? 
+            round((($presencesActuelles - $presencesPrecedentes) / $presencesPrecedentes) * 100, 1) : 0;
+            
+        $totalMembres = Member::where('group', $userGroup)->count();
+        $tauxActuel = $totalMembres > 0 ? round(($presencesActuelles / $totalMembres) * 100, 1) : 0;
+        $tauxPrecedent = $totalMembres > 0 ? round(($presencesPrecedentes / $totalMembres) * 100, 1) : 0;
+        
+        return view('comparaison-periodes', compact(
+            'type', 'presencesActuelles', 'presencesPrecedentes', 'evolution',
+            'tauxActuel', 'tauxPrecedent', 'debutActuel', 'finActuel'
+        ));
     }
 }

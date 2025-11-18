@@ -32,6 +32,31 @@
                     <x-nav-link :href="route('statistiques.avancees')" :active="request()->routeIs('statistiques.avancees')" class="text-sm md:text-base lg:text-lg px-3 py-2">
                         {{ __('messages.analytics') }}
                     </x-nav-link>
+                    
+                    <!-- Dropdown pour nouvelles fonctionnalités -->
+                    <x-dropdown align="left" width="48">
+                        <x-slot name="trigger">
+                            <button class="inline-flex items-center px-3 py-2 text-sm md:text-base lg:text-lg font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition duration-150 ease-in-out">
+                                <div>Plus</div>
+                                <div class="ml-1">
+                                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                            </button>
+                        </x-slot>
+                        <x-slot name="content">
+                            <x-dropdown-link :href="route('comparaison.periodes')">
+                                📊 Comparaison périodes
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('qr.generate')">
+                                📱 Générer QR Code
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('rgpd.index')">
+                                🔒 RGPD
+                            </x-dropdown-link>
+                        </x-slot>
+                    </x-dropdown>
                 </div>
             </div>
 
@@ -123,6 +148,27 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                 </svg>
                 {{ __('Analytics') }}
+            </x-responsive-nav-link>
+            
+            <x-responsive-nav-link :href="route('comparaison.periodes')" :active="request()->routeIs('comparaison.periodes')" class="flex items-center py-3 px-4 rounded-lg">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+                Comparaison périodes
+            </x-responsive-nav-link>
+            
+            <x-responsive-nav-link :href="route('qr.generate')" :active="request()->routeIs('qr.*')" class="flex items-center py-3 px-4 rounded-lg">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+                </svg>
+                Générer QR Code
+            </x-responsive-nav-link>
+            
+            <x-responsive-nav-link :href="route('rgpd.index')" :active="request()->routeIs('rgpd.*')" class="flex items-center py-3 px-4 rounded-lg">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+                RGPD
             </x-responsive-nav-link>
         </div>
 
