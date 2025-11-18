@@ -7,6 +7,24 @@
 
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
+            <!-- Liens rapides -->
+            <div class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <a href="{{ route('qr.generate') }}" class="bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-lg text-center transition-colors">
+                    <div class="text-2xl mb-2">📱</div>
+                    <div class="font-semibold">Générer QR Code</div>
+                    <div class="text-sm opacity-90">Créer un QR pour la présence</div>
+                </a>
+                <a href="{{ route('comparaison.periodes') }}" class="bg-green-500 hover:bg-green-600 text-white p-4 rounded-lg text-center transition-colors">
+                    <div class="text-2xl mb-2">📊</div>
+                    <div class="font-semibold">Comparaisons</div>
+                    <div class="text-sm opacity-90">Analyser les tendances</div>
+                </a>
+                <a href="{{ route('dashboardV') }}" class="bg-purple-500 hover:bg-purple-600 text-white p-4 rounded-lg text-center transition-colors">
+                    <div class="text-2xl mb-2">✓</div>
+                    <div class="font-semibold">Vérifier présence</div>
+                    <div class="text-sm opacity-90">Marquer les présents</div>
+                </a>
+            </div>
             @if(session('success'))
                 <div class="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
                     {{ session('success') }}
@@ -40,6 +58,12 @@
                                         <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
                                         <input type="text" name="members[0][phone]" class="w-full border-gray-300 rounded-md" required>
                                     </div>
+                                </div>
+                                <div class="mt-3">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="members[0][rgpd_consent]" class="rounded border-gray-300 text-blue-600" required>
+                                        <span class="ml-2 text-sm text-gray-700">Consentement RGPD obtenu (oral/écrit)</span>
+                                    </label>
                                 </div>
                             </div>
                         </div>
@@ -79,6 +103,12 @@
                         <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
                         <input type="text" name="members[${memberIndex}][phone]" class="w-full border-gray-300 rounded-md" required>
                     </div>
+                </div>
+                <div class="mt-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="members[${memberIndex}][rgpd_consent]" class="rounded border-gray-300 text-blue-600" required>
+                        <span class="ml-2 text-sm text-gray-700">Consentement RGPD obtenu (oral/écrit)</span>
+                    </label>
                 </div>
                 <button type="button" class="remove-member mt-2 text-red-600 hover:text-red-800 text-sm" onclick="this.parentElement.remove()">
                     Supprimer ce membre

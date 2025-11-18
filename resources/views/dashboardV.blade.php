@@ -42,6 +42,16 @@
                                 @endforeach
                             </div>
                             
+                            <!-- Section signature -->
+                            <div class="mb-6 p-4 border rounded-lg bg-gray-50 dark:bg-gray-700">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Signature de validation (optionnel)</label>
+                                <canvas id="signatureCanvas" width="400" height="150" class="border border-gray-300 dark:border-gray-600 rounded w-full cursor-crosshair bg-white"></canvas>
+                                <div class="mt-2 flex justify-between">
+                                    <button type="button" onclick="clearSignature()" class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400">Effacer signature</button>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">Signez pour valider les présences</span>
+                                </div>
+                            </div>
+                            
                             <div class="flex justify-between items-center">
                                 <p class="text-sm text-gray-600 dark:text-gray-400">{{ __('messages.members_total', ['count' => $members->count()]) }}</p>
                                 <button type="submit" class="btn-primary hover:bg-blue-700 text-white font-bold py-2 px-6 rounded transition-colors duration-200">
@@ -56,4 +66,60 @@
             </div>
         </div>
     </div>
+    
+    <script>
+        // Signature canvas
+        const canvas = document.getElementById('signatureCanvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchend', stopDrawing);
+
+        function startDrawing(e) {
+            isDrawing = true;
+            draw(e);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX || e.touches[0].clientX) - rect.left;
+            const y = (e.clientY || e.touches[0].clientY) - rect.top;
+            
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#000';
+            
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+
+        function stopDrawing() {
+            if (!isDrawing) return;
+            isDrawing = false;
+            ctx.beginPath();
+        }
+
+        function clearSignature() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        // Ajouter la signature au formulaire
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const signatureData = canvas.toDataURL();
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'signature';
+            input.value = signatureData;
+            this.appendChild(input);
+        });
+    </script>
 </x-app-layout>
