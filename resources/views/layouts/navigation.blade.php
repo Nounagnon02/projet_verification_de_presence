@@ -23,6 +23,9 @@
                     <x-nav-link :href="route('dashboardV')" :active="request()->routeIs('dashboardV')" class="text-sm md:text-base lg:text-lg px-3 py-2">
                         {{ __('Vérifier') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('membres')" :active="request()->routeIs('membres*')" class="text-sm md:text-base lg:text-lg px-3 py-2">
+                        {{ __('Membres') }}
+                    </x-nav-link>
                     <x-nav-link :href="route('statistiques')" :active="request()->routeIs('statistiques')" class="text-sm md:text-base lg:text-lg px-3 py-2">
                         {{ __('Statistiques') }}
                     </x-nav-link>
@@ -99,6 +102,12 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
                 {{ __('Vérifier la présence') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('membres')" :active="request()->routeIs('membres*')" class="flex items-center py-3 px-4 rounded-lg">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                </svg>
+                {{ __('Liste des membres') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('statistiques')" :active="request()->routeIs('statistiques')" class="flex items-center py-3 px-4 rounded-lg">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

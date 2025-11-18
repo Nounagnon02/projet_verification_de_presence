@@ -24,8 +24,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [PresenceController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboardV', [PresenceController::class, 'dashboardV'])->name('dashboardV');
     Route::post('/ajout', [PresenceController::class, 'ajout'])->name('ajout');
+    Route::post('/ajout-multiple', [PresenceController::class, 'ajoutMultiple'])->name('ajout.multiple');
     Route::post('/verif', [PresenceController::class, 'verif'])->name('verif');
     Route::get('/statistiques', [PresenceController::class, 'statistiques'])->name('statistiques');
+    
+    // Gestion des membres
+    Route::get('/membres', [PresenceController::class, 'listeMembres'])->name('membres');
+    Route::get('/membres/{id}/edit', [PresenceController::class, 'editMembre'])->name('membres.edit');
+    Route::put('/membres/{id}', [PresenceController::class, 'updateMembre'])->name('membres.update');
+    Route::delete('/membres/{id}', [PresenceController::class, 'deleteMembre'])->name('membres.delete');
 });
 
 Route::get('/statistiques', [PresenceController::class, 'statistiques'])->name('statistiques');

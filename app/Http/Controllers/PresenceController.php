@@ -27,8 +27,18 @@ class PresenceController extends Controller
     public function dashboardV()
     {
         $userGroup = Auth::user()->group;
+        $members = Member::where('group', $userGroup)->orderBy('name')->get();
+        
+        // Récupérer les présences du jour
+        $today = now()->toDateString();
+        $presencesToday = Presence::whereDate('date', $today)
+            ->whereHas('member', function($query) use ($userGroup) {
+                $query->where('group', $userGroup);
+            })
+            ->pluck('member_id')
+            ->toArray();
 
-        return view('dashboardV', compact('userGroup'));
+        return view('dashboardV', compact('userGroup', 'members', 'presencesToday'));
     }
     public function ajout(Request $request): RedirectResponse
     {
@@ -59,33 +69,58 @@ class PresenceController extends Controller
         }
     }
 
+    public function ajoutMultiple(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'members' => 'required|array|min:1',
+            'members.*.name' => 'required|string|max:255',
+            'members.*.phone' => 'required|string|max:20|unique:members,phone',
+        ]);
+
+        $userGroup = Auth::user()->group;
+        $count = 0;
+
+        foreach ($request->members as $memberData) {
+            Member::create([
+                'name' => $memberData['name'],
+                'phone' => $memberData['phone'],
+                'group' => $userGroup,
+                'users_id' => Auth::id(),
+            ]);
+            $count++;
+        }
+
+        return redirect()->route('dashboard')->with('success', $count . ' membre(s) ajouté(s) avec succès!');
+    }
+
     public function verif(Request $request): RedirectResponse
     {
         $request->validate([
-            'nometprenoms' => 'required|string',
+            'presences' => 'array',
+            'presences.*' => 'exists:members,id'
         ]);
 
-        $nometprenoms = $request->nometprenoms;
         $userGroup = Auth::user()->group;
-
-        // Rechercher le membre dans le groupe de l'utilisateur
-        $member = Member::where('name', $nometprenoms)
-                    ->where('group', $userGroup)
-                    ->first();
-
-        if ($member) {
-            // Enregistrer la présence
-            Presence::firstOrCreate([
-                'member_id' => $member->id,
-                'date' => now()->toDateString(),
-            ], [
-                'time' => now()->toTimeString(),
-            ]);
-
-            return redirect()->route('dashboardV')->with('verification_result', 'Vérification réussie! ' . $nometprenoms . ' est présent(e).');
+        $memberIds = $request->input('presences', []);
+        $today = now()->toDateString();
+        $currentTime = now()->toTimeString();
+        
+        $count = 0;
+        foreach ($memberIds as $memberId) {
+            // Vérifier que le membre appartient au groupe
+            $member = Member::where('id', $memberId)->where('group', $userGroup)->first();
+            if ($member) {
+                Presence::firstOrCreate([
+                    'member_id' => $memberId,
+                    'date' => $today,
+                ], [
+                    'time' => $currentTime,
+                ]);
+                $count++;
+            }
         }
 
-        return redirect()->route('dashboardV')->with('verification_error', 'Désolé, ' . $nometprenoms . ' n\'est pas enregistré(e) dans votre groupe.');
+        return redirect()->route('dashboardV')->with('verification_result', $count . ' présence(s) enregistrée(s) avec succès!');
     }
 
     public function statistiques(Request $request)
@@ -126,5 +161,57 @@ class PresenceController extends Controller
         }
 
         return view('statistiques', compact('presences', 'totalPresent', 'totalMembres', 'tauxPresence', 'date', 'search'));
+    }
+
+    // Gestion des membres
+    public function listeMembres()
+    {
+        $userGroup = Auth::user()->group;
+        $membres = Member::where('group', $userGroup)
+                        ->orderBy('name')
+                        ->paginate(10);
+
+        return view('membres.index', compact('membres'));
+    }
+
+    public function editMembre($id)
+    {
+        $userGroup = Auth::user()->group;
+        $membre = Member::where('id', $id)
+                       ->where('group', $userGroup)
+                       ->firstOrFail();
+
+        return view('membres.edit', compact('membre'));
+    }
+
+    public function updateMembre(Request $request, $id)
+    {
+        $userGroup = Auth::user()->group;
+        $membre = Member::where('id', $id)
+                       ->where('group', $userGroup)
+                       ->firstOrFail();
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20|unique:members,phone,' . $id,
+        ]);
+
+        $membre->update($validated);
+
+        return redirect()->route('membres')->with('success', 'Membre modifié avec succès!');
+    }
+
+    public function deleteMembre($id)
+    {
+        $userGroup = Auth::user()->group;
+        $membre = Member::where('id', $id)
+                       ->where('group', $userGroup)
+                       ->firstOrFail();
+
+        // Supprimer aussi les présences associées
+        Presence::where('member_id', $id)->delete();
+        $membre->delete();
+
+        return redirect()->route('membres')->with('success', 'Membre supprimé avec succès!');
     }
 }
