@@ -8,26 +8,26 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-md w-full space-y-8">
+    <div class="min-h-screen flex items-center justify-center py-4 px-3 sm:py-12 sm:px-6 lg:px-8">
+        <div class="max-w-sm sm:max-w-md w-full space-y-6 sm:space-y-8">
             <!-- Header -->
             <div class="text-center">
-                <div class="mx-auto h-16 w-16 bg-blue-500 rounded-full flex items-center justify-center mb-4">
-                    <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="mx-auto h-12 w-12 sm:h-16 sm:w-16 bg-blue-500 rounded-full flex items-center justify-center mb-3 sm:mb-4">
+                    <svg class="h-6 w-6 sm:h-8 sm:w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                 </div>
-                <h2 class="text-3xl font-bold text-gray-900 mb-2">Marquer sa présence</h2>
+                <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Marquer sa présence</h2>
                 @if($qrCode->event_name)
-                    <p class="text-lg text-gray-600 mb-2">{{ $qrCode->event_name }}</p>
+                    <p class="text-base sm:text-lg text-gray-600 mb-2">{{ $qrCode->event_name }}</p>
                 @endif
                 <p class="text-sm text-gray-500">{{ $qrCode->event_date->format('d/m/Y') }}</p>
             </div>
 
             <!-- Form Card -->
             <div class="bg-white shadow-sm rounded-lg border border-gray-200">
-                <div class="px-6 py-8">
-                    <form id="presenceForm" class="space-y-6">
+                <div class="px-4 py-6 sm:px-6 sm:py-8">
+                    <form id="presenceForm" class="space-y-4 sm:space-y-6">
                         @csrf
                         
                         <!-- Member Selection -->
@@ -35,7 +35,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-2">
                                 Sélectionnez votre nom
                             </label>
-                            <select name="member_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            <select name="member_id" required class="w-full px-3 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
                                 <option value="" class="text-gray-500">-- Choisir votre nom --</option>
                                 @foreach($members as $member)
                                     <option value="{{ $member->id }}">{{ $member->name }}</option>
@@ -48,17 +48,17 @@
                             <label class="block text-sm font-medium text-gray-700 mb-2">
                                 Signature (optionnel)
                             </label>
-                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
-                                <canvas id="signatureCanvas" width="300" height="120" class="w-full bg-white border border-gray-200 rounded cursor-crosshair"></canvas>
-                                <button type="button" onclick="clearSignature()" class="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors">
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-2 sm:p-4 bg-gray-50">
+                                <canvas id="signatureCanvas" class="w-full h-24 sm:h-32 bg-white border border-gray-200 rounded cursor-crosshair touch-none"></canvas>
+                                <button type="button" onclick="clearSignature()" class="mt-2 text-xs sm:text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors">
                                     🗑️ Effacer la signature
                                 </button>
                             </div>
                         </div>
 
                         <!-- Submit Button -->
-                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-md transition-colors duration-200 flex items-center justify-center space-x-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 sm:py-4 px-4 rounded-md transition-colors duration-200 flex items-center justify-center space-x-2 text-sm sm:text-base">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
                             <span>Confirmer ma présence</span>
@@ -84,13 +84,19 @@
         let isDrawing = false;
         let hasSignature = false;
 
-        // Set canvas size properly
-        const rect = canvas.getBoundingClientRect();
-        canvas.width = rect.width * window.devicePixelRatio;
-        canvas.height = rect.height * window.devicePixelRatio;
-        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-        canvas.style.width = rect.width + 'px';
-        canvas.style.height = rect.height + 'px';
+        // Set canvas size properly for responsive design
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            const ratio = window.devicePixelRatio || 1;
+            canvas.width = rect.width * ratio;
+            canvas.height = rect.height * ratio;
+            ctx.scale(ratio, ratio);
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+        }
+        
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
 
         // Event listeners for drawing
         canvas.addEventListener('mousedown', startDrawing);
@@ -121,10 +127,12 @@
             if (!isDrawing) return;
             
             const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX / (window.devicePixelRatio || 1);
+            const y = (e.clientY - rect.top) * scaleY / (window.devicePixelRatio || 1);
             
-            ctx.lineWidth = 2;
+            ctx.lineWidth = window.innerWidth < 640 ? 3 : 2; // Plus épais sur mobile
             ctx.lineCap = 'round';
             ctx.strokeStyle = '#1f2937';
             
