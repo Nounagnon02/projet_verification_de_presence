@@ -1,70 +1,57 @@
 <x-app-layout>
-    <div class="py-6 sm:py-8 md:py-12 lg:py-16">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 md:px-8">
-            <!-- Messages de feedback -->
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            {{ __('Vérifier la Présence') }}
+        </h2>
+    </x-slot>
+
+    <div class="py-12">
+        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             @if(session('verification_result'))
-                <div class="mb-6 p-4 sm:p-6 bg-green-50 border-l-4 border-green-400 rounded-lg shadow-sm">
-                    <div class="flex items-center">
-                        <svg class="w-5 h-5 text-green-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <p class="text-green-700 font-medium">{{ session('verification_result') }}</p>
-                    </div>
+                <div class="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                    {{ session('verification_result') }}
                 </div>
             @endif
 
-            @if(session('verification_error'))
-                <div class="mb-6 p-4 sm:p-6 bg-red-50 border-l-4 border-red-400 rounded-lg shadow-sm">
-                    <div class="flex items-center">
-                        <svg class="w-5 h-5 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <p class="text-red-700 font-medium">{{ session('verification_error') }}</p>
-                    </div>
-                </div>
-            @endif
-
-            <x-auth-session-status class="mb-6" :status="session('status')" />
-
-            <div class="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-100">
-                <div class="px-6 py-8 sm:px-8 sm:py-10 md:px-12 md:py-14">
-                    <div class="text-center mb-8 sm:mb-10">
-                        <div class="w-16 h-16 sm:w-20 sm:h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <svg class="w-8 h-8 sm:w-10 sm:h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                        <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">Vérifier la présence</h1>
-                        <p class="text-gray-600 text-sm sm:text-base md:text-lg">Confirmez la présence d'un membre aujourd'hui</p>
-                    </div>
-
-                    <form method="POST" action="{{ route('verif') }}" class="max-w-lg mx-auto">
-                        @csrf
-
-                        <!-- Name -->
-                        <div class="mb-8 sm:mb-10">
-                            <x-input-label for="nometprenoms" :value="__('Nom et Prénoms')" class="text-sm sm:text-base font-semibold text-gray-700 mb-2" />
-                            <x-text-input id="nometprenoms" 
-                                class="block w-full text-sm sm:text-base py-3 sm:py-4 px-4 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all" 
-                                type="text" 
-                                name="nometprenoms" 
-                                :value="old('nometprenoms')" 
-                                placeholder="Entrez le nom complet du membre"
-                                required 
-                                autofocus />
-                            <x-input-error :messages="$errors->get('nometprenoms')" class="mt-2 text-sm" />
-                            <p class="mt-2 text-xs sm:text-sm text-gray-500">Tapez le nom exact tel qu'enregistré dans le système</p>
-                        </div>
-
-                        <div class="flex justify-center">
-                            <x-primary-button class="w-full sm:w-auto px-8 sm:px-12 py-3 sm:py-4 text-base sm:text-lg font-semibold bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 rounded-lg transition-all transform hover:scale-105 focus:scale-105">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                {{ __('Vérifier la présence') }}
-                            </x-primary-button>
-                        </div>
-                    </form>
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Liste des Membres - {{ now()->format('d/m/Y') }}</h3>
+                    
+                    @if($members->count() > 0)
+                        <form method="POST" action="{{ route('verif') }}">
+                            @csrf
+                            <div class="space-y-3 mb-6">
+                                @foreach($members as $member)
+                                    <div class="flex items-center p-3 border rounded-lg {{ in_array($member->id, $presencesToday) ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200' }}">
+                                        <input type="checkbox" 
+                                               name="presences[]" 
+                                               value="{{ $member->id }}"
+                                               id="member_{{ $member->id }}"
+                                               {{ in_array($member->id, $presencesToday) ? 'checked' : '' }}
+                                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                        <label for="member_{{ $member->id }}" class="ml-3 flex-1 cursor-pointer">
+                                            <div class="flex justify-between items-center">
+                                                <span class="text-sm font-medium text-gray-900">{{ $member->name }}</span>
+                                                <span class="text-xs text-gray-500">{{ $member->phone }}</span>
+                                            </div>
+                                        </label>
+                                        @if(in_array($member->id, $presencesToday))
+                                            <span class="ml-2 text-xs text-green-600 font-medium">Présent</span>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <p class="text-sm text-gray-600">{{ $members->count() }} membre(s) au total</p>
+                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded">
+                                    Enregistrer les présences
+                                </button>
+                            </div>
+                        </form>
+                    @else
+                        <p class="text-gray-500 text-center py-8">Aucun membre enregistré dans votre groupe.</p>
+                    @endif
                 </div>
             </div>
         </div>

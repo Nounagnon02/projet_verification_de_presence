@@ -1,82 +1,91 @@
 <x-app-layout>
-    <div class="py-6 sm:py-8 md:py-12 lg:py-16">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 md:px-8">
-            <!-- Messages de feedback -->
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            {{ __('Ajouter des Membres') }}
+        </h2>
+    </x-slot>
+
+    <div class="py-12">
+        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             @if(session('success'))
-                <div class="mb-6 p-4 sm:p-6 bg-green-50 border-l-4 border-green-400 rounded-lg shadow-sm">
-                    <div class="flex items-center">
-                        <svg class="w-5 h-5 text-green-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <p class="text-green-700 font-medium">{{ session('success') }}</p>
-                    </div>
+                <div class="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                    {{ session('success') }}
                 </div>
             @endif
 
-            @if(session('error'))
-                <div class="mb-6 p-4 sm:p-6 bg-red-50 border-l-4 border-red-400 rounded-lg shadow-sm">
-                    <div class="flex items-center">
-                        <svg class="w-5 h-5 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <p class="text-red-700 font-medium">{{ session('error') }}</p>
-                    </div>
+            @if($errors->any())
+                <div class="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                    <ul>
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
             @endif
 
-            <div class="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-100">
-                <div class="px-6 py-8 sm:px-8 sm:py-10 md:px-12 md:py-14">
-                    <div class="text-center mb-8 sm:mb-10">
-                        <div class="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <svg class="w-8 h-8 sm:w-10 sm:h-10 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                        </div>
-                        <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">Ajouter un membre</h1>
-                        <p class="text-gray-600 text-sm sm:text-base md:text-lg">Enregistrez un nouveau membre dans le système</p>
-                    </div>
-
-                    <form method="POST" action="{{ route('ajout') }}" class="max-w-lg mx-auto">
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Ajouter des membres</h3>
+                    
+                    <form method="POST" action="{{ route('ajout.multiple') }}" id="membersForm">
                         @csrf
-
-                        <!-- Name -->
-                        <div class="mb-6 sm:mb-8">
-                            <x-input-label for="name" :value="__('Nom et Prénoms')" class="text-sm sm:text-base font-semibold text-gray-700 mb-2" />
-                            <x-text-input id="name" 
-                                class="block w-full text-sm sm:text-base py-3 sm:py-4 px-4 border-2 border-gray-200 rounded-lg focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-all" 
-                                type="text" 
-                                name="name" 
-                                :value="old('name')" 
-                                placeholder="Entrez le nom complet"
-                                required 
-                                autofocus />
-                            <x-input-error :messages="$errors->get('name')" class="mt-2 text-sm" />
+                        <div id="membersContainer">
+                            <div class="member-row border rounded-lg p-4 mb-4 bg-gray-50">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Nom et Prénoms</label>
+                                        <input type="text" name="members[0][name]" class="w-full border-gray-300 rounded-md" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+                                        <input type="text" name="members[0][phone]" class="w-full border-gray-300 rounded-md" required>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-
-                        <!-- Phone number -->
-                        <div class="mb-8 sm:mb-10">
-                            <x-input-label for="phone" :value="__('Téléphone')" class="text-sm sm:text-base font-semibold text-gray-700 mb-2" />
-                            <x-text-input id="phone" 
-                                class="block w-full text-sm sm:text-base py-3 sm:py-4 px-4 border-2 border-gray-200 rounded-lg focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-all" 
-                                type="tel" 
-                                name="phone" 
-                                :value="old('phone')" 
-                                placeholder="Ex: +33 6 12 34 56 78"
-                                required />
-                            <x-input-error :messages="$errors->get('phone')" class="mt-2 text-sm" />
-                        </div>
-
-                        <div class="flex justify-center">
-                            <x-primary-button class="w-full sm:w-auto px-8 sm:px-12 py-3 sm:py-4 text-base sm:text-lg font-semibold bg-gray-800 hover:bg-gray-700 focus:bg-gray-700 rounded-lg transition-all transform hover:scale-105 focus:scale-105">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        
+                        <div class="flex justify-between items-center mt-6">
+                            <button type="button" id="addMemberBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                                 </svg>
-                                {{ __('Enregistrer le membre') }}
-                            </x-primary-button>
+                                Ajouter un membre
+                            </button>
+                            
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded">
+                                Enregistrer tous les membres
+                            </button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
     </div>
+
+    <script>
+        let memberIndex = 1;
+        
+        document.getElementById('addMemberBtn').addEventListener('click', function() {
+            const container = document.getElementById('membersContainer');
+            const newMemberRow = document.createElement('div');
+            newMemberRow.className = 'member-row border rounded-lg p-4 mb-4 bg-gray-50';
+            newMemberRow.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nom et Prénoms</label>
+                        <input type="text" name="members[${memberIndex}][name]" class="w-full border-gray-300 rounded-md" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+                        <input type="text" name="members[${memberIndex}][phone]" class="w-full border-gray-300 rounded-md" required>
+                    </div>
+                </div>
+                <button type="button" class="remove-member mt-2 text-red-600 hover:text-red-800 text-sm" onclick="this.parentElement.remove()">
+                    Supprimer ce membre
+                </button>
+            `;
+            container.appendChild(newMemberRow);
+            memberIndex++;
+        });
+    </script>
 </x-app-layout>
