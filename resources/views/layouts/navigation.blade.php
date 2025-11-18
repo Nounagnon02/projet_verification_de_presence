@@ -18,19 +18,19 @@
                 <!-- Navigation Links -->
                 <div class="hidden md:flex md:space-x-4 lg:space-x-8 md:ml-8 lg:ml-12">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="text-sm md:text-base lg:text-lg px-3 py-2">
-                        {{ __('Ajouter') }}
+                        {{ __('messages.add') }}
                     </x-nav-link>
                     <x-nav-link :href="route('dashboardV')" :active="request()->routeIs('dashboardV')" class="text-sm md:text-base lg:text-lg px-3 py-2">
-                        {{ __('Vérifier') }}
+                        {{ __('messages.verify') }}
                     </x-nav-link>
                     <x-nav-link :href="route('membres')" :active="request()->routeIs('membres*')" class="text-sm md:text-base lg:text-lg px-3 py-2">
-                        {{ __('Membres') }}
+                        {{ __('messages.members') }}
                     </x-nav-link>
                     <x-nav-link :href="route('statistiques')" :active="request()->routeIs('statistiques')" class="text-sm md:text-base lg:text-lg px-3 py-2">
-                        {{ __('Statistiques') }}
+                        {{ __('messages.statistics') }}
                     </x-nav-link>
                     <x-nav-link :href="route('statistiques.avancees')" :active="request()->routeIs('statistiques.avancees')" class="text-sm md:text-base lg:text-lg px-3 py-2">
-                        {{ __('Analytics') }}
+                        {{ __('messages.analytics') }}
                     </x-nav-link>
                 </div>
             </div>
@@ -61,7 +61,7 @@
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                             </svg>
-                            {{ __('Profil') }}
+                            {{ __('messages.profile') }}
                         </x-dropdown-link>
 
                         <!-- Authentication -->
@@ -72,7 +72,7 @@
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                                 </svg>
-                                {{ __('Déconnexion') }}
+                                {{ __('messages.logout') }}
                             </x-dropdown-link>
                         </form>
                     </x-slot>
