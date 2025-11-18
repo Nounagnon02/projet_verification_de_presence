@@ -7,7 +7,7 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            
+
             <!-- Filtres -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6">
@@ -16,6 +16,9 @@
                         <select name="periode" class="border-gray-300 rounded-md" onchange="this.form.submit()">
                             <option value="7" {{ $periode == '7' ? 'selected' : '' }}>7 derniers jours</option>
                             <option value="30" {{ $periode == '30' ? 'selected' : '' }}>30 derniers jours</option>
+                            <option value="90" {{ $periode == '90' ? 'selected' : '' }}>90 derniers jours</option>
+                            <option value="120" {{ $periode == '120' ? 'selected' : '' }}>120 derniers jours</option>
+                            <option value="" {{ $periode == '30' ? 'selected' : '' }}>30 derniers jours</option>
                             <option value="90" {{ $periode == '90' ? 'selected' : '' }}>90 derniers jours</option>
                         </select>
                     </form>
@@ -165,14 +168,14 @@
     <script>
         const ctx = document.getElementById('presencesChart').getContext('2d');
         const presencesData = @json($presencesParJour);
-        
+
         const labels = presencesData.map(item => {
             const date = new Date(item.jour);
             return date.toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' });
         });
-        
+
         const data = presencesData.map(item => item.total);
-        
+
         new Chart(ctx, {
             type: 'line',
             data: {
