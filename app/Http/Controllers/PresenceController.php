@@ -163,6 +163,68 @@ class PresenceController extends Controller
         return view('statistiques', compact('presences', 'totalPresent', 'totalMembres', 'tauxPresence', 'date', 'search'));
     }
 
+    public function statistiquesAvancees(Request $request)
+    {
+        $userGroup = Auth::user()->group;
+        $periode = $request->input('periode', '30'); // 7, 30, 90 jours
+        $dateDebut = now()->subDays($periode)->toDateString();
+        $dateFin = now()->toDateString();
+
+        // Statistiques générales
+        $totalMembres = Member::where('group', $userGroup)->count();
+        
+        // Présences par jour sur la période
+        $presencesParJour = Presence::selectRaw('DATE(date) as jour, COUNT(DISTINCT member_id) as total')
+            ->whereHas('member', function($query) use ($userGroup) {
+                $query->where('group', $userGroup);
+            })
+            ->whereBetween('date', [$dateDebut, $dateFin])
+            ->groupBy('jour')
+            ->orderBy('jour')
+            ->get();
+
+        // Taux de présence par membre
+        $membresStats = Member::where('group', $userGroup)
+            ->withCount(['presences as total_presences' => function($query) use ($dateDebut, $dateFin) {
+                $query->whereBetween('date', [$dateDebut, $dateFin]);
+            }])
+            ->get()
+            ->map(function($member) use ($periode) {
+                $tauxPresence = $periode > 0 ? round(($member->total_presences / $periode) * 100, 1) : 0;
+                return [
+                    'name' => $member->name,
+                    'total_presences' => $member->total_presences,
+                    'taux_presence' => $tauxPresence
+                ];
+            })
+            ->sortByDesc('taux_presence');
+
+        // Tendance (comparaison avec période précédente)
+        $periodePrec = now()->subDays($periode * 2)->toDateString();
+        $dateDebutPrec = $periodePrec;
+        $dateFinPrec = now()->subDays($periode)->toDateString();
+        
+        $presencesActuelles = Presence::whereHas('member', function($query) use ($userGroup) {
+                $query->where('group', $userGroup);
+            })
+            ->whereBetween('date', [$dateDebut, $dateFin])
+            ->count();
+            
+        $presencesPrecedentes = Presence::whereHas('member', function($query) use ($userGroup) {
+                $query->where('group', $userGroup);
+            })
+            ->whereBetween('date', [$dateDebutPrec, $dateFinPrec])
+            ->count();
+            
+        $tendance = $presencesPrecedentes > 0 ? 
+            round((($presencesActuelles - $presencesPrecedentes) / $presencesPrecedentes) * 100, 1) : 0;
+
+        return view('statistiques-avancees', compact(
+            'totalMembres', 'presencesParJour', 'membresStats', 'tendance', 
+            'periode', 'presencesActuelles', 'presencesPrecedentes'
+        ));
+    }
+
     // Gestion des membres
     public function listeMembres()
     {

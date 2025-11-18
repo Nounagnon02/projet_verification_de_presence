@@ -27,6 +27,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/ajout-multiple', [PresenceController::class, 'ajoutMultiple'])->name('ajout.multiple');
     Route::post('/verif', [PresenceController::class, 'verif'])->name('verif');
     Route::get('/statistiques', [PresenceController::class, 'statistiques'])->name('statistiques');
+    Route::get('/statistiques-avancees', [PresenceController::class, 'statistiquesAvancees'])->name('statistiques.avancees');
     
     // Gestion des membres
     Route::get('/membres', [PresenceController::class, 'listeMembres'])->name('membres');
