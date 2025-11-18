@@ -21,7 +21,7 @@ Route::get('/dashboardV', function () {
     return view('dashboardV');
 })->middleware(['auth', 'verified'])->name('dashboardV');*/
 
-Route::middleware(['auth', 'locale'])->group(function () {
+Route::middleware(['auth', 'verified', 'locale'])->group(function () {
     Route::get('/dashboard', [PresenceController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboardV', [PresenceController::class, 'dashboardV'])->name('dashboardV');
     Route::post('/ajout', [PresenceController::class, 'ajout'])->name('ajout');
@@ -36,8 +36,6 @@ Route::middleware(['auth', 'locale'])->group(function () {
     Route::put('/membres/{id}', [PresenceController::class, 'updateMembre'])->name('membres.update');
     Route::delete('/membres/{id}', [PresenceController::class, 'deleteMembre'])->name('membres.delete');
 });
-
-Route::get('/statistiques', [PresenceController::class, 'statistiques'])->name('statistiques');
 
 // Route pour changer de langue
 Route::get('/language/{locale}', [LanguageController::class, 'switch'])->name('language.switch');
