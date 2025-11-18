@@ -1,4 +1,4 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100 shadow-sm">
+<nav x-data="{ open: false }" class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 shadow-sm transition-colors duration-300">
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
         <div class="flex justify-between h-16 md:h-20 lg:h-24">
@@ -11,7 +11,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         </div>
-                        <span class="text-lg md:text-xl lg:text-2xl font-bold text-gray-900 hidden sm:block">Présence</span>
+                        <span class="text-lg md:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white hidden sm:block transition-colors duration-300">Présence</span>
                     </a>
                 </div>
 
@@ -39,9 +39,9 @@
             <div class="hidden md:flex md:items-center md:ml-6">
                 <x-dropdown align="right" width="56">
                     <x-slot name="trigger">
-                        <button class="inline-flex items-center px-4 py-2 border border-transparent text-sm md:text-base leading-4 font-medium rounded-lg text-gray-700 bg-gray-50 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all duration-200">
+                        <button class="inline-flex items-center px-4 py-2 border border-transparent text-sm md:text-base leading-4 font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all duration-200">
                             <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-2">
-                                <span class="text-sm font-semibold text-gray-700">{{ substr(Auth::user()->name, 0, 1) }}</span>
+                                <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ substr(Auth::user()->name, 0, 1) }}</span>
                             </div>
                             <div class="hidden lg:block">{{ Auth::user()->name }}</div>
                             <div class="ml-1">
@@ -54,8 +54,8 @@
 
                     <x-slot name="content">
                         <div class="px-4 py-2 border-b border-gray-100">
-                            <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
-                            <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
+                            <div class="font-medium text-base text-gray-800 dark:text-gray-200">{{ Auth::user()->name }}</div>
+                            <div class="font-medium text-sm text-gray-500 dark:text-gray-400">{{ Auth::user()->email }}</div>
                         </div>
                         <x-dropdown-link :href="route('profile.edit')" class="flex items-center px-4 py-3">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -92,7 +92,7 @@
     </div>
 
     <!-- Responsive Navigation Menu -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden md:hidden bg-white border-t border-gray-100">
+    <div :class="{'block': open, 'hidden': ! open}" class="hidden md:hidden bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 transition-colors duration-300">
         <div class="pt-4 pb-3 space-y-2 px-4">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="flex items-center py-3 px-4 rounded-lg">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -127,15 +127,15 @@
         </div>
 
         <!-- Responsive Settings Options -->
-        <div class="pt-4 pb-4 border-t border-gray-200 bg-gray-50">
+        <div class="pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 transition-colors duration-300">
             <div class="px-4 mb-4">
                 <div class="flex items-center">
                     <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center mr-3">
-                        <span class="text-lg font-semibold text-gray-700">{{ substr(Auth::user()->name, 0, 1) }}</span>
+                        <span class="text-lg font-semibold text-gray-700 dark:text-gray-200">{{ substr(Auth::user()->name, 0, 1) }}</span>
                     </div>
                     <div>
-                        <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
-                        <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
+                        <div class="font-medium text-base text-gray-800 dark:text-gray-200">{{ Auth::user()->name }}</div>
+                        <div class="font-medium text-sm text-gray-500 dark:text-gray-400">{{ Auth::user()->email }}</div>
                     </div>
                 </div>
             </div>

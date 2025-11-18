@@ -8,6 +8,8 @@ export default {
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
     ],
+    
+    darkMode: 'class',
 
     theme: {
         extend: {
@@ -25,8 +27,22 @@ export default {
                 'laptop': '1024px',
                 'desktop': '1280px',
             },
+            animation: {
+                'fade-in-up': 'fadeInUp 0.5s ease-out',
+                'slide-in-right': 'slideInRight 0.3s ease-out',
+                'pulse-soft': 'pulse-soft 2s infinite',
+                'bounce-subtle': 'bounce-subtle 0.3s ease-in-out',
+            },
+            colors: {
+                primary: {
+                    50: '#eff6ff',
+                    500: '#3b82f6',
+                    600: '#2563eb',
+                    700: '#1d4ed8',
+                },
+            },
         },
     },
 
     plugins: [forms],
-};
+};}
