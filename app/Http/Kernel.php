@@ -26,6 +26,7 @@ class Kernel extends HttpKernel
 
         // Ajoutez votre middleware ici
         'check.group' => \App\Http\Middleware\CheckUserGroup::class,
+        'locale' => \App\Http\Middleware\SetLocale::class,
     ];
 
 

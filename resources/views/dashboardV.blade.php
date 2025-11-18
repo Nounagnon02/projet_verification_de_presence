@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Vérifier la Présence') }}
+        <h2 class="font-semibold text-xl text-gray-800 dark:text-white leading-tight">
+            {{ __('messages.verify_presence') }}
         </h2>
     </x-slot>
 
@@ -15,7 +15,7 @@
 
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg transition-colors duration-300">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Liste des Membres - {{ now()->format('d/m/Y') }}</h3>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">{{ __('messages.member_list') }} - {{ now()->format('d/m/Y') }}</h3>
                     
                     @if($members->count() > 0)
                         <form method="POST" action="{{ route('verif') }}">
@@ -36,21 +36,21 @@
                                             </div>
                                         </label>
                                         @if(in_array($member->id, $presencesToday))
-                                            <span class="ml-2 text-xs text-green-600 dark:text-green-400 font-medium">Présent</span>
+                                            <span class="ml-2 text-xs text-green-600 dark:text-green-400 font-medium">{{ __('messages.present') }}</span>
                                         @endif
                                     </div>
                                 @endforeach
                             </div>
                             
                             <div class="flex justify-between items-center">
-                                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $members->count() }} membre(s) au total</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">{{ __('messages.members_total', ['count' => $members->count()]) }}</p>
                                 <button type="submit" class="btn-primary hover:bg-blue-700 text-white font-bold py-2 px-6 rounded transition-colors duration-200">
-                                    Enregistrer les présences
+                                    {{ __('messages.save_presences') }}
                                 </button>
                             </div>
                         </form>
                     @else
-                        <p class="text-gray-500 dark:text-gray-400 text-center py-8">Aucun membre enregistré dans votre groupe.</p>
+                        <p class="text-gray-500 dark:text-gray-400 text-center py-8">{{ __('messages.no_members') }}</p>
                     @endif
                 </div>
             </div>

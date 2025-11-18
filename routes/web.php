@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PresenceController;
+use App\Http\Controllers\LanguageController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -20,7 +21,7 @@ Route::get('/dashboardV', function () {
     return view('dashboardV');
 })->middleware(['auth', 'verified'])->name('dashboardV');*/
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'locale'])->group(function () {
     Route::get('/dashboard', [PresenceController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboardV', [PresenceController::class, 'dashboardV'])->name('dashboardV');
     Route::post('/ajout', [PresenceController::class, 'ajout'])->name('ajout');
@@ -37,6 +38,9 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::get('/statistiques', [PresenceController::class, 'statistiques'])->name('statistiques');
+
+// Route pour changer de langue
+Route::get('/language/{locale}', [LanguageController::class, 'switch'])->name('language.switch');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
