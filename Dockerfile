@@ -49,21 +49,7 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install pdo pdo_pgsql pgsql gd zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Installation de l'extension LibSQL pour Turso
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    php-dev \
-    git \
-    cmake \
-    && git clone https://github.com/tursodatabase/turso-client-php.git /tmp/turso-client-php \
-    && cd /tmp/turso-client-php \
-    && phpize \
-    && ./configure \
-    && make \
-    && make install \
-    && echo "extension=turso.so" > /usr/local/etc/php/conf.d/turso.ini \
-    && rm -rf /tmp/turso-client-php \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 
 # Installer Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
