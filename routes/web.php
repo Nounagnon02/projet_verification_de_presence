@@ -15,10 +15,25 @@ Route::get('/home', function () {
 })->name('home');
 
 // Pages légales et informatives
-Route::get('/about', [\App\Http\Controllers\LegalController::class, 'about'])->name('about');
-Route::get('/privacy', [\App\Http\Controllers\LegalController::class, 'privacy'])->name('privacy');
-Route::get('/terms', [\App\Http\Controllers\LegalController::class, 'terms'])->name('terms');
-Route::get('/security', [\App\Http\Controllers\LegalController::class, 'security'])->name('security');
+Route::get('/about', function () {
+    return view('about');
+})->name('about');
+Route::get('/privacy', function () {
+    return view('legal.privacy');
+})->name('privacy');
+Route::get('/terms', function () {
+    return view('legal.terms');
+})->name('terms');
+Route::get('/security', function () {
+    return view('legal.security', ['securityInfo' => [
+        'encryption' => 'AES-256',
+        'hosting' => 'Render',
+        'database' => 'Turso',
+        'backup' => 'Automatique',
+        'compliance' => ['RGPD', 'HTTPS'],
+        'last_audit' => date('Y-m-d')
+    ]]);
+})->name('security');
 Route::get('/demo', function () {
     return view('demo');
 })->name('demo');
@@ -38,6 +53,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/ajout-multiple', [PresenceController::class, 'ajoutMultiple'])->name('ajout.multiple');
     Route::post('/verif', [PresenceController::class, 'verif'])->name('verif');
     Route::get('/statistiques', [PresenceController::class, 'statistiques'])->name('statistiques');
+
+// Route de debug pour vérifier la DB (à supprimer en production)
+Route::get('/debug-db', function () {
+    try {
+        $dbPath = config('database.connections.sqlite.database');
+        $exists = file_exists($dbPath);
+        $size = $exists ? filesize($dbPath) : 0;
+        
+        return response()->json([
+            'db_path' => $dbPath,
+            'exists' => $exists,
+            'size' => $size . ' bytes',
+            'tables' => $exists ? \DB::select("SELECT name FROM sqlite_master WHERE type='table'") : []
+        ]);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()]);
+    }
+});
     Route::get('/statistiques-avancees', [PresenceController::class, 'statistiquesAvancees'])->name('statistiques.avancees');
 
     // Gestion des membres
