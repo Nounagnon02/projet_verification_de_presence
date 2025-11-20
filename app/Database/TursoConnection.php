@@ -4,8 +4,8 @@ namespace App\Database;
 
 use Illuminate\Database\Connection;
 use GuzzleHttp\Client;
-use App\Database\TursoGrammar;
-use App\Database\TursoSchemaGrammar;
+use Illuminate\Database\Query\Grammars\SQLiteGrammar;
+use Illuminate\Database\Schema\Grammars\SQLiteGrammar as SQLiteSchemaGrammar;
 use Illuminate\Support\Collection;
 
 class TursoConnection extends Connection
@@ -29,12 +29,12 @@ class TursoConnection extends Connection
 
     protected function getDefaultQueryGrammar()
     {
-        return $this->withTablePrefix(new TursoGrammar);
+        return $this->withTablePrefix(new SQLiteGrammar);
     }
 
     protected function getDefaultSchemaGrammar()
     {
-        return $this->withTablePrefix(new TursoSchemaGrammar);
+        return $this->withTablePrefix(new SQLiteSchemaGrammar);
     }
 
     public function getSchemaBuilder()
