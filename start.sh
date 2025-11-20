@@ -1,34 +1,47 @@
 #!/bin/bash
+set -e
+cd /var/www/html
 
-# Attendre que la base de données soit prête
-echo "Attente de la base de données..."
-sleep 10
+# Créer le fichier .env s'il n'existe pas
+if [ ! -f .env ]; then
+    echo "Creating .env file from .env.example..."
+    cp .env.example .env || echo "APP_NAME=Laravel" > .env
+fi
 
-# Nettoyer les caches
-echo "Nettoyage des caches..."
+# Attendre la base de données si nécessaire
+if [ "$DB_CONNECTION" = "pgsql" ] && [ ! -z "$DB_HOST" ]; then
+    echo "Waiting for PostgreSQL..."
+    while ! nc -z $DB_HOST ${DB_PORT:-5432} 2>/dev/null; do
+        sleep 2
+    done
+    echo "PostgreSQL is ready!"
+elif [ "$DB_CONNECTION" = "libsql" ]; then
+    echo "Using Turso database - no wait required"
+fi
+
+# Générer la clé d'application si nécessaire
+if [ -z "$APP_KEY" ] || ! grep -q "APP_KEY=base64:" .env; then
+    echo "Generating application key..."
+    php artisan key:generate --force
+fi
+
+# Caches et optimisations
 php artisan config:clear
-php artisan route:clear
+php artisan migrate --force
+php artisan cache:clear || echo "Cache clear failed, continuing..."
 php artisan view:clear
-
-# Exécuter les migrations
-echo "Exécution des migrations..."
-php artisan migrate --force
-
-# Créer les tables de cache et sessions si elles n'existent pas
-echo "Création des tables système..."
-php artisan queue:table --quiet || true
-php artisan session:table --quiet || true
-php artisan cache:table --quiet || true
-
-# Exécuter les nouvelles migrations
-php artisan migrate --force
-
-# Optimiser l'application
-echo "Optimisation de l'application..."
+php artisan route:clear
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# Démarrer le serveur
-echo "Démarrage du serveur..."
-php artisan serve --host=0.0.0.0 --port=$PORT
+# Vérifier les assets Vite
+if [ -f public/build/manifest.json ]; then
+    echo "✓ Vite assets found successfully"
+else
+    echo "WARNING: Vite manifest not found at public/build/manifest.json"
+    ls -la public/build/ || echo "Build directory not found"
+fi
+
+echo "Application ready!"
+apache2-foreground
