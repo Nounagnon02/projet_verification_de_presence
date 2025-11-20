@@ -120,9 +120,11 @@ return [
         'turso' => [
             'driver' => 'turso',
             'url' => env('TURSO_DATABASE_URL'),
-            'auth_token' => env('TURSO_AUTH_TOKEN'),
-            'prefix' => '',
-            'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
+            'authToken' => env('TURSO_AUTH_TOKEN'),
+            'database' => env('DB_DATABASE', 'database'),
+            'syncUrl' => env('TURSO_SYNC_URL', ''),
+            'syncInterval' => env('TURSO_SYNC_INTERVAL', 5),
+            'remoteOnly' => env('TURSO_REMOTE_ONLY', true), // ← Ajoutez cette ligne
         ],
 
         /*'libsql' => [
