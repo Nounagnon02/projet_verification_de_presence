@@ -29,12 +29,12 @@ class TursoConnection extends Connection
 
     protected function getDefaultQueryGrammar()
     {
-        return $this->withTablePrefix(new SQLiteGrammar);
+        return $this->withTablePrefix(new SQLiteGrammar());
     }
 
     protected function getDefaultSchemaGrammar()
     {
-        return $this->withTablePrefix(new SQLiteSchemaGrammar);
+        return $this->withTablePrefix(new SQLiteSchemaGrammar());
     }
 
     public function getSchemaBuilder()
