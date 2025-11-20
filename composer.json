@@ -10,9 +10,9 @@
         "barryvdh/laravel-dompdf": "^3.1",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
-        "simplesoftwareio/simple-qrcode": "^4.2",
         "pragmarx/google2fa": "^8.0",
-        "tursodatabase/turso-driver-laravel": "^1.0"
+        "simplesoftwareio/simple-qrcode": "^4.2",
+        "tursodatabase/turso-driver-laravel": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
