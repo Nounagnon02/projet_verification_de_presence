@@ -123,6 +123,7 @@ return [
             'auth_token' => env('TURSO_AUTH_TOKEN'),
             'database' => '',
             'prefix' => '',
+            'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
         ],
 
         'turso' => [

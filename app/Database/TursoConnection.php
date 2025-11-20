@@ -15,8 +15,8 @@ class TursoConnection extends Connection
     {
         parent::__construct($pdo, $database, $tablePrefix, $config);
         
-        $this->url = rtrim($config['url'], '/') . '/v2/pipeline';
-        $this->token = $config['auth_token'] ?? '';
+        $this->url = rtrim($config['url'] ?? env('TURSO_DATABASE_URL', ''), '/') . '/v2/pipeline';
+        $this->token = $config['auth_token'] ?? env('TURSO_AUTH_TOKEN', '');
         $this->client = new Client();
     }
 
