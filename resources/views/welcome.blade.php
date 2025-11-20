@@ -4,7 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ config('app.name', 'Laravel') }}</title>
+    <meta name="description" content="Système moderne de vérification et gestion de présence. Solution sécurisée, conforme RGPD avec statistiques avancées et QR codes.">
+    <meta name="keywords" content="vérification présence, gestion présence, système présence, RGPD, sécurisé">
+    <meta name="author" content="Système de Vérification de Présence">
+    <meta property="og:title" content="Système de Vérification de Présence">
+    <meta property="og:description" content="Solution moderne et sécurisée pour la gestion des présences">
+    <meta property="og:type" content="website">
+    <title>Système de Vérification de Présence - Solution moderne et sécurisée</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -20,6 +26,7 @@
                         @auth
                             <a href="{{ route('dashboard') }}" class="text-gray-600 hover:text-gray-800 text-center px-3 py-2">Dashboard</a>
                         @else
+                            <a href="#" class="text-gray-600 hover:text-gray-800 text-center px-3 py-2">Démo</a>
                             <a href="{{ route('login') }}" class="text-gray-600 hover:text-gray-800 text-center px-3 py-2">Connexion</a>
                             <a href="{{ route('register') }}" class="bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-700 text-center transition-colors">S'inscrire</a>
                         @endauth
@@ -93,8 +100,35 @@
         <!-- Footer -->
         <footer class="bg-white border-t mt-12 sm:mt-16 md:mt-20 lg:mt-24">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-6 sm:py-8 md:py-10">
-                <div class="text-center text-gray-600">
-                    <p class="text-sm sm:text-base md:text-lg">&copy; {{ date('Y') }} Système de Vérification de Présence. Tous droits réservés.</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                    <div>
+                        <h3 class="font-semibold text-gray-900 mb-4">Produit</h3>
+                        <ul class="space-y-2 text-gray-600">
+                            <li><a href="#" class="hover:text-gray-900">À propos</a></li>
+                            <li><a href="#" class="hover:text-gray-900">Sécurité</a></li>
+                            <li><a href="{{ route('dashboard') }}" class="hover:text-gray-900">Fonctionnalités</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900 mb-4">Support</h3>
+                        <ul class="space-y-2 text-gray-600">
+                            <li><a href="mailto:support@verification-presence.com" class="hover:text-gray-900">Contact</a></li>
+                            <li><a href="#" class="hover:text-gray-900">Documentation</a></li>
+                            <li><a href="#" class="hover:text-gray-900">FAQ</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900 mb-4">Légal</h3>
+                        <ul class="space-y-2 text-gray-600">
+                            <li><a href="#" class="hover:text-gray-900">Confidentialité</a></li>
+                            <li><a href="#" class="hover:text-gray-900">CGU</a></li>
+                            <li><a href="#" class="hover:text-gray-900">RGPD</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="text-center text-gray-600 border-t pt-8">
+                    <p class="text-sm sm:text-base">&copy; {{ date('Y') }} Système de Vérification de Présence. Tous droits réservés.</p>
+                    <p class="text-xs mt-2">🔒 Hébergé de manière sécurisée • 🇪🇺 Conforme RGPD • 📊 Données chiffrées</p>
                 </div>
             </div>
         </footer>

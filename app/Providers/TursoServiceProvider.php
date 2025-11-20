@@ -12,8 +12,16 @@ class TursoServiceProvider extends ServiceProvider
     {
         $this->app->resolving('db', function (DatabaseManager $db) {
             $db->extend('turso', function ($config, $name) {
-                $pdo = new \PDO('sqlite::memory:');
-                return new TursoConnection($pdo, $config['database'] ?? '', $config['prefix'] ?? '', $config);
+                try {
+                    $pdo = new \PDO('sqlite::memory:');
+                    $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+                    return new TursoConnection($pdo, $config['database'] ?? '', $config['prefix'] ?? '', $config);
+                } catch (\Exception $e) {
+                    // Fallback vers SQLite fichier si mémoire échoue
+                    $pdo = new \PDO('sqlite:/tmp/fallback.sqlite');
+                    $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+                    return new TursoConnection($pdo, $config['database'] ?? '', $config['prefix'] ?? '', $config);
+                }
             });
         });
     }

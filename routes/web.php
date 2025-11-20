@@ -14,6 +14,15 @@ Route::get('/home', function () {
     return view('welcome');
 })->name('home');
 
+// Pages légales et informatives
+Route::get('/about', [\App\Http\Controllers\LegalController::class, 'about'])->name('about');
+Route::get('/privacy', [\App\Http\Controllers\LegalController::class, 'privacy'])->name('privacy');
+Route::get('/terms', [\App\Http\Controllers\LegalController::class, 'terms'])->name('terms');
+Route::get('/security', [\App\Http\Controllers\LegalController::class, 'security'])->name('security');
+Route::get('/demo', function () {
+    return view('demo');
+})->name('demo');
+
 /*Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
@@ -30,20 +39,20 @@ Route::middleware(['auth', 'verified', 'locale'])->group(function () {
     Route::post('/verif', [PresenceController::class, 'verif'])->name('verif');
     Route::get('/statistiques', [PresenceController::class, 'statistiques'])->name('statistiques');
     Route::get('/statistiques-avancees', [PresenceController::class, 'statistiquesAvancees'])->name('statistiques.avancees');
-    
+
     // Gestion des membres
     Route::get('/membres', [PresenceController::class, 'listeMembres'])->name('membres');
     Route::get('/membres/{id}/edit', [PresenceController::class, 'editMembre'])->name('membres.edit');
     Route::put('/membres/{id}', [PresenceController::class, 'updateMembre'])->name('membres.update');
     Route::delete('/membres/{id}', [PresenceController::class, 'deleteMembre'])->name('membres.delete');
-    
+
     // Comparaison de périodes
     Route::get('/comparaison-periodes', [PresenceController::class, 'comparaisonPeriodes'])->name('comparaison.periodes');
-    
+
     // QR Code
     Route::get('/qr/generate', [QrCodeController::class, 'generate'])->name('qr.generate');
     Route::post('/qr/generate', [QrCodeController::class, 'generate']);
-    
+
     // RGPD
     Route::get('/rgpd', [\App\Http\Controllers\RgpdController::class, 'index'])->name('rgpd.index');
     Route::post('/rgpd/consent', [\App\Http\Controllers\RgpdController::class, 'consent'])->name('rgpd.consent');

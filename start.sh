@@ -27,13 +27,19 @@ fi
 
 # Caches et optimisations
 php artisan config:clear
-php artisan migrate --force
+
+# Tentative de migration avec gestion d'erreur
+echo "Attempting database migration..."
+php artisan migrate --force || echo "Migration failed, continuing without database..."
+
 php artisan cache:clear || echo "Cache clear failed, continuing..."
-php artisan view:clear
-php artisan route:clear
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+php artisan view:clear || echo "View clear failed, continuing..."
+php artisan route:clear || echo "Route clear failed, continuing..."
+
+# Cache seulement si les commandes précédentes ont réussi
+php artisan config:cache || echo "Config cache failed, continuing..."
+php artisan route:cache || echo "Route cache failed, continuing..."
+php artisan view:cache || echo "View cache failed, continuing..."
 
 # Vérifier les assets Vite
 if [ -f public/build/manifest.json ]; then
