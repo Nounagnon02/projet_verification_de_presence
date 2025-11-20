@@ -117,6 +117,14 @@ return [
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
+        'turso' => [
+            'driver' => 'turso',
+            'url' => env('TURSO_DATABASE_URL'),
+            'auth_token' => env('TURSO_AUTH_TOKEN'),
+            'prefix' => '',
+            'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
+        ],
+
         'libsql' => [
             'driver' => 'sqlite',
             'url' => env('TURSO_DATABASE_URL'),

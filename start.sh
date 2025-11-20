@@ -15,7 +15,7 @@ if [ "$DB_CONNECTION" = "pgsql" ] && [ ! -z "$DB_HOST" ]; then
         sleep 2
     done
     echo "PostgreSQL is ready!"
-elif [ "$DB_CONNECTION" = "libsql" ]; then
+elif [ "$DB_CONNECTION" = "turso" ]; then
     echo "Using Turso database - no wait required"
 fi
 
