@@ -4,6 +4,8 @@ namespace App\Database;
 
 use Illuminate\Database\Connection;
 use GuzzleHttp\Client;
+use App\Database\TursoGrammar;
+use App\Database\TursoSchemaGrammar;
 
 class TursoConnection extends Connection
 {
@@ -18,6 +20,16 @@ class TursoConnection extends Connection
         $this->url = rtrim($config['url'] ?? env('TURSO_DATABASE_URL', ''), '/') . '/v2/pipeline';
         $this->token = $config['auth_token'] ?? env('TURSO_AUTH_TOKEN', '');
         $this->client = new Client();
+    }
+
+    protected function getDefaultQueryGrammar()
+    {
+        return $this->withTablePrefix(new TursoGrammar);
+    }
+
+    protected function getDefaultSchemaGrammar()
+    {
+        return $this->withTablePrefix(new TursoSchemaGrammar);
     }
 
     public function select($query, $bindings = [], $useReadPdo = true)
