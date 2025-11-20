@@ -15,8 +15,10 @@ if [ "$DB_CONNECTION" = "pgsql" ] && [ ! -z "$DB_HOST" ]; then
         sleep 2
     done
     echo "PostgreSQL is ready!"
-elif [ "$DB_CONNECTION" = "turso" ]; then
-    echo "Using Turso HTTP database - no wait required"
+elif [ "$DB_CONNECTION" = "sqlite" ]; then
+    echo "Setting up SQLite database..."
+    touch ${DB_DATABASE:-/var/www/html/storage/database.sqlite}
+    chmod 664 ${DB_DATABASE:-/var/www/html/storage/database.sqlite}
 fi
 
 # Générer la clé d'application si nécessaire

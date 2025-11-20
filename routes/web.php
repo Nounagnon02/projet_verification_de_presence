@@ -31,7 +31,7 @@ Route::get('/dashboardV', function () {
     return view('dashboardV');
 })->middleware(['auth', 'verified'])->name('dashboardV');*/
 
-Route::middleware(['auth', 'verified', 'locale'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [PresenceController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboardV', [PresenceController::class, 'dashboardV'])->name('dashboardV');
     Route::post('/ajout', [PresenceController::class, 'ajout'])->name('ajout');
