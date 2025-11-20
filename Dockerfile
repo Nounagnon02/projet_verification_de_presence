@@ -54,8 +54,7 @@ RUN apt-get update && apt-get install -y \
 # Installer Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Après la section COPY composer files
-RUN composer require tursodatabase/turso-client-php --no-interaction --no-dev --prefer-dist
+
 
 # Configuration Apache
 RUN a2enmod rewrite headers

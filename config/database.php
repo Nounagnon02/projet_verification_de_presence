@@ -120,6 +120,14 @@ return [
         'turso' => [
             'driver' => 'turso',
             'url' => env('TURSO_DATABASE_URL'),
+            'auth_token' => env('TURSO_AUTH_TOKEN'),
+            'database' => '',
+            'prefix' => '',
+        ],
+
+        'turso' => [
+            'driver' => 'turso',
+            'url' => env('TURSO_DATABASE_URL'),
             'authToken' => env('TURSO_AUTH_TOKEN'),
             'database' => env('DB_DATABASE', 'database'),
             'syncUrl' => env('TURSO_SYNC_URL', ''),
