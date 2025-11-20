@@ -125,7 +125,7 @@ return [
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
         ],
 
-        'libsql' => [
+        /*'libsql' => [
             'driver' => 'sqlite',
             'url' => env('TURSO_DATABASE_URL'),
             'database' => ':memory:',
@@ -134,6 +134,14 @@ return [
             'options' => [
                 'auth_token' => env('TURSO_AUTH_TOKEN'),
             ],
+        ],*/
+
+        'libsql' => [
+            'driver' => 'libsql',
+            'url' => env('TURSO_DATABASE_URL'),
+            'authToken' => env('TURSO_AUTH_TOKEN'),
+            'syncUrl' => env('TURSO_SYNC_URL'),
+            'syncInterval' => env('TURSO_SYNC_INTERVAL', 5),
         ],
 
     ],
