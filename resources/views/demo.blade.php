@@ -1,6 +1,11 @@
-@extends('layouts.app')
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 dark:text-white leading-tight">
+            Démonstration
+        </h2>
+    </x-slot>
 
-@section('content')
+    <div class="py-12">
 <div class="max-w-6xl mx-auto px-4 py-8">
     <div class="text-center mb-8">
         <h1 class="text-3xl font-bold text-gray-900 mb-4">🎯 Démonstration du système</h1>
@@ -104,6 +109,6 @@
                 </a>
             @endguest
         </div>
+        </div>
     </div>
-</div>
-@endsection
+</x-app-layout>
