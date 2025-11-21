@@ -46,7 +46,7 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     netcat-openbsd \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_pgsql pgsql gd zip \
+    && docker-php-ext-install pdo pdo_pgsql pgsql pdo_sqlite sqlite3 gd zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 
@@ -88,8 +88,10 @@ COPY --from=node-builder --chown=www-data:www-data /app/public/build ./public/bu
 # Installer les dépendances PHP
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Permissions
-RUN chown -R www-data:www-data /var/www/html \
+# Create storage directories and set permissions
+RUN mkdir -p /var/www/html/storage/database \
+    && touch /var/www/html/storage/database.sqlite \
+    && chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html \
     && chmod -R 775 /var/www/html/storage \
     && chmod -R 775 /var/www/html/bootstrap/cache
