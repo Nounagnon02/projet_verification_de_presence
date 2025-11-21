@@ -74,8 +74,10 @@ class PresenceController extends Controller
         $request->validate([
             'members' => 'required|array|min:1',
             'members.*.name' => 'required|string|max:255',
-            'members.*.phone' => 'required|string|max:20|unique:members,phone',
+            'members.*.phone' => 'required|string|max:20|unique:members,phone|regex:/^[\+0-9]+$/',
             'members.*.rgpd_consent' => 'required|accepted',
+        ], [
+            'members.*.phone.regex' => 'Le numéro de téléphone ne peut contenir que des chiffres et le symbole +',
         ]);
 
         $userGroup = Auth::user()->group;
