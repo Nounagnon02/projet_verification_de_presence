@@ -98,40 +98,7 @@
         </main>
 
         <!-- Footer -->
-        <footer class="bg-white border-t mt-12 sm:mt-16 md:mt-20 lg:mt-24">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-6 sm:py-8 md:py-10">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-                    <div>
-                        <h3 class="font-semibold text-gray-900 mb-4">Produit</h3>
-                        <ul class="space-y-2 text-gray-600">
-                            <li><a href="#" class="hover:text-gray-900">À propos</a></li>
-                            <li><a href="#" class="hover:text-gray-900">Sécurité</a></li>
-                            <li><a href="{{ route('dashboard') }}" class="hover:text-gray-900">Fonctionnalités</a></li>
-                        </ul>
-                    </div>
-                    <div>
-                        <h3 class="font-semibold text-gray-900 mb-4">Support</h3>
-                        <ul class="space-y-2 text-gray-600">
-                            <li><a href="mailto:support@verification-presence.com" class="hover:text-gray-900">Contact</a></li>
-                            <li><a href="#" class="hover:text-gray-900">Documentation</a></li>
-                            <li><a href="#" class="hover:text-gray-900">FAQ</a></li>
-                        </ul>
-                    </div>
-                    <div>
-                        <h3 class="font-semibold text-gray-900 mb-4">Légal</h3>
-                        <ul class="space-y-2 text-gray-600">
-                            <li><a href="#" class="hover:text-gray-900">Confidentialité</a></li>
-                            <li><a href="#" class="hover:text-gray-900">CGU</a></li>
-                            <li><a href="#" class="hover:text-gray-900">RGPD</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="text-center text-gray-600 border-t pt-8">
-                    <p class="text-sm sm:text-base">&copy; {{ date('Y') }} Système de Vérification de Présence. Tous droits réservés.</p>
-                    <p class="text-xs mt-2">🔒 Hébergé de manière sécurisée • 🇪🇺 Conforme RGPD • 📊 Données chiffrées</p>
-                </div>
-            </div>
-        </footer>
+        <x-footer />
     </div>
 </body>
 </html>

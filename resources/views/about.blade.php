@@ -1,60 +1,39 @@
-@extends('layouts.app')
+<x-guest-layout>
+    <div class="min-h-screen bg-gray-50 py-12">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-6">À propos</h1>
+                
+                <div class="prose max-w-none">
+                    <h2 class="text-xl font-semibold mb-4">Notre Mission</h2>
+                    <p class="mb-6">
+                        L'application de vérification de présence a été conçue pour simplifier la gestion des présences 
+                        lors de réunions, formations et événements. Notre objectif est de fournir un outil simple, 
+                        efficace et sécurisé.
+                    </p>
 
-@section('content')
-<div class="max-w-6xl mx-auto px-4 py-8">
-    <div class="text-center mb-12">
-        <h1 class="text-4xl font-bold text-gray-900 mb-4">À propos du système</h1>
-        <p class="text-xl text-gray-600">Solution moderne de gestion de présence</p>
-    </div>
+                    <h2 class="text-xl font-semibold mb-4">Fonctionnalités</h2>
+                    <ul class="list-disc list-inside mb-6 space-y-2">
+                        <li>Gestion des membres par groupes</li>
+                        <li>Vérification de présence rapide</li>
+                        <li>Génération de QR codes</li>
+                        <li>Statistiques et analyses</li>
+                        <li>Signatures électroniques</li>
+                        <li>Conformité RGPD</li>
+                    </ul>
 
-    <div class="grid md:grid-cols-2 gap-8 mb-12">
-        <div class="bg-white p-6 rounded-lg shadow-lg">
-            <h2 class="text-2xl font-semibold mb-4">🔧 Technologie</h2>
-            <ul class="space-y-2 text-gray-700">
-                <li>• Framework Laravel 12</li>
-                <li>• Base de données Turso (SQLite distribué)</li>
-                <li>• Hébergement Render avec HTTPS</li>
-                <li>• Interface responsive Tailwind CSS</li>
-                <li>• QR Codes pour vérification rapide</li>
-            </ul>
-        </div>
+                    <h2 class="text-xl font-semibold mb-4">Contact</h2>
+                    <p>
+                        Pour toute question ou suggestion, n'hésitez pas à nous contacter.
+                    </p>
+                </div>
 
-        <div class="bg-white p-6 rounded-lg shadow-lg">
-            <h2 class="text-2xl font-semibold mb-4">🔒 Sécurité</h2>
-            <ul class="space-y-2 text-gray-700">
-                <li>• Chiffrement HTTPS automatique</li>
-                <li>• Authentification sécurisée</li>
-                <li>• Conformité RGPD</li>
-                <li>• Données chiffrées en base</li>
-                <li>• Sauvegarde automatique</li>
-            </ul>
-        </div>
-    </div>
-
-    <div class="bg-gray-50 p-8 rounded-lg mb-8">
-        <h2 class="text-2xl font-semibold mb-4">📊 Fonctionnalités</h2>
-        <div class="grid md:grid-cols-3 gap-6">
-            <div>
-                <h3 class="font-semibold text-lg mb-2">Vérification</h3>
-                <p class="text-gray-600">Enregistrement rapide des présences via interface web ou QR Code</p>
-            </div>
-            <div>
-                <h3 class="font-semibold text-lg mb-2">Statistiques</h3>
-                <p class="text-gray-600">Tableaux de bord avec graphiques et export PDF</p>
-            </div>
-            <div>
-                <h3 class="font-semibold text-lg mb-2">Gestion</h3>
-                <p class="text-gray-600">Administration des utilisateurs et paramètres</p>
+                <div class="mt-8">
+                    <a href="{{ route('welcome') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg">
+                        Retour à l'accueil
+                    </a>
+                </div>
             </div>
         </div>
     </div>
-
-    <div class="text-center">
-        <h2 class="text-2xl font-semibold mb-4">📞 Support</h2>
-        <p class="text-gray-600 mb-4">Besoin d'aide ou de fonctionnalités supplémentaires ?</p>
-        <a href="mailto:support@verification-presence.com" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
-            Nous contacter
-        </a>
-    </div>
-</div>
-@endsection
+</x-guest-layout>

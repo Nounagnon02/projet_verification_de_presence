@@ -1,32 +1,63 @@
-@extends('layouts.app')
+<x-guest-layout>
+    <div class="min-h-screen bg-gray-50 py-12">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-6">Conditions Générales d'Utilisation</h1>
+                
+                <div class="prose max-w-none space-y-6">
+                    <section>
+                        <h2 class="text-xl font-semibold mb-3">Objet</h2>
+                        <p>
+                            Les présentes conditions générales d'utilisation (CGU) régissent l'utilisation de l'application 
+                            de vérification de présence. En utilisant cette application, vous acceptez ces conditions.
+                        </p>
+                    </section>
 
-@section('content')
-<div class="max-w-4xl mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold text-gray-900 mb-8">Conditions Générales d'Utilisation</h1>
-    
-    <div class="prose max-w-none">
-        <h2>1. Objet</h2>
-        <p>Le présent service permet la gestion et vérification de présence pour les organisations.</p>
+                    <section>
+                        <h2 class="text-xl font-semibold mb-3">Utilisation autorisée</h2>
+                        <p>L'application est destinée à :</p>
+                        <ul class="list-disc list-inside ml-4 space-y-1">
+                            <li>La gestion des présences lors d'événements</li>
+                            <li>La génération de statistiques de présence</li>
+                            <li>L'organisation de réunions et formations</li>
+                        </ul>
+                    </section>
 
-        <h2>2. Utilisation du service</h2>
-        <ul>
-            <li>Service réservé aux utilisateurs authentifiés</li>
-            <li>Utilisation conforme aux lois en vigueur</li>
-            <li>Interdiction de partager ses identifiants</li>
-        </ul>
+                    <section>
+                        <h2 class="text-xl font-semibold mb-3">Obligations de l'utilisateur</h2>
+                        <p>En utilisant l'application, vous vous engagez à :</p>
+                        <ul class="list-disc list-inside ml-4 space-y-1">
+                            <li>Fournir des informations exactes</li>
+                            <li>Respecter la confidentialité des données</li>
+                            <li>Ne pas utiliser l'application à des fins illégales</li>
+                            <li>Obtenir le consentement des personnes enregistrées</li>
+                        </ul>
+                    </section>
 
-        <h2>3. Données et sécurité</h2>
-        <ul>
-            <li>Hébergement sécurisé sur infrastructure Render</li>
-            <li>Base de données Turso avec chiffrement</li>
-            <li>Sauvegarde automatique des données</li>
-        </ul>
+                    <section>
+                        <h2 class="text-xl font-semibold mb-3">Responsabilité</h2>
+                        <p>
+                            L'utilisateur est responsable de l'utilisation qu'il fait de l'application et des données 
+                            qu'il y saisit. Nous nous efforçons de maintenir la disponibilité du service mais ne 
+                            garantissons pas une disponibilité de 100%.
+                        </p>
+                    </section>
 
-        <h2>4. Responsabilités</h2>
-        <p>L'utilisateur s'engage à utiliser le service de manière appropriée et à signaler tout dysfonctionnement.</p>
+                    <section>
+                        <h2 class="text-xl font-semibold mb-3">Modification des CGU</h2>
+                        <p>
+                            Nous nous réservons le droit de modifier ces conditions à tout moment. 
+                            Les utilisateurs seront informés des modifications importantes.
+                        </p>
+                    </section>
+                </div>
 
-        <h2>5. Contact</h2>
-        <p>Support technique : <a href="mailto:support@verification-presence.com" class="text-blue-600">support@verification-presence.com</a></p>
+                <div class="mt-8">
+                    <a href="{{ route('welcome') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg">
+                        Retour à l'accueil
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
-@endsection
+</x-guest-layout>

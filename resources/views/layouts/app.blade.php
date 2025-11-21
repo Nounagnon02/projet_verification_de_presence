@@ -54,6 +54,9 @@
             <main class="transition-colors duration-300">
                 {{ $slot }}
             </main>
+            
+            <!-- Footer -->
+            <x-footer />
         </div>
         
         <x-keyboard-shortcuts />
