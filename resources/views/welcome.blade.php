@@ -26,7 +26,7 @@
                         @auth
                             <a href="{{ route('dashboard') }}" class="text-gray-600 hover:text-gray-800 text-center px-3 py-2">Dashboard</a>
                         @else
-                            <a href="#" class="text-gray-600 hover:text-gray-800 text-center px-3 py-2">Démo</a>
+                            <a href="{{ route('demo') }}" class="text-gray-600 hover:text-gray-800 text-center px-3 py-2">Démo</a>
                             <a href="{{ route('login') }}" class="text-gray-600 hover:text-gray-800 text-center px-3 py-2">Connexion</a>
                             <a href="{{ route('register') }}" class="bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-700 text-center transition-colors">S'inscrire</a>
                         @endauth
@@ -43,10 +43,10 @@
                     <span class="text-gray-700 block sm:inline">Simplifiée</span>
                 </h2>
                 <p class="mt-4 sm:mt-6 md:mt-8 text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600 max-w-4xl mx-auto px-2 sm:px-4">
-                    Un système moderne et efficace pour suivre et vérifier la présence. 
+                    Un système moderne et efficace pour suivre et vérifier la présence.
                     Gérez facilement les présences avec notre interface intuitive.
                 </p>
-                
+
                 <div class="mt-8 sm:mt-10 md:mt-12 flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 px-2 sm:px-4">
                     @auth
                         <a href="{{ route('dashboard') }}" class="bg-gray-800 text-white px-6 sm:px-8 md:px-10 py-3 md:py-4 rounded-lg text-base sm:text-lg md:text-xl font-medium hover:bg-gray-700 transition-all transform hover:scale-105">

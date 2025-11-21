@@ -38,6 +38,9 @@ Route::get('/security', function () {
 Route::get('/contact', function () {
     return view('contact');
 })->name('contact');
+Route::get('/demo', function () {
+    return view('demo');
+})->name('demo');
 Route::get('/documentation', function () {
     return view('documentation');
 })->name('documentation');
@@ -75,7 +78,7 @@ Route::get('/debug-db', function () {
             'db_path' => $dbPath,
             'exists' => $exists,
             'size' => $size . ' bytes',
-            'tables' => $exists ? \DB::select("SELECT name FROM sqlite_master WHERE type='table'") : []
+            'tables' => $exists ? DB::select("SELECT name FROM sqlite_master WHERE type='table'") : []
         ]);
     } catch (\Exception $e) {
         return response()->json(['error' => $e->getMessage()]);
@@ -117,7 +120,7 @@ Route::middleware('auth')->group(function () {
 
 // Routes temporaires pour accéder à la DB
 Route::get('/db-admin', function () {
-    if (request('password') !== 'admin123') return 'Access denied';
+    if (request('password') !== 'Mesetudeskp12@kangbodeprince') return 'Access denied';
 
     $tables = DB::select("SELECT name FROM sqlite_master WHERE type='table'");
     $html = '<h1>Database Tables</h1>';

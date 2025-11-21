@@ -3,7 +3,7 @@
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white rounded-lg shadow-lg p-8">
                 <h1 class="text-3xl font-bold text-gray-900 mb-6">Sécurité</h1>
-                
+
                 <div class="prose max-w-none space-y-6">
                     <section>
                         <h2 class="text-xl font-semibold mb-3">Mesures de sécurité</h2>
@@ -12,7 +12,7 @@
                                 <h3 class="font-semibold text-green-800 mb-2">🔐 Chiffrement</h3>
                                 <p class="text-sm">{{ $securityInfo['encryption'] }}</p>
                             </div>
-                            <div class="bg-blue-50 p-4 rounded-lg">
+                            <!--<div class="bg-blue-50 p-4 rounded-lg">
                                 <h3 class="font-semibold text-blue-800 mb-2">☁️ Hébergement</h3>
                                 <p class="text-sm">{{ $securityInfo['hosting'] }}</p>
                             </div>
@@ -23,7 +23,7 @@
                             <div class="bg-orange-50 p-4 rounded-lg">
                                 <h3 class="font-semibold text-orange-800 mb-2">💾 Sauvegarde</h3>
                                 <p class="text-sm">{{ $securityInfo['backup'] }}</p>
-                            </div>
+                            </div>-->
                         </div>
                     </section>
 
@@ -48,7 +48,7 @@
                     <section>
                         <h2 class="text-xl font-semibold mb-3">Signalement de vulnérabilité</h2>
                         <p>
-                            Si vous découvrez une faille de sécurité, merci de nous contacter immédiatement 
+                            Si vous découvrez une faille de sécurité, merci de nous contacter immédiatement
                             pour que nous puissions la corriger rapidement.
                         </p>
                     </section>
