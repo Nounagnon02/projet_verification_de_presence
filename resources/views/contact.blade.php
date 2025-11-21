@@ -9,9 +9,18 @@
                         <h2 class="text-xl font-semibold mb-4">Nous contacter</h2>
                         <p class="mb-4">Pour toute question, suggestion ou support technique :</p>
                         <ul class="space-y-2">
-                            <li>📧 Email : princekangbode@gmail.com</li>
-                            <li>📱 Téléphone : +229 01 90 11 24 77</li>
-                            <li>🕒 Horaires : Lun-Ven 9h-18h</li>
+                            <li class="flex flex-col sm:flex-row sm:items-center">
+                                <span class="font-medium">📧 Email :</span>
+                                <span class="break-all sm:ml-2 text-blue-600">princekangbode@gmail.com</span>
+                            </li>
+                            <li class="flex flex-col sm:flex-row sm:items-center">
+                                <span class="font-medium">📱 Téléphone :</span>
+                                <span class="sm:ml-2">+229 01 90 11 24 77</span>
+                            </li>
+                            <li class="flex flex-col sm:flex-row sm:items-center">
+                                <span class="font-medium">🕒 Horaires :</span>
+                                <span class="sm:ml-2">Lun-Ven 9h-18h</span>
+                            </li>
                         </ul>
                     </div>
                 </div>

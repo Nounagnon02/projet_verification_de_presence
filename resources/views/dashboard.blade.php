@@ -8,7 +8,7 @@
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <!-- Liens rapides -->
-            <div class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 mx-2 md:mx-0">
                 <a href="{{ route('qr.generate') }}" class="bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-lg text-center transition-colors">
                     <div class="text-2xl mb-2">📱</div>
                     <div class="font-semibold">Générer QR Code</div>
@@ -68,8 +68,8 @@
                             </div>
                         </div>
                         
-                        <div class="flex justify-between items-center mt-6">
-                            <button type="button" id="addMemberBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center">
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-6 gap-4">
+                            <button type="button" id="addMemberBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                                 </svg>
