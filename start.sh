@@ -8,13 +8,10 @@ if [ ! -f .env ]; then
     cp .env.example .env || echo "APP_NAME=Laravel" > .env
 fi
 
-# Attendre la base de données si nécessaire
-if [ "$DB_CONNECTION" = "pgsql" ] && [ ! -z "$DB_HOST" ]; then
-    echo "Waiting for PostgreSQL..."
-    while ! nc -z $DB_HOST ${DB_PORT:-5432} 2>/dev/null; do
-        sleep 2
-    done
-    echo "PostgreSQL is ready!"
+# Configuration base de données
+if [ "$DB_CONNECTION" = "turso" ]; then
+    echo "Using Turso database..."
+    echo "Database URL: $TURSO_DATABASE_URL"
 elif [ "$DB_CONNECTION" = "sqlite" ]; then
     echo "Setting up SQLite database..."
     touch ${DB_DATABASE:-/var/www/html/storage/database.sqlite}
@@ -30,19 +27,21 @@ fi
 # Caches et optimisations
 php artisan config:clear
 
-# Tentative de migration avec gestion d'erreur
-echo "Checking database migration status..."
-if php artisan migrate:status >/dev/null 2>&1; then
-    echo "Running pending migrations only..."
-    php artisan migrate --force --no-interaction || echo "Migration failed, but continuing..."
+# Migrations avec gestion Turso
+echo "Running database migrations..."
+if [ "$DB_CONNECTION" = "turso" ]; then
+    echo "Migrating Turso database..."
+    php artisan migrate --force --no-interaction || {
+        echo "Turso migration failed, switching to SQLite fallback..."
+        export DB_CONNECTION=sqlite
+        export DB_DATABASE=/var/www/html/storage/database.sqlite
+        touch /var/www/html/storage/database.sqlite
+        chmod 664 /var/www/html/storage/database.sqlite
+        php artisan config:clear
+        php artisan migrate --force --no-interaction || echo "SQLite migration also failed, continuing..."
+    }
 else
-    echo "Database not accessible, switching to SQLite fallback..."
-    export DB_CONNECTION=sqlite
-    export DB_DATABASE=/var/www/html/storage/database.sqlite
-    touch /var/www/html/storage/database.sqlite
-    chmod 664 /var/www/html/storage/database.sqlite
-    php artisan config:clear
-    php artisan migrate --force --no-interaction || echo "SQLite migration also failed, continuing without database..."
+    php artisan migrate --force --no-interaction || echo "Migration failed, continuing..."
 fi
 
 php artisan cache:clear || echo "Cache clear failed, continuing..."
