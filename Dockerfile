@@ -39,6 +39,8 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     libfreetype6-dev \
     libzip-dev \
+    libsqlite3-dev \
+    sqlite3 \
     zip \
     unzip \
     git \
@@ -46,7 +48,7 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     netcat-openbsd \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_pgsql pgsql pdo_sqlite sqlite3 gd zip \
+    && docker-php-ext-install pdo pdo_pgsql pgsql pdo_sqlite gd zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 
