@@ -16,7 +16,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'pgsql'),
+    'default' => env('DB_CONNECTION', 'sqlite'),
 
     /*
     |--------------------------------------------------------------------------
@@ -121,38 +121,9 @@ return [
             'driver' => 'turso',
             'url' => env('TURSO_DATABASE_URL'),
             'auth_token' => env('TURSO_AUTH_TOKEN'),
-            'database' => '',
+            'database' => env('DB_DATABASE', ':memory:'),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
-        ],
-
-        'turso' => [
-            'driver' => 'turso',
-            'url' => env('TURSO_DATABASE_URL'),
-            'authToken' => env('TURSO_AUTH_TOKEN'),
-            'database' => env('DB_DATABASE', 'database'),
-            'syncUrl' => env('TURSO_SYNC_URL', ''),
-            'syncInterval' => env('TURSO_SYNC_INTERVAL', 5),
-            'remoteOnly' => env('TURSO_REMOTE_ONLY', true), // ← Ajoutez cette ligne
-        ],
-
-        /*'libsql' => [
-            'driver' => 'sqlite',
-            'url' => env('TURSO_DATABASE_URL'),
-            'database' => ':memory:',
-            'prefix' => '',
-            'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
-            'options' => [
-                'auth_token' => env('TURSO_AUTH_TOKEN'),
-            ],
-        ],*/
-
-        'libsql' => [
-            'driver' => 'libsql',
-            'url' => env('TURSO_DATABASE_URL'),
-            'authToken' => env('TURSO_AUTH_TOKEN'),
-            'syncUrl' => env('TURSO_SYNC_URL'),
-            'syncInterval' => env('TURSO_SYNC_INTERVAL', 5),
         ],
 
     ],
