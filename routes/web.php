@@ -29,15 +29,24 @@ Route::get('/security', function () {
     return view('legal.security', ['securityInfo' => [
         'encryption' => 'AES-256',
         'hosting' => 'Render',
-        'database' => 'Turso',
+        'database' => 'PostgreSQL',
         'backup' => 'Automatique',
         'compliance' => ['RGPD', 'HTTPS'],
         'last_audit' => date('Y-m-d')
     ]]);
 })->name('security');
-Route::get('/demo', function () {
-    return view('demo');
-})->name('demo');
+Route::get('/contact', function () {
+    return view('contact');
+})->name('contact');
+Route::get('/documentation', function () {
+    return view('documentation');
+})->name('documentation');
+Route::get('/faq', function () {
+    return view('faq');
+})->name('faq');
+Route::get('/features', function () {
+    return view('features');
+})->name('features');
 
 /*Route::get('/dashboard', function () {
     return view('dashboard');
@@ -125,7 +134,7 @@ Route::get('/db-admin', function () {
 });
 
 Route::get('/db-table/{table}', function ($table) {
-    if (request('password') !== 'admin123') return 'Access denied';
+    if (request('password') !== 'Mesetudeskp12@kangbodeprince') return 'Access denied';
 
     $data = DB::table($table)->limit(50)->get();
     return response()->json($data, JSON_PRETTY_PRINT);
