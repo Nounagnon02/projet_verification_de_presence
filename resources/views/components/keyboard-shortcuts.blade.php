@@ -1,33 +1,27 @@
-<div id="shortcuts-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">{{ __('messages.keyboard_shortcuts') }}</h3>
-            <div class="space-y-2 text-sm">
-                <div class="flex justify-between">
-                    <span class="text-gray-600 dark:text-gray-300">{{ __('messages.add_member_shortcut') }}</span>
-                    <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">Ctrl + A</kbd>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600 dark:text-gray-300">{{ __('messages.verify_presence_shortcut') }}</span>
-                    <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">Ctrl + V</kbd>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600 dark:text-gray-300">{{ __('messages.statistics_shortcut') }}</span>
-                    <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">Ctrl + S</kbd>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600 dark:text-gray-300">{{ __('messages.dark_mode_shortcut') }}</span>
-                    <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">Ctrl + D</kbd>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600 dark:text-gray-300">{{ __('messages.help_shortcut') }}</span>
-                    <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">?</kbd>
-                </div>
+<div id="shortcuts-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+        <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">{{ __('messages.keyboard_shortcuts') }}</h3>
+        <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+                <span class="text-gray-600 dark:text-gray-400">A</span>
+                <span class="text-gray-900 dark:text-white">{{ __('messages.add_member_shortcut') }}</span>
             </div>
-            <button onclick="closeShortcuts()" class="mt-4 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
-                {{ __('messages.close') }}
-            </button>
+            <div class="flex justify-between">
+                <span class="text-gray-600 dark:text-gray-400">V</span>
+                <span class="text-gray-900 dark:text-white">{{ __('messages.verify_presence_shortcut') }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-600 dark:text-gray-400">S</span>
+                <span class="text-gray-900 dark:text-white">{{ __('messages.statistics_shortcut') }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-600 dark:text-gray-400">D</span>
+                <span class="text-gray-900 dark:text-white">{{ __('messages.dark_mode_shortcut') }}</span>
+            </div>
         </div>
+        <button onclick="hideShortcuts()" class="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
+            {{ __('messages.close') }}
+        </button>
     </div>
 </div>
 
@@ -36,34 +30,16 @@ function showShortcuts() {
     document.getElementById('shortcuts-modal').classList.remove('hidden');
 }
 
-function closeShortcuts() {
+function hideShortcuts() {
     document.getElementById('shortcuts-modal').classList.add('hidden');
 }
 
-// Raccourcis clavier
 document.addEventListener('keydown', function(e) {
-    if (e.ctrlKey) {
-        switch(e.key) {
-            case 'a':
-                e.preventDefault();
-                window.location.href = '{{ route("dashboard") }}';
-                break;
-            case 'v':
-                e.preventDefault();
-                window.location.href = '{{ route("dashboardV") }}';
-                break;
-            case 's':
-                e.preventDefault();
-                window.location.href = '{{ route("statistiques") }}';
-                break;
-            case 'd':
-                e.preventDefault();
-                document.getElementById('theme-toggle').click();
-                break;
-        }
-    } else if (e.key === '?') {
-        e.preventDefault();
+    if (e.key === '?') {
         showShortcuts();
+    }
+    if (e.key === 'Escape') {
+        hideShortcuts();
     }
 });
 </script>
