@@ -7,23 +7,43 @@ use GuzzleHttp\Client;
 use Illuminate\Database\Query\Grammars\SQLiteGrammar;
 use Illuminate\Database\Schema\Grammars\SQLiteGrammar as SQLiteSchemaGrammar;
 use Illuminate\Support\Collection;
+use PDO;
 
 class TursoConnection extends Connection
 {
     protected $client;
     protected $url;
     protected $token;
+    protected $fallbackToSqlite = false;
 
     public function __construct($pdo, $database = '', $tablePrefix = '', array $config = [])
     {
+        // Create a dummy PDO for SQLite fallback
+        if (!$pdo) {
+            try {
+                $pdo = new PDO('sqlite::memory:');
+            } catch (\Exception $e) {
+                $pdo = null;
+            }
+        }
+        
         parent::__construct($pdo, $database, $tablePrefix, $config);
         
         $baseUrl = $config['url'] ?? env('TURSO_DATABASE_URL', '');
+        // Convert libsql:// to https:// for HTTP API
+        if (str_starts_with($baseUrl, 'libsql://')) {
+            $baseUrl = str_replace('libsql://', 'https://', $baseUrl);
+        }
         $this->url = $baseUrl ? rtrim($baseUrl, '/') . '/v2/pipeline' : '';
         $this->token = $config['auth_token'] ?? env('TURSO_AUTH_TOKEN', '');
+        
+        if (empty($this->url) || empty($this->token)) {
+            $this->fallbackToSqlite = true;
+        }
+        
         $this->client = new Client([
-            'timeout' => 10,
-            'connect_timeout' => 5
+            'timeout' => 30,
+            'connect_timeout' => 10
         ]);
     }
 
@@ -86,9 +106,9 @@ class TursoConnection extends Connection
 
     protected function executeQuery($query, $bindings = [])
     {
-        // Fallback vers SQLite local si Turso échoue
-        if (empty($this->url) || empty($this->token)) {
-            return [];
+        // Use SQLite fallback if Turso is not configured
+        if ($this->fallbackToSqlite || empty($this->url) || empty($this->token)) {
+            return $this->executeSqliteQuery($query, $bindings);
         }
 
         try {
@@ -108,7 +128,7 @@ class TursoConnection extends Connection
                         ]
                     ]
                 ],
-                'timeout' => 10
+                'timeout' => 30
             ]);
 
             $data = json_decode($response->getBody(), true);
@@ -119,8 +139,29 @@ class TursoConnection extends Connection
             
             return [];
         } catch (\Exception $e) {
-            // Log l'erreur mais ne pas faire échouer l'application
             error_log('Turso query failed: ' . $e->getMessage());
+            // Fallback to SQLite on error
+            return $this->executeSqliteQuery($query, $bindings);
+        }
+    }
+
+    protected function executeSqliteQuery($query, $bindings = [])
+    {
+        if (!$this->getPdo()) {
+            return [];
+        }
+        
+        try {
+            $statement = $this->getPdo()->prepare($query);
+            $statement->execute($bindings);
+            
+            if (stripos($query, 'SELECT') === 0) {
+                return $statement->fetchAll(PDO::FETCH_ASSOC);
+            }
+            
+            return ['affected_rows' => $statement->rowCount()];
+        } catch (\Exception $e) {
+            error_log('SQLite query failed: ' . $e->getMessage());
             return [];
         }
     }
