@@ -118,13 +118,10 @@ return [
         ],
 
         'turso' => [
-            'driver' => 'libsql',
+            'driver' => 'turso',
             'url' => env('TURSO_DATABASE_URL'),
             'authToken' => env('TURSO_AUTH_TOKEN'),
             'database' => env('DB_DATABASE', 'database'),
-            'syncUrl' => env('TURSO_SYNC_URL', ''),
-            'syncInterval' => env('TURSO_SYNC_INTERVAL', 5),
-            'remoteOnly' => env('TURSO_REMOTE_ONLY', true),
             'prefix' => '',
         ],
 
