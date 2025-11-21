@@ -8,12 +8,8 @@ use App\Http\Controllers\QrCodeController;
 use Illuminate\Support\Facades\DB;
 
 Route::get('/', function () {
-    return 'Hello World - Test OK';
-})->name('welcome');
-
-Route::get('/test', function () {
     return view('welcome');
-})->name('test');
+})->name('welcome');
 
 Route::get('/home', function () {
     return view('welcome');
@@ -129,7 +125,7 @@ Route::get('/db-admin', function () {
 });
 
 Route::get('/db-table/{table}', function ($table) {
-    if (request('password') !== 'Mesetudeskp12@') return 'Access denied';
+    if (request('password') !== 'admin123') return 'Access denied';
 
     $data = DB::table($table)->limit(50)->get();
     return response()->json($data, JSON_PRETTY_PRINT);
