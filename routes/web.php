@@ -68,22 +68,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/statistiques', [PresenceController::class, 'statistiques'])->name('statistiques');
 
 // Route de debug pour vérifier la DB (à supprimer en production)
-Route::get('/debug-db', function () {
-    try {
-        $dbPath = config('database.connections.sqlite.database');
-        $exists = file_exists($dbPath);
-        $size = $exists ? filesize($dbPath) : 0;
-
-        return response()->json([
-            'db_path' => $dbPath,
-            'exists' => $exists,
-            'size' => $size . ' bytes',
-            'tables' => $exists ? DB::select("SELECT name FROM sqlite_master WHERE type='table'") : []
-        ]);
-    } catch (\Exception $e) {
-        return response()->json(['error' => $e->getMessage()]);
-    }
-});
+// Route::get('/debug-db', function () {
+//     try {
+//         $dbPath = config('database.connections.sqlite.database');
+//         $exists = file_exists($dbPath);
+//         $size = $exists ? filesize($dbPath) : 0;
+//
+//         return response()->json([
+//             'db_path' => $dbPath,
+//             'exists' => $exists,
+//             'size' => $size . ' bytes',
+//             'tables' => $exists ? DB::select("SELECT name FROM sqlite_master WHERE type='table'") : []
+//         ]);
+//     } catch (\Exception $e) {
+//         return response()->json(['error' => $e->getMessage()]);
+//     }
+// });
     Route::get('/statistiques-avancees', [PresenceController::class, 'statistiquesAvancees'])->name('statistiques.avancees');
 
     // Gestion des membres
