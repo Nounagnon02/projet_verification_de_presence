@@ -31,15 +31,18 @@ fi
 php artisan config:clear
 
 # Tentative de migration avec gestion d'erreur
-echo "Attempting database migration..."
-if ! php artisan migrate --force; then
-    echo "Turso migration failed, switching to SQLite fallback..."
+echo "Checking database migration status..."
+if php artisan migrate:status >/dev/null 2>&1; then
+    echo "Running pending migrations only..."
+    php artisan migrate --force --no-interaction || echo "Migration failed, but continuing..."
+else
+    echo "Database not accessible, switching to SQLite fallback..."
     export DB_CONNECTION=sqlite
     export DB_DATABASE=/var/www/html/storage/database.sqlite
     touch /var/www/html/storage/database.sqlite
     chmod 664 /var/www/html/storage/database.sqlite
     php artisan config:clear
-    php artisan migrate --force || echo "SQLite migration also failed, continuing without database..."
+    php artisan migrate --force --no-interaction || echo "SQLite migration also failed, continuing without database..."
 fi
 
 php artisan cache:clear || echo "Cache clear failed, continuing..."
