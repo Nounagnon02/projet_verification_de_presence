@@ -9,9 +9,10 @@ if [ ! -f .env ]; then
 fi
 
 # Configuration base de données
-if [ "$DB_CONNECTION" = "turso" ]; then
-    echo "Using Turso database..."
-    echo "Database URL: $TURSO_DATABASE_URL"
+if [ "$DB_CONNECTION" = "pgsql" ]; then
+    echo "Using Neon PostgreSQL database..."
+    echo "Host: $DB_HOST"
+    echo "Database: $DB_DATABASE"
 elif [ "$DB_CONNECTION" = "sqlite" ]; then
     echo "Setting up SQLite database..."
     touch ${DB_DATABASE:-/var/www/html/storage/database.sqlite}
@@ -29,10 +30,10 @@ php artisan config:clear
 
 # Migrations avec gestion Turso
 echo "Running database migrations..."
-if [ "$DB_CONNECTION" = "turso" ]; then
-    echo "Migrating Turso database..."
+if [ "$DB_CONNECTION" = "pgsql" ]; then
+    echo "Migrating Neon PostgreSQL database..."
     php artisan migrate --force --no-interaction || {
-        echo "Turso migration failed, switching to SQLite fallback..."
+        echo "Neon migration failed, switching to SQLite fallback..."
         export DB_CONNECTION=sqlite
         export DB_DATABASE=/var/www/html/storage/database.sqlite
         touch /var/www/html/storage/database.sqlite
