@@ -26,7 +26,7 @@
                         @auth
                             <a href="{{ route('dashboard') }}" class="text-gray-600 hover:text-gray-800 text-center px-3 py-2">Dashboard</a>
                         @else
-                            <a href="{{ route('demo') }}" class="text-gray-600 hover:text-gray-800 text-center px-3 py-2">Démo</a>
+
                             <a href="{{ route('login') }}" class="text-gray-600 hover:text-gray-800 text-center px-3 py-2">Connexion</a>
                             <a href="{{ route('register') }}" class="bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-700 text-center transition-colors">S'inscrire</a>
                         @endauth
