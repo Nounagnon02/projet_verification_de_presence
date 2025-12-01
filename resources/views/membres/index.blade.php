@@ -39,6 +39,9 @@
                                             Téléphone
                                         </th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Code Membre
+                                        </th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Actions
                                         </th>
                                     </tr>
@@ -51,6 +54,9 @@
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 {{ $membre->phone }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-blue-600">
+                                                {{ $membre->member_code ?? 'Non généré' }}
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                 <a href="{{ route('membres.edit', $membre->id) }}" 
