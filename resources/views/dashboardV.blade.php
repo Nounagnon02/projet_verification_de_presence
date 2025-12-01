@@ -31,7 +31,10 @@
                                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
                                         <label for="member_{{ $member->id }}" class="ml-3 flex-1 cursor-pointer">
                                             <div class="flex justify-between items-center">
-                                                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $member->name }}</span>
+                                                <div>
+                                                    <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $member->name }}</span>
+                                                    <span class="block text-xs text-blue-600 dark:text-blue-400 font-mono">Code: {{ $member->member_code ?? 'N/A' }}</span>
+                                                </div>
                                                 <span class="text-xs text-gray-500 dark:text-gray-400">{{ $member->phone }}</span>
                                             </div>
                                         </label>
@@ -54,7 +57,7 @@
                             
                             <div class="flex justify-between items-center">
                                 <p class="text-sm text-gray-600 dark:text-gray-400">{{ __('messages.members_total', ['count' => $members->count()]) }}</p>
-                                <button type="submit" class="btn-primary hover:bg-blue-700 text-white font-bold py-2 px-6 rounded transition-colors duration-200">
+                                <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-6 rounded">
                                     {{ __('messages.save_presences') }}
                                 </button>
                             </div>
