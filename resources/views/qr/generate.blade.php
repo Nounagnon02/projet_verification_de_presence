@@ -32,17 +32,34 @@
                     @if(isset($qrCode))
                         <div class="text-center">
                             <h3 class="text-lg font-semibold mb-4">QR Code généré</h3>
-                            <div class="bg-white p-4 inline-block rounded">
+                            <div class="bg-white p-4 inline-block rounded" id="qr-container">
                                 {!! $qrImage !!}
                             </div>
                             <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                                Code: {{ $qrCode->code }}<br>
-                                Valide jusqu'à: {{ $qrCode->expires_at->format('d/m/Y H:i') }}
+                                Code: <span id="current-code">{{ $qrCode->code }}</span><br>
+                                Valide jusqu'à: {{ $qrCode->expires_at->format('d/m/Y H:i') }}<br>
+                                Dernière mise à jour: <span id="last-update">{{ now()->format('H:i:s') }}</span>
                             </p>
-                            <p class="mt-2 text-xs text-gray-500">
-                                URL: {{ route('qr.scan', $qrCode->code) }}
-                            </p>
+                            <div class="mt-2 flex items-center justify-center space-x-2">
+                                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span class="text-xs text-gray-500">Code mis à jour toutes les minutes</span>
+                            </div>
                         </div>
+                        
+                        <script>
+                            // Actualiser le QR code toutes les minutes
+                            setInterval(function() {
+                                fetch('{{ route("qr.refresh") }}')
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        document.getElementById('qr-container').innerHTML = 
+                                            '<img src="data:image/svg+xml;base64,' + data.qr_image + '" alt="QR Code">';
+                                        document.getElementById('current-code').textContent = data.code;
+                                        document.getElementById('last-update').textContent = data.timestamp;
+                                    })
+                                    .catch(error => console.error('Erreur:', error));
+                            }, 60000); // 60000ms = 1 minute
+                        </script>
                     @endif
                 </div>
             </div>

@@ -27,8 +27,15 @@ class QrCode extends Model
         parent::boot();
         
         static::creating(function ($model) {
-            $model->code = Str::random(32);
+            $model->code = self::generateTimeBasedCode();
         });
+    }
+    
+    public static function generateTimeBasedCode()
+    {
+        // Générer un code basé sur la minute actuelle
+        $currentMinute = now()->format('Y-m-d-H-i');
+        return hash('sha256', $currentMinute . config('app.key'));
     }
 
     public function creator()
@@ -40,6 +47,16 @@ class QrCode extends Model
     {
         return $this->is_active && 
                (!$this->expires_at || $this->expires_at->isFuture()) &&
-               $this->event_date->isToday();
+               $this->event_date->isToday() &&
+               $this->isCurrentMinuteValid();
+    }
+    
+    public function isCurrentMinuteValid()
+    {
+        // Vérifier si le code correspond à la minute actuelle ou précédente (tolérance)
+        $currentCode = self::generateTimeBasedCode();
+        $previousCode = hash('sha256', now()->subMinute()->format('Y-m-d-H-i') . config('app.key'));
+        
+        return $this->code === $currentCode || $this->code === $previousCode;
     }
 }

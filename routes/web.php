@@ -98,6 +98,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // QR Code
     Route::get('/qr/generate', [QrCodeController::class, 'generate'])->name('qr.generate');
     Route::post('/qr/generate', [QrCodeController::class, 'generate']);
+    Route::get('/qr/refresh', [QrCodeController::class, 'refresh'])->name('qr.refresh');
 
     // RGPD
     Route::get('/rgpd', [\App\Http\Controllers\RgpdController::class, 'index'])->name('rgpd.index');
