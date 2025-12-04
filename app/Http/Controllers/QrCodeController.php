@@ -13,12 +13,21 @@ class QrCodeController extends Controller
 {
     public function generate(Request $request)
     {
-        $qrCode = QrCode::create([
-            'event_date' => $request->date ?? today(),
-            'event_name' => $request->event_name,
-            'created_by' => Auth::id(),
-            'expires_at' => now()->addHours(1)
-        ]);
+        // Utiliser le code basé sur le temps
+        $timeBasedCode = QrCode::generateTimeBasedCode();
+        
+        $qrCode = QrCode::updateOrCreate(
+            [
+                'event_date' => $request->date ?? today(),
+                'created_by' => Auth::id()
+            ],
+            [
+                'code' => $timeBasedCode,
+                'event_name' => $request->event_name,
+                'expires_at' => now()->addHours(1),
+                'is_active' => true
+            ]
+        );
 
         $url = route('qr.scan', $qrCode->code);
         $qrImage = QrGenerator::size(300)->generate($url);
@@ -34,8 +43,20 @@ class QrCodeController extends Controller
             return redirect()->route('dashboard')->with('error', 'QR Code invalide ou expiré');
         }
 
-        $members = member::all();
-        return view('qr.scan', compact('qrCode', 'members'));
+        return view('qr.scan', compact('qrCode'));
+    }
+    
+    public function refresh()
+    {
+        $currentCode = QrCode::generateTimeBasedCode();
+        $url = route('qr.scan', $currentCode);
+        $qrImage = QrGenerator::size(300)->generate($url);
+        
+        return response()->json([
+            'code' => $currentCode,
+            'qr_image' => base64_encode($qrImage),
+            'timestamp' => now()->format('H:i:s')
+        ]);
     }
 
     public function markPresence(Request $request, $code)
@@ -47,13 +68,19 @@ class QrCodeController extends Controller
         }
 
         $request->validate([
-            'member_id' => 'required|exists:members,id',
+            'phone' => 'required|string',
             'signature' => 'nullable|string'
         ]);
 
+        // Trouver le membre par son numéro de téléphone
+        $member = member::where('phone', $request->phone)->first();
+        if (!$member) {
+            return response()->json(['error' => 'Aucun membre trouvé avec ce numéro de téléphone'], 400);
+        }
+
         $presence = Presence::updateOrCreate(
             [
-                'member_id' => $request->member_id,
+                'member_id' => $member->id,
                 'date' => $qrCode->event_date
             ],
             [
@@ -65,6 +92,6 @@ class QrCodeController extends Controller
             ]
         );
 
-        return response()->json(['success' => true, 'message' => 'Présence enregistrée']);
+        return response()->json(['success' => true, 'message' => 'Présence enregistrée pour ' . $member->name]);
     }
 }
