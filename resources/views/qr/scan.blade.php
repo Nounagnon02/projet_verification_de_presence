@@ -30,17 +30,15 @@
                     <form id="presenceForm" class="space-y-4 sm:space-y-6">
                         @csrf
                         
-                        <!-- Member Selection -->
+                        <!-- Phone Validation -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
-                                Sélectionnez votre nom
+                                Numéro de téléphone *
                             </label>
-                            <select name="member_id" required class="w-full px-3 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
-                                <option value="" class="text-gray-500">-- Choisir votre nom --</option>
-                                @foreach($members as $member)
-                                    <option value="{{ $member->id }}">{{ $member->name }}</option>
-                                @endforeach
-                            </select>
+                            <input type="tel" name="phone" required 
+                                   placeholder="Votre numéro de téléphone"
+                                   class="w-full px-3 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            <p class="text-xs text-gray-500 mt-1">Saisissez votre numéro pour vous identifier</p>
                         </div>
 
                         <!-- Signature Section -->
@@ -172,7 +170,7 @@
             
             const formData = new FormData();
             formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
-            formData.append('member_id', document.querySelector('select[name="member_id"]').value);
+            formData.append('phone', document.querySelector('input[name="phone"]').value);
             
             // Get signature data if exists
             if (hasSignature) {
