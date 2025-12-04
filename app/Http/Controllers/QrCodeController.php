@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\QrCode;
 use App\Models\member;
 use App\Models\Presence;
+use App\Models\DeviceVerification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use SimpleSoftwareIO\QrCode\Facades\QrCode as QrGenerator;
@@ -73,8 +74,14 @@ class QrCodeController extends Controller
 
         $request->validate([
             'phone' => 'required|string',
-            'signature' => 'nullable|string'
+            'signature' => 'nullable|string',
+            'device_fingerprint' => 'required|string'
         ]);
+
+        // Vérifier si l'appareil peut faire une vérification (limite 2h)
+        if (!DeviceVerification::canVerify($request->device_fingerprint, $request->ip())) {
+            return response()->json(['error' => 'Cet appareil a déjà vérifié une présence dans les 2 dernières heures'], 429);
+        }
 
         // Trouver le membre par son numéro de téléphone
         $member = member::where('phone', $request->phone)->first();
@@ -86,6 +93,9 @@ class QrCodeController extends Controller
         if (!$qrCode->canBeUsedByMember($member)) {
             return response()->json(['error' => 'Ce QR code n\'est pas valide pour votre groupe'], 403);
         }
+
+        // Enregistrer la vérification de l'appareil
+        DeviceVerification::recordVerification($request->device_fingerprint, $request->ip());
 
         $presence = Presence::updateOrCreate(
             [
