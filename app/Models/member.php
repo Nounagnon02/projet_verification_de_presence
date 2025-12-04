@@ -17,8 +17,7 @@ class Member extends Model
         'users_id',
         'rgpd_consent',
         'rgpd_consent_at',
-        'consent_method',
-        'member_code'
+        'consent_method'
     ];
     
     protected $casts = [
