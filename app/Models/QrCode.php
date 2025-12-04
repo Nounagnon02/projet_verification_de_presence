@@ -13,7 +13,8 @@ class QrCode extends Model
         'event_name',
         'is_active',
         'expires_at',
-        'created_by'
+        'created_by',
+        'group'
     ];
 
     protected $casts = [
@@ -27,15 +28,16 @@ class QrCode extends Model
         parent::boot();
         
         static::creating(function ($model) {
-            $model->code = self::generateTimeBasedCode();
+            $model->code = self::generateTimeBasedCode($model->group);
         });
     }
     
-    public static function generateTimeBasedCode()
+    public static function generateTimeBasedCode($group = null)
     {
-        // Générer un code basé sur la minute actuelle
+        // Générer un code basé sur la minute actuelle et le groupe
         $currentMinute = now()->format('Y-m-d-H-i');
-        return hash('sha256', $currentMinute . config('app.key'));
+        $groupSuffix = $group ? '-' . $group : '';
+        return hash('sha256', $currentMinute . $groupSuffix . config('app.key'));
     }
 
     public function creator()
@@ -54,9 +56,15 @@ class QrCode extends Model
     public function isCurrentMinuteValid()
     {
         // Vérifier si le code correspond à la minute actuelle ou précédente (tolérance)
-        $currentCode = self::generateTimeBasedCode();
-        $previousCode = hash('sha256', now()->subMinute()->format('Y-m-d-H-i') . config('app.key'));
+        $currentCode = self::generateTimeBasedCode($this->group);
+        $previousCode = hash('sha256', now()->subMinute()->format('Y-m-d-H-i') . '-' . $this->group . config('app.key'));
         
         return $this->code === $currentCode || $this->code === $previousCode;
+    }
+    
+    public function canBeUsedByMember($member)
+    {
+        // Vérifier si le membre appartient au même groupe que le QR code
+        return $this->group === $member->group;
     }
 }
