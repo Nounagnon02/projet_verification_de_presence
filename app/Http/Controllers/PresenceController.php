@@ -51,34 +51,17 @@ class PresenceController extends Controller
 
             // Récupérer le groupe de l'utilisateur connecté
             $userGroup = Auth::user()->group;
-            $smsService = new SmsService();
-            
-            // Générer le code membre
-            $memberCode = $smsService->generateMemberCode();
 
             $member = Member::create([
                 'name' => $validated['name'],
                 'phone' => $validated['phone'],
                 'group' => $userGroup,
-                'users_id' => Auth::id(),
-                'member_code' => $memberCode
+                'users_id' => Auth::id()
             ]);
-            
-            // Envoyer le SMS avec le code
-            $smsResult = $smsService->sendMemberCode(
-                $validated['phone'], 
-                $memberCode, 
-                $validated['name']
-            );
 
             event(new Registered($member));
-            
-            $message = 'Membre ajouté avec succès!';
-            if (!$smsResult['success']) {
-                $message .= ' (Erreur envoi SMS)';
-            }
 
-            return redirect()->route('dashboard')->with('success', $message);
+            return redirect()->route('dashboard')->with('success', 'Membre ajouté avec succès!');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return redirect()->back()->withErrors($e->errors())->withInput();
@@ -100,13 +83,8 @@ class PresenceController extends Controller
 
         $userGroup = Auth::user()->group;
         $count = 0;
-        $smsService = new SmsService();
-        $smsErrors = [];
 
         foreach ($request->members as $memberData) {
-            // Générer le code membre
-            $memberCode = $smsService->generateMemberCode();
-            
             // Créer le membre
             $member = Member::create([
                 'name' => $memberData['name'],
@@ -115,30 +93,13 @@ class PresenceController extends Controller
                 'users_id' => Auth::id(),
                 'rgpd_consent' => true,
                 'rgpd_consent_at' => now(),
-                'consent_method' => 'oral',
-                'member_code' => $memberCode
+                'consent_method' => 'oral'
             ]);
-            
-            // Envoyer le SMS avec le code
-            $smsResult = $smsService->sendMemberCode(
-                $memberData['phone'], 
-                $memberCode, 
-                $memberData['name']
-            );
-            
-            if (!$smsResult['success']) {
-                $smsErrors[] = $memberData['name'];
-            }
             
             $count++;
         }
-        
-        $message = $count . ' membre(s) ajouté(s) avec succès!';
-        if (!empty($smsErrors)) {
-            $message .= ' Erreur SMS pour: ' . implode(', ', $smsErrors);
-        }
 
-        return redirect()->route('dashboard')->with('success', $message);
+        return redirect()->route('dashboard')->with('success', $count . ' membre(s) ajouté(s) avec succès!');
     }
 
     public function verif(Request $request): RedirectResponse
