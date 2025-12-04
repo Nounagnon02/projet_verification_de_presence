@@ -13,13 +13,16 @@ class QrCodeController extends Controller
 {
     public function generate(Request $request)
     {
-        // Utiliser le code basé sur le temps
-        $timeBasedCode = QrCode::generateTimeBasedCode();
+        $userGroup = Auth::user()->group;
+        
+        // Utiliser le code basé sur le temps avec le groupe
+        $timeBasedCode = QrCode::generateTimeBasedCode($userGroup);
         
         $qrCode = QrCode::updateOrCreate(
             [
                 'event_date' => $request->date ?? today(),
-                'created_by' => Auth::id()
+                'created_by' => Auth::id(),
+                'group' => $userGroup
             ],
             [
                 'code' => $timeBasedCode,
@@ -48,7 +51,8 @@ class QrCodeController extends Controller
     
     public function refresh()
     {
-        $currentCode = QrCode::generateTimeBasedCode();
+        $userGroup = Auth::user()->group;
+        $currentCode = QrCode::generateTimeBasedCode($userGroup);
         $url = route('qr.scan', $currentCode);
         $qrImage = QrGenerator::size(300)->generate($url);
         
@@ -64,7 +68,7 @@ class QrCodeController extends Controller
         $qrCode = QrCode::where('code', $code)->first();
 
         if (!$qrCode || !$qrCode->isValid()) {
-            return response()->json(['error' => 'QR Code invalide'], 400);
+            return response()->json(['error' => 'QR Code invalide ou expiré'], 400);
         }
 
         $request->validate([
@@ -76,6 +80,11 @@ class QrCodeController extends Controller
         $member = member::where('phone', $request->phone)->first();
         if (!$member) {
             return response()->json(['error' => 'Aucun membre trouvé avec ce numéro de téléphone'], 400);
+        }
+
+        // Vérifier si le membre peut utiliser ce QR code (même groupe)
+        if (!$qrCode->canBeUsedByMember($member)) {
+            return response()->json(['error' => 'Ce QR code n\'est pas valide pour votre groupe'], 403);
         }
 
         $presence = Presence::updateOrCreate(
