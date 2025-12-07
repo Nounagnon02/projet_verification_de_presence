@@ -13,6 +13,8 @@ class QrCode extends Model
         'event_date',
         'expires_at',
         'group',
+        'created_by',
+        'is_active',
         'latitude',
         'longitude',
         'radius',
