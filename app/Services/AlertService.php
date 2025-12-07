@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Member;
+use App\Models\member;
 use App\Models\Presence;
 use App\Models\QrCode;
 use App\Models\AlertSetting;
@@ -29,7 +29,7 @@ class AlertService
 
         // Récupérer les paramètres d'alerte
         $settings = AlertSetting::where('group', $group)->first();
-        
+
         if (!$settings || !$settings->is_active) {
             return ['status' => 'disabled', 'alerts_sent' => 0];
         }
@@ -71,7 +71,7 @@ class AlertService
             ->pluck('member_id')
             ->toArray();
 
-        return Member::where('group', $group)
+        return member::where('group', $group)
             ->whereNotIn('id', $presentMemberIds)
             ->get();
     }
@@ -79,7 +79,7 @@ class AlertService
     /**
      * Vérifie si une alerte doit être envoyée
      */
-    private function shouldSendAlert(Member $member, AlertSetting $settings): bool
+    private function shouldSendAlert(member $member, AlertSetting $settings): bool
     {
         // Vérifier si le membre a un numéro de téléphone
         if (empty($member->phone)) {
@@ -90,7 +90,7 @@ class AlertService
         if ($settings->alert_after_minutes) {
             $eventStart = Carbon::parse($settings->event_start_time ?? '09:00');
             $alertTime = $eventStart->addMinutes($settings->alert_after_minutes);
-            
+
             if (now()->lt($alertTime)) {
                 return false;
             }
@@ -102,17 +102,17 @@ class AlertService
     /**
      * Envoie une alerte d'absence par SMS
      */
-    private function sendAbsenceAlert(Member $member, QrCode $event, AlertSetting $settings): array
+    private function sendAbsenceAlert(member $member, QrCode $event, AlertSetting $settings): array
     {
         $message = $this->buildAlertMessage($member, $event, $settings);
-        
+
         try {
             // Utiliser le service SMS existant pour envoyer
             Log::info("Envoi alerte absence à {$member->phone}: {$message}");
-            
+
             // Enregistrer l'alerte envoyée
             $this->logAlert($member, $event, 'absence_alert');
-            
+
             return ['success' => true, 'message' => $message];
         } catch (\Exception $e) {
             Log::error("Erreur envoi alerte: " . $e->getMessage());
@@ -123,11 +123,11 @@ class AlertService
     /**
      * Construit le message d'alerte
      */
-    private function buildAlertMessage(Member $member, QrCode $event, AlertSetting $settings): string
+    private function buildAlertMessage(member $member, QrCode $event, AlertSetting $settings): string
     {
-        $template = $settings->alert_message_template ?? 
+        $template = $settings->alert_message_template ??
             "Bonjour {name}, vous n'êtes pas encore enregistré pour l'événement du {date}. N'oubliez pas de pointer !";
-        
+
         return str_replace(
             ['{name}', '{date}', '{event}'],
             [$member->name, $event->event_date->format('d/m/Y'), $event->event_name ?? 'la séance'],
@@ -138,16 +138,16 @@ class AlertService
     /**
      * Envoie un rappel de pointage
      */
-    public function sendReminder(Member $member, string $eventName, string $eventDate): array
+    public function sendReminder(member $member, string $eventName, string $eventDate): array
     {
         $message = "📢 Rappel: N'oubliez pas l'événement '{$eventName}' prévu le {$eventDate}. Pensez à pointer votre présence !";
-        
+
         try {
             Log::info("Envoi rappel à {$member->phone}: {$message}");
-            
+
             // Ici on pourrait appeler le vrai SMS
             // $this->smsService->send($member->phone, $message);
-            
+
             return ['success' => true, 'message' => 'Rappel envoyé'];
         } catch (\Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];
@@ -157,7 +157,7 @@ class AlertService
     /**
      * Enregistre une alerte dans les logs
      */
-    private function logAlert(Member $member, QrCode $event, string $type): void
+    private function logAlert(member $member, QrCode $event, string $type): void
     {
         Log::channel('daily')->info("Alerte {$type}", [
             'member_id' => $member->id,
@@ -173,7 +173,7 @@ class AlertService
     public function getAlertStats(string $group, int $days = 30): array
     {
         $startDate = now()->subDays($days);
-        
+
         // Compter les événements
         $totalEvents = QrCode::where('group', $group)
             ->where('event_date', '>=', $startDate)
@@ -194,8 +194,8 @@ class AlertService
      */
     private function calculateAveragePresenceRate(string $group, int $days): float
     {
-        $totalMembers = Member::where('group', $group)->count();
-        
+        $totalMembers = member::where('group', $group)->count();
+
         if ($totalMembers === 0) {
             return 0;
         }
@@ -210,9 +210,9 @@ class AlertService
             ->count();
 
         $expectedPresences = $totalMembers * $totalEvents;
-        
-        return $expectedPresences > 0 
-            ? round(($totalPresences / $expectedPresences) * 100, 1) 
+
+        return $expectedPresences > 0
+            ? round(($totalPresences / $expectedPresences) * 100, 1)
             : 0;
     }
 }
