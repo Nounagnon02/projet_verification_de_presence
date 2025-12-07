@@ -208,8 +208,56 @@
             const deviceFingerprint = generateDeviceFingerprint();
             formData.append('device_fingerprint', deviceFingerprint);
             
+            // Fonction pour sauvegarder en local
+            const saveOffline = (dataObject) => {
+                const scans = JSON.parse(localStorage.getItem('offline_scans') || '[]');
+                scans.push({
+                    timestamp: Date.now(),
+                    data: dataObject,
+                    url: '{{ route("qr.presence", $qrCode->code) }}'
+                });
+                localStorage.setItem('offline_scans', JSON.stringify(scans));
+                
+                const messageDiv = document.getElementById('message');
+                messageDiv.classList.remove('hidden');
+                messageDiv.className = 'mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-center';
+                messageDiv.innerHTML = `
+                    <div class="flex items-center justify-center space-x-2 text-yellow-800">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span class="font-semibold">Mode Hors Ligne</span>
+                    </div>
+                    <p class="text-sm text-yellow-700 mt-2">
+                        Scan sauvegardé dans le téléphone.<br>
+                        Il sera envoyé automatiquement dès le retour de la connexion.
+                    </p>
+                    <p class="text-xs text-yellow-600 mt-4">Vous pouvez fermer cette page ou scanner d'autres personnes.</p>
+                `;
+                document.getElementById('presenceForm').reset();
+                clearSignature();
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            };
+
             // Fonction pour envoyer les données
             const sendData = () => {
+                // Préparer l'objet de données pour le stockage potentiel (FormData n'est pas stringifiable)
+                const dataObject = {
+                    _token: document.querySelector('meta[name="csrf-token"]').content,
+                    phone: formData.get('phone'),
+                    signature: formData.get('signature'),
+                    device_fingerprint: formData.get('device_fingerprint'),
+                    latitude: formData.get('latitude'),
+                    longitude: formData.get('longitude'),
+                    accuracy: formData.get('accuracy')
+                };
+
+                if (!navigator.onLine) {
+                    saveOffline(dataObject);
+                    return;
+                }
+
                 fetch('{{ route("qr.presence", $qrCode->code) }}', {
                     method: 'POST',
                     body: formData
@@ -232,35 +280,15 @@
                         `;
                         document.getElementById('presenceForm').style.display = 'none';
                     } else {
-                        messageDiv.className = 'mt-6 p-4 bg-red-50 border border-red-200 rounded-lg text-center';
-                        messageDiv.innerHTML = `
-                            <div class="flex items-center justify-center space-x-2 text-red-800">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                <span class="font-semibold">${data.error || 'Erreur lors de l\'enregistrement'}</span>
-                            </div>
-                        `;
-                        // Reset button
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = originalText;
+                        // Si erreur serveur, afficher l'erreur
+                        throw new Error(data.error || 'Erreur inconnue');
                     }
                 })
                 .catch(error => {
-                    const messageDiv = document.getElementById('message');
-                    messageDiv.classList.remove('hidden');
-                    messageDiv.className = 'mt-6 p-4 bg-red-50 border border-red-200 rounded-lg text-center';
-                    messageDiv.innerHTML = `
-                        <div class="flex items-center justify-center space-x-2 text-red-800">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <span class="font-semibold">Erreur de connexion</span>
-                        </div>
-                    `;
-                    // Reset button
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalText;
+                    console.warn('Echec envoi, tentative sauvegarde offline', error);
+                    // En cas d'échec réseau (pas d'erreur 400/500 explicite du serveur mais échec fetch)
+                    // On sauvegarde en offline
+                    saveOffline(dataObject);
                 });
             };
 
@@ -283,18 +311,90 @@
                     },
                     function(error) {
                         console.warn("Erreur géolocalisation:", error.message);
-                        // On envoie quand même sans localisation (le serveur décidera si c'est bloquant)
                         sendData();
                     },
                     {
                         enableHighAccuracy: true,
-                        timeout: 5000,
+                        timeout: 3000, // Timeout réduit pour pas bloquer
                         maximumAge: 0
                     }
                 );
             } else {
                 sendData();
             }
+        });
+
+        // Gestionnaire de synchronisation
+        window.addEventListener('online', syncOfflineScans);
+        
+        // Tenter une synchro au chargement si on est online
+        if (navigator.onLine) {
+            setTimeout(syncOfflineScans, 1000);
+        }
+
+        function syncOfflineScans() {
+            const scans = JSON.parse(localStorage.getItem('offline_scans') || '[]');
+            if (scans.length === 0) return;
+
+            console.log(`Tentative de synchronisation de ${scans.length} scans...`);
+            
+            // Afficher un petit toast ou indicateur
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 flex items-center';
+            toast.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Synchronisation de ${scans.length} scan(s)...
+            `;
+            document.body.appendChild(toast);
+
+            // Traiter séquentiellement
+            const processNext = async (index) => {
+                if (index >= scans.length) {
+                    localStorage.removeItem('offline_scans');
+                    toast.className = 'fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+                    toast.textContent = '✅ Synchronisation terminée !';
+                    setTimeout(() => toast.remove(), 3000);
+                    return;
+                }
+
+                const scan = scans[index];
+                const formData = new FormData();
+                // Reconstruire le FormData
+                for (const key in scan.data) {
+                    if (scan.data[key] !== null) {
+                        formData.append(key, scan.data[key]);
+                    }
+                }
+
+                try {
+                    const response = await fetch(scan.url, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success || response.status === 429) { // 429 = déjà scanné, on considère comme traité
+                        console.log(`Scan ${index + 1} synchronisé`);
+                        processNext(index + 1);
+                    } else {
+                        console.error(`Erreur synchro scan ${index + 1}:`, data);
+                        // On continue quand même pour ne pas bloquer les autres
+                        processNext(index + 1);
+                    }
+                } catch (e) {
+                    console.error('Erreur réseau durant synchro', e);
+                    // On arrête la synchro, on garde tout pour plus tard
+                    toast.className = 'fixed bottom-4 right-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+                    toast.textContent = '❌ Erreur connexion. Réessai plus tard.';
+                    setTimeout(() => toast.remove(), 3000);
+                }
+            };
+
+            processNext(0);
+        }
     </script>
 </body>
 </html>
