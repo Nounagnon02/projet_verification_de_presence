@@ -67,6 +67,37 @@ class GoogleCalendarController extends Controller
             $event->description = $request->description ?? '';
             $event->startDateTime = $startDateTime;
             $event->endDateTime = $endDateTime;
+
+            // Gestion de la récurrence (RRULE)
+            if ($request->recurrence_type && $request->recurrence_type !== 'none') {
+                $rrule = [];
+                
+                if ($request->recurrence_type === 'custom') {
+                    // Mode personnalisé
+                    $freq = $request->freq ?? 'WEEKLY';
+                    $rrule[] = "FREQ={$freq}";
+                    
+                    if ($request->interval > 1) {
+                        $rrule[] = "INTERVAL={$request->interval}";
+                    }
+                    
+                    // Fin de la récurrence
+                    if ($request->end_type === 'date' && $request->until_date) {
+                        // Format YYYYMMDDTHHMMSSZ pour iCal
+                        $until = Carbon::parse($request->until_date)->endOfDay()->format('Ymd\THis\Z');
+                        $rrule[] = "UNTIL={$until}";
+                    } elseif ($request->end_type === 'count' && $request->count) {
+                        $rrule[] = "COUNT={$request->count}";
+                    }
+                } else {
+                    // Modes prédéfinis (DAILY, WEEKLY, MONTHLY, YEARLY)
+                    $rrule[] = "FREQ={$request->recurrence_type}";
+                }
+                
+                // Assigner la règle de récurrence
+                $event->recurrence = ['RRULE:' . implode(';', $rrule)];
+            }
+
             $event->save();
 
             return redirect()

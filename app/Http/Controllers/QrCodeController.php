@@ -51,7 +51,30 @@ class QrCodeController extends Controller
         return view('qr.generate', compact('qrCode', 'qrImage'));
     }
 
-    // ... (autres méthodes scan, refresh)
+    public function scan($code)
+    {
+        $qrCode = QrCode::where('code', $code)->first();
+
+        if (!$qrCode || !$qrCode->isValid()) {
+            return redirect()->route('dashboard')->with('error', 'QR Code invalide ou expiré');
+        }
+
+        return view('qr.scan', compact('qrCode'));
+    }
+    
+    public function refresh()
+    {
+        $userGroup = Auth::user()->group;
+        $currentCode = QrCode::generateTimeBasedCode($userGroup);
+        $url = route('qr.scan', $currentCode);
+        $qrImage = QrGenerator::size(300)->generate($url);
+        
+        return response()->json([
+            'code' => $currentCode,
+            'qr_image' => base64_encode($qrImage),
+            'timestamp' => now()->format('H:i:s')
+        ]);
+    }
 
     public function markPresence(Request $request, $code)
     {
