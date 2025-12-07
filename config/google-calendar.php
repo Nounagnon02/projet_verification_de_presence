@@ -1,5 +1,18 @@
 <?php
 
+// Helper pour créer le fichier de credentials depuis une variable d'environnement (pour Render/Heroku)
+$credentialsPath = storage_path('app/google-calendar/service-account-credentials.json');
+
+if (!file_exists($credentialsPath) && !app()->runningInConsole()) {
+    $credentialsJson = env('GOOGLE_CALENDAR_CREDENTIALS_JSON');
+    if ($credentialsJson) {
+        if (!is_dir(dirname($credentialsPath))) {
+            mkdir(dirname($credentialsPath), 0755, true);
+        }
+        file_put_contents($credentialsPath, $credentialsJson);
+    }
+}
+
 return [
 
     'default_auth_profile' => env('GOOGLE_CALENDAR_AUTH_PROFILE', 'service_account'),
@@ -13,7 +26,7 @@ return [
             /*
              * Path to the json file containing the credentials.
              */
-            'credentials_json' => storage_path('app/google-calendar/service-account-credentials.json'),
+            'credentials_json' => $credentialsPath,
         ],
 
         /*
