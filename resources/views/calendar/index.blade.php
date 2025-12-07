@@ -132,6 +132,58 @@
                                 </div>
                             </div>
 
+                            <!-- Récurrence -->
+                            <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                                <label for="recurrence_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Répétition
+                                </label>
+                                <select name="recurrence_type" 
+                                        id="recurrence_type" 
+                                        class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="none">Une seule fois</option>
+                                    <option value="DAILY">Tous les jours</option>
+                                    <option value="WEEKLY">Toutes les semaines</option>
+                                    <option value="MONTHLY">Tous les mois</option>
+                                    <option value="YEARLY">Tous les ans</option>
+                                    <option value="custom">Personnalisé...</option>
+                                </select>
+                            </div>
+
+                            <!-- Options de récurrence personnalisée -->
+                            <div id="custom_recurrence_options" class="hidden space-y-4 mt-4 pl-4 border-l-2 border-blue-500">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-sm text-gray-700 dark:text-gray-300">Répéter tous les</span>
+                                    <input type="number" name="interval" value="1" min="1" class="w-16 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <select name="freq" class="border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="DAILY">Jours</option>
+                                        <option value="WEEKLY" selected>Semaines</option>
+                                        <option value="MONTHLY">Mois</option>
+                                        <option value="YEARLY">Ans</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fin de la répétition</label>
+                                    <div class="space-y-2">
+                                        <div class="flex items-center">
+                                            <input type="radio" name="end_type" value="never" id="end_never" checked class="text-blue-600 focus:ring-blue-500">
+                                            <label for="end_never" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Jamais</label>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <input type="radio" name="end_type" value="date" id="end_date_radio" class="text-blue-600 focus:ring-blue-500">
+                                            <label for="end_date_radio" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Le</label>
+                                            <input type="date" name="until_date" class="ml-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm">
+                                        </div>
+                                        <div class="flex items-center">
+                                            <input type="radio" name="end_type" value="count" id="end_count_radio" class="text-blue-600 focus:ring-blue-500">
+                                            <label for="end_count_radio" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Après</label>
+                                            <input type="number" name="count" min="1" class="ml-2 w-16 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm">
+                                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">occurrences</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Bouton de soumission -->
                             <div class="pt-4">
                                 <button type="submit" 
@@ -244,6 +296,17 @@
             const endHours = (hours + 1) % 24;
             const endTime = `${String(endHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
             document.getElementById('end_time').value = endTime;
+        });
+        // Gestion de l'affichage des options de récurrence
+        const recurrenceType = document.getElementById('recurrence_type');
+        const customOptions = document.getElementById('custom_recurrence_options');
+
+        recurrenceType.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                customOptions.classList.remove('hidden');
+            } else {
+                customOptions.classList.add('hidden');
+            }
         });
     </script>
 </x-app-layout>
