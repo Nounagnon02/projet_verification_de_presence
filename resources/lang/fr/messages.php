@@ -73,4 +73,21 @@ return [
     'dark_mode_shortcut' => 'Mode sombre',
     'help_shortcut' => 'Aide',
     'close' => 'Fermer',
+
+    // Calendar
+    'calendar' => 'Agenda',
+    'calendar_title' => 'Agenda - Programmation des séances',
+    'create_event' => 'Créer un événement',
+    'event_name' => 'Nom de la séance',
+    'event_description' => 'Description',
+    'start_date' => 'Date de début',
+    'start_time' => 'Heure de début',
+    'end_date' => 'Date de fin',
+    'end_time' => 'Heure de fin',
+    'upcoming_events' => 'Événements à venir',
+    'no_events' => 'Aucun événement prévu',
+    'create_first_event' => 'Créez votre premier événement !',
+    'event_created' => 'Événement créé avec succès !',
+    'event_deleted' => 'Événement supprimé avec succès !',
+    'all_day' => 'Journée entière',
 ];

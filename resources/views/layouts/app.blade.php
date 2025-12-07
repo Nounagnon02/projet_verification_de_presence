@@ -11,10 +11,28 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
+        <!-- PWA -->
+        <link rel="manifest" href="/manifest.json">
+        <meta name="theme-color" content="#3b82f6">
+        <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/942/942751.png">
+
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         
         <script>
+            // Enregistrement du Service Worker
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(registration => {
+                            console.log('ServiceWorker registered');
+                        })
+                        .catch(err => {
+                            console.log('ServiceWorker registration failed: ', err);
+                        });
+                });
+            }
+
             // Initialiser le thème avant le rendu
             if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');

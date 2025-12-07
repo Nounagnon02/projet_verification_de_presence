@@ -6,6 +6,7 @@ use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Member extends Model
 {
@@ -35,10 +36,26 @@ class Member extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function badges(): BelongsToMany
+    {
+        return $this->belongsToMany(Badge::class, 'member_badges')
+            ->withPivot('earned_at', 'metadata')
+            ->withTimestamps();
+    }
+
     // Scope pour filtrer par groupe utilisateur
     public function scopeForUserGroup($query, $userId)
     {
         $userGroup = User::find($userId)->group;
         return $query->where('group', $userGroup);
     }
+
+    /**
+     * Retourne le nombre total de points de badges
+     */
+    public function getTotalBadgePointsAttribute(): int
+    {
+        return $this->badges->sum('points');
+    }
 }
+
