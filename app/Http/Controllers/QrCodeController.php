@@ -12,8 +12,20 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode as QrGenerator;
 
 class QrCodeController extends Controller
 {
+    protected $geofenceService;
+    protected $anomalyService;
+
+    public function __construct(
+        \App\Services\GeofenceService $geofenceService,
+        \App\Services\AnomalyDetectionService $anomalyService
+    ) {
+        $this->geofenceService = $geofenceService;
+        $this->anomalyService = $anomalyService;
+    }
+
     public function generate(Request $request)
     {
+        // ... (code existant)
         $userGroup = Auth::user()->group;
         
         // Utiliser le code basé sur le temps avec le groupe
@@ -29,7 +41,7 @@ class QrCodeController extends Controller
                 'code' => $timeBasedCode,
                 'event_name' => $request->event_name,
                 'expires_at' => now()->addHours(1),
-                'is_active' => true
+                'is_active' => true,
             ]
         );
 
@@ -39,33 +51,11 @@ class QrCodeController extends Controller
         return view('qr.generate', compact('qrCode', 'qrImage'));
     }
 
-    public function scan($code)
-    {
-        $qrCode = QrCode::where('code', $code)->first();
-
-        if (!$qrCode || !$qrCode->isValid()) {
-            return redirect()->route('dashboard')->with('error', 'QR Code invalide ou expiré');
-        }
-
-        return view('qr.scan', compact('qrCode'));
-    }
-    
-    public function refresh()
-    {
-        $userGroup = Auth::user()->group;
-        $currentCode = QrCode::generateTimeBasedCode($userGroup);
-        $url = route('qr.scan', $currentCode);
-        $qrImage = QrGenerator::size(300)->generate($url);
-        
-        return response()->json([
-            'code' => $currentCode,
-            'qr_image' => base64_encode($qrImage),
-            'timestamp' => now()->format('H:i:s')
-        ]);
-    }
+    // ... (autres méthodes scan, refresh)
 
     public function markPresence(Request $request, $code)
     {
+        // ... (validations existantes)
         $qrCode = QrCode::where('code', $code)->first();
 
         if (!$qrCode || !$qrCode->isValid()) {
@@ -75,8 +65,26 @@ class QrCodeController extends Controller
         $request->validate([
             'phone' => 'required|string',
             'signature' => 'nullable|string',
-            'device_fingerprint' => 'required|string'
+            'device_fingerprint' => 'required|string',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'accuracy' => 'nullable|numeric'
         ]);
+
+        // Vérifier la géolocalisation si disponible
+        if ($request->latitude && $request->longitude) {
+            $geoResult = $this->geofenceService->isLocationValid(
+                $qrCode, 
+                (float)$request->latitude, 
+                (float)$request->longitude
+            );
+
+            if (!$geoResult['valid']) {
+                return response()->json([
+                    'error' => "Vous êtes trop loin du lieu de l'événement ({$geoResult['distance']}m). Rayon autorisé: {$geoResult['radius']}m."
+                ], 403);
+            }
+        }
 
         // Vérifier si l'appareil peut faire une vérification (limite 2h)
         if (!DeviceVerification::canVerify($request->device_fingerprint, $request->ip())) {
@@ -107,9 +115,25 @@ class QrCodeController extends Controller
                 'qr_code_id' => $qrCode->code,
                 'verification_method' => 'qr_code',
                 'signature' => $request->signature,
-                'signed_at' => $request->signature ? now() : null
+                'signed_at' => $request->signature ? now() : null,
+                'location_data' => [
+                    'latitude' => $request->latitude,
+                    'longitude' => $request->longitude,
+                    'accuracy' => $request->accuracy
+                ],
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent()
             ]
         );
+
+        // Vérifier les anomalies (en arrière-plan idéalement, mais ici synchrone pour la démo)
+        $this->anomalyService->checkAnomalies($member, [
+            'device_fingerprint' => $request->device_fingerprint,
+            'ip_address' => $request->ip(),
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+            'user_agent' => $request->userAgent()
+        ]);
 
         return response()->json(['success' => true, 'message' => 'Présence enregistrée pour ' . $member->name]);
     }

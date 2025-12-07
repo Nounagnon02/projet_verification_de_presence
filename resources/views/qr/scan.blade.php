@@ -208,59 +208,93 @@
             const deviceFingerprint = generateDeviceFingerprint();
             formData.append('device_fingerprint', deviceFingerprint);
             
-            fetch('{{ route("qr.presence", $qrCode->code) }}', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                const messageDiv = document.getElementById('message');
-                messageDiv.classList.remove('hidden');
-                
-                if (data.success) {
-                    messageDiv.className = 'mt-6 p-4 bg-green-50 border border-green-200 rounded-lg text-center';
-                    messageDiv.innerHTML = `
-                        <div class="flex items-center justify-center space-x-2 text-green-800">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <span class="font-semibold">${data.message}</span>
-                        </div>
-                        <p class="text-sm text-green-600 mt-2">Vous pouvez fermer cette page</p>
-                    `;
-                    document.getElementById('presenceForm').style.display = 'none';
-                } else {
+            // Fonction pour envoyer les données
+            const sendData = () => {
+                fetch('{{ route("qr.presence", $qrCode->code) }}', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const messageDiv = document.getElementById('message');
+                    messageDiv.classList.remove('hidden');
+                    
+                    if (data.success) {
+                        messageDiv.className = 'mt-6 p-4 bg-green-50 border border-green-200 rounded-lg text-center';
+                        messageDiv.innerHTML = `
+                            <div class="flex items-center justify-center space-x-2 text-green-800">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span class="font-semibold">${data.message}</span>
+                            </div>
+                            <p class="text-sm text-green-600 mt-2">Vous pouvez fermer cette page</p>
+                        `;
+                        document.getElementById('presenceForm').style.display = 'none';
+                    } else {
+                        messageDiv.className = 'mt-6 p-4 bg-red-50 border border-red-200 rounded-lg text-center';
+                        messageDiv.innerHTML = `
+                            <div class="flex items-center justify-center space-x-2 text-red-800">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span class="font-semibold">${data.error || 'Erreur lors de l\'enregistrement'}</span>
+                            </div>
+                        `;
+                        // Reset button
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    }
+                })
+                .catch(error => {
+                    const messageDiv = document.getElementById('message');
+                    messageDiv.classList.remove('hidden');
                     messageDiv.className = 'mt-6 p-4 bg-red-50 border border-red-200 rounded-lg text-center';
                     messageDiv.innerHTML = `
                         <div class="flex items-center justify-center space-x-2 text-red-800">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
-                            <span class="font-semibold">${data.error || 'Erreur lors de l\'enregistrement'}</span>
+                            <span class="font-semibold">Erreur de connexion</span>
                         </div>
                     `;
                     // Reset button
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalText;
-                }
-            })
-            .catch(error => {
-                const messageDiv = document.getElementById('message');
-                messageDiv.classList.remove('hidden');
-                messageDiv.className = 'mt-6 p-4 bg-red-50 border border-red-200 rounded-lg text-center';
-                messageDiv.innerHTML = `
-                    <div class="flex items-center justify-center space-x-2 text-red-800">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <span class="font-semibold">Erreur de connexion</span>
-                    </div>
+                });
+            };
+
+            // Tenter de récupérer la localisation
+            if ("geolocation" in navigator) {
+                submitBtn.innerHTML = `
+                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Localisation...
                 `;
-                // Reset button
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
-            });
-        });
+                
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        formData.append('latitude', position.coords.latitude);
+                        formData.append('longitude', position.coords.longitude);
+                        formData.append('accuracy', position.coords.accuracy);
+                        sendData();
+                    },
+                    function(error) {
+                        console.warn("Erreur géolocalisation:", error.message);
+                        // On envoie quand même sans localisation (le serveur décidera si c'est bloquant)
+                        sendData();
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 5000,
+                        maximumAge: 0
+                    }
+                );
+            } else {
+                sendData();
+            }
     </script>
 </body>
 </html>
