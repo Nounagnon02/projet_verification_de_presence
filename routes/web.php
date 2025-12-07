@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PresenceController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\QrCodeController;
+use App\Http\Controllers\GoogleCalendarController;
 use Illuminate\Support\Facades\DB;
 
 Route::get('/', function () {
@@ -104,10 +105,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/rgpd', [\App\Http\Controllers\RgpdController::class, 'index'])->name('rgpd.index');
     Route::post('/rgpd/consent', [\App\Http\Controllers\RgpdController::class, 'consent'])->name('rgpd.consent');
     Route::post('/rgpd/withdraw', [\App\Http\Controllers\RgpdController::class, 'withdraw'])->name('rgpd.withdraw');
+
+    // Google Calendar
+    Route::get('/calendar', [GoogleCalendarController::class, 'index'])->name('calendar.index');
+    Route::post('/calendar', [GoogleCalendarController::class, 'store'])->name('calendar.store');
+    Route::delete('/calendar/{eventId}', [GoogleCalendarController::class, 'destroy'])->name('calendar.destroy');
+
+    // Heatmap
+    Route::get('/heatmap', [\App\Http\Controllers\HeatmapController::class, 'index'])->name('heatmap.index');
+    Route::get('/heatmap/data', [\App\Http\Controllers\HeatmapController::class, 'getData'])->name('heatmap.data');
+
+    // Alertes & Notifications
+    Route::get('/alerts', [\App\Http\Controllers\AlertController::class, 'index'])->name('alerts.index');
+    Route::put('/alerts', [\App\Http\Controllers\AlertController::class, 'update'])->name('alerts.update');
+    Route::post('/alerts/check-now', [\App\Http\Controllers\AlertController::class, 'checkNow'])->name('alerts.check-now');
 });
 
 // Route pour changer de langue
 Route::get('/language/{locale}', [LanguageController::class, 'switch'])->name('language.switch');
+
+// Route offline PWA
+Route::view('/offline', 'offline');
 
 // Routes QR Code publiques
 Route::get('/qr/{code}', [QrCodeController::class, 'scan'])->name('qr.scan');

@@ -46,6 +46,12 @@
                             </button>
                         </x-slot>
                         <x-slot name="content">
+                            <x-dropdown-link :href="route('calendar.index')">
+                                📅 Agenda
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('heatmap.index')">
+                                🗓️ Heatmap
+                            </x-dropdown-link>
                             <x-dropdown-link :href="route('comparaison.periodes')">
                                 📊 Comparaison périodes
                             </x-dropdown-link>
@@ -54,6 +60,9 @@
                             </x-dropdown-link>
                             <x-dropdown-link :href="route('rgpd.index')">
                                 🔒 RGPD
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('alerts.index')">
+                                🔔 Alertes & Rappels
                             </x-dropdown-link>
                         </x-slot>
                     </x-dropdown>
@@ -148,6 +157,13 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                 </svg>
                 {{ __('Analytics') }}
+            </x-responsive-nav-link>
+            
+            <x-responsive-nav-link :href="route('calendar.index')" :active="request()->routeIs('calendar.*')" class="flex items-center py-3 px-4 rounded-lg">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                Agenda
             </x-responsive-nav-link>
             
             <x-responsive-nav-link :href="route('comparaison.periodes')" :active="request()->routeIs('comparaison.periodes')" class="flex items-center py-3 px-4 rounded-lg">

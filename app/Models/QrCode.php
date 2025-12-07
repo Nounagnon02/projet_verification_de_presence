@@ -9,18 +9,23 @@ class QrCode extends Model
 {
     protected $fillable = [
         'code',
-        'event_date',
         'event_name',
-        'is_active',
+        'event_date',
         'expires_at',
-        'created_by',
-        'group'
+        'group',
+        'latitude',
+        'longitude',
+        'radius',
+        'location_name'
     ];
 
     protected $casts = [
         'event_date' => 'date',
         'expires_at' => 'datetime',
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
+        'latitude' => 'decimal:8',
+        'longitude' => 'decimal:8',
+        'radius' => 'integer'
     ];
 
     protected static function boot()

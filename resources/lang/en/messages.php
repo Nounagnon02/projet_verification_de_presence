@@ -73,4 +73,21 @@ return [
     'dark_mode_shortcut' => 'Dark mode',
     'help_shortcut' => 'Help',
     'close' => 'Close',
+
+    // Calendar
+    'calendar' => 'Calendar',
+    'calendar_title' => 'Calendar - Schedule sessions',
+    'create_event' => 'Create event',
+    'event_name' => 'Session name',
+    'event_description' => 'Description',
+    'start_date' => 'Start date',
+    'start_time' => 'Start time',
+    'end_date' => 'End date',
+    'end_time' => 'End time',
+    'upcoming_events' => 'Upcoming events',
+    'no_events' => 'No events scheduled',
+    'create_first_event' => 'Create your first event!',
+    'event_created' => 'Event created successfully!',
+    'event_deleted' => 'Event deleted successfully!',
+    'all_day' => 'All day',
 ];

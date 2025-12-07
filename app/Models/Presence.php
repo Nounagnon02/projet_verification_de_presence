@@ -15,16 +15,20 @@ class Presence extends Model
         'member_id',
         'date',
         'time',
-        'signature',
-        'qr_code_id',
-        'verification_method',
-        'signed_at'
+        'status',
+        'location_data',
+        'ip_address',
+        'user_agent'
     ];
 
     protected $casts = [
         'date' => 'date',
         'time' => 'datetime:H:i:s',
-        'signed_at' => 'datetime'
+        'signed_at' => 'datetime',
+        'latitude' => 'decimal:8',
+        'longitude' => 'decimal:8',
+        'location_verified' => 'boolean',
+        'location_data' => 'array'
     ];
 
     public function member(): BelongsTo
