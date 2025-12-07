@@ -14,6 +14,7 @@ use Illuminate\Auth\Events\Registered;
 use App\Models\Presence;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Services\SmsService;
+use App\Services\RegularityScoreService;
 
 class PresenceController extends Controller
 {
@@ -254,7 +255,12 @@ class PresenceController extends Controller
                         ->orderBy('name')
                         ->paginate(10);
 
-        return view('membres.index', compact('membres'));
+        // Calculer les scores de régularité
+        $scoreService = new RegularityScoreService();
+        $scores = $scoreService->calculateScoresForGroup($userGroup);
+        $ranking = $scoreService->getRanking($userGroup, 5);
+
+        return view('membres.index', compact('membres', 'scores', 'ranking'));
     }
 
     public function editMembre($id)
