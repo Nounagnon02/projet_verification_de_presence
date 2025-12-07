@@ -129,13 +129,19 @@ class HeatmapController extends Controller
             ->orderByDesc('count')
             ->first();
 
-        // Heure la plus active
+            // Heure la plus active
+        $driver = \DB::connection()->getDriverName();
+        $hourExtraction = $driver === 'sqlite' ? "strftime('%H', time)" : "EXTRACT(HOUR FROM time)";
+        
+        // Si c'est MySQL, c'est HOUR(time), mais EXTRACT(HOUR FROM time) est standard SQL
+        // Pour Postgres: EXTRACT(HOUR FROM time)
+        
         $bestHour = Presence::whereHas('member', function ($query) use ($group) {
                 $query->where('group', $group);
             })
             ->whereBetween('date', [$startDate, $endDate])
             ->whereNotNull('time')
-            ->selectRaw('SUBSTR(time, 1, 2) as hour, COUNT(*) as count')
+            ->selectRaw("$hourExtraction as hour, COUNT(*) as count")
             ->groupBy('hour')
             ->orderByDesc('count')
             ->first();
