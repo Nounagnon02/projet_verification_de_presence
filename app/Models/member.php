@@ -18,12 +18,14 @@ class Member extends Model
         'users_id',
         'rgpd_consent',
         'rgpd_consent_at',
-        'consent_method'
+        'consent_method',
+        'points'
     ];
     
     protected $casts = [
         'rgpd_consent_at' => 'datetime',
-        'rgpd_consent' => 'boolean'
+        'rgpd_consent' => 'boolean',
+        'points' => 'integer'
     ];
 
     public function presences(): HasMany
@@ -41,6 +43,11 @@ class Member extends Model
         return $this->belongsToMany(Badge::class, 'member_badges')
             ->withPivot('earned_at', 'metadata')
             ->withTimestamps();
+    }
+
+    public function redemptions(): HasMany
+    {
+        return $this->hasMany(Redemption::class);
     }
 
     // Scope pour filtrer par groupe utilisateur
