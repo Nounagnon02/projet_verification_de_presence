@@ -16,12 +16,12 @@
                     </div>
                     
                     <div class="bg-purple-50 p-6 rounded-lg">
-                        <h3 class="text-lg font-semibold mb-3">📱 QR Code</h3>
+                        <h3 class="text-lg font-semibold mb-3">QR Code</h3>
                         <p class="text-sm">Génération et scan de QR codes pour présence mobile</p>
                     </div>
                     
                     <div class="bg-orange-50 p-6 rounded-lg">
-                        <h3 class="text-lg font-semibold mb-3">📊 Statistiques</h3>
+                        <h3 class="text-lg font-semibold mb-3">Statistiques</h3>
                         <p class="text-sm">Analyses détaillées et comparaisons de périodes</p>
                     </div>
                     
@@ -31,7 +31,7 @@
                     </div>
                     
                     <div class="bg-gray-50 p-6 rounded-lg">
-                        <h3 class="text-lg font-semibold mb-3">🔒 RGPD</h3>
+                        <h3 class="text-lg font-semibold mb-3">RGPD</h3>
                         <p class="text-sm">Conformité totale avec la protection des données</p>
                     </div>
                 </div>

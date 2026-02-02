@@ -10,12 +10,12 @@
             <!-- Liens rapides -->
             <div class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 mx-2 md:mx-0">
                 <a href="{{ route('qr.generate') }}" class="bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-lg text-center transition-colors">
-                    <div class="text-2xl mb-2">📱</div>
+                    <div class="text-2xl mb-2">QR</div>
                     <div class="font-semibold">Générer QR Code</div>
                     <div class="text-sm opacity-90">Créer un QR pour la présence</div>
                 </a>
                 <a href="{{ route('comparaison.periodes') }}" class="bg-green-500 hover:bg-green-600 text-white p-4 rounded-lg text-center transition-colors">
-                    <div class="text-2xl mb-2">📊</div>
+                    <div class="text-2xl mb-2">Stats</div>
                     <div class="font-semibold">Comparaisons</div>
                     <div class="text-sm opacity-90">Analyser les tendances</div>
                 </a>

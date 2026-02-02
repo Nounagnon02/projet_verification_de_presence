@@ -43,22 +43,22 @@
                         </x-slot>
                         <x-slot name="content">
                             <x-dropdown-link :href="route('calendar.index')">
-                                📅 Agenda
+                                Agenda
                             </x-dropdown-link>
                             <x-dropdown-link :href="route('heatmap.index')">
-                                🗓️ Heatmap
+                                Heatmap
                             </x-dropdown-link>
                             <x-dropdown-link :href="route('comparaison.periodes')">
-                                📊 Comparaison périodes
+                                Comparaison périodes
                             </x-dropdown-link>
                             <x-dropdown-link :href="route('qr.generate')">
-                                📱 Générer QR Code
+                                Générer QR Code
                             </x-dropdown-link>
                             <x-dropdown-link :href="route('rgpd.index')">
-                                🔒 RGPD
+                                RGPD
                             </x-dropdown-link>
                             <x-dropdown-link :href="route('alerts.index')">
-                                🔔 Alertes & Rappels
+                                Alertes & Rappels
                             </x-dropdown-link>
                         </x-slot>
                     </x-dropdown>
