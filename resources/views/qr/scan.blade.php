@@ -10,7 +10,7 @@
 <body class="bg-gray-50 min-h-screen">
     <div class="min-h-screen flex items-center justify-center py-4 px-3 sm:py-12 sm:px-6 lg:px-8">
         <div class="max-w-sm sm:max-w-md w-full space-y-6 sm:space-y-8">
-            <!-- Header -->
+            <!-- En-tête -->
             <div class="text-center">
                 <div class="mx-auto h-12 w-12 sm:h-16 sm:w-16 bg-blue-500 rounded-full flex items-center justify-center mb-3 sm:mb-4">
                     <svg class="h-6 w-6 sm:h-8 sm:w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -24,13 +24,13 @@
                 <p class="text-sm text-gray-500">{{ $qrCode->event_date->format('d/m/Y') }}</p>
             </div>
 
-            <!-- Form Card -->
+            <!-- Carte de formulaire -->
             <div class="bg-white shadow-sm rounded-lg border border-gray-200">
                 <div class="px-4 py-6 sm:px-6 sm:py-8">
                     <form id="presenceForm" class="space-y-4 sm:space-y-6">
                         @csrf
                         
-                        <!-- Phone Validation -->
+                        <!-- Validation du téléphone -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
                                 Numéro de téléphone *
@@ -41,7 +41,7 @@
                             <p class="text-xs text-gray-500 mt-1">Saisissez votre numéro pour vous identifier</p>
                         </div>
 
-                        <!-- Signature Section -->
+                        <!-- Section signature -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
                                 Signature (optionnel)
@@ -54,7 +54,7 @@
                             </div>
                         </div>
 
-                        <!-- Submit Button -->
+                        <!-- Bouton de soumission -->
                         <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 sm:py-4 px-4 rounded-md transition-colors duration-200 flex items-center justify-center space-x-2 text-sm sm:text-base">
                             <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -63,12 +63,12 @@
                         </button>
                     </form>
 
-                    <!-- Message Area -->
+                    <!-- Zone de message -->
                     <div id="message" class="mt-6 text-center hidden"></div>
                 </div>
             </div>
 
-            <!-- Footer -->
+            <!-- Pied de page -->
             <div class="text-center text-xs text-gray-500">
                 Système de vérification de présence
             </div>
@@ -76,13 +76,13 @@
     </div>
 
     <script>
-        // Signature canvas setup
+        // Configuration du canvas de signature
         const canvas = document.getElementById('signatureCanvas');
         const ctx = canvas.getContext('2d');
         let isDrawing = false;
         let hasSignature = false;
 
-        // Set canvas size properly for responsive design
+        // Définir la taille du canvas correctement pour le design responsive
         function resizeCanvas() {
             const rect = canvas.getBoundingClientRect();
             const ratio = window.devicePixelRatio || 1;
@@ -96,7 +96,7 @@
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
-        // Event listeners for drawing
+        // Écouteurs d'événements pour le dessin
         canvas.addEventListener('mousedown', startDrawing);
         canvas.addEventListener('mousemove', draw);
         canvas.addEventListener('mouseup', stopDrawing);
@@ -151,7 +151,7 @@
             hasSignature = false;
         }
         
-        // Generate device fingerprint
+        // Générer l'empreinte de l'appareil
         function generateDeviceFingerprint() {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
@@ -167,24 +167,24 @@
                 canvas.toDataURL()
             ].join('|');
             
-            // Simple hash function
+            // Fonction de hachage simple
             let hash = 0;
             for (let i = 0; i < fingerprint.length; i++) {
                 const char = fingerprint.charCodeAt(i);
                 hash = ((hash << 5) - hash) + char;
-                hash = hash & hash; // Convert to 32bit integer
+                hash = hash & hash; // Convertir en entier 32 bits
             }
             return Math.abs(hash).toString(36);
         }
 
-        // Form submission with loading state
+        // Soumission du formulaire avec état de chargement
         document.getElementById('presenceForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const submitBtn = e.target.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
             
-            // Show loading state
+            // Afficher l'état de chargement
             submitBtn.disabled = true;
             submitBtn.innerHTML = `
                 <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -198,13 +198,13 @@
             formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
             formData.append('phone', document.querySelector('input[name="phone"]').value);
             
-            // Get signature data if exists
+            // Récupérer les données de signature si elles existent
             if (hasSignature) {
                 const signatureData = canvas.toDataURL();
                 formData.append('signature', signatureData);
             }
             
-            // Generate device fingerprint
+            // Générer l'empreinte de l'appareil
             const deviceFingerprint = generateDeviceFingerprint();
             formData.append('device_fingerprint', deviceFingerprint);
             
@@ -287,7 +287,7 @@
                 .catch(error => {
                     console.warn('Echec envoi, tentative sauvegarde offline', error);
                     // En cas d'échec réseau (pas d'erreur 400/500 explicite du serveur mais échec fetch)
-                    // On sauvegarde en offline
+                    // On sauvegarde en mode hors ligne
                     saveOffline(dataObject);
                 });
             };
@@ -315,7 +315,7 @@
                     },
                     {
                         enableHighAccuracy: true,
-                        timeout: 3000, // Timeout réduit pour pas bloquer
+                        timeout: 3000, // Délai d'attente réduit pour ne pas bloquer
                         maximumAge: 0
                     }
                 );
@@ -327,7 +327,7 @@
         // Gestionnaire de synchronisation
         window.addEventListener('online', syncOfflineScans);
         
-        // Tenter une synchro au chargement si on est online
+        // Tenter une synchronisation au chargement si on est en ligne
         if (navigator.onLine) {
             setTimeout(syncOfflineScans, 1000);
         }
@@ -386,7 +386,7 @@
                     }
                 } catch (e) {
                     console.error('Erreur réseau durant synchro', e);
-                    // On arrête la synchro, on garde tout pour plus tard
+                    // On arrête la synchronisation, on garde tout pour plus tard
                     toast.className = 'fixed bottom-4 right-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
                     toast.textContent = '❌ Erreur connexion. Réessai plus tard.';
                     setTimeout(() => toast.remove(), 3000);
