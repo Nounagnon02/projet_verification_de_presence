@@ -14,7 +14,7 @@
                                 <span class="break-all sm:ml-2 text-blue-600">princekangbode@gmail.com</span>
                             </li>
                             <li class="flex flex-col sm:flex-row sm:items-center">
-                                <span class="font-medium">📱 Téléphone :</span>
+                                <span class="font-medium">Téléphone :</span>
                                 <span class="sm:ml-2">+229 01 90 11 24 77</span>
                             </li>
                             <li class="flex flex-col sm:flex-row sm:items-center">
