@@ -6,11 +6,7 @@
                 <!-- Logo/Brand -->
                 <div class="flex-shrink-0">
                     <a href="{{ route('dashboard') }}" class="flex items-center">
-                        <div class="w-8 h-8 md:w-10 md:h-10 bg-gray-800 rounded-lg flex items-center justify-center mr-2 md:mr-3">
-                            <svg class="w-4 h-4 md:w-5 md:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
+                        <x-application-logo class="w-8 h-8 md:w-10 md:h-10 rounded-lg mr-2 md:mr-3" />
                         <span class="text-lg md:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white hidden sm:block transition-colors duration-300">Présence</span>
                     </a>
                 </div>
