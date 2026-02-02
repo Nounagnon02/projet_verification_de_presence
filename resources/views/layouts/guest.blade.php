@@ -18,11 +18,7 @@
         <div class="min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 md:px-8 py-6 sm:py-12 bg-gray-100">
             <!-- Logo/Brand -->
             <div class="mb-6 sm:mb-8 text-center">
-                <div class="w-16 h-16 sm:w-20 sm:h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-8 h-8 sm:w-10 sm:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
+                <x-application-logo class="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-4" />
                 <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Système de Présence</h1>
             </div>
             
