@@ -20,12 +20,12 @@ self.addEventListener('fetch', event => {
     event.respondWith(
         caches.match(event.request)
             .then(response => {
-                // Cache hit - return response
+                // Cache hit - retourner la réponse
                 if (response) {
                     return response;
                 }
                 return fetch(event.request).catch(() => {
-                    // If offline and request fails, show offline page
+                    // Si hors ligne et la requête échoue, afficher la page hors ligne
                     if (event.request.mode === 'navigate') {
                         return caches.match('/offline');
                     }
