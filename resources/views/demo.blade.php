@@ -16,7 +16,7 @@
         <!-- Capture d'écran Dashboard -->
         <div class="bg-white rounded-lg shadow-lg overflow-hidden">
             <div class="bg-gray-800 p-4">
-                <h3 class="text-white font-semibold">📊 Dashboard Principal</h3>
+                <h3 class="text-white font-semibold">Dashboard Principal</h3>
             </div>
             <div class="p-6">
                 <div class="bg-gray-100 h-48 rounded flex items-center justify-center mb-4">
@@ -37,7 +37,7 @@
         <!-- QR Code Demo -->
         <div class="bg-white rounded-lg shadow-lg overflow-hidden">
             <div class="bg-blue-600 p-4">
-                <h3 class="text-white font-semibold">📱 QR Code</h3>
+                <h3 class="text-white font-semibold">QR Code</h3>
             </div>
             <div class="p-6">
                 <div class="bg-gray-100 h-48 rounded flex items-center justify-center mb-4">
@@ -69,14 +69,14 @@
             </div>
             <div class="text-center">
                 <div class="bg-white p-4 rounded-lg shadow mb-3">
-                    <div class="text-2xl mb-2">📱</div>
+                    <div class="text-2xl mb-2">QR</div>
                     <h3 class="font-semibold">2. Vérification</h3>
                 </div>
                 <p class="text-sm text-gray-600">Scan QR ou saisie manuelle</p>
             </div>
             <div class="text-center">
                 <div class="bg-white p-4 rounded-lg shadow mb-3">
-                    <div class="text-2xl mb-2">📊</div>
+                    <div class="text-2xl mb-2">Stats</div>
                     <h3 class="font-semibold">3. Suivi</h3>
                 </div>
                 <p class="text-sm text-gray-600">Statistiques automatiques</p>
