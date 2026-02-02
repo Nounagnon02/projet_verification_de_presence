@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            🔔 Configuration des Alertes
+            Configuration des Alertes
         </h2>
     </x-slot>
 
@@ -44,7 +44,7 @@
                             <input type="checkbox" name="is_active" {{ $settings->is_active ? 'checked' : '' }} 
                                    class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500">
                             <span class="ml-3 text-lg font-semibold text-gray-900 dark:text-white">
-                                🔔 Activer les alertes et rappels
+                                Activer les alertes et rappels
                             </span>
                         </label>
                     </div>
@@ -136,7 +136,7 @@
                             <label class="flex items-center">
                                 <input type="checkbox" name="sms_enabled" {{ $settings->sms_enabled ? 'checked' : '' }} 
                                        class="rounded border-gray-300 dark:border-gray-600 text-blue-600">
-                                <span class="ml-2 text-gray-700 dark:text-gray-300">📱 SMS</span>
+                                <span class="ml-2 text-gray-700 dark:text-gray-300">SMS</span>
                             </label>
                             <label class="flex items-center opacity-50">
                                 <input type="checkbox" name="email_enabled" disabled
@@ -178,7 +178,7 @@
                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
                     </svg>
                     <div class="text-sm text-blue-700 dark:text-blue-300">
-                        <p class="font-medium">💡 Comment ça marche ?</p>
+                        <p class="font-medium">Comment ça marche ?</p>
                         <p class="mt-1">Les alertes d'absence sont envoyées automatiquement aux membres qui n'ont pas pointé après le délai configuré. Les rappels sont envoyés avant les événements programmés dans l'agenda.</p>
                     </div>
                 </div>

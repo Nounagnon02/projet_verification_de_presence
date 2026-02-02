@@ -28,7 +28,7 @@
         </div>
         <div class="text-center text-gray-600 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-8">
             <p class="text-sm sm:text-base">&copy; {{ date('Y') }} Système de Vérification de Présence. Tous droits réservés.</p>
-            <p class="text-xs mt-2">🔒 Hébergé de manière sécurisée • 🇪🇺 Conforme RGPD • 📊 Données chiffrées</p>
+            <p class="text-xs mt-2">Hébergé de manière sécurisée • Conforme RGPD • Données chiffrées</p>
         </div>
     </div>
 </footer>
