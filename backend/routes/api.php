@@ -15,8 +15,11 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Routes publiques pour les étudiants (Scan)
+// Rate limiting : max 3 requêtes/minute par device/IP (CDC 9.2.4)
 Route::prefix('presence')->group(function () {
-    Route::post('/scan', [PresenceController::class, 'scan'])->name('api.presence.scan');
+    Route::post('/scan', [PresenceController::class, 'scan'])
+        ->middleware('throttle:scan-presence')
+        ->name('api.presence.scan');
 });
 
 // Routes protégées pour l'administration
