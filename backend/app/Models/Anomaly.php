@@ -9,6 +9,7 @@ class Anomaly extends Model
 {
     protected $fillable = [
         'member_id',
+        'etudiant_id',
         'type',
         'description',
         'severity',
@@ -26,5 +27,10 @@ class Anomaly extends Model
     public function member(): BelongsTo
     {
         return $this->belongsTo(Member::class);
+    }
+
+    public function etudiant(): BelongsTo
+    {
+        return $this->belongsTo(Etudiant::class);
     }
 }

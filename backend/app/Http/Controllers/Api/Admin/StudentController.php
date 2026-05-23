@@ -3,99 +3,178 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreStudentRequest;
+use App\Http\Requests\UpdateStudentRequest;
+use App\Http\Resources\EtudiantResource;
+use App\Models\AnneeAcademique;
 use App\Models\Etudiant;
 use App\Models\Filiere;
-use App\Models\AnneeAcademique;
-use App\Mail\StudentRegisteredMail;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class StudentController extends Controller
 {
     /**
-     * Inscription individuelle (US01).
-     * Conforme CDC 7.1.1 & 7.1.3
+     * Liste paginée des étudiants avec filtres.
+     * GET /api/admin/students?per_page=15&search=&filiere_id=&annee_id=
      */
-    public function store(Request $request)
+    public function index(): AnonymousResourceCollection
     {
-        $validator = Validator::make($request->all(), [
-            'nom' => 'required|string|max:100',
-            'prenom' => 'required|string|max:100',
-            'matricule' => 'required|string|unique:etudiants,matricule',
-            'filiere_id' => 'required|exists:filieres,id',
-            'annee_id' => 'required|exists:annees_academiques,id',
-            'email' => 'required|email|unique:etudiants,email',
-        ]);
+        $query = Etudiant::with(['filiere', 'anneeAcademique']);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+        if ($search = request('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nom', 'like', "%{$search}%")
+                  ->orWhere('prenom', 'like', "%{$search}%")
+                  ->orWhere('matricule', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
         }
 
-        $filiere = Filiere::findOrFail($request->filiere_id);
-        $annee = AnneeAcademique::findOrFail($request->annee_id);
+        if ($filiereId = request('filiere_id')) {
+            $query->where('filiere_id', $filiereId);
+        }
 
-        // Logique déterministe CDC 7.1.3
+        if ($anneeId = request('annee_id')) {
+            $query->where('annee_id', $anneeId);
+        }
+
+        $perPage = min((int) request('per_page', 15), 100);
+
+        return EtudiantResource::collection(
+            $query->orderBy('created_at', 'desc')->paginate($perPage)
+        );
+    }
+
+    /**
+     * Détail d'un étudiant.
+     * GET /api/admin/students/{student}
+     */
+    public function show(Etudiant $student): EtudiantResource
+    {
+        $student->load(['filiere', 'anneeAcademique', 'presences.evenement.ec']);
+
+        return new EtudiantResource($student);
+    }
+
+    /**
+     * Inscription individuelle (US01).
+     * Conforme CDC 7.1.1 & 7.1.3.
+     * POST /api/admin/students
+     */
+    public function store(StoreStudentRequest $request): JsonResponse
+    {
+        $filiere = Filiere::findOrFail($request->filiere_id);
+        $annee   = AnneeAcademique::findOrFail($request->annee_id);
+
         $identifiantUnique = $this->generateDeterministicId(
-            $request->nom, 
-            $request->prenom, 
-            $request->matricule, 
-            $filiere->code, 
+            $request->nom,
+            $request->prenom,
+            $request->matricule,
+            $filiere->code,
             $annee->libelle
         );
 
         $etudiant = Etudiant::create([
-            'id' => (string) Str::uuid(),
-            'nom' => mb_strtoupper($this->removeAccents($request->nom)),
-            'prenom' => mb_strtoupper($this->removeAccents($request->prenom)),
-            'matricule' => $request->matricule,
-            'filiere_id' => $request->filiere_id,
-            'annee_id' => $request->annee_id,
-            'email' => $request->email,
+            'id'                => (string) Str::uuid(),
+            'nom'               => mb_strtoupper($this->removeAccents($request->nom)),
+            'prenom'            => mb_strtoupper($this->removeAccents($request->prenom)),
+            'matricule'         => $request->matricule,
+            'filiere_id'        => $request->filiere_id,
+            'annee_id'          => $request->annee_id,
+            'email'             => $request->email,
             'identifiant_unique' => $identifiantUnique,
         ]);
 
-        // Envoi de l'e-mail (CDC 2.2)
-        try {
-            Mail::to($etudiant->email)->send(new StudentRegisteredMail($etudiant));
-        } catch (\Exception $e) {
-            // Log error but don't fail registration
-            \Log::error("Email failed for {$etudiant->email}: " . $e->getMessage());
-        }
+        dispatch(function () use ($etudiant) {
+            try {
+                Mail::to($etudiant->email)->send(new \App\Mail\StudentRegisteredMail($etudiant));
+            } catch (\Exception $e) {
+                \Log::error("Email d'inscription échoué pour {$etudiant->email}: " . $e->getMessage());
+            }
+        });
 
-        return response()->json([
-            'message' => 'Étudiant inscrit avec succès et e-mail envoyé.',
-            'data' => $etudiant
-        ], 201);
+        return $this->createdResponse(
+            new EtudiantResource($etudiant->load(['filiere', 'anneeAcademique'])),
+            'Étudiant inscrit avec succès.'
+        );
     }
 
     /**
-     * Génère l'identifiant selon la logique CDC 7.1.3
+     * Mise à jour d'un étudiant.
+     * PUT/PATCH /api/admin/students/{student}
      */
-    private function generateDeterministicId($nom, $prenom, $matricule, $filiere, $annee)
+    public function update(UpdateStudentRequest $request, Etudiant $student): JsonResponse
     {
-        $nom = $this->sanitize($nom);
-        $prenom = $this->sanitize($prenom);
-        $matricule = $this->sanitize($matricule);
-        $filiere = $this->sanitize($filiere);
-        $annee = $this->sanitize($annee);
+        $data = $request->validated();
 
-        return "{$nom}_{$prenom}_{$matricule}_{$filiere}_{$annee}";
+        if ($request->filled('nom') || $request->filled('prenom')) {
+            $nom     = $request->filled('nom') ? $request->nom : $student->nom;
+            $prenom  = $request->filled('prenom') ? $request->prenom : $student->prenom;
+            $filiere = Filiere::findOrFail($data['filiere_id'] ?? $student->filiere_id);
+            $annee   = AnneeAcademique::findOrFail($data['annee_id'] ?? $student->annee_id);
+
+            $data['identifiant_unique'] = $this->generateDeterministicId(
+                $nom, $prenom,
+                $data['matricule'] ?? $student->matricule,
+                $filiere->code,
+                $annee->libelle
+            );
+        }
+
+        if (isset($data['nom'])) {
+            $data['nom'] = mb_strtoupper($this->removeAccents($data['nom']));
+        }
+        if (isset($data['prenom'])) {
+            $data['prenom'] = mb_strtoupper($this->removeAccents($data['prenom']));
+        }
+
+        $student->update($data);
+
+        return $this->successResponse(
+            new EtudiantResource($student->load(['filiere', 'anneeAcademique'])),
+            'Étudiant mis à jour avec succès.'
+        );
     }
 
-    private function sanitize($string)
+    /**
+     * Suppression d'un étudiant.
+     * DELETE /api/admin/students/{student}
+     */
+    public function destroy(Etudiant $student): JsonResponse
     {
-        $string = $this->removeAccents($string);
-        $string = mb_strtoupper($string);
-        $string = str_replace([' ', '-'], '_', $string);
-        return $string;
+        $student->delete();
+
+        return $this->successResponse(null, 'Étudiant supprimé avec succès.');
     }
 
-    private function removeAccents($string)
+    private function generateDeterministicId(
+        string $nom,
+        string $prenom,
+        string $matricule,
+        string $filiereCode,
+        string $anneeLibelle
+    ): string {
+        return implode('_', [
+            $this->sanitize($nom),
+            $this->sanitize($prenom),
+            $this->sanitize($matricule),
+            $this->sanitize($filiereCode),
+            $this->sanitize($anneeLibelle),
+        ]);
+    }
+
+    private function sanitize(string $value): string
     {
-        return strtr(utf8_decode($string), 
-            utf8_decode('àáâãäçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ'), 
+        return mb_strtoupper(str_replace([' ', '-'], '_', $this->removeAccents($value)));
+    }
+
+    private function removeAccents(string $value): string
+    {
+        return strtr(utf8_decode($value),
+            utf8_decode('àáâãäçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ'),
             'aaaaaceeeeiiiinooooouuuuyyAAAAACEEEEIIIINOOOOOUUUUY');
     }
 }
