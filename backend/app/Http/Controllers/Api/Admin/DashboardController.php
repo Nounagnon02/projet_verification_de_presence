@@ -3,51 +3,91 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Anomaly;
 use App\Models\Etudiant;
 use App\Models\Evenement;
 use App\Models\Presence;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
     /**
-     * Statistiques globales pour le dashboard (US05).
+     * Statistiques clés pour le tableau de bord (US05).
+     * Optimisé avec un minimum de requêtes SQL.
+     *
+     * GET /api/admin/dashboard
      */
-    public function index()
+    public function index(): JsonResponse
     {
-        $totalStudents = Etudiant::count();
-        $presencesToday = Presence::whereDate('heure_scan', today())->count();
-        
-        // Taux de présence moyen (simulé)
-        $avgAttendance = Presence::count() > 0 ? (Presence::count() / (Evenement::where('statut', 'termine')->count() ?: 1)) : 0;
+        $totalEtudiants = Etudiant::count();
+        $coursDuJour    = Evenement::whereDate('date', today())->count();
 
-        // Alertes de fraude (US06)
-        $fraudAlerts = Presence::where('statut', 'suspect')->latest()->take(5)->get();
+        $presencesDuJour = Presence::whereDate('heure_scan', today())
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw("SUM(CASE WHEN statut = 'valide' THEN 1 ELSE 0 END) as valides")
+            ->selectRaw("SUM(CASE WHEN statut = 'suspect' THEN 1 ELSE 0 END) as suspectes")
+            ->first();
 
-        return response()->json([
-            'stats' => [
-                'total_students' => $totalStudents,
-                'presences_today' => $presencesToday,
-                'avg_attendance' => round($avgAttendance, 2),
-            ],
-            'recent_alerts' => $fraudAlerts
+        $evenementsPasses = Evenement::where('date', '<', now())
+            ->where('statut', 'termine')
+            ->count();
+
+        $presencesTotales = Presence::count();
+        $tauxPresenceGlobal = ($evenementsPasses > 0 && $totalEtudiants > 0)
+            ? round(($presencesTotales / ($evenementsPasses * $totalEtudiants)) * 100, 1)
+            : 0;
+
+        $fraudesSuspectees = Anomaly::where('resolved', false)->count();
+
+        $dernieresAnomalies = Anomaly::with('member')
+            ->where('resolved', false)
+            ->latest()
+            ->take(5)
+            ->get();
+
+        $heatmapAujourdhui = Presence::whereDate('heure_scan', today())
+            ->select(DB::raw("EXTRACT(HOUR FROM heure_scan) as heure"), DB::raw('COUNT(*) as total'))
+            ->groupBy('heure')
+            ->orderBy('heure')
+            ->pluck('total', 'heure');
+
+        return $this->successResponse([
+            'total_etudiants'       => $totalEtudiants,
+            'cours_du_jour'         => $coursDuJour,
+            'presences_aujourd_hui' => (int) $presencesDuJour->total,
+            'presences_valides'     => (int) $presencesDuJour->valides,
+            'presences_suspectes'   => (int) $presencesDuJour->suspectes,
+            'taux_presence_global'  => $tauxPresenceGlobal,
+            'fraudes_suspectees'    => $fraudesSuspectees,
+            'dernieres_anomalies'   => $dernieresAnomalies->map(fn ($a) => [
+                'id'          => $a->id,
+                'type'        => $a->type,
+                'severite'    => $a->severity,
+                'description' => $a->description,
+                'creee_le'    => $a->created_at,
+            ]),
+            'heatmap' => $heatmapAujourdhui,
         ]);
     }
 
     /**
-     * Données pour la Heatmap (CDC 4.3).
+     * Données pour la Heatmap hebdomadaire (CDC 4.3).
+     * GET /api/admin/dashboard/heatmap
      */
-    public function heatmap()
+    public function heatmap(): JsonResponse
     {
         $data = Presence::select(
             DB::raw('EXTRACT(HOUR FROM heure_scan) as hour'),
             DB::raw('EXTRACT(DOW FROM heure_scan) as day'),
-            DB::raw('count(*) as count')
+            DB::raw('COUNT(*) as count')
         )
+        ->where('heure_scan', '>=', now()->subDays(30))
         ->groupBy('hour', 'day')
+        ->orderBy('day')
+        ->orderBy('hour')
         ->get();
 
-        return response()->json($data);
+        return $this->successResponse($data);
     }
 }

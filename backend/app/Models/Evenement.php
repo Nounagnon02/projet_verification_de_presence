@@ -23,6 +23,12 @@ class Evenement extends Model
         'statut',
     ];
 
+    protected $casts = [
+        'date'        => 'date',
+        'heure_debut'  => 'string',
+        'heure_fin'   => 'string',
+    ];
+
     public function ec(): BelongsTo
     {
         return $this->belongsTo(Ec::class);

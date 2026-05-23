@@ -10,6 +10,8 @@ class QrCode extends Model
 {
     use HasFactory;
 
+    protected $table = 'qrcodes';
+
     protected $fillable = [
         'evenement_id',
         'token',
