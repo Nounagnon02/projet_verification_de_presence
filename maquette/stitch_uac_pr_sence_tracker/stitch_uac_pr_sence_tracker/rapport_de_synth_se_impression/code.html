@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#006d43",
+                    "on-primary-fixed": "#03174b",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-fixed-variant": "#005232",
+                    "on-secondary-container": "#007147",
+                    "surface-variant": "#e0e3e6",
+                    "surface-bright": "#f7f9fd",
+                    "outline-variant": "#c5c6d1",
+                    "on-tertiary-fixed-variant": "#930014",
+                    "surface-container": "#eceef2",
+                    "on-background": "#191c1f",
+                    "on-primary": "#ffffff",
+                    "surface-dim": "#d8dade",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-low": "#f2f4f8",
+                    "on-primary-container": "#8494cd",
+                    "inverse-on-surface": "#eff1f5",
+                    "tertiary": "#3d0004",
+                    "secondary-fixed-dim": "#59de9b",
+                    "secondary-container": "#75f8b3",
+                    "on-surface": "#191c1f",
+                    "error": "#ba1a1a",
+                    "on-tertiary-container": "#ff5f5c",
+                    "surface": "#f7f9fd",
+                    "error-container": "#ffdad6",
+                    "primary-fixed-dim": "#b5c4ff",
+                    "on-secondary-fixed": "#002111",
+                    "background": "#f7f9fd",
+                    "on-primary-fixed-variant": "#344478",
+                    "outline": "#757680",
+                    "on-error-container": "#93000a",
+                    "primary": "#011549",
+                    "on-surface-variant": "#45464f",
+                    "primary-fixed": "#dce1ff",
+                    "on-tertiary": "#ffffff",
+                    "on-error": "#ffffff",
+                    "primary-container": "#1a2b5e",
+                    "inverse-surface": "#2d3134",
+                    "surface-container-highest": "#e0e3e6",
+                    "surface-container-high": "#e6e8ec",
+                    "secondary-fixed": "#78fbb6",
+                    "tertiary-container": "#64000a",
+                    "tertiary-fixed": "#ffdad7",
+                    "on-tertiary-fixed": "#410004",
+                    "tertiary-fixed-dim": "#ffb3ae",
+                    "surface-tint": "#4c5c92",
+                    "inverse-primary": "#b5c4ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Sora", "sans-serif"],
+                    "body": ["Inter", "sans-serif"],
+                    "label": ["Inter", "sans-serif"],
+                    "mono": ["JetBrains Mono", "monospace"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        @media print {
+            .no-print { display: none !important; }
+            body { background-color: white !important; }
+            .print-canvas { box-shadow: none !important; margin: 0 !important; width: 100% !important; }
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .page-break-after { page-break-after: always; }
+        .tonal-layering { background-color: #f7f9fd; }
+        .no-line { border: none !important; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary-fixed selection:text-on-primary-fixed antialiased">
+<!-- Top Navigation (Shell suppressed for Print focus, but keeping for UI context) -->
+<header class="no-print w-full sticky top-0 z-40 bg-white shadow-sm flex justify-between items-center px-8 h-16">
+<div class="font-headline font-bold text-xl tracking-tight text-primary">Academic Editorial</div>
+<nav class="flex space-x-8">
+<a class="font-body text-sm font-medium text-slate-500 hover:text-primary transition-colors" href="#">Attendance</a>
+<a class="font-body text-sm font-bold text-primary border-b-2 border-primary" href="#">Monthly Reports</a>
+</nav>
+<div class="flex items-center space-x-6">
+<div class="bg-surface-container-high px-4 py-1.5 rounded-full flex items-center space-x-2">
+<span class="material-symbols-outlined text-outline text-sm">search</span>
+<span class="text-slate-500 text-xs">Search reports...</span>
+</div>
+<span class="material-symbols-outlined text-primary cursor-pointer">notifications</span>
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center">
+<span class="text-xs font-bold text-white">AD</span>
+</div>
+</div>
+</header>
+<div class="flex min-h-screen">
+<!-- Sidebar Navigation -->
+<aside class="no-print h-screen w-64 fixed left-0 top-0 bg-slate-50 flex flex-col p-6 space-y-2 font-body text-sm font-medium tracking-wide">
+<div class="mb-10 mt-16">
+<div class="flex items-center space-x-3">
+<div class="w-10 h-10 bg-primary flex items-center justify-center rounded-lg">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+</div>
+<div>
+<h2 class="font-headline font-bold text-primary leading-tight">Faculty Portal</h2>
+<p class="text-[10px] text-slate-500 uppercase tracking-widest">Academic Reporting</p>
+</div>
+</div>
+</div>
+<nav class="flex-grow space-y-1">
+<a class="flex items-center space-x-3 p-3 text-slate-600 hover:bg-slate-100 rounded-lg transition-all scale-95 active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center space-x-3 p-3 text-slate-600 hover:bg-slate-100 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">group</span>
+<span>Students</span>
+</a>
+<a class="flex items-center space-x-3 p-3 text-slate-600 hover:bg-slate-100 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">book</span>
+<span>Courses</span>
+</a>
+<a class="flex items-center space-x-3 p-3 text-emerald-700 font-semibold bg-white rounded-lg shadow-sm" href="#">
+<span class="material-symbols-outlined">assessment</span>
+<span>Reports</span>
+</a>
+<a class="flex items-center space-x-3 p-3 text-slate-600 hover:bg-slate-100 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">calendar_today</span>
+<span>Schedules</span>
+</a>
+</nav>
+<div class="pt-6 border-t border-slate-200">
+<button class="w-full bg-gradient-to-br from-primary to-primary-container text-white py-3 rounded-lg font-semibold flex items-center justify-center space-x-2 shadow-md" onclick="window.print()">
+<span class="material-symbols-outlined text-sm">print</span>
+<span>Imprimer le Rapport</span>
+</button>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-grow ml-0 md:ml-64 bg-surface p-8 md:p-12">
+<!-- Report Container (The "A4" Document Look) -->
+<div class="print-canvas max-w-[850px] mx-auto bg-surface-container-lowest p-12 md:p-16 shadow-2xl rounded-none border-t-[12px] border-primary">
+<!-- Institutional Header -->
+<div class="flex justify-between items-start mb-16 border-b border-outline-variant pb-8">
+<div class="flex flex-col space-y-4">
+<div class="w-20 h-20 bg-primary-fixed p-3 rounded-xl">
+<img alt="UAC Logo" class="w-full h-full object-contain" data-alt="Official university crest logo with traditional academic symbols in gold and navy on a clean white background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnn_Fe6QNdHv-u6sBTriL4O2YONIzn25to9Q4V9P31tTztGFwxklXlkqQ_CiS13_bbe9O8iZz7f7ZjWB6klJItrOdWCla0qeyK3nFrntVAcoJPgKiaCYls-nwbQymQIJkwIxaYgG54PKSlPhLSpSElYEPXeWkZweJ8Q5Az28dUrX9q9DX0y7CceSFq1qI_v51hwCrt37T48aJ19efLW1RKwhS61ZerGsjym1WDWqzLHSIdR7a-5B7DEabM_LNPB8mmmGZz9-1ZrQ"/>
+</div>
+<div>
+<h1 class="font-headline font-extrabold text-2xl text-primary tracking-tight">UNIVERSITÉ D'ABOMEY-CALAVI</h1>
+<p class="font-mono text-xs text-on-surface-variant font-medium uppercase tracking-widest mt-1">FACULTÉ DES SCIENCES HUMAINES ET SOCIALES</p>
+</div>
+</div>
+<div class="text-right">
+<div class="inline-block px-4 py-2 bg-primary-container text-white font-headline font-bold text-xs tracking-tighter mb-4 rounded-md">
+                            RAPPORT OFFICIEL D'ASSIDUITÉ
+                        </div>
+<p class="font-mono text-[10px] text-slate-500">Réf: UAC/FSHS/2024/REP-082</p>
+</div>
+</div>
+<!-- Metadata Section -->
+<div class="grid grid-cols-2 gap-x-12 gap-y-6 mb-12">
+<div class="bg-surface-container-low p-6 rounded-lg">
+<label class="font-mono text-[10px] text-primary font-bold uppercase tracking-widest block mb-2">Période du Rapport</label>
+<p class="font-headline font-bold text-lg text-on-surface">Octobre 2023 - Novembre 2023</p>
+<p class="text-xs text-slate-500 mt-1 italic">Semestre 1 • Année Académique 2023-2024</p>
+</div>
+<div class="bg-surface-container-low p-6 rounded-lg">
+<label class="font-mono text-[10px] text-primary font-bold uppercase tracking-widest block mb-2">Département</label>
+<p class="font-headline font-bold text-lg text-on-surface">Département de Géographie</p>
+<p class="text-xs text-slate-500 mt-1">Niveau : Licence 3 • Option : Aménagement</p>
+</div>
+<div class="px-6">
+<label class="font-mono text-[10px] text-slate-500 font-bold uppercase tracking-widest block mb-1">Date de Génération</label>
+<p class="font-body text-sm text-on-surface">24 Novembre 2023, 14:30</p>
+</div>
+<div class="px-6">
+<label class="font-mono text-[10px] text-slate-500 font-bold uppercase tracking-widest block mb-1">Agent Responsable</label>
+<p class="font-body text-sm text-on-surface">Dr. Aimé DOSSOU-YOVO</p>
+</div>
+</div>
+<!-- Statistics Overview - Bento Grid Style -->
+<section class="mb-12">
+<h3 class="font-headline font-bold text-primary mb-6 flex items-center space-x-2">
+<span class="material-symbols-outlined text-lg">analytics</span>
+<span>Synthèse des Statistiques</span>
+</h3>
+<div class="grid grid-cols-3 gap-6">
+<div class="p-5 bg-white border border-outline-variant/30 rounded-xl shadow-sm">
+<p class="text-xs text-slate-500 font-medium mb-1">Taux de Présence Global</p>
+<p class="font-headline font-extrabold text-3xl text-secondary">92.4%</p>
+<div class="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-secondary h-full" style="width: 92.4%"></div>
+</div>
+</div>
+<div class="p-5 bg-white border border-outline-variant/30 rounded-xl shadow-sm">
+<p class="text-xs text-slate-500 font-medium mb-1">Total Absences Justifiées</p>
+<p class="font-headline font-extrabold text-3xl text-primary">14</p>
+<div class="flex items-center space-x-1 mt-2 text-[10px] text-secondary font-bold">
+<span class="material-symbols-outlined text-[12px]">verified</span>
+<span>Régularisées</span>
+</div>
+</div>
+<div class="p-5 bg-white border border-outline-variant/30 rounded-xl shadow-sm">
+<p class="text-xs text-slate-500 font-medium mb-1">Absences Non-Justifiées</p>
+<p class="font-headline font-extrabold text-3xl text-error">03</p>
+<div class="flex items-center space-x-1 mt-2 text-[10px] text-error font-bold">
+<span class="material-symbols-outlined text-[12px]">warning</span>
+<span>Avertissements émis</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Detailed Data Table -->
+<section class="mb-16">
+<h3 class="font-headline font-bold text-primary mb-6 flex items-center space-x-2">
+<span class="material-symbols-outlined text-lg">list_alt</span>
+<span>Assiduité par Cours</span>
+</h3>
+<div class="overflow-hidden bg-white border border-outline-variant/20 rounded-xl shadow-sm">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 border-b border-outline-variant/30">
+<th class="px-6 py-4 font-mono text-[10px] text-slate-500 uppercase tracking-widest font-bold">Code UE</th>
+<th class="px-6 py-4 font-mono text-[10px] text-slate-500 uppercase tracking-widest font-bold">Intitulé de l'Unité</th>
+<th class="px-6 py-4 font-mono text-[10px] text-slate-500 uppercase tracking-widest font-bold text-center">Sessions</th>
+<th class="px-6 py-4 font-mono text-[10px] text-slate-500 uppercase tracking-widest font-bold text-right">Taux</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+<tr class="hover:bg-slate-50/50 transition-colors">
+<td class="px-6 py-4 font-mono text-xs font-bold text-primary">GEOG3102</td>
+<td class="px-6 py-4 text-sm font-medium">Cartographie Thématique Avancée</td>
+<td class="px-6 py-4 text-sm text-center text-slate-500">12</td>
+<td class="px-6 py-4 text-sm text-right font-bold text-secondary">98%</td>
+</tr>
+<tr class="hover:bg-slate-50/50 transition-colors">
+<td class="px-6 py-4 font-mono text-xs font-bold text-primary">GEOG3105</td>
+<td class="px-6 py-4 text-sm font-medium">Géomorphologie Dynamique</td>
+<td class="px-6 py-4 text-sm text-center text-slate-500">10</td>
+<td class="px-6 py-4 text-sm text-right font-bold text-secondary">89%</td>
+</tr>
+<tr class="hover:bg-slate-50/50 transition-colors">
+<td class="px-6 py-4 font-mono text-xs font-bold text-primary">GEOG3110</td>
+<td class="px-6 py-4 text-sm font-medium">Environnement et Développement</td>
+<td class="px-6 py-4 text-sm text-center text-slate-500">08</td>
+<td class="px-6 py-4 text-sm text-right font-bold text-secondary">94%</td>
+</tr>
+<tr class="hover:bg-slate-50/50 transition-colors">
+<td class="px-6 py-4 font-mono text-xs font-bold text-primary">GEOG3114</td>
+<td class="px-6 py-4 text-sm font-medium">Anglais Technique pour Géographes</td>
+<td class="px-6 py-4 text-sm text-center text-slate-500">06</td>
+<td class="px-6 py-4 text-sm text-right font-bold text-error">78%</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="mt-4 flex items-start space-x-3 text-slate-400 p-4 bg-surface-container-low rounded-lg">
+<span class="material-symbols-outlined text-sm mt-0.5">info</span>
+<p class="text-[11px] leading-relaxed italic">Ce rapport compile les données d'émargement biométrique et manuel validées par les chefs de département. Toute contestation doit être signalée au secrétariat administratif sous 72 heures.</p>
+</div>
+</section>
+<!-- Signature Section -->
+<div class="mt-24 pt-12 grid grid-cols-2 gap-x-24 border-t border-slate-100">
+<div class="text-center">
+<p class="font-headline font-bold text-sm text-primary mb-20">Le Chef de Département</p>
+<div class="mx-auto w-32 border-b border-slate-300 mb-2"></div>
+<p class="font-body text-xs text-slate-500">Signature &amp; Cachet</p>
+</div>
+<div class="text-center">
+<p class="font-headline font-bold text-sm text-primary mb-20">Le Doyen de la Faculté</p>
+<div class="mx-auto w-32 border-b border-slate-300 mb-2"></div>
+<p class="font-body text-xs text-slate-500">Signature &amp; Cachet</p>
+</div>
+</div>
+<!-- Footer (Official) -->
+<div class="mt-20 pt-8 border-t border-outline-variant/30 flex justify-between items-end">
+<div class="flex items-center space-x-2 opacity-50">
+<div class="w-2 h-2 bg-primary rounded-full"></div>
+<span class="font-mono text-[9px] uppercase tracking-widest text-slate-500">Document Authentifié Digitalement</span>
+</div>
+<p class="font-mono text-[10px] text-slate-300 uppercase tracking-tighter italic">Propriété de l'Université d'Abomey-Calavi - Reproduction Interdite</p>
+</div>
+</div>
+<!-- Print Prompt (Floating Control for Web View) -->
+<div class="no-print fixed bottom-8 right-8 flex items-center space-x-4">
+<button class="group flex items-center space-x-3 bg-white text-primary px-6 py-3 rounded-full shadow-lg border border-primary/10 hover:shadow-xl transition-all" onclick="window.print()">
+<span class="material-symbols-outlined font-variation-settings-'FILL'-1">print</span>
+<span class="font-semibold text-sm">Lancer l'impression</span>
+</button>
+</div>
+</main>
+</div>
+</body></html>

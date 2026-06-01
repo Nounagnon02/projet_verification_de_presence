@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Support Academic Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Sora:wght@700;800&amp;family=JetBrains+Mono&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed-dim": "#b5c4ff",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#d8dade",
+                        "surface-container": "#eceef2",
+                        "primary-container": "#1a2b5e",
+                        "on-tertiary-container": "#ff5f5c",
+                        "on-secondary-fixed-variant": "#005232",
+                        "tertiary-fixed-dim": "#ffb3ae",
+                        "on-primary-fixed": "#03174b",
+                        "on-surface-variant": "#45464f",
+                        "background": "#f7f9fd",
+                        "secondary-container": "#75f8b3",
+                        "on-primary-container": "#8494cd",
+                        "tertiary-fixed": "#ffdad7",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed": "#410004",
+                        "on-primary-fixed-variant": "#344478",
+                        "secondary": "#006d43",
+                        "surface-tint": "#4c5c92",
+                        "outline": "#757680",
+                        "inverse-surface": "#2d3134",
+                        "error": "#ba1a1a",
+                        "on-error-container": "#93000a",
+                        "on-surface": "#191c1f",
+                        "on-secondary-fixed": "#002111",
+                        "primary-fixed": "#dce1ff",
+                        "primary": "#011549",
+                        "tertiary-container": "#64000a",
+                        "surface-container-highest": "#e0e3e6",
+                        "tertiary": "#3d0004",
+                        "surface-bright": "#f7f9fd",
+                        "on-secondary": "#ffffff",
+                        "inverse-primary": "#b5c4ff",
+                        "on-secondary-container": "#007147",
+                        "inverse-on-surface": "#eff1f5",
+                        "secondary-fixed": "#78fbb6",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-variant": "#e0e3e6",
+                        "on-background": "#191c1f",
+                        "surface": "#f7f9fd",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-low": "#f2f4f8",
+                        "surface-container-high": "#e6e8ec",
+                        "secondary-fixed-dim": "#59de9b",
+                        "outline-variant": "#c5c6d1",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed-variant": "#930014"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Sora", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"],
+                        "technical": ["JetBrains Mono", "monospace"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fd;
+            color: #191c1f;
+        }
+    </style>
+</head>
+<body class="flex min-h-screen">
+<!-- SideNavBar (Shared Component) -->
+<aside class="flex flex-col h-screen w-72 bg-slate-100 dark:bg-slate-800/50 py-6 px-4 sticky top-0 hidden md:flex shrink-0">
+<div class="flex items-center gap-3 mb-10 px-2">
+<div class="h-10 w-10 bg-primary-container rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+</div>
+<div>
+<h1 class="font-['Sora'] font-bold text-lg text-blue-900 dark:text-blue-100 leading-tight">Help Center</h1>
+<p class="text-xs text-slate-600 dark:text-slate-400 font-medium">Academic Editorial Support</p>
+</div>
+</div>
+<nav class="flex-1 space-y-2">
+<!-- Active Tab: Knowledge Base (Home intent) -->
+<a class="flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-900 text-blue-900 dark:text-blue-100 rounded-lg shadow-sm font-bold scale-95 transition-transform active:scale-90" href="#">
+<span class="material-symbols-outlined">library_books</span>
+<span class="font-['Inter'] text-sm">Knowledge Base</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-all scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined">quiz</span>
+<span class="font-['Inter'] text-sm">FAQ</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-all scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-['Inter'] text-sm">Tutorials</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-all scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined">confirmation_number</span>
+<span class="font-['Inter'] text-sm">My Tickets</span>
+</a>
+</nav>
+<div class="mt-auto pt-6 space-y-2">
+<button class="w-full py-3 px-4 bg-primary text-white rounded-xl font-bold text-sm mb-6 hover:opacity-90 transition-opacity">
+                Contact Support
+            </button>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-['Inter'] text-sm">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">rate_review</span>
+<span class="font-['Inter'] text-sm">Feedback</span>
+</a>
+<div class="flex items-center gap-3 px-2 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="Professional headshot of a friendly support representative in a modern office setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcUKtRwoDBz0ocd62kc7cRuyh3K4Yn2G3q8ans7f9D8HvE4j4fiRI7nvzCcdQ25t_zFnBme1D3Bfh_0wEjOaD13W0JXIAXg1UfxTNMEPXKXxHOaeokP5PH4qNB8Hrgb8PmRsaaLCBgF2QVwadHQBpDoF3eKsaFOvt-pVJqyywJkCHDbm1cs29Wwvo1ltCwmolfX78ORaZoBawDSdDLVEoZPbhG17eDKvjnoVb3oggQ5Gp548AJ8YN3vorwEjp3pg8vs6XFJ4hh7g"/>
+<div class="overflow-hidden">
+<p class="text-xs font-bold text-blue-900 truncate">Support Representative</p>
+<p class="text-[10px] text-slate-500">ID: REP-8832</p>
+</div>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col min-w-0">
+<!-- TopNavBar (Shared Component) -->
+<header class="flex items-center justify-between px-8 w-full sticky top-0 z-50 bg-slate-50 dark:bg-slate-900 h-16">
+<div class="flex items-center gap-6">
+<span class="font-['Sora'] font-bold text-xl tracking-tight text-slate-900 dark:text-slate-50">Academic Portal Support</span>
+<div class="hidden lg:flex items-center gap-6 font-['Inter'] font-normal text-sm ml-4">
+<a class="text-slate-900 dark:text-slate-50 font-semibold border-b-2 border-slate-900 dark:border-slate-50 py-5" href="#">Overview</a>
+<a class="text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors px-2 py-1 rounded" href="#">Solutions</a>
+<a class="text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors px-2 py-1 rounded" href="#">Resources</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-900 dark:text-slate-100 cursor-pointer active:opacity-80 rounded-full hover:bg-slate-200/50 transition-colors">
+<span class="material-symbols-outlined">help</span>
+</button>
+<button class="p-2 text-slate-900 dark:text-slate-100 cursor-pointer active:opacity-80 rounded-full hover:bg-slate-200/50 transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="p-2 text-slate-900 dark:text-slate-100 cursor-pointer active:opacity-80 rounded-full hover:bg-slate-200/50 transition-colors">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Main Content -->
+<div class="flex-1 px-8 py-10 max-w-7xl mx-auto w-full">
+<!-- Hero Search Section -->
+<section class="mb-16 text-center">
+<h2 class="font-headline text-4xl font-extrabold text-primary mb-6 tracking-tight">Comment pouvons-nous vous aider ?</h2>
+<div class="relative max-w-2xl mx-auto group">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">search</span>
+</div>
+<input class="block w-full pl-12 pr-4 py-4 bg-surface-container-lowest text-on-surface rounded-xl border-none shadow-sm focus:ring-2 focus:ring-primary ring-1 ring-outline-variant/15 transition-all text-lg placeholder:text-outline/60" placeholder="Rechercher un guide, un ticket ou une fonctionnalité..." type="text"/>
+<div class="absolute inset-y-0 right-2 flex items-center p-2">
+<span class="font-technical text-[10px] text-outline bg-surface-container-high px-2 py-1 rounded-md">CMD + K</span>
+</div>
+</div>
+</section>
+<!-- Knowledge Base Bento Grid -->
+<section class="mb-20">
+<div class="flex items-end justify-between mb-8">
+<div>
+<h3 class="font-headline text-2xl font-bold text-on-surface">Base de connaissances</h3>
+<p class="text-on-surface-variant mt-1">Explorez nos ressources documentaires détaillées.</p>
+</div>
+<a class="text-primary font-semibold flex items-center gap-1 hover:underline" href="#">Voir tout <span class="material-symbols-outlined text-sm">arrow_forward</span></a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+<!-- Large Feature Card -->
+<div class="md:col-span-7 bg-surface-container-lowest rounded-xl p-8 group hover:shadow-lg transition-all flex flex-col justify-between border-b-2 border-transparent hover:border-primary-container">
+<div>
+<div class="w-12 h-12 bg-primary-container/10 text-primary rounded-lg flex items-center justify-center mb-6">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">rocket_launch</span>
+</div>
+<h4 class="font-headline text-xl font-bold mb-3">Prise en main</h4>
+<p class="text-on-surface-variant leading-relaxed">Découvrez les fondamentaux de la plateforme UAC Presence. Configurez votre espace de travail et invitez vos premiers collaborateurs en quelques minutes.</p>
+</div>
+<div class="mt-8 flex gap-4">
+<span class="px-3 py-1 bg-surface-container-high text-xs font-medium rounded-full text-on-surface-variant">6 Articles</span>
+<span class="px-3 py-1 bg-secondary-container/20 text-xs font-medium rounded-full text-on-secondary-container">Guide Complet</span>
+</div>
+</div>
+<!-- Side Grid Card 1 -->
+<div class="md:col-span-5 bg-surface-container-lowest rounded-xl p-8 hover:shadow-lg transition-all border-b-2 border-transparent hover:border-secondary">
+<div class="w-12 h-12 bg-secondary-container/20 text-on-secondary-container rounded-lg flex items-center justify-center mb-6">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">group</span>
+</div>
+<h4 class="font-headline text-xl font-bold mb-3">Gestion des Étudiants</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6">Inscriptions, suivi de présence, dossiers académiques et archivage conforme aux normes institutionnelles.</p>
+<a class="text-secondary font-bold text-sm flex items-center gap-1 group" href="#">Gérer les accès <span class="material-symbols-outlined text-xs transition-transform group-hover:translate-x-1">chevron_right</span></a>
+</div>
+<!-- Side Grid Card 2 -->
+<div class="md:col-span-5 bg-surface-container-lowest rounded-xl p-8 hover:shadow-lg transition-all border-b-2 border-transparent hover:border-primary">
+<div class="w-12 h-12 bg-primary-container/10 text-primary rounded-lg flex items-center justify-center mb-6">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<h4 class="font-headline text-xl font-bold mb-3">Imports IA</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6">Automatisez la saisie de données grâce à nos outils de reconnaissance intelligente de documents et imports massifs.</p>
+<a class="text-primary font-bold text-sm flex items-center gap-1 group" href="#">Optimiser les flux <span class="material-symbols-outlined text-xs transition-transform group-hover:translate-x-1">chevron_right</span></a>
+</div>
+<!-- Side Grid Card 3 -->
+<div class="md:col-span-7 bg-primary-container text-white rounded-xl p-8 flex items-center justify-between overflow-hidden relative">
+<div class="z-10 relative">
+<h4 class="font-headline text-xl font-bold mb-3">Rapports &amp; Stats</h4>
+<p class="text-on-primary-container text-sm leading-relaxed max-w-sm mb-6">Générez des rapports décisionnels précis sur la performance académique et l'engagement des étudiants.</p>
+<button class="bg-white text-primary px-6 py-2 rounded-lg font-bold text-sm hover:bg-opacity-90">Accéder aux Dashboards</button>
+</div>
+<div class="absolute right-[-20px] bottom-[-20px] opacity-10 scale-150">
+<span class="material-symbols-outlined text-[160px]">analytics</span>
+</div>
+</div>
+</div>
+</section>
+<!-- FAQ & Support Action Row -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+<!-- FAQ Section -->
+<div class="lg:col-span-2">
+<h3 class="font-headline text-2xl font-bold text-on-surface mb-8">Questions fréquentes</h3>
+<div class="space-y-4">
+<div class="bg-surface-container-lowest p-5 rounded-xl flex items-center justify-between group cursor-pointer hover:bg-surface-container-low transition-colors">
+<div class="flex items-center gap-4">
+<span class="font-technical text-sm text-outline">01.</span>
+<span class="font-medium text-on-surface">Comment réinitialiser le mot de passe d'un étudiant ?</span>
+</div>
+<span class="material-symbols-outlined text-outline transition-transform group-hover:rotate-90">chevron_right</span>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-xl flex items-center justify-between group cursor-pointer hover:bg-surface-container-low transition-colors">
+<div class="flex items-center gap-4">
+<span class="font-technical text-sm text-outline">02.</span>
+<span class="font-medium text-on-surface">Puis-je exporter les rapports en format CSV ou Excel ?</span>
+</div>
+<span class="material-symbols-outlined text-outline transition-transform group-hover:rotate-90">chevron_right</span>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-xl flex items-center justify-between group cursor-pointer hover:bg-surface-container-low transition-colors">
+<div class="flex items-center gap-4">
+<span class="font-technical text-sm text-outline">03.</span>
+<span class="font-medium text-on-surface">Quelle est la limite de stockage pour les documents joints ?</span>
+</div>
+<span class="material-symbols-outlined text-outline transition-transform group-hover:rotate-90">chevron_right</span>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-xl flex items-center justify-between group cursor-pointer hover:bg-surface-container-low transition-colors">
+<div class="flex items-center gap-4">
+<span class="font-technical text-sm text-outline">04.</span>
+<span class="font-medium text-on-surface">Comment intégrer les calendriers externes via API ?</span>
+</div>
+<span class="material-symbols-outlined text-outline transition-transform group-hover:rotate-90">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Contact Support Section -->
+<div class="space-y-6">
+<h3 class="font-headline text-2xl font-bold text-on-surface mb-8">Besoin d'aide ?</h3>
+<div class="bg-white rounded-2xl p-8 shadow-sm border border-outline-variant/10">
+<div class="text-center mb-8">
+<div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-secondary-container/20 text-secondary mb-4">
+<span class="material-symbols-outlined text-3xl">headset_mic</span>
+</div>
+<h4 class="font-headline text-lg font-bold">Support 24/7</h4>
+<p class="text-sm text-on-surface-variant mt-2">Notre équipe est disponible pour résoudre vos problématiques critiques.</p>
+</div>
+<div class="space-y-3">
+<button class="w-full py-4 bg-primary text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-lg">confirmation_number</span>
+                                Ouvrir un ticket
+                            </button>
+<button class="w-full py-4 bg-surface-container-high text-on-surface rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">chat_bubble</span>
+                                Chat en direct
+                            </button>
+</div>
+<p class="text-[10px] text-center text-outline uppercase tracking-widest mt-6 font-bold">Délai moyen : 12 minutes</p>
+</div>
+<!-- Maintenance Status Card -->
+<div class="bg-secondary-container/10 p-4 rounded-xl flex items-center gap-4">
+<span class="flex h-3 w-3 relative">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-secondary"></span>
+</span>
+<div>
+<p class="text-xs font-bold text-on-secondary-container">Systèmes opérationnels</p>
+<p class="text-[10px] text-secondary">Tous les services fonctionnent normalement.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<footer class="mt-auto px-8 py-10 bg-surface-container-low text-center">
+<div class="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+<p class="text-sm text-outline">© 2024 Academic Portal Support. All rights reserved.</p>
+<div class="flex items-center gap-8 text-sm font-medium text-on-surface-variant">
+<a class="hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="hover:text-primary transition-colors" href="#">Service Status</a>
+<a class="hover:text-primary transition-colors" href="#">Documentation</a>
+</div>
+</div>
+</footer>
+</main>
+<!-- Mobile Bottom NavBar (Shared Logic) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-50 flex items-center justify-around px-4">
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">library_books</span>
+<span class="text-[10px] font-bold">Base</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-outline hover:text-primary transition-colors">
+<span class="material-symbols-outlined">quiz</span>
+<span class="text-[10px]">FAQ</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-outline hover:text-primary transition-colors">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="text-[10px]">Tutos</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-outline hover:text-primary transition-colors">
+<span class="material-symbols-outlined">confirmation_number</span>
+<span class="text-[10px]">Tickets</span>
+</button>
+</nav>
+</body></html>

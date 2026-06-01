@@ -12,6 +12,12 @@ class AnneeAcademique extends Model
     protected $table = 'annees_academiques';
     protected $fillable = ['libelle', 'date_debut', 'date_fin', 'active'];
 
+    protected $casts = [
+        'date_debut' => 'datetime',
+        'date_fin'   => 'datetime',
+        'active'     => 'boolean',
+    ];
+
     public function etudiants(): HasMany { return $this->hasMany(Etudiant::class, 'annee_id'); }
     public function evenements(): HasMany { return $this->hasMany(Evenement::class, 'annee_id'); }
 }

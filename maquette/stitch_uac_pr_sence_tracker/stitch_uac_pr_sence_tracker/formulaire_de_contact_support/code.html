@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Contact Support | Academic Support Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-variant": "#e0e3e6",
+                      "on-tertiary": "#ffffff",
+                      "secondary-fixed": "#78fbb6",
+                      "background": "#f7f9fd",
+                      "inverse-surface": "#2d3134",
+                      "surface-dim": "#d8dade",
+                      "on-secondary-container": "#007147",
+                      "outline-variant": "#c5c6d1",
+                      "on-primary-fixed": "#03174b",
+                      "on-secondary-fixed-variant": "#005232",
+                      "primary": "#011549",
+                      "tertiary-fixed-dim": "#ffb3ae",
+                      "surface-bright": "#f7f9fd",
+                      "on-tertiary-container": "#ff5f5c",
+                      "inverse-primary": "#b5c4ff",
+                      "tertiary-fixed": "#ffdad7",
+                      "surface-container": "#eceef2",
+                      "on-tertiary-fixed": "#410004",
+                      "surface": "#f7f9fd",
+                      "primary-container": "#1a2b5e",
+                      "on-error-container": "#93000a",
+                      "tertiary-container": "#64000a",
+                      "on-primary-container": "#8494cd",
+                      "on-background": "#191c1f",
+                      "outline": "#757680",
+                      "error": "#ba1a1a",
+                      "surface-container-lowest": "#ffffff",
+                      "secondary-fixed-dim": "#59de9b",
+                      "surface-container-highest": "#e0e3e6",
+                      "primary-fixed": "#dce1ff",
+                      "secondary": "#006d43",
+                      "on-surface": "#191c1f",
+                      "surface-container-high": "#e6e8ec",
+                      "primary-fixed-dim": "#b5c4ff",
+                      "on-primary-fixed-variant": "#344478",
+                      "on-error": "#ffffff",
+                      "on-secondary": "#ffffff",
+                      "error-container": "#ffdad6",
+                      "inverse-on-surface": "#eff1f5",
+                      "secondary-container": "#75f8b3",
+                      "on-tertiary-fixed-variant": "#930014",
+                      "on-surface-variant": "#45464f",
+                      "on-secondary-fixed": "#002111",
+                      "surface-tint": "#4c5c92",
+                      "tertiary": "#3d0004",
+                      "surface-container-low": "#f2f4f8",
+                      "on-primary": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "fontFamily": {
+                      "headline": ["Sora", "sans-serif"],
+                      "body": ["Inter", "sans-serif"],
+                      "label": ["Inter", "sans-serif"],
+                      "mono": ["JetBrains Mono", "monospace"]
+              }
+            },
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .bg-gradient-institutional {
+            background: linear-gradient(135deg, #011549 0%, #1a2b5e 100%);
+        }
+        .surface-glass {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface min-h-screen">
+<!-- SideNavBar (Authority: JSON) -->
+<aside class="h-screen w-72 flex flex-col fixed left-0 top-0 bg-slate-50 dark:bg-slate-950 p-6 gap-4 z-40 hidden md:flex">
+<div class="mb-8">
+<h1 class="text-lg font-bold text-blue-950 dark:text-white font-headline">The Digital Chancellor</h1>
+<p class="text-xs text-slate-500 font-medium tracking-wide">Institutional Support</p>
+</div>
+<nav class="flex flex-col gap-2 flex-grow">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all duration-150 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all duration-150 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="text-sm font-medium">Knowledge Base</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all duration-150 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="confirmation_number">confirmation_number</span>
+<span class="text-sm font-medium">Tickets</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all duration-150 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="forum">forum</span>
+<span class="text-sm font-medium">Support Chat</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-800 text-blue-900 dark:text-blue-100 rounded-lg font-bold scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="mail">mail</span>
+<span class="text-sm">Contact Form</span>
+</a>
+</nav>
+<div class="mt-auto pt-6 flex flex-col gap-2">
+<button class="bg-gradient-institutional text-white rounded-xl py-3 px-4 font-semibold text-sm mb-4">
+                New Ticket
+            </button>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-blue-700 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-sm">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-blue-700 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="text-sm">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="md:ml-72 min-h-screen">
+<!-- TopAppBar (Authority: JSON) -->
+<header class="w-full sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex justify-between items-center px-8 py-4">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold tracking-tight text-blue-950 dark:text-white font-headline">Academic Support Portal</span>
+<div class="hidden lg:flex items-center gap-6">
+<a class="text-slate-600 dark:text-slate-400 font-medium hover:text-blue-800 transition-colors" href="#">Dashboard</a>
+<a class="text-slate-600 dark:text-slate-400 font-medium hover:text-blue-800 transition-colors" href="#">Knowledge Base</a>
+<a class="text-slate-600 dark:text-slate-400 font-medium hover:text-blue-800 transition-colors" href="#">Tickets</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="bg-surface-container-high rounded-full px-4 py-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-sm" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-48" placeholder="Rechercher..." type="text"/>
+</div>
+<span class="material-symbols-outlined text-slate-600 cursor-pointer" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined text-slate-600 cursor-pointer" data-icon="help_outline">help_outline</span>
+<img class="w-10 h-10 rounded-full object-cover" data-alt="Professional headshot of an academic staff member with warm lighting and a neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD9x22PDc8fiQ7CAwnLflzzSmkLC8pdKJ8jQu8Oe07xxK27M1HiY1fpTHkQrSOSCaZtWD7VdJxSGmDMEf93eNsN-jbyqYiS84otbTUd_xGYfE_P4F-QamUFihaPGcUiH2M6Sey8T7DC1W96cW32CaovCfY8L1s0K1fd6bPNF1jochhbRdFDGBQqPb75AWR5i11UDbJpeHE7aFrDRDNHR5wuZ5rlYpym35gbHbr7WtwpawZGnr8LHikOMiKYoIt4OnKhUSvxBSWgVQ"/>
+</div>
+</header>
+<div class="p-8 max-w-7xl mx-auto">
+<!-- Page Header -->
+<div class="mb-12">
+<h2 class="text-4xl font-extrabold text-primary font-headline tracking-tight mb-2">Contacter le Support</h2>
+<p class="text-on-surface-variant max-w-2xl leading-relaxed">
+                    Besoin d'aide technique ou académique ? Notre équipe est là pour vous accompagner. Remplissez le formulaire ci-dessous et nous reviendrons vers vous dans les plus brefs délais.
+                </p>
+</div>
+<div class="flex flex-col lg:flex-row gap-12 items-start">
+<!-- Central Form Card -->
+<div class="flex-grow w-full lg:w-2/3 bg-surface-container-lowest rounded-xl p-8 transition-all">
+<form action="#" class="space-y-8" method="POST">
+<!-- Subject Field -->
+<div class="space-y-2">
+<label class="block text-sm font-semibold text-primary font-headline">Sujet de la demande</label>
+<input class="w-full bg-surface-container-low border-0 border-b-2 border-transparent focus:border-primary focus:ring-0 rounded-t-lg px-4 py-3 transition-all text-on-surface" placeholder="ex: Problème d'accès au portail de cours" type="text"/>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Category Dropdown -->
+<div class="space-y-2">
+<label class="block text-sm font-semibold text-primary font-headline">Catégorie</label>
+<select class="w-full bg-surface-container-low border-0 border-b-2 border-transparent focus:border-primary focus:ring-0 rounded-t-lg px-4 py-3 transition-all text-on-surface appearance-none">
+<option>Technical</option>
+<option>Account</option>
+<option>Academic</option>
+<option>Other</option>
+</select>
+</div>
+<!-- Urgency Level -->
+<div class="space-y-2">
+<label class="block text-sm font-semibold text-primary font-headline">Niveau d'urgence</label>
+<div class="flex bg-surface-container-low p-1 rounded-lg">
+<label class="flex-1 text-center cursor-pointer">
+<input class="sr-only peer" name="urgency" type="radio" value="low"/>
+<span class="block py-2 text-xs font-bold uppercase tracking-wider peer-checked:bg-white peer-checked:text-primary peer-checked:rounded-md transition-all text-on-surface-variant">Low</span>
+</label>
+<label class="flex-1 text-center cursor-pointer">
+<input checked="" class="sr-only peer" name="urgency" type="radio" value="medium"/>
+<span class="block py-2 text-xs font-bold uppercase tracking-wider peer-checked:bg-white peer-checked:text-primary peer-checked:rounded-md transition-all text-on-surface-variant">Medium</span>
+</label>
+<label class="flex-1 text-center cursor-pointer">
+<input class="sr-only peer" name="urgency" type="radio" value="high"/>
+<span class="block py-2 text-xs font-bold uppercase tracking-wider peer-checked:bg-white peer-checked:text-primary peer-checked:rounded-md transition-all text-on-surface-variant">High</span>
+</label>
+</div>
+</div>
+</div>
+<!-- Description (Rich Text feel) -->
+<div class="space-y-2">
+<label class="block text-sm font-semibold text-primary font-headline">Description détaillée</label>
+<div class="bg-surface-container-low rounded-xl overflow-hidden">
+<div class="flex gap-4 p-2 bg-surface-container-high">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary p-1" type="button">format_bold</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary p-1" type="button">format_italic</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary p-1" type="button">format_list_bulleted</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary p-1" type="button">link</button>
+</div>
+<textarea class="w-full bg-transparent border-0 focus:ring-0 px-4 py-4 text-on-surface" placeholder="Veuillez décrire votre problème ici..." rows="6"></textarea>
+</div>
+</div>
+<!-- Attachment Zone -->
+<div class="space-y-2">
+<label class="block text-sm font-semibold text-primary font-headline">Pièces jointes (Captures d'écran, PDF)</label>
+<div class="border-2 border-dashed border-outline-variant rounded-xl p-8 text-center bg-surface hover:bg-surface-container transition-colors group cursor-pointer">
+<span class="material-symbols-outlined text-4xl text-outline-variant group-hover:text-primary transition-colors mb-2 block" data-icon="cloud_upload">cloud_upload</span>
+<p class="text-sm text-on-surface-variant">
+                                    Glissez-déposez vos fichiers ici, ou <span class="text-primary font-semibold">parcourez</span>
+</p>
+<p class="text-xs text-outline mt-1 font-mono">Taille max: 10MB (PDF, PNG, JPG)</p>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex items-center justify-end gap-4 pt-6">
+<button class="px-6 py-3 text-sm font-bold text-on-surface-variant hover:bg-surface-container-low rounded-xl transition-all" type="button">Annuler</button>
+<button class="bg-gradient-institutional px-8 py-3 rounded-xl text-white font-bold text-sm shadow-lg hover:opacity-90 transition-all flex items-center gap-2" type="submit">
+<span class="material-symbols-outlined text-lg" data-icon="send">send</span>
+                                Envoyer le ticket
+                            </button>
+</div>
+</form>
+</div>
+<!-- Sidebar Info Box -->
+<aside class="w-full lg:w-1/3 space-y-6">
+<!-- Identity Card -->
+<div class="bg-primary-container p-8 rounded-xl text-on-primary-container relative overflow-hidden group">
+<div class="relative z-10">
+<h3 class="font-headline font-bold text-xl mb-4 text-white">Other ways to reach us</h3>
+<div class="space-y-6">
+<div class="flex items-start gap-4">
+<div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+</div>
+<div>
+<p class="font-bold text-sm text-white">Live Chat Support</p>
+<p class="text-xs opacity-70 mb-2">Available Mon-Fri, 9am - 6pm</p>
+<button class="text-xs font-bold uppercase tracking-widest text-secondary-fixed hover:underline transition-all">Démarrer le chat</button>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined" data-icon="alternate_email">alternate_email</span>
+</div>
+<div>
+<p class="font-bold text-sm text-white">Email Us</p>
+<p class="text-xs opacity-70 mb-1">support@uac-presence.edu</p>
+<p class="text-xs font-mono opacity-50">Response time: ~24h</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Decorative Abstract Shape -->
+<div class="absolute -right-12 -bottom-12 w-48 h-48 bg-white/5 rounded-full blur-3xl group-hover:scale-110 transition-transform"></div>
+</div>
+<!-- Helpful Links -->
+<div class="bg-surface-container p-6 rounded-xl">
+<h4 class="font-headline font-bold text-primary text-sm mb-4">Questions fréquentes</h4>
+<ul class="space-y-4">
+<li>
+<a class="flex items-center justify-between group" href="#">
+<span class="text-sm text-on-surface-variant group-hover:text-primary transition-colors">Réinitialiser mon mot de passe</span>
+<span class="material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-all" data-icon="arrow_forward">arrow_forward</span>
+</a>
+</li>
+<li>
+<a class="flex items-center justify-between group" href="#">
+<span class="text-sm text-on-surface-variant group-hover:text-primary transition-colors">Calendrier des examens 2024</span>
+<span class="material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-all" data-icon="arrow_forward">arrow_forward</span>
+</a>
+</li>
+<li>
+<a class="flex items-center justify-between group" href="#">
+<span class="text-sm text-on-surface-variant group-hover:text-primary transition-colors">Guide de l'étudiant Digital</span>
+<span class="material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-all" data-icon="arrow_forward">arrow_forward</span>
+</a>
+</li>
+</ul>
+</div>
+<!-- Status Indicator -->
+<div class="flex items-center gap-3 px-6 py-4 bg-secondary-container/20 rounded-xl">
+<div class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-secondary"></span>
+</div>
+<span class="text-xs font-bold text-on-secondary-container">Tous les systèmes sont opérationnels</span>
+</div>
+</aside>
+</div>
+</div>
+</main>
+<!-- Mobile Bottom NavBar (Authority: JSON Logic) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full bg-white surface-glass flex justify-around py-3 px-4 z-50">
+<button class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-[10px]">Home</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="text-[10px]">Lib</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined" data-icon="mail" style="font-variation-settings: 'FILL' 1;">mail</span>
+<span class="text-[10px] font-bold">Contact</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-[10px]">Settings</span>
+</button>
+</nav>
+</body></html>

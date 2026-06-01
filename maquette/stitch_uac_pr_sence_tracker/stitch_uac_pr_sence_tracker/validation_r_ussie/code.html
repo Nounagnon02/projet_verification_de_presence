@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;700;800&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed-variant": "#005232",
+                    "primary": "#011549",
+                    "on-primary-fixed": "#03174b",
+                    "outline-variant": "#c5c6d1",
+                    "inverse-surface": "#2d3134",
+                    "surface-dim": "#d8dade",
+                    "on-secondary-container": "#007147",
+                    "secondary-fixed": "#78fbb6",
+                    "background": "#f7f9fd",
+                    "surface-variant": "#e0e3e6",
+                    "on-tertiary": "#ffffff",
+                    "surface": "#f7f9fd",
+                    "primary-container": "#1a2b5e",
+                    "tertiary-fixed": "#ffdad7",
+                    "surface-container": "#eceef2",
+                    "on-tertiary-fixed": "#410004",
+                    "inverse-primary": "#b5c4ff",
+                    "surface-bright": "#f7f9fd",
+                    "on-tertiary-container": "#ff5f5c",
+                    "tertiary-fixed-dim": "#ffb3ae",
+                    "secondary-fixed-dim": "#59de9b",
+                    "surface-container-highest": "#e0e3e6",
+                    "primary-fixed": "#dce1ff",
+                    "surface-container-lowest": "#ffffff",
+                    "on-background": "#191c1f",
+                    "outline": "#757680",
+                    "error": "#ba1a1a",
+                    "on-error-container": "#93000a",
+                    "tertiary-container": "#64000a",
+                    "on-primary-container": "#8494cd",
+                    "surface-container-low": "#f2f4f8",
+                    "on-primary": "#ffffff",
+                    "tertiary": "#3d0004",
+                    "on-tertiary-fixed-variant": "#930014",
+                    "on-surface-variant": "#45464f",
+                    "on-secondary-fixed": "#002111",
+                    "surface-tint": "#4c5c92",
+                    "inverse-on-surface": "#eff1f5",
+                    "secondary-container": "#75f8b3",
+                    "on-secondary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "primary-fixed-dim": "#b5c4ff",
+                    "on-primary-fixed-variant": "#344478",
+                    "on-error": "#ffffff",
+                    "secondary": "#006d43",
+                    "on-surface": "#191c1f",
+                    "surface-container-high": "#e6e8ec"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Sora", "sans-serif"],
+                    "body": ["Inter", "sans-serif"],
+                    "label": ["Inter", "sans-serif"],
+                    "mono": ["JetBrains Mono", "monospace"]
+            }
+          },
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .tonal-shift-no-border { background-color: var(--tw-bg-opacity); }
+        .success-glow {
+            background: radial-gradient(circle at center, #75f8b3 0%, transparent 70%);
+            opacity: 0.15;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#E8F5E9] font-body text-on-surface min-h-screen flex flex-col items-center">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-50 bg-[#f7f9fd] dark:bg-slate-900 flex items-center justify-between px-6 py-4 transition-all duration-200 ease-in-out">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#1A2B5E] dark:text-blue-400">account_balance</span>
+<h1 class="font-['Sora'] font-black text-[#1A2B5E] dark:text-white tracking-tight text-lg">Validation Portal</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-all">
+<span class="material-symbols-outlined text-slate-500">notifications</span>
+</button>
+</div>
+</header>
+<!-- Success Content Canvas -->
+<main class="flex-1 w-full max-w-md flex flex-col items-center justify-center px-8 pb-20 text-center relative overflow-hidden">
+<!-- Decorative Ambient Background Element -->
+<div class="absolute inset-0 pointer-events-none success-glow"></div>
+<!-- Success Icon Cluster -->
+<div class="relative mb-12">
+<div class="w-32 h-32 bg-white rounded-full flex items-center justify-center shadow-[0_12px_48px_rgba(0,109,67,0.12)] z-10 relative">
+<span class="material-symbols-outlined text-secondary text-6xl" style="font-variation-settings: 'wght' 700;">check_circle</span>
+</div>
+<!-- Pulse rings -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 border-2 border-secondary/20 rounded-full"></div>
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-52 h-52 border border-secondary/10 rounded-full"></div>
+</div>
+<!-- Feedback Text -->
+<div class="space-y-3 z-10">
+<h2 class="font-headline font-bold text-3xl text-primary tracking-tight">Présence enregistrée !</h2>
+<p class="text-on-surface-variant font-medium opacity-80">Votre participation a été validée avec succès.</p>
+</div>
+<!-- Course Summary Card: Asymmetrical Bento Pattern -->
+<div class="mt-10 w-full bg-surface-container-lowest rounded-[24px] p-6 shadow-[0_12px_32px_rgba(25,28,31,0.06)] text-left relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-32 h-32 bg-secondary-container/10 rounded-bl-[100px] pointer-events-none transition-transform group-hover:scale-110 duration-500"></div>
+<div class="flex flex-col gap-4 relative z-10">
+<div class="flex items-center gap-3">
+<div class="px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-[10px] font-bold uppercase tracking-wider">
+                        Validé
+                    </div>
+<span class="font-mono text-xs text-outline tracking-tighter">CS-302-2024</span>
+</div>
+<h3 class="font-headline font-bold text-xl text-primary leading-tight">Algorithmique &amp; Structures de Données</h3>
+<div class="flex flex-col gap-2 mt-2">
+<div class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm opacity-60">calendar_today</span>
+<span class="text-sm font-medium">Aujourd'hui, 14 Mai 2024</span>
+</div>
+<div class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm opacity-60">schedule</span>
+<span class="text-sm font-medium">Session: 14:00 - 16:30</span>
+</div>
+</div>
+</div>
+</div>
+<!-- CTA Section -->
+<div class="mt-12 w-full flex flex-col gap-3 z-10">
+<button class="w-full py-4 bg-gradient-to-br from-primary to-primary-container text-white font-headline font-bold rounded-xl shadow-lg hover:opacity-90 active:scale-[0.98] transition-all">
+                Fermer
+            </button>
+<button class="w-full py-4 bg-surface-container-high text-on-surface font-headline font-semibold rounded-xl hover:bg-surface-container-highest transition-colors">
+                Retour à l'accueil
+            </button>
+</div>
+</main>
+<!-- BottomNavBar (Suppressed for focused success state as per 'Linear/Transactional' rule, but included for structure if required by platform) -->
+<!-- We prioritize the canvas for this "Success" state -->
+<!-- Footer Identity (UAC Branding) -->
+<footer class="pb-10 w-full flex flex-col items-center gap-2 opacity-40 grayscale pointer-events-none">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-xs">verified_user</span>
+<span class="font-headline font-extrabold tracking-widest text-[10px] uppercase">UAC Global</span>
+</div>
+<p class="font-mono text-[8px]">TX_ID: 9942-XLA-B01</p>
+</footer>
+</body></html>

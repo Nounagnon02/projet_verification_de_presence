@@ -16,6 +16,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'locale' => \App\Http\Middleware\SetLocale::class,
         ]);
+
+        // Note : SPA stateful auth désactivé — on utilise exclusivement
+        // les tokens Bearer Sanctum pour l'authentification API.
+        // $middleware->api(prepend: [
+        //     \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        // ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Forcer JSON pour toutes les routes API

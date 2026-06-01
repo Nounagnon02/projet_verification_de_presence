@@ -10,7 +10,6 @@ use App\Models\AnneeAcademique;
 use App\Models\Etudiant;
 use App\Models\Filiere;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -20,7 +19,7 @@ class StudentController extends Controller
      * Liste paginée des étudiants avec filtres.
      * GET /api/admin/students?per_page=15&search=&filiere_id=&annee_id=
      */
-    public function index(): AnonymousResourceCollection
+    public function index(): JsonResponse
     {
         $query = Etudiant::with(['filiere', 'anneeAcademique']);
 
@@ -42,10 +41,19 @@ class StudentController extends Controller
         }
 
         $perPage = min((int) request('per_page', 15), 100);
+        $paginator = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
-        return EtudiantResource::collection(
-            $query->orderBy('created_at', 'desc')->paginate($perPage)
-        );
+        return response()->json([
+            'success' => true,
+            'message' => 'Liste des étudiants récupérée.',
+            'data'    => EtudiantResource::collection($paginator->items()),
+            'meta'    => [
+                'current_page' => $paginator->currentPage(),
+                'last_page'    => $paginator->lastPage(),
+                'per_page'     => $paginator->perPage(),
+                'total'        => $paginator->total(),
+            ],
+        ]);
     }
 
     /**
@@ -66,13 +74,15 @@ class StudentController extends Controller
      */
     public function store(StoreStudentRequest $request): JsonResponse
     {
+        $matricule = $request->matricule ?? ('TEMP-' . Str::random(8));
+
         $filiere = Filiere::findOrFail($request->filiere_id);
         $annee   = AnneeAcademique::findOrFail($request->annee_id);
 
         $identifiantUnique = $this->generateDeterministicId(
             $request->nom,
             $request->prenom,
-            $request->matricule,
+            $matricule,
             $filiere->code,
             $annee->libelle
         );
@@ -81,7 +91,7 @@ class StudentController extends Controller
             'id'                => (string) Str::uuid(),
             'nom'               => mb_strtoupper($this->removeAccents($request->nom)),
             'prenom'            => mb_strtoupper($this->removeAccents($request->prenom)),
-            'matricule'         => $request->matricule,
+            'matricule'         => $matricule,
             'filiere_id'        => $request->filiere_id,
             'annee_id'          => $request->annee_id,
             'email'             => $request->email,

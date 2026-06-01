@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>UAC Présence - Validation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#005232",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb3ae",
+                        "secondary-container": "#75f8b3",
+                        "on-primary-fixed": "#03174b",
+                        "tertiary": "#3d0004",
+                        "on-error-container": "#93000a",
+                        "error": "#ba1a1a",
+                        "outline-variant": "#c5c6d1",
+                        "inverse-surface": "#2d3134",
+                        "on-surface": "#191c1f",
+                        "primary-fixed": "#dce1ff",
+                        "inverse-on-surface": "#eff1f5",
+                        "on-primary-container": "#8494cd",
+                        "inverse-primary": "#b5c4ff",
+                        "secondary": "#006d43",
+                        "on-tertiary-fixed-variant": "#930014",
+                        "primary-container": "#1a2b5e",
+                        "on-background": "#191c1f",
+                        "tertiary-fixed": "#ffdad7",
+                        "surface-tint": "#4c5c92",
+                        "surface-dim": "#d8dade",
+                        "secondary-fixed": "#78fbb6",
+                        "error-container": "#ffdad6",
+                        "primary-fixed-dim": "#b5c4ff",
+                        "background": "#f7f9fd",
+                        "on-primary-fixed-variant": "#344478",
+                        "on-tertiary-container": "#ff5f5c",
+                        "surface": "#f7f9fd",
+                        "secondary-fixed-dim": "#59de9b",
+                        "on-tertiary": "#ffffff",
+                        "on-surface-variant": "#45464f",
+                        "surface-container-low": "#f2f4f8",
+                        "surface-bright": "#f7f9fd",
+                        "on-primary": "#ffffff",
+                        "surface-container": "#eceef2",
+                        "tertiary-container": "#64000a",
+                        "surface-container-highest": "#e0e3e6",
+                        "surface-container-high": "#e6e8ec",
+                        "outline": "#757680",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed": "#410004",
+                        "on-secondary-fixed": "#002111",
+                        "on-secondary": "#ffffff",
+                        "surface-variant": "#e0e3e6",
+                        "on-secondary-container": "#007147",
+                        "primary": "#011549"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Sora", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"],
+                        "technical": ["JetBrains Mono", "monospace"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .tonal-shift-no-border {
+            background-color: #f7f9fd;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body min-h-screen flex flex-col items-center">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-50 bg-[#f7f9fd] transition-all duration-200 ease-in-out flex items-center justify-between px-6 py-6">
+<div class="flex items-center gap-3 mx-auto">
+<div class="flex items-center justify-center w-10 h-10 bg-primary rounded-xl">
+<span class="material-symbols-outlined text-white" data-icon="account_balance">account_balance</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline font-black text-[#1A2B5E] text-xl leading-none">UAC</span>
+<span class="font-headline font-bold text-[#1A2B5E] tracking-tight text-sm opacity-80">Présence</span>
+</div>
+</div>
+</header>
+<main class="flex-1 w-full max-w-md px-6 pt-4 pb-24 flex flex-col items-center">
+<!-- Hero Illustration / Visual Context -->
+<div class="w-full mb-8 relative aspect-[16/10] overflow-hidden rounded-3xl">
+<img class="w-full h-full object-cover" data-alt="Modern university lecture hall with clean minimalist architectural lines and soft natural daylighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMVUYdUtdevU6je4s_NiWDnFTpzoj8T39uMa0v8U8W2s1u9TbcEHkJc15uIY4yrOCZlmKfYzAs2ee5PYarGMiKZV1qE90fFCT80zMPFwylTuJA5lrT1pHGDJszFexIQm3bcAg1IxBOEW8ZlWngQ0tr4OgDerqfK2-3KiPufEoUkG3w8gv1a-3wz4wrk0FavmUDpVv3bUFJp-4AL1zDhCvJM7Er6L75UVSDDAxrB4h-7SHYsbwDAq0fxYqJJoQijfAnqn8QBTHO5A"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/40 to-transparent"></div>
+<div class="absolute bottom-4 left-6 right-6">
+<div class="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full inline-flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+<span class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant font-technical">Session Active</span>
+</div>
+</div>
+</div>
+<!-- Title Section -->
+<section class="w-full text-center mb-8">
+<h1 class="font-headline font-bold text-2xl text-on-surface mb-3 tracking-tight">Valider votre présence</h1>
+<div class="bg-surface-container-high rounded-2xl p-5 text-center">
+<p class="font-body font-semibold text-primary mb-1 text-sm">Algorithmique &amp; Structures de Données</p>
+<p class="font-technical font-medium text-xs text-on-surface-variant">10:30 - 12:30</p>
+</div>
+</section>
+<!-- Form Section -->
+<section class="w-full space-y-6">
+<div class="space-y-2">
+<label class="block text-xs font-semibold text-on-surface-variant ml-1 uppercase tracking-wider" for="matricule">Identifiant unique</label>
+<div class="relative group">
+<input class="w-full bg-surface-container-lowest border-none rounded-xl px-4 py-4 text-lg font-technical focus:ring-0 transition-all duration-200 peer" id="matricule" placeholder="Ex: 22-UAC-1234" type="text"/>
+<div class="absolute bottom-0 left-0 h-0.5 w-0 bg-primary transition-all duration-300 peer-focus:w-full"></div>
+</div>
+<p class="text-[11px] text-on-surface-variant/70 italic ml-1">Saisissez votre matricule étudiant officiel.</p>
+</div>
+<!-- Primary CTA -->
+<button class="w-full bg-gradient-to-br from-[#011549] to-[#1a2b5e] text-white py-4 px-6 rounded-xl font-headline font-bold text-lg shadow-[0_8px_20px_rgba(1,21,73,0.2)] active:scale-95 transition-transform flex items-center justify-center gap-3">
+<span class="material-symbols-outlined" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                Valider ma présence
+            </button>
+<!-- Secondary Help -->
+<div class="flex items-center justify-center gap-4 pt-4">
+<div class="h-[1px] flex-1 bg-outline-variant opacity-20"></div>
+<span class="text-[10px] font-bold text-outline uppercase tracking-widest">Aide</span>
+<div class="h-[1px] flex-1 bg-outline-variant opacity-20"></div>
+</div>
+<button class="w-full py-3 text-sm font-medium text-on-surface-variant hover:bg-surface-container-low rounded-xl transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="support_agent">support_agent</span>
+                Besoin d'assistance ?
+            </button>
+</section>
+</main>
+<!-- Navigation Shell (Suppressed as per rule for focused transactional task, but included footer) -->
+<footer class="w-full py-8 mt-auto flex flex-col items-center border-t border-outline-variant/10">
+<p class="text-[10px] font-technical uppercase tracking-widest text-on-surface-variant">UAC — Système de Gestion de Présence</p>
+<div class="mt-4 flex gap-4 opacity-40">
+<span class="material-symbols-outlined text-lg" data-icon="qr_code_2">qr_code_2</span>
+<span class="material-symbols-outlined text-lg" data-icon="shield_check">shield</span>
+<span class="material-symbols-outlined text-lg" data-icon="history">history</span>
+</div>
+</footer>
+<!-- Bottom Nav Bar (Hidden for this specific linear flow page, but templated per JSON) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-2 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl z-50 rounded-t-3xl shadow-[0_-8px_24px_rgba(25,28,31,0.04)] hidden">
+<div class="flex flex-col items-center justify-center bg-[#e6e8ec] text-[#1A2B5E] rounded-xl p-3 transition-transform active:scale-90">
+<span class="material-symbols-outlined" data-icon="qr_code_scanner">qr_code_scanner</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 p-3 transition-transform active:scale-90">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 p-3 transition-transform active:scale-90">
+<span class="material-symbols-outlined" data-icon="info">info</span>
+</div>
+</nav>
+</body></html>

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Sora:wght@600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed-dim": "#ffb3ae",
+                    "secondary": "#006d43",
+                    "on-tertiary-fixed-variant": "#930014",
+                    "on-secondary-fixed-variant": "#005232",
+                    "primary-container": "#1a2b5e",
+                    "surface-container": "#eceef2",
+                    "secondary-fixed-dim": "#59de9b",
+                    "secondary-container": "#75f8b3",
+                    "on-error-container": "#93000a",
+                    "error": "#ba1a1a",
+                    "outline": "#757680",
+                    "on-primary": "#ffffff",
+                    "background": "#f7f9fd",
+                    "outline-variant": "#c5c6d1",
+                    "on-error": "#ffffff",
+                    "on-background": "#191c1f",
+                    "surface": "#f7f9fd",
+                    "on-tertiary": "#ffffff",
+                    "surface-bright": "#f7f9fd",
+                    "inverse-on-surface": "#eff1f5",
+                    "secondary-fixed": "#78fbb6",
+                    "tertiary-fixed": "#ffdad7",
+                    "tertiary-container": "#64000a",
+                    "inverse-surface": "#2d3134",
+                    "surface-tint": "#4c5c92",
+                    "on-secondary": "#ffffff",
+                    "tertiary": "#3d0004",
+                    "on-surface-variant": "#45464f",
+                    "primary": "#011549",
+                    "surface-container-high": "#e6e8ec",
+                    "on-primary-fixed-variant": "#344478",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed-dim": "#b5c4ff",
+                    "on-secondary-container": "#007147",
+                    "primary-fixed": "#dce1ff",
+                    "inverse-primary": "#b5c4ff",
+                    "surface-container-highest": "#e0e3e6",
+                    "on-secondary-fixed": "#002111",
+                    "error-container": "#ffdad6",
+                    "surface-dim": "#d8dade",
+                    "on-primary-container": "#8494cd",
+                    "on-tertiary-container": "#ff5f5c",
+                    "on-surface": "#191c1f",
+                    "surface-variant": "#e0e3e6",
+                    "on-primary-fixed": "#03174b",
+                    "on-tertiary-fixed": "#410004",
+                    "surface-container-low": "#f2f4f8"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Sora", "sans-serif"],
+                    "body": ["Inter", "sans-serif"],
+                    "label": ["Inter", "sans-serif"],
+                    "mono": ["JetBrains Mono", "monospace"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Sora', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex">
+<!-- SideNavBar (Authority: JSON & Design System) -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-[#e6e8ec] dark:bg-slate-800 flex flex-col py-6 gap-2 z-50">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white shadow-lg overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="minimalist academic crest logo in navy blue and white with clean geometric lines" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBm8JN13bXRApvtLIHOa-olCjlioe6SP6k9ZWpYbRA-vqGApk7GGdYncg1QzbgNr30iuGgESzkBdCs0Ok_1SRyLSllav57W9WXnPgErFN9h4ybejktPDRFwNjWfw2HUCgClGYVhGbxfyYjhoG1-UaUuX_e4JbEPm4S4rP6qPMcF7x5a0j2f4bweSymL9preSRjbUIp8pT3XLFnXRibIC6zfB_7SN5oXY69s7spPjaRY5Oac7N9Epi8D8J5y_JxIy8or1hdOWCMq5Q"/>
+</div>
+<div>
+<h1 class="font-['Sora'] font-bold text-lg text-[#011549] dark:text-white leading-none">Settings</h1>
+<p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mt-1">System Configuration</p>
+</div>
+</div>
+<nav class="flex-grow px-2">
+<!-- Active Tab: Filières (Mapped from JSON logic) -->
+<a class="bg-[#ffffff] dark:bg-slate-900 text-[#011549] dark:text-white rounded-l-xl ml-2 shadow-sm font-semibold flex items-center gap-3 px-4 py-3 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="school">school</span>
+<span class="font-['Inter'] font-medium text-sm">Filières</span>
+</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-[#011549] dark:hover:text-white px-4 py-3 flex items-center gap-3 transition-all hover:bg-[#f7f9fd] dark:hover:bg-slate-700" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span class="font-['Inter'] font-medium text-sm">Années académiques</span>
+</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-[#011549] dark:hover:text-white px-4 py-3 flex items-center gap-3 transition-all hover:bg-[#f7f9fd] dark:hover:bg-slate-700" href="#">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span>
+<span class="font-['Inter'] font-medium text-sm">Sécurité</span>
+</a>
+</nav>
+<div class="px-2 mt-auto border-t border-outline-variant/10 pt-4">
+<a class="text-slate-600 dark:text-slate-400 hover:text-[#011549] dark:hover:text-white px-4 py-3 flex items-center gap-3 transition-all hover:bg-[#f7f9fd] dark:hover:bg-slate-700" href="#">
+<span class="material-symbols-outlined" data-icon="contact_support">contact_support</span>
+<span class="font-['Inter'] font-medium text-sm">Support</span>
+</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-error px-4 py-3 flex items-center gap-3 transition-all hover:bg-error-container/20" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-['Inter'] font-medium text-sm">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Wrapper -->
+<main class="flex-grow ml-64 min-h-screen">
+<!-- TopAppBar (Authority: JSON) -->
+<header class="flex justify-between items-center w-full h-16 px-8 bg-[#f7f9fd] dark:bg-slate-900">
+<div class="flex items-center gap-4">
+<h2 class="font-['Sora'] font-bold text-[#011549] dark:text-white tracking-tighter text-xl">Academic Management</h2>
+<div class="hidden md:flex items-center bg-surface-container-high rounded-full px-4 py-1.5 gap-2">
+<span class="material-symbols-outlined text-slate-500 text-sm" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm font-['Inter'] w-64 placeholder:text-slate-400" placeholder="Rechercher une filière..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3">
+<button class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-surface"></span>
+</button>
+<button class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+</div>
+<div class="h-8 w-px bg-outline-variant/30"></div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-bold text-[#011549] leading-tight">Admin Principal</p>
+<p class="text-[10px] text-slate-500">Administrator</p>
+</div>
+<img alt="Administrator Avatar" class="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-sm" data-alt="Professional headshot of a university administrator in a suit with a neutral gray background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMN1teTg06eGsdeuUnLZhAgWHL4RxAMg2Pnr-ShBgBckdbF1MQ2_hCY6D4TFy4fL48Lsu31BbqnUXDEHbbYeXP-JVmfGQ7vQh7eQe6iODq-0s32gmLgm0RAeQQ4r89NnRcuqjooTXgDgvfeM62Vg32GWmtSlQIrVMjfqwq8p_Y-T3Z9cqHWxeCnBoqFkB4Mpi7B24ibs43YGElZ4QuJVXOkH3-vIqr2sSHCDmDdAbbSPJ5VQylJP4aqRoEEwMc5V1r3SF3Mm8fzg"/>
+</div>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="p-8 max-w-7xl mx-auto">
+<!-- Page Header Area -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+<div>
+<nav class="flex items-center gap-2 text-xs font-medium text-slate-500 mb-2">
+<span>Settings</span>
+<span class="material-symbols-outlined text-[14px]" data-icon="chevron_right">chevron_right</span>
+<span class="text-[#011549]">Filières</span>
+</nav>
+<h3 class="text-3xl font-extrabold text-[#011549] tracking-tight">Gestion des Filières</h3>
+<p class="text-slate-500 mt-1 max-w-xl">Configurez et gérez les départements académiques, les cursus et les spécialités disponibles au sein de l'institution.</p>
+</div>
+<button class="bg-primary hover:bg-primary-container text-white px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg shadow-primary/20 transition-all active:scale-95 group">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+<span class="font-semibold tracking-wide">Ajouter une filière</span>
+</button>
+</div>
+<!-- Dashboard Stats Layer (Asymmetric Bento Style) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+<div class="col-span-1 md:col-span-2 bg-surface-container-lowest p-6 rounded-2xl shadow-sm flex items-center justify-between overflow-hidden relative group">
+<div>
+<p class="text-slate-500 text-sm font-medium">Total Filières Actives</p>
+<h4 class="text-4xl font-black text-[#011549] mt-2 tracking-tighter">42 <span class="text-sm font-bold text-secondary-container bg-secondary px-2 py-0.5 rounded ml-2">+3 ce semestre</span></h4>
+</div>
+<div class="opacity-10 group-hover:opacity-20 transition-opacity absolute -right-4 -bottom-4">
+<span class="material-symbols-outlined text-[120px]" data-icon="account_balance">account_balance</span>
+</div>
+</div>
+<div class="bg-primary text-on-primary-container p-6 rounded-2xl shadow-xl shadow-primary/10 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-3xl" data-icon="hub">hub</span>
+<span class="text-xs font-mono opacity-60">UAC-2024</span>
+</div>
+<div>
+<p class="text-sm font-medium opacity-80">Dernière mise à jour</p>
+<p class="font-bold">Aujourd'hui, 09:42</p>
+</div>
+</div>
+</div>
+<!-- Table Container (Tonal Layering - No Lines) -->
+<div class="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low/50">
+<th class="px-6 py-4 text-xs font-bold text-[#011549] uppercase tracking-wider">Code</th>
+<th class="px-6 py-4 text-xs font-bold text-[#011549] uppercase tracking-wider">Intitulé</th>
+<th class="px-6 py-4 text-xs font-bold text-[#011549] uppercase tracking-wider">Niveau</th>
+<th class="px-6 py-4 text-xs font-bold text-[#011549] uppercase tracking-wider">Statut</th>
+<th class="px-6 py-4 text-xs font-bold text-[#011549] uppercase tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-transparent">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-5">
+<span class="mono text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">INF-01</span>
+</td>
+<td class="px-6 py-5">
+<div class="flex flex-col">
+<span class="font-bold text-[#011549]">Génie Informatique</span>
+<span class="text-xs text-slate-400">Faculté des Sciences et Techniques</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="text-sm font-medium text-slate-600">Licence / Master</span>
+</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-secondary-container text-on-secondary-container">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary mr-1.5"></span>
+                                        Actif
+                                    </span>
+</td>
+<td class="px-6 py-5 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 hover:bg-white rounded-lg text-[#011549] transition-all shadow-sm">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+<button class="p-2 hover:bg-white rounded-lg text-error transition-all shadow-sm">
+<span class="material-symbols-outlined text-sm" data-icon="delete">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-5">
+<span class="mono text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">MGT-04</span>
+</td>
+<td class="px-6 py-5">
+<div class="flex flex-col">
+<span class="font-bold text-[#011549]">Management des Organisations</span>
+<span class="text-xs text-slate-400">École de Commerce</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="text-sm font-medium text-slate-600">Master Professionnel</span>
+</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-secondary-container text-on-secondary-container">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary mr-1.5"></span>
+                                        Actif
+                                    </span>
+</td>
+<td class="px-6 py-5 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 hover:bg-white rounded-lg text-[#011549] transition-all shadow-sm">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+<button class="p-2 hover:bg-white rounded-lg text-error transition-all shadow-sm">
+<span class="material-symbols-outlined text-sm" data-icon="delete">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-5">
+<span class="mono text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">DRT-09</span>
+</td>
+<td class="px-6 py-5">
+<div class="flex flex-col">
+<span class="font-bold text-[#011549]">Droit des Affaires</span>
+<span class="text-xs text-slate-400">Faculté de Droit</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="text-sm font-medium text-slate-600">Licence</span>
+</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-error-container text-on-error-container">
+<span class="w-1.5 h-1.5 rounded-full bg-error mr-1.5"></span>
+                                        Inactif
+                                    </span>
+</td>
+<td class="px-6 py-5 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 hover:bg-white rounded-lg text-[#011549] transition-all shadow-sm">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+<button class="p-2 hover:bg-white rounded-lg text-error transition-all shadow-sm">
+<span class="material-symbols-outlined text-sm" data-icon="delete">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-5">
+<span class="mono text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">BIO-22</span>
+</td>
+<td class="px-6 py-5">
+<div class="flex flex-col">
+<span class="font-bold text-[#011549]">Bio-Ingénierie Médicale</span>
+<span class="text-xs text-slate-400">Département des Sciences de la Santé</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="text-sm font-medium text-slate-600">Doctorat</span>
+</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-secondary-container text-on-secondary-container">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary mr-1.5"></span>
+                                        Actif
+                                    </span>
+</td>
+<td class="px-6 py-5 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 hover:bg-white rounded-lg text-[#011549] transition-all shadow-sm">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+<button class="p-2 hover:bg-white rounded-lg text-error transition-all shadow-sm">
+<span class="material-symbols-outlined text-sm" data-icon="delete">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="px-6 py-4 bg-surface-container-low/30 flex items-center justify-between">
+<p class="text-xs font-medium text-slate-500">Affichage de 1 à 4 sur 42 filières</p>
+<div class="flex gap-2">
+<button class="w-8 h-8 flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-400 hover:text-[#011549] disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-lg" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-white shadow-sm font-bold text-xs">1</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-600 hover:bg-slate-50 font-bold text-xs">2</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-600 hover:bg-slate-50 font-bold text-xs">3</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-400 hover:text-[#011549]">
+<span class="material-symbols-outlined text-lg" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Footer Meta -->
+<footer class="mt-12 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-400 text-xs">
+<div class="flex items-center gap-4">
+<span>© 2024 UAC Presence - Academic Editorial System</span>
+<span class="w-1 h-1 bg-slate-300 rounded-full"></span>
+<a class="hover:text-[#011549]" href="#">Confidentialité</a>
+<span class="w-1 h-1 bg-slate-300 rounded-full"></span>
+<a class="hover:text-[#011549]" href="#">Support technique</a>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="database">database</span>
+<span class="mono">v2.4.8-stable</span>
+</div>
+</footer>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,9 @@
+nom,prenom,matricule,filiere_code,annee_libelle,email
+AGOSSOU,Marc,2024101,IM-L1,2025-2026,marc.agossou@uac.bj
+INVALIDE,Champs,2024102,,2025-2026,champs.invalide@uac.bj
+TROP_LONG,Nom,2024103,IM-L1,2025-2026,trop.long@uac.bj
+DUPLICATE_EMAIL,Test,2024104,IM-L1,2025-2026,dupemail@uac.bj
+DUPLICATE_EMAIL,Bis,2024105,IM-L1,2025-2026,dupemail@uac.bj
+MAUVAIS_CODE,Test,2024106,XXXX,2025-2026,mauvais.code@uac.bj
+MAUVAIS_ANNEE,Test,2024107,IM-L1,2099-2100,mauvaise.annee@uac.bj
+INVALIDE_SANS_EMAIL,Test,2024108,IM-L1,2025-2026,

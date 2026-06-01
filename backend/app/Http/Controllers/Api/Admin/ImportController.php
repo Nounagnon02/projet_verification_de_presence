@@ -96,6 +96,27 @@ class ImportController extends Controller
     }
 
     /**
+     * Importation et analyse des cours (UEs/ECs) via PDF (Gemini IA).
+     *
+     * POST /api/admin/import/courses
+     */
+    public function courses(Request $request): JsonResponse
+    {
+        $validator = validator($request->all(), [
+            'file' => 'required|file|mimes:pdf|max:20480',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->validationErrorResponse($validator->errors());
+        }
+
+        $path     = $request->file('file')->store('imports/courses');
+        $analysis = $this->gemini->analyzeCourses(storage_path('app/' . $path));
+
+        return $this->successResponse($analysis, 'Analyse des cours terminée.');
+    }
+
+    /**
      * Importation et analyse de l'emploi du temps via PDF (US03 - Gemini IA).
      * Conforme CDC 8.1 & 8.2.
      *
@@ -115,5 +136,83 @@ class ImportController extends Controller
         $analysis = $this->gemini->analyzeSchedule(storage_path('app/' . $path));
 
         return $this->successResponse($analysis, 'Analyse de l\'emploi du temps terminée.');
+    }
+
+    /**
+     * Validation et sauvegarde en masse des événements extraits.
+     *
+     * POST /api/admin/import/validate-events
+     */
+    public function validateEvents(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'events'            => 'required|array|min:1',
+            'events.*.ec_id'    => 'required|exists:ecs,id',
+            'events.*.filiere_id' => 'required|exists:filieres,id',
+            'events.*.annee_id'  => 'required|exists:annees_academiques,id',
+            'events.*.date'     => 'required|date',
+            'events.*.heure_debut' => 'required|date_format:H:i',
+            'events.*.heure_fin' => 'required|date_format:H:i|after:events.*.heure_debut',
+            'events.*.salle'    => 'nullable|string|max:100',
+        ]);
+
+        $created = [];
+        foreach ($validated['events'] as $eventData) {
+            $eventData['statut'] = 'planifie';
+            $event = \App\Models\Evenement::create($eventData);
+            $created[] = $event;
+        }
+
+        return $this->createdResponse([
+            'total' => count($created),
+            'events' => $created,
+        ], count($created) . ' événements créés avec succès.');
+    }
+
+    /**
+     * Validation et sauvegarde en masse des cours (UEs + ECs) extraits.
+     *
+     * POST /api/admin/import/validate-courses
+     */
+    public function validateCourses(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ues'              => 'required|array|min:1',
+            'ues.*.code'       => 'required|string|max:20|unique:ues,code',
+            'ues.*.intitule'   => 'required|string|max:255',
+            'ues.*.filiere_id' => 'required|exists:filieres,id',
+            'ues.*.annee_id'   => 'required|exists:annees_academiques,id',
+            'ues.*.semestre'   => 'required|integer|min:1|max:6',
+            'ues.*.volume_horaire' => 'required|integer|min:1',
+            'ues.*.ecs'        => 'nullable|array',
+            'ues.*.ecs.*.code' => 'required_with:ues.*.ecs|string|max:20',
+            'ues.*.ecs.*.intitule' => 'required_with:ues.*.ecs|string|max:255',
+            'ues.*.ecs.*.volume_horaire' => 'required_with:ues.*.ecs|integer|min:1',
+        ]);
+
+        $created = [];
+        foreach ($validated['ues'] as $ueData) {
+            $ecsData = $ueData['ecs'] ?? [];
+            unset($ueData['ecs']);
+
+            $ue = \App\Models\Ue::create($ueData);
+            $ecs = [];
+            foreach ($ecsData as $ecData) {
+                $ecData['ue_id'] = $ue->id;
+                $ec = \App\Models\Ec::create($ecData);
+                $ecs[] = $ec;
+            }
+
+            $ue->load('ecs');
+            $created[] = [
+                'ue' => $ue,
+                'ecs' => $ecs,
+            ];
+        }
+
+        return $this->createdResponse([
+            'total_ues' => count($created),
+            'ues' => $created,
+        ], count($created) . ' UE(s) créée(s) avec succès.');
     }
 }

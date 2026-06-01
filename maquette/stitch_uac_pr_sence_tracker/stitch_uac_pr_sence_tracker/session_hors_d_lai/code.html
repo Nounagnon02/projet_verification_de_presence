@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Sora:wght@700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#3d0004",
+                        "on-error-container": "#93000a",
+                        "error": "#ba1a1a",
+                        "on-surface": "#191c1f",
+                        "outline-variant": "#c5c6d1",
+                        "inverse-surface": "#2d3134",
+                        "on-secondary-fixed-variant": "#005232",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed": "#03174b",
+                        "tertiary-fixed-dim": "#ffb3ae",
+                        "secondary-container": "#75f8b3",
+                        "secondary": "#006d43",
+                        "on-tertiary-fixed-variant": "#930014",
+                        "primary-fixed": "#dce1ff",
+                        "on-primary-container": "#8494cd",
+                        "inverse-primary": "#b5c4ff",
+                        "inverse-on-surface": "#eff1f5",
+                        "tertiary-fixed": "#ffdad7",
+                        "on-background": "#191c1f",
+                        "primary-container": "#1a2b5e",
+                        "surface-dim": "#d8dade",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed": "#78fbb6",
+                        "surface-tint": "#4c5c92",
+                        "on-tertiary-container": "#ff5f5c",
+                        "surface": "#f7f9fd",
+                        "background": "#f7f9fd",
+                        "primary-fixed-dim": "#b5c4ff",
+                        "on-primary-fixed-variant": "#344478",
+                        "surface-container": "#eceef2",
+                        "surface-bright": "#f7f9fd",
+                        "on-primary": "#ffffff",
+                        "tertiary-container": "#64000a",
+                        "surface-container-low": "#f2f4f8",
+                        "secondary-fixed-dim": "#59de9b",
+                        "on-tertiary": "#ffffff",
+                        "on-surface-variant": "#45464f",
+                        "outline": "#757680",
+                        "surface-container-highest": "#e0e3e6",
+                        "surface-container-high": "#e6e8ec",
+                        "on-secondary-container": "#007147",
+                        "primary": "#011549",
+                        "surface-variant": "#e0e3e6",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed": "#410004",
+                        "on-secondary-fixed": "#002111",
+                        "on-secondary": "#ffffff",
+                        "warning": "#F59E0B",
+                        "on-warning": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Sora", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    }
+                },
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-sora { font-family: 'Sora', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#FFFBEB] min-h-screen flex flex-col items-center overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="bg-slate-50 dark:bg-slate-900 flex justify-between items-center w-full px-6 py-3 docked full-width top-0 z-50">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Official university seal logo with traditional academic crest in deep navy blue" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAEu4PTIDbkb70fL4u6FLkgUDMDQ0UJ-X3MInpIvm5ziN-QeY9f2HaNwsE1kdgTCRTBdjcFUwoBfbWuVkK0wY9L6kFu9PX-7O8LXAAFgL3r1eNfoj5K3gd7FKv6wtqaByBJsEBL-l3tyd-7G9eg3DIA6_ZrZhTXGzj_c1YU0Kyp-Kx42q8r48xNf94gOi2XF4IdRM_MU0rgxfy-JsTPk4QayP7TkGvbTeBUvqV9Yfxt6ePI8vLt56nrZ2BMVHUqWaD-Tg2S7by3Q"/>
+</div>
+<h1 class="text-xl font-bold tracking-tighter text-blue-900 dark:text-blue-100 font-sora">Academic Editorial</h1>
+</div>
+<div class="text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors rounded-full p-2 active:scale-95 duration-150 ease-in-out">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 w-full max-w-md px-6 pt-12 pb-24 flex flex-col items-center text-center">
+<!-- Status Indicator -->
+<div class="relative mb-8">
+<div class="w-24 h-24 bg-amber-100 rounded-full flex items-center justify-center animate-pulse">
+<div class="w-20 h-20 bg-amber-500 rounded-full flex items-center justify-center shadow-lg shadow-amber-500/20">
+<span class="material-symbols-outlined text-white text-4xl" data-icon="access_time" style="font-variation-settings: 'FILL' 1;">access_time</span>
+</div>
+</div>
+</div>
+<!-- Headline -->
+<h2 class="text-3xl font-bold text-primary font-sora tracking-tight mb-4">Hors délai</h2>
+<!-- Subtext -->
+<p class="text-on-surface-variant text-sm leading-relaxed mb-10 px-4">
+            La période de validation pour ce cours est terminée. Veuillez contacter votre enseignant ou l'administration en cas de problème.
+        </p>
+<!-- Course Details Card (Bento-style Asymmetric) -->
+<div class="w-full bg-surface-container-lowest rounded-[24px] p-6 text-left shadow-[0_12px_32px_rgba(25,28,31,0.04)] relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-6xl" data-icon="history">history</span>
+</div>
+<div class="flex flex-col gap-4 relative z-10">
+<div class="space-y-1">
+<span class="text-[10px] uppercase tracking-widest font-bold text-amber-600 font-mono">Session de cours</span>
+<h3 class="text-lg font-bold text-primary leading-tight font-sora">Algorithmique &amp; Structures de Données</h3>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex flex-col">
+<span class="text-[11px] text-slate-400 font-medium">Horaire</span>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="material-symbols-outlined text-sm text-primary" data-icon="schedule">schedule</span>
+<span class="text-sm font-mono font-medium text-on-surface">10:30 — 12:30</span>
+</div>
+</div>
+<div class="w-[1px] h-8 bg-outline-variant/20"></div>
+<div class="flex flex-col">
+<span class="text-[11px] text-slate-400 font-medium">Statut</span>
+<div class="flex items-center gap-1.5 mt-0.5">
+<div class="w-2 h-2 rounded-full bg-error"></div>
+<span class="text-sm font-medium text-on-surface">Fermé</span>
+</div>
+</div>
+</div>
+<div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+<span class="text-xs text-slate-500 italic">Code: ASD-302-L2</span>
+<span class="material-symbols-outlined text-slate-300" data-icon="school">school</span>
+</div>
+</div>
+</div>
+<!-- Action Area -->
+<div class="w-full mt-10 space-y-4">
+<button class="w-full py-4 bg-surface-container-highest text-on-surface font-bold rounded-xl active:scale-95 transition-transform">
+                Retour à l'accueil
+            </button>
+<button class="w-full py-2 flex items-center justify-center gap-2 text-primary font-semibold text-sm hover:underline active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-lg" data-icon="help_outline">help_outline</span>
+                Besoin d'assistance ?
+            </button>
+</div>
+</main>
+<!-- Footer Identity -->
+<footer class="mt-auto w-full py-6 text-center">
+<p class="text-[10px] text-slate-400 font-mono tracking-widest uppercase">UAC — Système de Gestion de Présence</p>
+</footer>
+<!-- BottomNavBar (Suppressed as per rules for focused journey, but logic placeholder check: Current page is focused error/dead-end, thus shell hidden) -->
+<!-- Suppression logic: Error/Hors délai page is a "dead end" relative to global nav -->
+<!-- Material Design Shell Logic Placeholder (Visual Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pt-2 pb-6 bg-white/80 backdrop-blur-xl shadow-[0_-4px_20px_rgba(0,0,0,0.05)] border-t border-slate-200/20 md:hidden hidden">
+<div class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5">
+<span class="material-symbols-outlined" data-icon="fact_check">fact_check</span>
+<span class="text-[11px] font-medium font-label">Attendance</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="text-[11px] font-medium font-label">Courses</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span class="text-[11px] font-medium font-label">Schedule</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 px-3 py-1.5">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="text-[11px] font-medium font-label">Profile</span>
+</div>
+</nav>
+</body></html>
