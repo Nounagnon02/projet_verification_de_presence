@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#344478",
+                        "primary-fixed-dim": "#b5c4ff",
+                        "tertiary-fixed-dim": "#ffb3ae",
+                        "surface-container-highest": "#e0e3e6",
+                        "surface": "#f7f9fd",
+                        "background": "#f7f9fd",
+                        "surface-container-high": "#e6e8ec",
+                        "on-primary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "secondary-container": "#75f8b3",
+                        "on-secondary-container": "#007147",
+                        "tertiary": "#3d0004",
+                        "on-error-container": "#93000a",
+                        "surface-variant": "#e0e3e6",
+                        "on-surface-variant": "#45464f",
+                        "surface-bright": "#f7f9fd",
+                        "surface-container": "#eceef2",
+                        "on-surface": "#191c1f",
+                        "secondary-fixed-dim": "#59de9b",
+                        "secondary-fixed": "#78fbb6",
+                        "on-tertiary-container": "#ff5f5c",
+                        "secondary": "#006d43",
+                        "on-primary-container": "#8494cd",
+                        "tertiary-container": "#64000a",
+                        "inverse-on-surface": "#eff1f5",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "primary-container": "#1a2b5e",
+                        "on-secondary": "#ffffff",
+                        "surface-dim": "#d8dade",
+                        "on-tertiary-fixed": "#410004",
+                        "tertiary-fixed": "#ffdad7",
+                        "outline-variant": "#c5c6d1",
+                        "inverse-surface": "#2d3134",
+                        "on-primary-fixed": "#03174b",
+                        "surface-container-low": "#f2f4f8",
+                        "on-secondary-fixed": "#002111",
+                        "on-background": "#191c1f",
+                        "primary": "#011549",
+                        "on-error": "#ffffff",
+                        "inverse-primary": "#b5c4ff",
+                        "on-secondary-fixed-variant": "#005232",
+                        "on-tertiary-fixed-variant": "#930014",
+                        "error": "#ba1a1a",
+                        "surface-tint": "#4c5c92",
+                        "primary-fixed": "#dce1ff",
+                        "outline": "#757680"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "12px",
+                        "2xl": "16px",
+                        "3xl": "24px",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Sora", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"],
+                        "technical": ["JetBrains Mono", "monospace"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .student-table-row:hover {
+            background-color: #f2f4f8;
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface flex overflow-hidden h-screen">
+<!-- SideNavBar (Execution from JSON) -->
+<aside class="hidden md:flex flex-col h-screen p-6 fixed left-0 top-0 bg-[#f7f9fd] dark:bg-slate-900 w-64 z-40">
+<div class="text-lg font-bold text-[#1A2B5E] dark:text-white mb-8 font-headline tracking-tight">
+            UAC Présence
+        </div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-[#e6e8ec] dark:hover:bg-slate-800 rounded-lg transition-all hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-medium">Dashboard</span>
+</a>
+<!-- Active State Logic: Students is active -->
+<a class="flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-800 text-[#1A2B5E] font-semibold rounded-lg shadow-sm" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-medium">Students</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-[#e6e8ec] dark:hover:bg-slate-800 rounded-lg transition-all hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">book</span>
+<span class="font-medium">Courses</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-[#e6e8ec] dark:hover:bg-slate-800 rounded-lg transition-all hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="font-medium">Schedules</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-[#e6e8ec] dark:hover:bg-slate-800 rounded-lg transition-all hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">how_to_reg</span>
+<span class="font-medium">Attendance</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-[#e6e8ec] dark:hover:bg-slate-800 rounded-lg transition-all hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-medium">Settings</span>
+</a>
+</nav>
+<div class="mt-auto pt-6 border-t border-outline-variant/10">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-[#e6e8ec] dark:hover:bg-slate-800 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="font-medium">Admin Profile</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-64 h-full overflow-y-auto bg-surface flex flex-col relative">
+<!-- TopAppBar (Execution from JSON) -->
+<header class="flex justify-between items-center w-full px-8 py-4 bg-[#f7f9fd] sticky top-0 z-30">
+<div class="flex items-center gap-4 w-full max-w-2xl">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-surface-container-high rounded-xl border-none focus:ring-2 focus:ring-primary text-sm font-body" placeholder="Rechercher par nom ou matricule..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-primary-container">notifications</span>
+</button>
+<div class="w-10 h-10 rounded-full overflow-hidden bg-primary-fixed">
+<img alt="Avatar" class="w-full h-full object-cover" data-alt="close-up portrait of a professional academic administrator in a modern office setting, soft natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5bC_hSB6SVgS__MZ0dFvDH_qpaGClcOJiPADIKSm7sVxzgfYpw8s_47CLGC4ohLa62L9HIhMNblxdAnpZzyoJBwfPGEzpbEd3NuAVfChPZYXTSZphvHZ9mnpgT5YNVWDKAavJIGCOAVWboHUZdu9sWM9fulrD0lCF-F37LhtamUWueuVjP1PzrQAtwLRK_LkXCskZfMWbgAEXrsP1NqOBq0bdnOmytD6mUwqTEzNL84y1DQ6Lwf68z13bkgHfGR41jhQ7Q7BlnA"/>
+</div>
+</div>
+</header>
+<!-- Page Header & Actions -->
+<div class="px-8 py-6 space-y-6">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<div>
+<h1 class="text-3xl font-bold font-headline tracking-tight text-primary">Gestion des Étudiants</h1>
+<p class="text-on-surface-variant font-body">Portail académique • Année Universitaire 2023-2024</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-5 py-2.5 bg-surface-container-highest text-on-surface font-semibold rounded-xl hover:bg-surface-container-high transition-all">
+<span class="material-symbols-outlined text-[20px]">upload_file</span>
+<span>Importer CSV</span>
+</button>
+<button class="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-primary to-primary-container text-white font-semibold rounded-xl hover:opacity-90 shadow-lg shadow-primary/10 transition-all">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span>Ajouter un étudiant</span>
+</button>
+</div>
+</div>
+<!-- Filter Chips -->
+<div class="flex flex-wrap gap-3 items-center">
+<div class="flex items-center gap-2 px-4 py-1.5 bg-surface-container-lowest text-on-surface-variant rounded-full text-sm border border-outline-variant/15">
+<span class="font-medium text-xs uppercase tracking-wider text-primary">Filière:</span>
+<select class="bg-transparent border-none p-0 text-sm focus:ring-0 cursor-pointer">
+<option>Toutes les filières</option>
+<option>Informatique de Gestion</option>
+<option>Génie Civil</option>
+<option>Droit</option>
+</select>
+</div>
+<div class="flex items-center gap-2 px-4 py-1.5 bg-surface-container-lowest text-on-surface-variant rounded-full text-sm border border-outline-variant/15">
+<span class="font-medium text-xs uppercase tracking-wider text-primary">Année:</span>
+<select class="bg-transparent border-none p-0 text-sm focus:ring-0 cursor-pointer">
+<option>Toutes les années</option>
+<option>Licence 1</option>
+<option>Licence 2</option>
+<option>Licence 3</option>
+<option>Master 1</option>
+</select>
+</div>
+<button class="text-primary text-sm font-semibold hover:underline px-2">Réinitialiser</button>
+</div>
+<!-- Student List Table (Editorial Style) -->
+<div class="bg-surface-container-lowest rounded-3xl overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low/50">
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Étudiant</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Matricule</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Filière</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Année</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant">Email</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container-high">
+<!-- Student 1 -->
+<tr class="student-table-row transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center font-bold text-primary overflow-hidden">
+<img alt="KA" class="w-full h-full object-cover" data-alt="portrait of a young student smiling, academic background, clean studio lighting, realistic photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYYh3tccwdHu-4tlK9Ku-42FI50psPvBomEnCoGMNBe-QvXWcQHKIsbaBECr1bTSCvD_i5BbfwKJiMv-_4EE65Xq0SX0zTCFoBLxQFYT69ECvrLnvl8cT8Sh6_R8NYT5-jqoZPyLBzBUSbRxcF5GBKn2XZkj7fStXIQqu8P_Upup7XKqpUfnTXD90jO6a4mQXYui4nVW28qCN0dJi0TjbdRthJx9CGBiRzKrebwXOMyMNyllPya8G9wOQ_T_wI7MCVRATJ7YTmrw"/>
+</div>
+<div>
+<p class="font-bold text-on-surface">ADAMOU Koffi</p>
+<p class="text-xs text-on-surface-variant">Inscrit le 12 Sept. 2023</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="font-technical text-sm text-primary-container bg-primary-fixed/30 px-2 py-1 rounded">2023-IG-045</span>
+</td>
+<td class="px-6 py-4 text-sm">Informatique de Gestion</td>
+<td class="px-6 py-4 text-sm font-medium">Licence 2</td>
+<td class="px-6 py-4 text-sm text-on-surface-variant">k.adamou@uac.bj</td>
+<td class="px-6 py-4 text-right">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Student 2 -->
+<tr class="student-table-row transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-secondary-fixed flex items-center justify-center font-bold text-secondary overflow-hidden">
+<img alt="ST" class="w-full h-full object-cover" data-alt="close up of a cheerful university student, bokeh library background, warm natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvq0D6IZ-IZf2jLWZruvC9i-x2H79tBJyZCZZygIZ4hFpgQRcXUpdzuTOYPCrdC6BJ8h0y2J6n1AK6vh9VVxXH2EgMMrILieNN3CW9GmL55DaP1FEhSv83zMeYBeRkuwiKY1o4LuEtLygZQgkepPGkPqvAJhv9mYHpxsFRWwLoqYbIo-4S5e4PNw5sfTkDzIaA8XqFnHKvvfWGDEs2yd2vhaTPO29b5AjUuPbeSVErzXMWRwDaq8mvt_eqE33GDnMBnxBCOxRGJw"/>
+</div>
+<div>
+<p class="font-bold text-on-surface">TOURE Saliou</p>
+<p class="text-xs text-on-surface-variant">Inscrit le 15 Sept. 2023</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="font-technical text-sm text-primary-container bg-primary-fixed/30 px-2 py-1 rounded">2023-GC-112</span>
+</td>
+<td class="px-6 py-4 text-sm">Génie Civil</td>
+<td class="px-6 py-4 text-sm font-medium">Licence 1</td>
+<td class="px-6 py-4 text-sm text-on-surface-variant">s.toure@uac.bj</td>
+<td class="px-6 py-4 text-right">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Student 3 -->
+<tr class="student-table-row transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-tertiary-fixed flex items-center justify-center font-bold text-on-tertiary-fixed-variant overflow-hidden">
+<img alt="MB" class="w-full h-full object-cover" data-alt="headshot of a focused female graduate student, bright classroom background, soft diffused lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA21UnSTiDUMkJTk71rLlwmsiA53270PVgAxxY5kLyPAUQk5OBFAcg-BqYHmNhVdRg4e2mtaRNvTjcQ4Do4IeZoPlxaBGWkz4_ykamNi_ntOo8QKpTJlP096lmy_tE8O0jcxIMHXCK1BZSnTRHWzSqEwBjz8UdAe-JElNrRsvTXxHoumEO8c32_CHxlY7Ptc3TpXn2JvFzJ46PIAuIBi_cQuxbEhzzvn7wF3o3umY-7UaKwA_PHf4PKV-sE-gkYS3u2Hd139lkOiA"/>
+</div>
+<div>
+<p class="font-bold text-on-surface">BA Mariam</p>
+<p class="text-xs text-on-surface-variant">Inscrit le 10 Sept. 2023</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="font-technical text-sm text-primary-container bg-primary-fixed/30 px-2 py-1 rounded">2023-DR-009</span>
+</td>
+<td class="px-6 py-4 text-sm">Droit Public</td>
+<td class="px-6 py-4 text-sm font-medium">Licence 3</td>
+<td class="px-6 py-4 text-sm text-on-surface-variant">m.ba@uac.bj</td>
+<td class="px-6 py-4 text-right">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- FAB Suppression Check: Primary action handled in header, but for mobile/quick add: -->
+<button class="md:hidden fixed bottom-24 right-6 w-14 h-14 bg-primary text-white rounded-2xl shadow-xl flex items-center justify-center active:scale-95 transition-transform z-40">
+<span class="material-symbols-outlined">add</span>
+</button>
+<!-- BottomNavBar (Execution from JSON) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 z-50">
+<a class="flex flex-col items-center justify-center text-slate-400 p-2" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-medium mt-1">Home</span>
+</a>
+<!-- Active: Students -->
+<a class="flex flex-col items-center justify-center bg-[#1A2B5E] text-white rounded-2xl p-2 px-4" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="text-[10px] font-medium mt-1">Students</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 p-2" href="#">
+<span class="material-symbols-outlined">how_to_reg</span>
+<span class="text-[10px] font-medium mt-1">Attendance</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 p-2" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="text-[10px] font-medium mt-1">Schedules</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 p-2" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-medium mt-1">Profile</span>
+</a>
+</nav>
+</main>
+<!-- Side Drawer: Ajouter un Étudiant (Always visible for demonstration as per prompt) -->
+<div class="fixed inset-0 z-[60] bg-on-surface/20 backdrop-blur-sm flex justify-end">
+<div class="w-full max-w-md bg-surface h-full shadow-2xl flex flex-col transform transition-transform duration-300">
+<div class="p-8 border-b border-outline-variant/10 flex justify-between items-center bg-surface-container-low">
+<div>
+<h2 class="text-xl font-bold font-headline text-primary">Nouvel Étudiant</h2>
+<p class="text-sm text-on-surface-variant font-body">Renseignez les informations académiques</p>
+</div>
+<button class="p-2 hover:bg-surface-container-highest rounded-full transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-8 space-y-6">
+<!-- Profile Picture Placeholder -->
+<div class="flex justify-center">
+<div class="relative group">
+<div class="w-24 h-24 rounded-3xl bg-surface-container-high border-2 border-dashed border-outline flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-highest transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-3xl">add_a_photo</span>
+<span class="text-[10px] font-bold mt-1">PHOTO</span>
+</div>
+</div>
+</div>
+<!-- Form Fields -->
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-2">
+<label class="text-xs font-bold uppercase tracking-wider text-primary">Nom</label>
+<input class="w-full px-4 py-3 bg-surface-container-lowest rounded-xl border border-outline-variant/20 focus:ring-2 focus:ring-primary focus:border-transparent transition-all" placeholder="DOSSOU" type="text"/>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-bold uppercase tracking-wider text-primary">Prénom</label>
+<input class="w-full px-4 py-3 bg-surface-container-lowest rounded-xl border border-outline-variant/20 focus:ring-2 focus:ring-primary focus:border-transparent transition-all" placeholder="Ariel" type="text"/>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-bold uppercase tracking-wider text-primary">Email Institutionnel</label>
+<input class="w-full px-4 py-3 bg-surface-container-lowest rounded-xl border border-outline-variant/20 focus:ring-2 focus:ring-primary focus:border-transparent transition-all" placeholder="a.dossou@uac.bj" type="email"/>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-bold uppercase tracking-wider text-primary">Téléphone</label>
+<input class="w-full px-4 py-3 bg-surface-container-lowest rounded-xl border border-outline-variant/20 focus:ring-2 focus:ring-primary focus:border-transparent transition-all" placeholder="+229 00 00 00 00" type="tel"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-2">
+<label class="text-xs font-bold uppercase tracking-wider text-primary">Filière</label>
+<select class="w-full px-4 py-3 bg-surface-container-lowest rounded-xl border border-outline-variant/20 focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
+<option>Informatique</option>
+<option>Droit</option>
+<option>Économie</option>
+</select>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-bold uppercase tracking-wider text-primary">Année</label>
+<select class="w-full px-4 py-3 bg-surface-container-lowest rounded-xl border border-outline-variant/20 focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
+<option>Licence 1</option>
+<option>Licence 2</option>
+<option>Licence 3</option>
+</select>
+</div>
+</div>
+<!-- Academic Info Block (Bento style) -->
+<div class="mt-8 p-6 bg-primary-container/5 rounded-3xl space-y-4 border border-primary/5">
+<div class="flex justify-between items-center">
+<span class="text-xs font-bold uppercase tracking-wider text-primary">ID GÉNÉRÉ</span>
+<span class="px-2 py-1 bg-secondary-container text-on-secondary-container text-[10px] font-bold rounded-lg">SYSTEM ACTIVE</span>
+</div>
+<div class="font-technical text-3xl font-bold text-primary-container tracking-wider text-center py-4 bg-white/50 rounded-2xl shadow-inner">
+                        2024-UAC-0882
+                    </div>
+<p class="text-[10px] text-center text-on-surface-variant font-medium leading-relaxed">
+                        Cet identifiant est unique et sera utilisé pour toutes les transactions académiques de l'étudiant.
+                    </p>
+</div>
+</div>
+<div class="p-8 border-t border-outline-variant/10 bg-surface-container-low">
+<div class="flex gap-4">
+<button class="flex-1 px-6 py-4 bg-surface-container-highest text-on-surface font-bold rounded-2xl hover:bg-surface-container-high transition-all">Annuler</button>
+<button class="flex-[2] px-6 py-4 bg-gradient-to-br from-primary to-primary-container text-white font-bold rounded-2xl shadow-xl shadow-primary/20 hover:opacity-90 transition-all">Enregistrer l'étudiant</button>
+</div>
+</div>
+</div>
+</div>
+</body></html>

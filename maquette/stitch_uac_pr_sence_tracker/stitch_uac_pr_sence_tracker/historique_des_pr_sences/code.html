@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>UAC Presence - Historique des Présences</title>
+<!-- Fonts and Icons -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#f2f4f8",
+                    "secondary": "#006d43",
+                    "tertiary": "#3d0004",
+                    "inverse-primary": "#b5c4ff",
+                    "primary-fixed": "#dce1ff",
+                    "secondary-container": "#75f8b3",
+                    "primary-container": "#1a2b5e",
+                    "on-primary-fixed-variant": "#344478",
+                    "on-secondary": "#ffffff",
+                    "on-background": "#191c1f",
+                    "surface-dim": "#d8dade",
+                    "on-error": "#ffffff",
+                    "on-secondary-container": "#007147",
+                    "error-container": "#ffdad6",
+                    "surface-variant": "#e0e3e6",
+                    "on-primary-container": "#8494cd",
+                    "on-secondary-fixed": "#002111",
+                    "on-primary-fixed": "#03174b",
+                    "on-error-container": "#93000a",
+                    "on-tertiary-fixed": "#410004",
+                    "primary": "#011549",
+                    "on-tertiary-container": "#ff5f5c",
+                    "tertiary-container": "#64000a",
+                    "surface-container-high": "#e6e8ec",
+                    "surface-bright": "#f7f9fd",
+                    "primary-fixed-dim": "#b5c4ff",
+                    "secondary-fixed": "#78fbb6",
+                    "surface-tint": "#4c5c92",
+                    "on-surface-variant": "#45464f",
+                    "surface-container-highest": "#e0e3e6",
+                    "secondary-fixed-dim": "#59de9b",
+                    "on-secondary-fixed-variant": "#005232",
+                    "outline": "#757680",
+                    "error": "#ba1a1a",
+                    "outline-variant": "#c5c6d1",
+                    "inverse-on-surface": "#eff1f5",
+                    "inverse-surface": "#2d3134",
+                    "tertiary-fixed-dim": "#ffb3ae",
+                    "on-surface": "#191c1f",
+                    "on-tertiary-fixed-variant": "#930014",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "surface-container": "#eceef2",
+                    "on-tertiary": "#ffffff",
+                    "surface": "#f7f9fd",
+                    "tertiary-fixed": "#ffdad7",
+                    "background": "#f7f9fd"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Sora", "sans-serif"],
+                    "body": ["Inter", "sans-serif"],
+                    "label": ["Inter", "sans-serif"],
+                    "mono": ["JetBrains Mono", "monospace"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .academic-gradient {
+            background: linear-gradient(135deg, #011549 0%, #1a2b5e 100%);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased overflow-x-hidden">
+<!-- SideNavBar (Authority: JSON & Design System) -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-slate-100 flex flex-col py-6 px-4 gap-2 z-40">
+<div class="mb-8 px-4">
+<h1 class="text-lg font-black text-blue-950">UAC Portal</h1>
+<p class="text-xs font-medium text-slate-500 font-headline">Academic Editorial</p>
+</div>
+<nav class="flex-1 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200 transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200 transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="school">school</span>
+<span class="font-medium">Students</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200 transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="book">book</span>
+<span class="font-medium">Courses</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200 transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span class="font-medium">Schedules</span>
+</a>
+<!-- Active Tab: Attendance -->
+<a class="flex items-center gap-3 px-4 py-3 bg-white text-blue-900 shadow-sm rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="fact_check">fact_check</span>
+<span class="font-bold">Attendance</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200 transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-medium">Settings</span>
+</a>
+</nav>
+<div class="mt-auto border-t border-slate-200 pt-4 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200 transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+<span class="font-medium">Help Center</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 min-h-screen pb-12">
+<!-- TopNavBar (Authority: JSON & Design System) -->
+<header class="fixed top-0 right-0 left-64 h-16 bg-slate-50 flex justify-between items-center px-8 z-30">
+<div class="flex items-center gap-4">
+<div class="bg-surface-container-high rounded-full px-4 py-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-outline" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-64 placeholder:text-outline font-body" placeholder="Rechercher un dossier..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<button class="relative text-slate-500 hover:text-blue-900 transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-error ring-2 ring-slate-50"></span>
+</button>
+<div class="flex items-center gap-3 cursor-pointer group">
+<div class="text-right">
+<p class="text-sm font-bold text-blue-950 font-headline leading-tight">Dr. Aristhène</p>
+<p class="text-[10px] font-mono text-slate-500">ADMIN_PRESENCE_01</p>
+</div>
+<span class="material-symbols-outlined text-3xl text-blue-950 group-hover:scale-105 transition-transform" data-icon="account_circle">account_circle</span>
+</div>
+</div>
+</header>
+<!-- Page Header Section -->
+<div class="mt-24 px-10">
+<div class="flex justify-between items-end mb-8">
+<div>
+<nav class="flex mb-2 gap-2 text-xs font-mono text-slate-400 uppercase tracking-widest">
+<span>Gestion</span>
+<span>/</span>
+<span class="text-primary font-bold">Archives</span>
+</nav>
+<h2 class="text-4xl font-extrabold text-primary font-headline tracking-tight">Historique des Présences</h2>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-primary text-primary font-bold text-sm hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="csv">csv</span>
+                        Exporter CSV
+                    </button>
+<button class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white font-bold text-sm academic-gradient shadow-md hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-lg" data-icon="picture_as_pdf">picture_as_pdf</span>
+                        Exporter PDF
+                    </button>
+</div>
+</div>
+<!-- Filters Bar -->
+<div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm mb-10">
+<div class="grid grid-cols-5 gap-6">
+<div class="flex flex-col gap-1.5">
+<label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-headline">Filière</label>
+<div class="relative">
+<select class="w-full bg-surface-container rounded-lg border-none focus:ring-2 focus:ring-primary py-2.5 pl-4 pr-10 text-sm font-medium appearance-none">
+<option>Informatique de Gestion</option>
+<option>Génie Civil</option>
+<option>Économie</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-slate-400 pointer-events-none" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-headline">Année</label>
+<div class="relative">
+<select class="w-full bg-surface-container rounded-lg border-none focus:ring-2 focus:ring-primary py-2.5 pl-4 pr-10 text-sm font-medium appearance-none">
+<option>Licence 3</option>
+<option>Master 1</option>
+<option>Master 2</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-slate-400 pointer-events-none" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-headline">Cours</label>
+<div class="relative">
+<select class="w-full bg-surface-container rounded-lg border-none focus:ring-2 focus:ring-primary py-2.5 pl-4 pr-10 text-sm font-medium appearance-none">
+<option>Algorithmique Avancée</option>
+<option>Base de Données</option>
+<option>Réseaux Locaux</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-slate-400 pointer-events-none" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-headline">Date (Période)</label>
+<div class="relative">
+<div class="flex items-center w-full bg-surface-container rounded-lg px-4 py-2.5 gap-2 cursor-pointer">
+<span class="material-symbols-outlined text-sm text-slate-500" data-icon="calendar_month">calendar_month</span>
+<span class="text-sm font-medium">10 Jan - 25 Jan 2024</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-headline">Statut</label>
+<div class="relative">
+<select class="w-full bg-surface-container rounded-lg border-none focus:ring-2 focus:ring-primary py-2.5 pl-4 pr-10 text-sm font-medium appearance-none">
+<option>Tous les statuts</option>
+<option>Présent</option>
+<option>Absent</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-slate-400 pointer-events-none" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Data Table Container -->
+<div class="bg-surface-container-lowest rounded-3xl overflow-hidden shadow-sm">
+<table class="w-full text-left border-separate border-spacing-0">
+<thead class="bg-surface-container-low border-b-0">
+<tr>
+<th class="px-8 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest font-headline">Étudiant</th>
+<th class="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest font-headline">Cours</th>
+<th class="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest font-headline">Date</th>
+<th class="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest font-headline">Heure de scan</th>
+<th class="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest font-headline">Statut</th>
+<th class="px-8 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest font-headline text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="px-8 py-4">
+<div class="flex items-center gap-4">
+<div class="h-10 w-10 rounded-xl bg-primary-container flex items-center justify-center overflow-hidden">
+<img class="h-full w-full object-cover" data-alt="portrait of a confident university student with glasses smiling against a blurred academic building background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3p7okz2Hmewd5WKTUR40a5gXEEP9cSZIzbgTzYMwxipkbyTVRwPcehtLQybAtzwG4PdD-inrUrpCttb84RycRenUPINrngk3L85TBdp6nnzFiP3_iCpoAD11I5ta4_NSeqJPrOWLrIoxFd3XuTkQ0YqUPnzMRGbgSpcFr_H_DmZUCkH-5tjXQy7UAt1lyWiDLo-QEGADyM1PXHqZ3sFB5ycxIPuJF8bfl4Hu1bEdUo_U5qsjah16vCzBfmbI8l-NYei4xbeWnDw"/>
+</div>
+<div>
+<p class="font-bold text-blue-950 font-headline">Yao Kouassi Jean</p>
+<p class="text-[10px] font-mono text-slate-400">ID: #INF24-0012</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold font-headline">Algo Avancée</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm font-medium text-slate-700">14 Jan 2024</span>
+</td>
+<td class="px-6 py-4">
+<span class="font-mono text-sm text-primary font-medium">08:12:45</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-secondary-container text-on-secondary-container text-xs font-bold">
+<span class="h-1.5 w-1.5 rounded-full bg-secondary"></span>
+                                    Présent
+                                </span>
+</td>
+<td class="px-8 py-4 text-right">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="px-8 py-4">
+<div class="flex items-center gap-4">
+<div class="h-10 w-10 rounded-xl bg-primary-container flex items-center justify-center overflow-hidden">
+<img class="h-full w-full object-cover" data-alt="close up of a professional young woman student wearing a traditional scarf with soft indoor lighting and books in background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7c1S6HRfwdkKG_6vTkoDKCeesToLkzC1XTJ8-S-AVGQeYDV9NKVpqplDw-5NpCS8537OZXPJGQ-xx-Y8vk0FxSBx7vuq-8m2f2JrdQMDjCM4VhywnvPb39FqO5J3AHVsIu4CYbpJr7SFJallxolNUC9nBiS_WP7W3UY2zZqAZcUNMu-lHIj0NzbSBsUDWt6JpFgzmpl1I2NbiBkkbUPQvssYi_BXevAED6obSPGB1H4Cm5PKQ-LcK6u4SPNoy9nisJWacX2zZvA"/>
+</div>
+<div>
+<p class="font-bold text-blue-950 font-headline">Aminata Koné</p>
+<p class="text-[10px] font-mono text-slate-400">ID: #INF24-0089</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold font-headline">Algo Avancée</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm font-medium text-slate-700">14 Jan 2024</span>
+</td>
+<td class="px-6 py-4">
+<span class="font-mono text-sm text-slate-400 font-medium">-- : -- : --</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-error-container text-on-error-container text-xs font-bold">
+<span class="h-1.5 w-1.5 rounded-full bg-error"></span>
+                                    Absent
+                                </span>
+</td>
+<td class="px-8 py-4 text-right">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="px-8 py-4">
+<div class="flex items-center gap-4">
+<div class="h-10 w-10 rounded-xl bg-primary-container flex items-center justify-center overflow-hidden">
+<img class="h-full w-full object-cover" data-alt="academic portrait of a male student with dark curly hair and thoughtful expression in an library setting with warm tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYyrYk2_MkMmil9sXrq7s_MXt5p6kvkzokjc2dcpDjgwReMCIzV-HU6aL57uRvje9K1LdBg3u715ngYwaJKmgU5CVx_wYy0oem8bvGFm1yZAEA_DoFkyThDMUWe-zLlEFToe_wVf-GopcbNwzRxyvvV4zNYThlRSTIcR0YeZc737fTD_ULftMzLMtKjB8vv4D2SCj-hhualqC8MtHgB_5tEsl1hiESQrH_1pSomVAnbAelOHHqxKxD2kAhKFZrC1-rQzGS3Obj3Q"/>
+</div>
+<div>
+<p class="font-bold text-blue-950 font-headline">Bakayoko Marc</p>
+<p class="text-[10px] font-mono text-slate-400">ID: #INF24-0045</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold font-headline">Base de Données</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm font-medium text-slate-700">14 Jan 2024</span>
+</td>
+<td class="px-6 py-4">
+<span class="font-mono text-sm text-primary font-medium">10:05:12</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-secondary-container text-on-secondary-container text-xs font-bold">
+<span class="h-1.5 w-1.5 rounded-full bg-secondary"></span>
+                                    Présent
+                                </span>
+</td>
+<td class="px-8 py-4 text-right">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="px-8 py-4">
+<div class="flex items-center gap-4">
+<div class="h-10 w-10 rounded-xl bg-primary-container flex items-center justify-center overflow-hidden">
+<img class="h-full w-full object-cover" data-alt="focused university student working on laptop in a modern study hall with natural window lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCr45cnZTBLE42r3WzhRDUvovQPjnpLafZ8H0TQ77UgCMfygj8EiKnlaqI1HiCwcqdsQuhGdX2OK99yj7HSGNct6gF__JmTB7CKG1kfuZNFSJvxrv3M4wRjR9emBQAsbyXkI5FG5NukWdAvr4e4BQ7mCKDaa8DYcP_YkN6LP-XQkXdTb2LPu8AQB-wbnBPc9VHe1Kcg_pcspzKFAiOdDgDlcZVkMwuYkiVvCXYNmyxYT4790Y0XDsmOEsQ9NwNuQ61325yktZ1_jQ"/>
+</div>
+<div>
+<p class="font-bold text-blue-950 font-headline">Diallo Fatoumata</p>
+<p class="text-[10px] font-mono text-slate-400">ID: #INF24-0102</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold font-headline">Base de Données</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm font-medium text-slate-700">14 Jan 2024</span>
+</td>
+<td class="px-6 py-4">
+<span class="font-mono text-sm text-primary font-medium">09:58:30</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-secondary-container text-on-secondary-container text-xs font-bold">
+<span class="h-1.5 w-1.5 rounded-full bg-secondary"></span>
+                                    Présent
+                                </span>
+</td>
+<td class="px-8 py-4 text-right">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+<!-- Pagination -->
+<div class="flex justify-between items-center px-8 py-6 bg-surface-container-low">
+<p class="text-xs font-medium text-slate-500">Affichage de <span class="text-primary font-bold">1-10</span> sur <span class="text-primary font-bold">1,240</span> entrées</p>
+<div class="flex items-center gap-1">
+<button class="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined text-xl" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="h-9 w-9 flex items-center justify-center rounded-lg bg-primary text-white font-bold text-sm">1</button>
+<button class="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-slate-200 transition-colors text-sm font-bold">2</button>
+<button class="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-slate-200 transition-colors text-sm font-bold">3</button>
+<span class="px-2 text-slate-400">...</span>
+<button class="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-slate-200 transition-colors text-sm font-bold">124</button>
+<button class="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined text-xl" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Dashboard Insight (Editorial Layout Style) -->
+<div class="mt-10 grid grid-cols-3 gap-8">
+<div class="col-span-1 bg-primary text-white p-8 rounded-3xl academic-gradient shadow-xl flex flex-col justify-between">
+<div>
+<h4 class="text-sm font-bold opacity-60 uppercase tracking-widest mb-1">Résumé Quotidien</h4>
+<p class="text-3xl font-extrabold font-headline leading-tight">92.4% Taux de Présence</p>
+</div>
+<div class="mt-8 flex items-end justify-between">
+<div class="flex gap-2 items-center">
+<span class="material-symbols-outlined text-secondary-container" data-icon="trending_up">trending_up</span>
+<span class="text-xs font-bold">+2.4% vs hier</span>
+</div>
+<span class="material-symbols-outlined text-4xl opacity-20" data-icon="fact_check">fact_check</span>
+</div>
+</div>
+<div class="col-span-2 bg-surface-container-high p-8 rounded-3xl flex items-center gap-10">
+<div class="flex-1">
+<h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Aperçu rapide du mois</h4>
+<div class="flex gap-1 items-end h-24 mb-2">
+<div class="w-full bg-slate-300 rounded-t-lg h-[60%]"></div>
+<div class="w-full bg-slate-300 rounded-t-lg h-[45%]"></div>
+<div class="w-full bg-primary rounded-t-lg h-[85%]"></div>
+<div class="w-full bg-slate-300 rounded-t-lg h-[55%]"></div>
+<div class="w-full bg-slate-300 rounded-t-lg h-[70%]"></div>
+<div class="w-full bg-primary-container rounded-t-lg h-[95%]"></div>
+<div class="w-full bg-slate-300 rounded-t-lg h-[40%]"></div>
+<div class="w-full bg-slate-300 rounded-t-lg h-[65%]"></div>
+</div>
+<p class="text-xs font-mono text-slate-500">Janvier 2024 - Activité de scannage</p>
+</div>
+<div class="w-px h-full bg-slate-300"></div>
+<div class="flex-none w-48">
+<p class="text-xs font-bold text-slate-500 mb-1">Alertes Absences</p>
+<p class="text-2xl font-black text-primary font-headline">12 Étudiants</p>
+<p class="text-[10px] text-slate-400 mt-1 leading-relaxed">Nécessitant une intervention pédagogique immédiate.</p>
+<button class="mt-4 text-xs font-bold text-primary flex items-center gap-1 group">
+                            Voir les détails 
+                            <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Global Action Button (Prohibited on this transactional screen as per instructions, but placeholder for structure awareness if it was dashboard) -->
+</body></html>

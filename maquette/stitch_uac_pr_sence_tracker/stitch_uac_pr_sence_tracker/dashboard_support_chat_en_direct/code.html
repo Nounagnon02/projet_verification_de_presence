@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Academic Support Portal | Chat Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        .font-sora { font-family: 'Sora', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e0e3e6; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #c5c6d1; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-secondary-container": "#007147",
+                        "outline": "#757680",
+                        "on-primary-container": "#8494cd",
+                        "on-primary-fixed-variant": "#344478",
+                        "on-error-container": "#93000a",
+                        "secondary": "#006d43",
+                        "surface-variant": "#e0e3e6",
+                        "primary-container": "#1a2b5e",
+                        "on-primary-fixed": "#03174b",
+                        "on-secondary-fixed": "#002111",
+                        "primary": "#011549",
+                        "surface-bright": "#f7f9fd",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-container-high": "#e6e8ec",
+                        "on-error": "#ffffff",
+                        "surface-dim": "#d8dade",
+                        "background": "#f7f9fd",
+                        "surface-container-highest": "#e0e3e6",
+                        "inverse-surface": "#2d3134",
+                        "primary-fixed": "#dce1ff",
+                        "on-surface-variant": "#45464f",
+                        "tertiary-fixed": "#ffdad7",
+                        "tertiary-fixed-dim": "#ffb3ae",
+                        "secondary-container": "#75f8b3",
+                        "on-background": "#191c1f",
+                        "on-secondary": "#ffffff",
+                        "on-surface": "#191c1f",
+                        "tertiary": "#3d0004",
+                        "inverse-primary": "#b5c4ff",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed-dim": "#59de9b",
+                        "on-secondary-fixed-variant": "#005232",
+                        "surface-container-low": "#f2f4f8",
+                        "on-tertiary-fixed": "#410004",
+                        "secondary-fixed": "#78fbb6",
+                        "on-tertiary-fixed-variant": "#930014",
+                        "error-container": "#ffdad6",
+                        "surface-tint": "#4c5c92",
+                        "surface": "#f7f9fd",
+                        "on-tertiary-container": "#ff5f5c",
+                        "tertiary-container": "#64000a",
+                        "primary-fixed-dim": "#b5c4ff",
+                        "outline-variant": "#c5c6d1",
+                        "inverse-on-surface": "#eff1f5",
+                        "surface-container": "#eceef2"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-surface text-on-surface flex h-screen overflow-hidden">
+<!-- Predicted SideNavBar -->
+<aside class="flex flex-col h-full py-6 px-4 space-y-2 bg-slate-50 dark:bg-slate-950 text-blue-900 dark:text-blue-400 font-inter text-sm w-64 flex-shrink-0 z-20">
+<div class="flex items-center gap-3 px-2 mb-8">
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+</div>
+<div>
+<h2 class="font-sora font-bold text-lg text-blue-900 dark:text-white leading-tight">Chancellor Support</h2>
+<p class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Editorial Admin</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-white dark:bg-blue-900/20 text-blue-900 dark:text-blue-300 font-bold rounded-lg shadow-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">chat_bubble</span>
+<span>Active Chats</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined">history</span>
+<span>History</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined">bar_chart</span>
+<span>Analytics</span>
+</a>
+</nav>
+<button class="w-full bg-primary-container text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-all mt-4 mb-8">
+<span class="material-symbols-outlined text-[20px]">add_circle</span>
+<span>Start New Session</span>
+</button>
+<div class="border-t border-slate-200 dark:border-slate-800 pt-4 space-y-1">
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+<span>Help</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-error hover:bg-error-container/10 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span>Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Shell -->
+<main class="flex-1 flex flex-col min-w-0 bg-surface">
+<!-- Predicted TopNavBar -->
+<header class="flex justify-between items-center w-full px-6 py-3 bg-white dark:bg-slate-900 text-blue-900 dark:text-blue-400 font-inter text-sm antialiased z-10">
+<div class="flex items-center gap-6">
+<h1 class="font-sora font-bold text-xl text-blue-950 dark:text-white tracking-tight">Academic Support Portal</h1>
+<div class="hidden md:flex items-center bg-slate-50 dark:bg-slate-950 px-3 py-1.5 rounded-lg border-none">
+<span class="material-symbols-outlined text-slate-400 text-lg mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-64 placeholder:text-slate-400" placeholder="Search knowledge base..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<nav class="flex items-center gap-6">
+<a class="text-slate-500 dark:text-slate-400 font-medium hover:text-blue-700 dark:hover:text-blue-300 transition-colors" href="#">Knowledge Base</a>
+<a class="text-blue-900 dark:text-white border-b-2 border-blue-900 dark:border-blue-400 pb-1 hover:text-blue-700 dark:hover:text-blue-300 transition-colors" href="#">Tickets</a>
+</nav>
+<div class="h-6 w-[1px] bg-slate-200 mx-2"></div>
+<div class="flex items-center gap-3">
+<button class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-primary transition-all">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-primary transition-all">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<img alt="Support Agent Avatar" class="w-8 h-8 rounded-full border-2 border-white shadow-sm" data-alt="professional support agent headshot with warm friendly expression wearing blue sweater in soft office background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJC_TSb18GxOlRqegtwuwarReIRGMqvjG7Ac6E0Tbyher2x2MjClBsubxQPA-z8ZqBz521PuEKBY_GM_3EE2SCMQ_-O72_JixkLy12sYOY96Wy6zNKzGSxlmDHaNYksfYXb7Vo2EMI0XjI2jQWC82RRc9X2mZuZ02eBjSeDhT5mNIZXkiYlaMidaCkfvYujOuWDd4XsjREXDxqr4zEo6Aot8B6ah2tjpAHzTGBV24NRwIHEYVzYRGvbA6SbuIXGojpOZN20utwKg"/>
+</div>
+</div>
+</header>
+<!-- Three Column Dashboard Content -->
+<div class="flex-1 flex overflow-hidden">
+<!-- Column 1: Chat Queue/List -->
+<section class="w-80 flex flex-col bg-surface-container-low border-r border-transparent">
+<div class="p-4 space-y-4">
+<div class="flex p-1 bg-surface-container-high rounded-lg">
+<button class="flex-1 py-1.5 text-xs font-bold bg-surface-container-lowest text-primary rounded-md shadow-sm">My Chats</button>
+<button class="flex-1 py-1.5 text-xs font-medium text-on-surface-variant hover:bg-white/50 transition-all rounded-md">Queue (12)</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto px-2 space-y-1 pb-4">
+<!-- Chat Item (Active) -->
+<div class="p-4 bg-surface-container-lowest rounded-xl shadow-sm border-l-4 border-primary">
+<div class="flex justify-between items-start mb-1">
+<span class="font-bold text-sm text-primary">Jean-Baptiste Dupont</span>
+<span class="font-mono text-[10px] text-slate-400">14:22</span>
+</div>
+<p class="text-xs text-on-surface-variant line-clamp-2">Thank you, I've just submitted the requested documents via the student portal...</p>
+<div class="mt-2 flex items-center gap-2">
+<span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container text-[10px] font-bold">REGISTRATION</span>
+</div>
+</div>
+<!-- Chat Item -->
+<div class="p-4 hover:bg-surface-container-high transition-all rounded-xl cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<span class="font-bold text-sm text-on-surface">Amara Okafor</span>
+<span class="font-mono text-[10px] text-slate-400">14:15</span>
+</div>
+<p class="text-xs text-on-surface-variant line-clamp-2">Is there any update on the scholarship application for the next semester?</p>
+<div class="mt-2 flex items-center gap-2">
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant text-[10px] font-bold">FINANCE</span>
+</div>
+</div>
+<!-- Chat Item -->
+<div class="p-4 hover:bg-surface-container-high transition-all rounded-xl cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<span class="font-bold text-sm text-on-surface">Luca Moretti</span>
+<span class="font-mono text-[10px] text-slate-400">13:58</span>
+</div>
+<p class="text-xs text-on-surface-variant line-clamp-2">I am having trouble accessing the e-library system with my credentials.</p>
+<div class="mt-2 flex items-center gap-2">
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant text-[10px] font-bold">IT SUPPORT</span>
+</div>
+</div>
+<!-- More placeholders for depth -->
+<div class="p-4 hover:bg-surface-container-high transition-all rounded-xl cursor-pointer opacity-80">
+<div class="flex justify-between items-start mb-1">
+<span class="font-bold text-sm text-on-surface">Elena Fischer</span>
+<span class="font-mono text-[10px] text-slate-400">13:42</span>
+</div>
+<p class="text-xs text-on-surface-variant">Confirmed. The meeting is set for Friday.</p>
+</div>
+</div>
+</section>
+<!-- Column 2: Active Chat Window -->
+<section class="flex-1 flex flex-col bg-surface-container-lowest">
+<!-- Chat Header -->
+<div class="px-6 py-4 flex items-center justify-between bg-surface-container-lowest border-b-2 border-surface">
+<div class="flex items-center gap-3">
+<div class="relative">
+<img alt="Student Profile" class="w-10 h-10 rounded-full object-cover" data-alt="close up headshot of a young male university student with short dark hair looking friendly and professional" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAegQajJViM3_yRP0gSYrYKU9LJGxTrkq6GFapjPNUYI8Alq2lXTIQ22z4w19knw_Bf4Tw2IVWnaYYFg66oNggF6dLE8v1pwpiZq5YzsXzONQlceBg5G_bReyuBt7aHlhtdhNCN-FWFjZNFMxoP_3BJO74_Y2Lc5B4rpfnvCu1L-7JRymucB9I1JWR8cB8FCieJ_rw8vg_VHLtJkszaIdHlpEp18tjy7C-9rZnI3vmgHzoi-1iDCC4n1gOe31dmUfrF__oLU10Adg"/>
+<span class="absolute bottom-0 right-0 w-3 h-3 bg-secondary rounded-full border-2 border-white"></span>
+</div>
+<div>
+<h3 class="font-sora font-bold text-primary">Jean-Baptiste Dupont</h3>
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-bold text-secondary uppercase tracking-widest">Online</span>
+<span class="text-slate-300">•</span>
+<span class="text-[10px] font-mono text-slate-500">UAC-2024-4492</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-slate-400 hover:text-primary transition-all">
+<span class="material-symbols-outlined">call</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-primary transition-all">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Messages -->
+<div class="flex-1 overflow-y-auto p-6 space-y-6 bg-surface-container-lowest">
+<div class="flex flex-col items-center">
+<span class="px-4 py-1 rounded-full bg-surface-container-low text-[10px] font-bold text-slate-500 uppercase tracking-widest">Today</span>
+</div>
+<!-- Student Message -->
+<div class="flex gap-3 max-w-[80%]">
+<div class="flex-shrink-0 w-8 h-8 rounded-full bg-slate-200 overflow-hidden mt-1">
+<img alt="Avatar" class="w-full h-full object-cover" data-alt="headshot of young male student" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4tuobx7pe6MG9O5SWIQUs2MHDn13UomBB3r4a69GZyTOPpn-h_xuFWsWrVvI3wFHw3v9CwYburcxJNy8u2wiYGyzR_5qDV8CLfQpyBoXO_yJ4RyuHuRj8f4VH6LpuL32SG1Eoca9LWTvsr7M74NzkM1YnQPbUK2rq717g67hIK5Fs1yC7LDvYvKEQV2MV6FFNNdiXHQ1xgyCZr4eqGIaeC9XjwUMCxsv09hARPkLO5pmHG2TeuTlDqcmmpTBxp4xki9WvEojrLA"/>
+</div>
+<div class="space-y-1">
+<div class="bg-surface-container-high px-4 py-2.5 rounded-2xl rounded-tl-none text-sm leading-relaxed text-on-surface">
+                                Hello, I'm having trouble with my registration for the Advanced Editorial seminar. The portal says I lack the prerequisites, but I completed the foundation course last year.
+                            </div>
+<span class="text-[10px] font-mono text-slate-400 ml-1">14:18</span>
+</div>
+</div>
+<!-- Agent Message -->
+<div class="flex gap-3 max-w-[80%] ml-auto flex-row-reverse">
+<div class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-white text-[10px] font-bold mt-1">
+                            JD
+                        </div>
+<div class="space-y-1 text-right">
+<div class="bg-primary text-white px-4 py-2.5 rounded-2xl rounded-tr-none text-sm shadow-sm leading-relaxed">
+                                Hello Jean-Baptiste! I'm looking into your transcript now. One moment while I verify your foundation course completion in our legacy system.
+                            </div>
+<span class="text-[10px] font-mono text-slate-400 mr-1">14:20</span>
+</div>
+</div>
+<!-- Student Message -->
+<div class="flex gap-3 max-w-[80%]">
+<div class="flex-shrink-0 w-8 h-8 rounded-full bg-slate-200 overflow-hidden mt-1">
+<img alt="Avatar" class="w-full h-full object-cover" data-alt="headshot of young male student" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXUqYR14YKarHTLIyBWG9y4aWkEXaUBbe0RAAFZ7QIqPkJIy_RTrNLVoDK8BUFzSImTua2sgxcfTv12p5yncVE4fxcrxnnL-ZgqQuQBBfLYnPHYQj68pxXI-wXotm0jqBi-e6xRaHVEq6ztpi1hE1eQ-4vC66r3BV0ni2kkmizginCj2GvIfkS9zu3mwU-8l93wgKgq2gajrelUpX8QFOlNkx4PTVf5n87KKb1g_apaRokT6VCBPfJfJG1mP-pspYzn6pxoA32PA"/>
+</div>
+<div class="space-y-1">
+<div class="bg-surface-container-high px-4 py-2.5 rounded-2xl rounded-tl-none text-sm leading-relaxed text-on-surface">
+                                Thank you, I've just submitted the requested documents via the student portal as well. Let me know if you need anything else!
+                            </div>
+<span class="text-[10px] font-mono text-slate-400 ml-1">14:22</span>
+</div>
+</div>
+</div>
+<!-- Message Input Area -->
+<div class="p-4 bg-surface-container-lowest">
+<div class="bg-surface-container-low rounded-2xl p-2 border border-outline-variant/20 focus-within:border-primary/30 transition-all">
+<textarea class="w-full bg-transparent border-none focus:ring-0 text-sm resize-none h-20 p-2 placeholder:text-slate-400" placeholder="Type your message here..."></textarea>
+<div class="flex items-center justify-between px-2 pb-1">
+<div class="flex items-center gap-1 text-slate-500">
+<button class="p-1.5 hover:bg-white rounded-lg transition-all"><span class="material-symbols-outlined text-[20px]">format_bold</span></button>
+<button class="p-1.5 hover:bg-white rounded-lg transition-all"><span class="material-symbols-outlined text-[20px]">format_italic</span></button>
+<button class="p-1.5 hover:bg-white rounded-lg transition-all"><span class="material-symbols-outlined text-[20px]">attach_file</span></button>
+<button class="p-1.5 hover:bg-white rounded-lg transition-all"><span class="material-symbols-outlined text-[20px]">mood</span></button>
+</div>
+<button class="bg-primary text-white px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
+<span>Send</span>
+<span class="material-symbols-outlined text-sm">send</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Column 3: Student Profile Info -->
+<section class="w-80 bg-surface-container-low p-6 overflow-y-auto">
+<div class="flex flex-col items-center text-center mb-8">
+<div class="w-24 h-24 rounded-2xl overflow-hidden shadow-xl mb-4 border-4 border-white">
+<img alt="Student Profile Detail" class="w-full h-full object-cover" data-alt="detailed close up headshot of young male student with focused expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfEDjv3vomBwRXsGu8BBkqE6AJW10OwxejDGwJv-_R6tLEbnGm18WkxXTqospTvCx-kQr_XvDMaOd85reGe-1VQRkH38v_URt8ygYJ_yB4FmpURm-L46MvC32UzStype769q0i9xHOHmzzXR3MwfOpvD4FZGTQn-7vRXuO-GdOh0ov7_1YFIH5-t228h0qr2z8LfARK9SyasCPiI0nqiE7DYj9fn-9MOLtKku7MckRzoRHD8z8hcWaKHGDwhKZlcebvcZg0sVTjg"/>
+</div>
+<h4 class="font-sora font-bold text-primary text-lg">Jean-Baptiste Dupont</h4>
+<p class="font-mono text-xs text-slate-500 mb-4">UAC-2024-4492</p>
+<div class="flex flex-wrap justify-center gap-2">
+<span class="px-3 py-1 bg-white rounded-full text-[10px] font-bold text-primary shadow-sm">FACULTY OF ARTS</span>
+<span class="px-3 py-1 bg-white rounded-full text-[10px] font-bold text-primary shadow-sm">YEAR 3</span>
+</div>
+</div>
+<div class="space-y-6">
+<div>
+<div class="flex items-center justify-between mb-3">
+<h5 class="text-xs font-bold uppercase tracking-widest text-slate-400">Personal Details</h5>
+<button class="text-primary"><span class="material-symbols-outlined text-sm">edit</span></button>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-4 space-y-3 shadow-sm">
+<div class="flex flex-col">
+<span class="text-[10px] text-slate-400 uppercase font-bold">Email</span>
+<span class="text-xs font-medium text-primary">jb.dupont@university.edu</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] text-slate-400 uppercase font-bold">Phone</span>
+<span class="text-xs font-medium text-primary">+33 1 23 45 67 89</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] text-slate-400 uppercase font-bold">Location</span>
+<span class="text-xs font-medium text-primary">Paris, France (CET)</span>
+</div>
+</div>
+</div>
+<div>
+<div class="flex items-center justify-between mb-3">
+<h5 class="text-xs font-bold uppercase tracking-widest text-slate-400">Recent Tickets</h5>
+<span class="material-symbols-outlined text-sm text-slate-400">history</span>
+</div>
+<div class="space-y-2">
+<!-- Ticket Card -->
+<div class="bg-surface-container-lowest p-3 rounded-xl shadow-sm hover:scale-[1.02] transition-all cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<span class="text-xs font-bold text-primary">Exam Deferral</span>
+<span class="px-1.5 py-0.5 bg-secondary-container text-on-secondary-container text-[8px] font-black rounded uppercase">Resolved</span>
+</div>
+<div class="flex justify-between items-center text-[10px] text-slate-400">
+<span class="font-mono">#TKT-8821</span>
+<span>Oct 12, 2023</span>
+</div>
+</div>
+<!-- Ticket Card -->
+<div class="bg-surface-container-lowest p-3 rounded-xl shadow-sm hover:scale-[1.02] transition-all cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<span class="text-xs font-bold text-primary">ID Card Replacement</span>
+<span class="px-1.5 py-0.5 bg-surface-container-highest text-on-surface-variant text-[8px] font-black rounded uppercase">Closed</span>
+</div>
+<div class="flex justify-between items-center text-[10px] text-slate-400">
+<span class="font-mono">#TKT-7640</span>
+<span>Aug 04, 2023</span>
+</div>
+</div>
+</div>
+<button class="w-full mt-4 text-[10px] font-bold text-primary py-2 border border-primary/20 rounded-lg hover:bg-primary/5 transition-all">VIEW ALL HISTORY</button>
+</div>
+<div class="bg-primary/5 rounded-2xl p-4 border border-primary/10">
+<h6 class="text-[10px] font-bold text-primary uppercase tracking-widest mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">priority_high</span>
+                            Critical Alerts
+                        </h6>
+<p class="text-xs text-primary/70 leading-relaxed">
+                            Outstanding tuition balance for Q3. Access to portal may be restricted if not settled by Friday.
+                        </p>
+</div>
+</div>
+</section>
+</div>
+</main>
+</body></html>
