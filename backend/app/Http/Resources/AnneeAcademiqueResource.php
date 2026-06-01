@@ -7,13 +7,16 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class AnneeAcademiqueResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
-     */
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        return [
+            'id'          => $this->id,
+            'annee'       => $this->libelle,
+            'libelle'     => $this->libelle,
+            'date_debut'  => $this->date_debut?->format('Y-m-d'),
+            'date_fin'    => $this->date_fin?->format('Y-m-d'),
+            'is_active'   => $this->is_active,
+            'created_at'  => $this->created_at?->format('Y-m-d'),
+        ];
     }
 }

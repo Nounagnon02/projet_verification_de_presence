@@ -26,7 +26,7 @@ class StoreStudentRequest extends FormRequest
         return [
             'nom'        => ['required', 'string', 'max:100'],
             'prenom'     => ['required', 'string', 'max:100'],
-            'matricule'  => ['required', 'string', Rule::unique('etudiants', 'matricule')],
+            'matricule'  => ['nullable', 'string', Rule::unique('etudiants', 'matricule')],
             'filiere_id' => ['required', 'integer', 'exists:filieres,id'],
             'annee_id'   => ['required', 'integer', 'exists:annees_academiques,id'],
             'email'      => ['required', 'email', Rule::unique('etudiants', 'email')],

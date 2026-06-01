@@ -90,4 +90,68 @@ class DashboardController extends Controller
 
         return $this->successResponse($data);
     }
+
+    /**
+     * Tendance des présences sur 30 jours pour les graphiques.
+     * GET /api/admin/dashboard/attendance-trend
+     */
+    public function attendanceTrend(): JsonResponse
+    {
+        $trend = Presence::select(
+            DB::raw('DATE(heure_scan) as date'),
+            DB::raw('COUNT(*) as total'),
+            DB::raw("SUM(CASE WHEN statut = 'valide' THEN 1 ELSE 0 END) as valides"),
+            DB::raw("SUM(CASE WHEN statut = 'suspect' THEN 1 ELSE 0 END) as suspectes")
+        )
+            ->where('heure_scan', '>=', now()->subDays(30))
+            ->groupBy(DB::raw('DATE(heure_scan)'))
+            ->orderBy('date')
+            ->get();
+
+        return $this->successResponse($trend);
+    }
+
+    /**
+     * Top 10 des étudiants les plus absents.
+     * GET /api/admin/dashboard/top-absences
+     */
+    public function topAbsences(): JsonResponse
+    {
+        $totalEvenements = Evenement::where('date', '<', now())->count();
+
+        $topAbsences = Etudiant::with('filiere')
+            ->select('etudiants.id', 'etudiants.nom', 'etudiants.prenom', 'etudiants.matricule', 'filieres.code as filiere_code')
+            ->join('filieres', 'etudiants.filiere_id', '=', 'filieres.id')
+            ->selectRaw("COALESCE((SELECT COUNT(*) FROM presences WHERE presences.etudiant_id = etudiants.id), 0) as total_presences")
+            ->selectRaw("? - COALESCE((SELECT COUNT(*) FROM presences WHERE presences.etudiant_id = etudiants.id), 0) as absences", [$totalEvenements])
+            ->orderBy('absences', 'desc')
+            ->take(10)
+            ->get();
+
+        return $this->successResponse($topAbsences);
+    }
+
+    /**
+     * Événements du jour pour la timeline.
+     * GET /api/admin/dashboard/today-events
+     */
+    public function todayEvents(): JsonResponse
+    {
+        $events = Evenement::with(['ec', 'filiere', 'presences'])
+            ->whereDate('date', today())
+            ->orderBy('heure_debut')
+            ->get()
+            ->map(fn($e) => [
+                'id'              => $e->id,
+                'cours'           => $e->ec?->intitule ?? 'N/A',
+                'filiere'         => $e->filiere?->code ?? 'N/A',
+                'heure_debut'     => $e->heure_debut,
+                'heure_fin'       => $e->heure_fin,
+                'salle'           => $e->salle,
+                'statut'          => $e->statut,
+                'presences_count' => $e->presences->count(),
+            ]);
+
+        return $this->successResponse($events);
+    }
 }

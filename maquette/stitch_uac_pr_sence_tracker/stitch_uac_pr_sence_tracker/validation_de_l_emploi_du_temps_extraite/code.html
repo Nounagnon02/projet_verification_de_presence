@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Academic Slate - Schedule Import Validation</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&amp;family=Inter:wght@300;400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#005232",
+                        "surface-bright": "#f7f9fd",
+                        "surface-container-lowest": "#ffffff",
+                        "outline-variant": "#c5c6d1",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed-variant": "#344478",
+                        "on-error": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "surface": "#f7f9fd",
+                        "on-secondary-container": "#007147",
+                        "primary-container": "#1a2b5e",
+                        "tertiary-fixed-dim": "#ffb3ae",
+                        "outline": "#757680",
+                        "on-surface-variant": "#45464f",
+                        "primary": "#011549",
+                        "surface-tint": "#4c5c92",
+                        "inverse-primary": "#b5c4ff",
+                        "primary-fixed": "#dce1ff",
+                        "secondary-fixed": "#78fbb6",
+                        "primary-fixed-dim": "#b5c4ff",
+                        "error": "#ba1a1a",
+                        "background": "#f7f9fd",
+                        "inverse-on-surface": "#eff1f5",
+                        "on-tertiary": "#ffffff",
+                        "inverse-surface": "#2d3134",
+                        "on-surface": "#191c1f",
+                        "on-primary-fixed": "#03174b",
+                        "on-primary-container": "#8494cd",
+                        "secondary": "#006d43",
+                        "on-secondary-fixed": "#002111",
+                        "on-tertiary-fixed-variant": "#930014",
+                        "on-background": "#191c1f",
+                        "on-tertiary-container": "#ff5f5c",
+                        "tertiary-fixed": "#ffdad7",
+                        "on-error-container": "#93000a",
+                        "surface-container-high": "#e6e8ec",
+                        "secondary-fixed-dim": "#59de9b",
+                        "surface-dim": "#d8dade",
+                        "surface-container": "#eceef2",
+                        "on-tertiary-fixed": "#410004",
+                        "surface-container-low": "#f2f4f8",
+                        "secondary-container": "#75f8b3",
+                        "tertiary": "#3d0004",
+                        "tertiary-container": "#64000a",
+                        "surface-container-highest": "#e0e3e6",
+                        "on-primary": "#ffffff",
+                        "surface-variant": "#e0e3e6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Sora", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"],
+                        "technical": ["JetBrains Mono", "monospace"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, .brand-font { font-family: 'Sora', sans-serif; }
+        .tech-font { font-family: 'JetBrains Mono', monospace; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for academic feel */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #c5c6d1; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen">
+<!-- TopAppBar Component -->
+<header class="fixed top-0 w-full z-40 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-md shadow-sm dark:shadow-none flex items-center justify-between px-8 h-16 w-full">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold tracking-tight text-blue-900 dark:text-blue-100 brand-font">Academic Slate</span>
+<div class="hidden md:flex items-center bg-slate-100 dark:bg-slate-800 px-4 py-1.5 rounded-full w-96">
+<span class="material-symbols-outlined text-slate-500 mr-2 text-sm" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-full placeholder-slate-400" placeholder="Search records..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-500 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors rounded-full relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="p-2 text-slate-500 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors rounded-full">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="flex items-center gap-3 pl-4 ml-4 border-l border-outline-variant/30">
+<div class="text-right hidden sm:block">
+<p class="text-xs font-bold text-primary leading-tight">Admin User</p>
+<p class="text-[10px] text-slate-500 uppercase tracking-widest tech-font">Chancellor Office</p>
+</div>
+<img alt="Administrator Profile" class="w-10 h-10 rounded-full object-cover ring-2 ring-primary/10" data-alt="professional portrait of a university administrator in a modern office setting, soft natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCRET8PrmoVZV4EIdhgbUDJKDJqXQuU4Blj7vK799_zrc0UqykMdgV5_4sBRLbQTqjT5RU2u8-ih3UHCjXomAtQ2slVmxCoTj2U2P5yX2cSQGbd0u6u7mqJa0C8ANs4qDUrlnLO-gZcobLzc0HuKiD-I9pBvOdWZEBSbxxCWFh4lN6Bwwiwyaj0wtJtAvm3AP3lKB12rwu_klli4uoOQgg2-oDKcizhR7tzNNxVTa11ww3_1Mi-K068jgVg4C0QYDaK9MpRwxKj4Q"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar Component (Suppressed on this task-focused transactional page as per instructions) -->
+<main class="pt-24 pb-32 px-8 max-w-[1600px] mx-auto">
+<!-- Breadcrumb & Step Indicator -->
+<div class="mb-8 flex justify-between items-end">
+<div>
+<nav class="flex items-center gap-2 text-xs font-medium text-slate-500 mb-2 uppercase tracking-wider tech-font">
+<span>Schedules</span>
+<span class="material-symbols-outlined text-[14px]" data-icon="chevron_right">chevron_right</span>
+<span>Import AI</span>
+<span class="material-symbols-outlined text-[14px]" data-icon="chevron_right">chevron_right</span>
+<span class="text-primary font-bold">Step 3: Validation</span>
+</nav>
+<h1 class="text-3xl font-extrabold text-primary tracking-tight">Review Extracted Events</h1>
+<p class="text-on-surface-variant mt-1">AI has processed your PDF. Please verify the course details before finalizing.</p>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1.5 px-3 py-1 bg-secondary-container/30 text-on-secondary-container rounded-full text-xs font-semibold">
+<span class="material-symbols-outlined text-sm" data-icon="auto_awesome">auto_awesome</span>
+                    98% Confidence
+                </div>
+</div>
+</div>
+<div class="flex flex-col lg:flex-row gap-8">
+<!-- Main Content Area: The Table -->
+<div class="flex-1 space-y-6">
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-on-surface-variant text-[11px] uppercase tracking-[0.1em] font-bold">
+<th class="py-4 px-6 w-12 text-center">
+<input checked="" class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+</th>
+<th class="py-4 px-6">Course</th>
+<th class="py-4 px-6">Day</th>
+<th class="py-4 px-6">Schedule</th>
+<th class="py-4 px-6">Room</th>
+<th class="py-4 px-6">Status</th>
+<th class="py-4 px-6 text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container-low">
+<!-- Row 1: Validated -->
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="py-5 px-6 text-center">
+<input checked="" class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+</td>
+<td class="py-5 px-6">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">Advanced Macroeconomics</span>
+<span class="text-xs text-slate-500 tech-font">ECON-402</span>
+</div>
+</td>
+<td class="py-5 px-6">
+<span class="text-sm font-medium">Monday</span>
+</td>
+<td class="py-5 px-6">
+<div class="flex items-center gap-2 tech-font text-sm text-primary">
+<span>09:00</span>
+<span class="w-2 h-[1px] bg-outline-variant"></span>
+<span>11:30</span>
+</div>
+</td>
+<td class="py-5 px-6">
+<span class="text-sm px-2 py-0.5 bg-surface-container rounded font-medium tech-font">Hall A-12</span>
+</td>
+<td class="py-5 px-6">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary-container text-xs font-bold">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+                                        Validated
+                                    </span>
+</td>
+<td class="py-5 px-6 text-right">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+</td>
+</tr>
+<!-- Row 2: Conflict -->
+<tr class="hover:bg-surface-bright transition-colors group bg-red-50/20">
+<td class="py-5 px-6 text-center">
+<input class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+</td>
+<td class="py-5 px-6">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">Applied Statistics</span>
+<span class="text-xs text-slate-500 tech-font">STAT-301</span>
+</div>
+</td>
+<td class="py-5 px-6">
+<span class="text-sm font-medium">Tuesday</span>
+</td>
+<td class="py-5 px-6">
+<div class="flex items-center gap-2 tech-font text-sm text-primary">
+<span>14:00</span>
+<span class="w-2 h-[1px] bg-outline-variant"></span>
+<span>16:00</span>
+</div>
+</td>
+<td class="py-5 px-6">
+<span class="text-sm px-2 py-0.5 bg-surface-container rounded font-medium tech-font">Lab 4B</span>
+</td>
+<td class="py-5 px-6">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-error-container text-on-error-container text-xs font-bold">
+<span class="material-symbols-outlined text-[14px]" data-icon="warning">warning</span>
+                                        Conflict
+                                    </span>
+</td>
+<td class="py-5 px-6 text-right">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors opacity-100">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+</td>
+</tr>
+<!-- Row 3: Validated -->
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="py-5 px-6 text-center">
+<input checked="" class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+</td>
+<td class="py-5 px-6">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">Global Ethics</span>
+<span class="text-xs text-slate-500 tech-font">PHIL-102</span>
+</div>
+</td>
+<td class="py-5 px-6">
+<span class="text-sm font-medium">Wednesday</span>
+</td>
+<td class="py-5 px-6">
+<div class="flex items-center gap-2 tech-font text-sm text-primary">
+<span>10:00</span>
+<span class="w-2 h-[1px] bg-outline-variant"></span>
+<span>12:00</span>
+</div>
+</td>
+<td class="py-5 px-6">
+<span class="text-sm px-2 py-0.5 bg-surface-container rounded font-medium tech-font">Room 201</span>
+</td>
+<td class="py-5 px-6">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary-container text-xs font-bold">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+                                        Validated
+                                    </span>
+</td>
+<td class="py-5 px-6 text-right">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+</td>
+</tr>
+<!-- Row 4: Validated -->
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="py-5 px-6 text-center">
+<input checked="" class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+</td>
+<td class="py-5 px-6">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">Corporate Finance</span>
+<span class="text-xs text-slate-500 tech-font">FIN-500</span>
+</div>
+</td>
+<td class="py-5 px-6">
+<span class="text-sm font-medium">Friday</span>
+</td>
+<td class="py-5 px-6">
+<div class="flex items-center gap-2 tech-font text-sm text-primary">
+<span>13:30</span>
+<span class="w-2 h-[1px] bg-outline-variant"></span>
+<span>15:30</span>
+</div>
+</td>
+<td class="py-5 px-6">
+<span class="text-sm px-2 py-0.5 bg-surface-container rounded font-medium tech-font">Auditorium 2</span>
+</td>
+<td class="py-5 px-6">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary-container text-xs font-bold">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+                                        Validated
+                                    </span>
+</td>
+<td class="py-5 px-6 text-right">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Summary Alert -->
+<div class="bg-primary/5 rounded-xl p-6 flex items-start gap-4">
+<span class="material-symbols-outlined text-primary mt-0.5" data-icon="info">info</span>
+<div>
+<p class="text-sm font-bold text-primary">Ready to Import</p>
+<p class="text-sm text-on-surface-variant">3 events selected for import. 1 event has a scheduling conflict with "Intensive Lab Week" and has been auto-deselected.</p>
+</div>
+</div>
+</div>
+<!-- Sidebar Panel: Document Source -->
+<aside class="w-full lg:w-96 space-y-6">
+<div class="bg-surface-container-low rounded-xl p-1 shadow-sm h-fit">
+<div class="bg-surface-container-lowest rounded-lg p-5">
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-bold text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-lg" data-icon="description">description</span>
+                                Document Source
+                            </h3>
+<button class="text-xs font-bold text-secondary hover:underline tracking-tight">Expand View</button>
+</div>
+<!-- Snippet of uploaded PDF -->
+<div class="relative group rounded-lg overflow-hidden border border-outline-variant/10 shadow-inner bg-slate-200">
+<img alt="Document Snippet" class="w-full h-80 object-cover opacity-60 grayscale" data-alt="a snippet of a university academic schedule document with printed text, tables, and official header, blurred for background effect" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDD_FK474QMMRUX2js_-3MbdGzwCswTESjWyl43GLtG9JTu8nQ-kRgwLZ77jn2oG0KfOuMVDfHstofbYVZ8BHbpeV1lagSRxBeYK09VvFo-y3YxZA3gCMFNHH32AORd_A8nBN7gpTwHHx80419r-yXS1wZDR5gaX8li9VX57iP6ICfeWdbdvUqFFOnGpoYbTahLmRBFPJGnUd9Gm1JKnREK97qq-EKN3pA38k-IQE7W_8JedNnM62EJkIq-qY5xBGp4rcl7mNMa3w"/>
+<div class="absolute inset-0 flex flex-col items-center justify-center bg-black/40 p-6 text-center backdrop-blur-[1px]">
+<span class="material-symbols-outlined text-white text-4xl mb-2" data-icon="zoom_in">zoom_in</span>
+<p class="text-white text-xs font-medium">Source: Semester_2_Final_v3.pdf</p>
+<p class="text-white/70 text-[10px] mt-1 tech-font uppercase">Uploaded 12 mins ago</p>
+</div>
+<!-- Highlight Overlays (AI extraction visual cues) -->
+<div class="absolute top-12 left-10 w-32 h-6 bg-emerald-400/30 border border-emerald-400/50 rounded-sm"></div>
+<div class="absolute top-24 left-10 w-24 h-6 bg-emerald-400/30 border border-emerald-400/50 rounded-sm"></div>
+<div class="absolute top-36 left-10 w-40 h-6 bg-red-400/30 border border-red-400/50 rounded-sm"></div>
+</div>
+<div class="mt-6 space-y-4">
+<h4 class="text-[10px] uppercase tracking-widest font-bold text-slate-400">Extraction Stats</h4>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-low p-3 rounded-lg">
+<p class="text-[10px] text-on-surface-variant font-medium">Fields Detected</p>
+<p class="text-xl font-bold text-primary tech-font">24</p>
+</div>
+<div class="bg-surface-container-low p-3 rounded-lg">
+<p class="text-[10px] text-on-surface-variant font-medium">Confidence</p>
+<p class="text-xl font-bold text-secondary tech-font">98.2%</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-high/50 rounded-xl p-5 border border-outline-variant/10">
+<p class="text-xs font-medium text-on-surface-variant leading-relaxed">
+<span class="material-symbols-outlined text-xs align-middle mr-1" data-icon="lightbulb">lightbulb</span>
+                        Tip: You can manually edit any row by clicking the edit icon in the table. Conflicts must be resolved before those specific rows can be checked for import.
+                    </p>
+</div>
+</aside>
+</div>
+</main>
+<!-- Bottom Actions Bar -->
+<footer class="fixed bottom-0 w-full bg-surface-container-lowest border-t border-outline-variant/10 p-6 z-40">
+<div class="max-w-[1600px] mx-auto flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="hidden sm:flex flex-col">
+<span class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Draft Schedule</span>
+<span class="text-sm font-semibold text-primary">Academic Year 2024/25 - Q3</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="px-6 py-2.5 rounded-lg font-bold text-sm text-on-surface hover:bg-surface-container transition-all active:scale-95">
+                    Annuler
+                </button>
+<button class="px-8 py-2.5 rounded-lg font-bold text-sm text-white bg-gradient-to-br from-primary to-primary-container shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="save" data-weight="fill" style="font-variation-settings: 'FILL' 1;">save</span>
+                    Valider et enregistrer
+                </button>
+</div>
+</div>
+</footer>
+</body></html>

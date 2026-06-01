@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Academic Management - Années académiques</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#ffb3ae",
+                        "secondary": "#006d43",
+                        "on-tertiary-fixed-variant": "#930014",
+                        "on-secondary-fixed-variant": "#005232",
+                        "primary-container": "#1a2b5e",
+                        "surface-container": "#eceef2",
+                        "secondary-fixed-dim": "#59de9b",
+                        "secondary-container": "#75f8b3",
+                        "on-error-container": "#93000a",
+                        "error": "#ba1a1a",
+                        "outline": "#757680",
+                        "on-primary": "#ffffff",
+                        "background": "#f7f9fd",
+                        "outline-variant": "#c5c6d1",
+                        "on-error": "#ffffff",
+                        "on-background": "#191c1f",
+                        "surface": "#f7f9fd",
+                        "on-tertiary": "#ffffff",
+                        "surface-bright": "#f7f9fd",
+                        "inverse-on-surface": "#eff1f5",
+                        "secondary-fixed": "#78fbb6",
+                        "tertiary-fixed": "#ffdad7",
+                        "tertiary-container": "#64000a",
+                        "inverse-surface": "#2d3134",
+                        "surface-tint": "#4c5c92",
+                        "on-secondary": "#ffffff",
+                        "tertiary": "#3d0004",
+                        "on-surface-variant": "#45464f",
+                        "primary": "#011549",
+                        "surface-container-high": "#e6e8ec",
+                        "on-primary-fixed-variant": "#344478",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed-dim": "#b5c4ff",
+                        "on-secondary-container": "#007147",
+                        "primary-fixed": "#dce1ff",
+                        "inverse-primary": "#b5c4ff",
+                        "surface-container-highest": "#e0e3e6",
+                        "on-secondary-fixed": "#002111",
+                        "error-container": "#ffdad6",
+                        "surface-dim": "#d8dade",
+                        "on-primary-container": "#8494cd",
+                        "on-tertiary-container": "#ff5f5c",
+                        "on-surface": "#191c1f",
+                        "surface-variant": "#e0e3e6",
+                        "on-primary-fixed": "#03174b",
+                        "on-tertiary-fixed": "#410004",
+                        "surface-container-low": "#f2f4f8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Sora", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Sora', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e0e3e6; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-[#e6e8ec] dark:bg-slate-800 flex flex-col py-6 gap-2 z-50">
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+</div>
+<div>
+<h2 class="font-['Sora'] font-bold text-lg text-[#011549] dark:text-white leading-tight">Settings</h2>
+<p class="text-xs text-slate-500 font-medium">System Configuration</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 hover:text-[#011549] dark:hover:text-white px-4 py-3 transition-all hover:bg-[#f7f9fd] rounded-xl group" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="school">school</span>
+<span class="font-['Inter'] font-medium text-sm">Filières</span>
+</a>
+<!-- Active State: Années académiques -->
+<a class="flex items-center gap-3 bg-[#ffffff] dark:bg-slate-900 text-[#011549] dark:text-white rounded-xl shadow-sm font-semibold px-4 py-3 transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="calendar_today">calendar_today</span>
+<span class="font-['Inter'] font-medium text-sm">Années académiques</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 hover:text-[#011549] dark:hover:text-white px-4 py-3 transition-all hover:bg-[#f7f9fd] rounded-xl group" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="verified_user">verified_user</span>
+<span class="font-['Inter'] font-medium text-sm">Sécurité</span>
+</a>
+</nav>
+<div class="mt-auto px-4 space-y-1">
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 hover:text-[#011549] dark:hover:text-white px-4 py-3 transition-all rounded-xl" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="contact_support">contact_support</span>
+<span class="font-['Inter'] font-medium text-sm">Support</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 hover:text-error px-4 py-3 transition-all rounded-xl" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="logout">logout</span>
+<span class="font-['Inter'] font-medium text-sm">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-64 min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center w-full h-16 px-8 bg-[#f7f9fd] dark:bg-slate-900 sticky top-0 z-40">
+<div class="flex items-center gap-4">
+<h1 class="font-['Sora'] font-bold text-[#011549] dark:text-white tracking-tighter text-xl">Academic Management</h1>
+<div class="h-4 w-px bg-outline-variant opacity-30"></div>
+<div class="text-slate-500 font-['Inter'] text-sm font-medium">System / Academic Years</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" data-icon="search">search</span>
+<input class="bg-surface-container-high border-none rounded-full py-1.5 pl-10 pr-4 text-sm w-64 focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Search config..." type="text"/>
+</div>
+<div class="flex items-center gap-3">
+<button class="w-10 h-10 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 transition-colors">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+<div class="h-8 w-px bg-outline-variant opacity-30 mx-2"></div>
+<img alt="Administrator Avatar" class="w-9 h-9 rounded-full object-cover ring-2 ring-white" data-alt="Administrator Avatar wearing a professional suit, neutral academic office background, soft daylight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCz2dGTrbe9N3keHjtmPBt8q1ixiDmGdgkrARiYJXX1yFepd1fIO_nweqA8bzSg6NbE_EpjFRYx8tqTY3I_R-h2lIvhwk7Usw58O3k53GUE1CxwogwRglvAZRe4Rhhke1DqEJjZJcVzUwEKcQ52opfg5xOvtT-5i3WqHyEfO8mA9611fFbV_2A-f-hSg1zBjc9q71ZboII5DC_DmlPzOrf1_8g4BFayhW4oc7YN6-fYxuHbxLc8e9f0EuvO7KoV19nCtbZJ__Pw-w"/>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<div class="p-10 max-w-7xl w-full mx-auto space-y-8">
+<!-- Hero Header -->
+<div class="flex justify-between items-end">
+<div class="space-y-1">
+<h2 class="text-3xl font-bold tracking-tight text-primary">Années académiques</h2>
+<p class="text-slate-500 font-medium">Manage institutional timelines and active periods.</p>
+</div>
+<button class="bg-gradient-to-tr from-primary to-primary-container text-white px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-lg shadow-primary/10 hover:scale-[0.98] transition-transform">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                    Nouvelle année
+                </button>
+</div>
+<!-- Bento Layout Start -->
+<div class="grid grid-cols-12 gap-8">
+<!-- Main Configuration Table (Asymmetric Wide Column) -->
+<div class="col-span-12 lg:col-span-8 space-y-6">
+<div class="bg-surface-container-lowest rounded-3xl p-8 shadow-sm">
+<div class="flex items-center justify-between mb-8">
+<h3 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="history">history</span>
+                                Historique des périodes
+                            </h3>
+<button class="text-xs font-semibold text-slate-400 hover:text-primary transition-colors flex items-center gap-1">
+                                View all <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+<!-- Custom Table without Lines -->
+<div class="space-y-2">
+<!-- Header -->
+<div class="grid grid-cols-12 px-4 py-2 text-xs font-bold text-slate-400 uppercase tracking-widest">
+<div class="col-span-4">Libellé</div>
+<div class="col-span-3">Statut</div>
+<div class="col-span-3">Code Système</div>
+<div class="col-span-2 text-right">Action</div>
+</div>
+<!-- Row: Current Year -->
+<div class="grid grid-cols-12 items-center px-4 py-5 bg-surface-container-low rounded-2xl group hover:bg-surface-container transition-colors">
+<div class="col-span-4 flex items-center gap-3">
+<span class="font-mono text-lg font-bold text-primary">2024-2025</span>
+<span class="bg-secondary-container text-on-secondary-container px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-tight">CURRENT YEAR</span>
+</div>
+<div class="col-span-3">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<span class="text-sm font-semibold text-secondary">Active</span>
+</div>
+</div>
+<div class="col-span-3 font-mono text-sm text-slate-500">AY-2425-MAIN</div>
+<div class="col-span-2 flex justify-end">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+</div>
+<!-- Row: Past Year -->
+<div class="grid grid-cols-12 items-center px-4 py-5 rounded-2xl group hover:bg-surface-container-low transition-colors">
+<div class="col-span-4 flex items-center gap-3">
+<span class="font-mono text-lg font-semibold text-slate-700">2023-2024</span>
+</div>
+<div class="col-span-3">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-slate-400"></div>
+<span class="text-sm font-semibold text-slate-400">Archivée</span>
+</div>
+</div>
+<div class="col-span-3 font-mono text-sm text-slate-400">AY-2324-OLD</div>
+<div class="col-span-2 flex justify-end">
+<label class="relative inline-flex items-center cursor-pointer opacity-50">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+</div>
+<!-- Row: Future Year -->
+<div class="grid grid-cols-12 items-center px-4 py-5 rounded-2xl group hover:bg-surface-container-low transition-colors">
+<div class="col-span-4 flex items-center gap-3">
+<span class="font-mono text-lg font-semibold text-slate-700">2025-2026</span>
+<span class="bg-surface-container-highest text-slate-500 px-2.5 py-0.5 rounded-full text-[10px] font-bold">DRAFT</span>
+</div>
+<div class="col-span-3">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-amber-400"></div>
+<span class="text-sm font-semibold text-amber-600">En attente</span>
+</div>
+</div>
+<div class="col-span-3 font-mono text-sm text-slate-400">AY-2526-PROJ</div>
+<div class="col-span-2 flex justify-end">
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+</div>
+</div>
+</div>
+<!-- Dates Clés Section -->
+<div class="bg-surface-container-lowest rounded-3xl p-8 shadow-sm">
+<div class="flex items-center justify-between mb-8">
+<h3 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="event_note">event_note</span>
+                                Dates clés (2024-2025)
+                            </h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Semester 1 -->
+<div class="p-6 rounded-2xl bg-surface border border-outline-variant border-opacity-10 relative overflow-hidden">
+<div class="absolute -right-4 -top-4 w-20 h-20 bg-primary/5 rounded-full blur-2xl"></div>
+<div class="flex items-center gap-3 mb-4">
+<div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined text-lg" data-icon="filter_1">filter_1</span>
+</div>
+<h4 class="font-bold text-primary">Premier Semestre</h4>
+</div>
+<div class="space-y-4">
+<div class="flex justify-between items-center">
+<span class="text-sm font-medium text-slate-500">Début</span>
+<span class="font-mono text-sm font-bold bg-white px-3 py-1 rounded-lg shadow-sm border border-slate-100">02 SEP 2024</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-sm font-medium text-slate-500">Fin des cours</span>
+<span class="font-mono text-sm font-bold bg-white px-3 py-1 rounded-lg shadow-sm border border-slate-100">15 JAN 2025</span>
+</div>
+<div class="pt-2">
+<div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full w-[65%]"></div>
+</div>
+<div class="flex justify-between mt-2">
+<span class="text-[10px] font-bold text-secondary uppercase tracking-widest">En cours</span>
+<span class="text-[10px] font-bold text-slate-400">65% complété</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Semester 2 -->
+<div class="p-6 rounded-2xl bg-surface border border-outline-variant border-opacity-10">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center text-slate-500">
+<span class="material-symbols-outlined text-lg" data-icon="filter_2">filter_2</span>
+</div>
+<h4 class="font-bold text-slate-700">Second Semestre</h4>
+</div>
+<div class="space-y-4">
+<div class="flex justify-between items-center">
+<span class="text-sm font-medium text-slate-500">Début</span>
+<span class="font-mono text-sm font-bold bg-white px-3 py-1 rounded-lg shadow-sm border border-slate-100">01 FEV 2025</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-sm font-medium text-slate-500">Fin des cours</span>
+<span class="font-mono text-sm font-bold bg-white px-3 py-1 rounded-lg shadow-sm border border-slate-100">15 JUIN 2025</span>
+</div>
+<div class="pt-2">
+<div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+<div class="bg-slate-300 h-full w-0"></div>
+</div>
+<div class="flex justify-between mt-2">
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Programmée</span>
+<span class="text-[10px] font-bold text-slate-400">0% complété</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Sidebar Utility Cards (Asymmetric Narrow Column) -->
+<div class="col-span-12 lg:col-span-4 space-y-8">
+<!-- Statistics Card -->
+<div class="bg-primary text-white rounded-3xl p-8 shadow-xl shadow-primary/20 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-6xl" data-icon="timeline">timeline</span>
+</div>
+<div class="relative z-10">
+<p class="text-primary-fixed-dim text-xs font-bold uppercase tracking-[0.2em] mb-2">Statut Global</p>
+<h3 class="text-4xl font-bold mb-6">Semaine 24</h3>
+<div class="space-y-4">
+<div class="flex justify-between text-sm">
+<span class="opacity-70">Jours restants</span>
+<span class="font-mono font-bold text-secondary-fixed">142 jours</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="opacity-70">Examens à venir</span>
+<span class="font-mono font-bold">12</span>
+</div>
+<div class="pt-4 border-t border-white/10 flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary-fixed" data-icon="warning">warning</span>
+<p class="text-xs text-primary-fixed-dim leading-relaxed">Fin de saisie des notes du S1 dans 5 jours.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Actions Card -->
+<div class="bg-surface-container-high rounded-3xl p-8">
+<h3 class="text-sm font-bold text-primary uppercase tracking-widest mb-6">Actions rapides</h3>
+<div class="space-y-3">
+<button class="w-full text-left p-4 bg-surface-container-lowest rounded-2xl flex items-center justify-between group hover:shadow-md transition-all">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="ios_share">ios_share</span>
+</div>
+<div>
+<p class="text-sm font-bold">Exporter Calendrier</p>
+<p class="text-[10px] text-slate-500">PDF, Excel, iCal</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-300 group-hover:translate-x-1 transition-transform" data-icon="chevron_right">chevron_right</span>
+</button>
+<button class="w-full text-left p-4 bg-surface-container-lowest rounded-2xl flex items-center justify-between group hover:shadow-md transition-all">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="sync_lock">sync_lock</span>
+</div>
+<div>
+<p class="text-sm font-bold">Clôturer l'Année</p>
+<p class="text-[10px] text-slate-500">Finaliser les procès-verbaux</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-300 group-hover:translate-x-1 transition-transform" data-icon="chevron_right">chevron_right</span>
+</button>
+<button class="w-full text-left p-4 bg-surface-container-lowest rounded-2xl flex items-center justify-between group hover:shadow-md transition-all">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="settings_backup_restore">settings_backup_restore</span>
+</div>
+<div>
+<p class="text-sm font-bold">Gérer les Reports</p>
+<p class="text-[10px] text-slate-500">Basculement des inscriptions</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-300 group-hover:translate-x-1 transition-transform" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- System Banner -->
+<div class="relative group rounded-3xl overflow-hidden aspect-[4/3]">
+<img alt="University Context" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-105 group-hover:scale-100" data-alt="Stately classical university building facade with modern architectural lighting, dawn atmosphere, intellectual prestige" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoEtvuWLv8-H07EJymLUSBPgrqpgpOzGmhp9gBuZZv2ZPN5VOaP-Swv5wgHFrUtf1-F96qyOuDhwv8p6ppZlMsOTMwjQecsbhDWxPpnHxhPhMAiIXJLSq2zEmh_kUBMxFTFy7UbvBhCmEU5SuXQEfKfVw9oYMc6nrAxksGjnqpt8bG21CGnoJwOjofkI5w9Dv_sxga6ChZ9Yub_5vL_MdTZvywJXOmCB76pZNWiy4u249lfkXBORvWgDhFerTFLLXrdDosMDiVZg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/90 to-transparent flex flex-col justify-end p-8 text-white">
+<h4 class="text-xl font-bold">Excellence Institutionnelle</h4>
+<p class="text-xs opacity-80 mt-2">La rigueur de la gestion est le socle de la réussite académique.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Separation -->
+<footer class="mt-auto py-8 px-10 flex justify-between items-center border-t border-outline-variant/10 text-slate-400 text-xs">
+<p>© 2024 Academic Editorial Management System • v4.2.1</p>
+<div class="flex gap-6">
+<a class="hover:text-primary transition-colors" href="#">Politique de confidentialité</a>
+<a class="hover:text-primary transition-colors" href="#">Documentation technique</a>
+</div>
+</footer>
+</main>
+</body></html>
