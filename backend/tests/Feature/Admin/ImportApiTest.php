@@ -5,10 +5,8 @@ namespace Tests\Feature\Admin;
 use App\Models\AnneeAcademique;
 use App\Models\Filiere;
 use App\Models\User;
-use App\Services\GeminiService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Mockery;
 use Tests\TestCase;
 
 /**
@@ -104,39 +102,10 @@ class ImportApiTest extends TestCase
         $response->assertStatus(401);
     }
 
-    // ── IMPORT EMPLOI DU TEMPS GEMINI (MOCKÉ) ─────────────────────
+    // ── IMPORT EMPLOI DU TEMPS GEMINI (ASYNCHRONE) ─────────────────
 
-    public function test_import_schedule_avec_gemini_mock(): void
+    public function test_import_schedule_lance_analyse_async(): void
     {
-        // Mocker le GeminiService pour éviter tout appel réel à Google
-        $mock = Mockery::mock(GeminiService::class);
-        $mock->shouldReceive('analyzeSchedule')
-            ->once()
-            ->andReturn([
-                'status'            => 'success',
-                'score_de_confiance' => 0.85,
-                'statut_analyse'    => 'valide',
-                'data'              => [
-                    [
-                        'ec'          => 'Algorithmique Avancée',
-                        'date'        => '2026-05-25',
-                        'heure_debut' => '08:00',
-                        'heure_fin'   => '10:00',
-                        'salle'       => 'Amphi I',
-                    ],
-                    [
-                        'ec'          => 'Base de Données',
-                        'date'        => '2026-05-26',
-                        'heure_debut' => '10:00',
-                        'heure_fin'   => '12:00',
-                        'salle'       => 'Labo 1',
-                    ],
-                ],
-            ]);
-
-        // Remplacer l'instance dans le conteneur
-        $this->app->instance(GeminiService::class, $mock);
-
         $file = UploadedFile::fake()->create('edt.pdf', 1024, 'application/pdf');
 
         $response = $this->withToken($this->bearerToken)
@@ -146,10 +115,59 @@ class ImportApiTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.status', 'success')
-            ->assertJsonPath('data.score_de_confiance', 0.85);
+            ->assertJsonPath('data.status', 'pending')
+            ->assertJsonStructure(['data' => ['analysis_id', 'status']]);
 
-        $this->assertCount(2, $response->json('data.data'));
+        // Vérifier qu'un enregistrement Analyse a été créé en base
+        // (le statut final peut être 'pending', 'processing', 'completed' ou 'failed'
+        //  selon la vitesse de la queue synchrone dans l'environnement de test)
+        $this->assertDatabaseHas('analyses', [
+            'type' => 'schedule',
+        ]);
+
+        // Récupérer l'ID et tester le endpoint de statut
+        $analysisId = $response->json('data.analysis_id');
+        $statusResponse = $this->withToken($this->bearerToken)
+            ->getJson("/api/admin/import/analysis-status/{$analysisId}");
+
+        $statusResponse->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.type', 'schedule')
+            ->assertJsonStructure([
+                'data' => ['analysis_id', 'status', 'type'],
+            ]);
+    }
+
+    public function test_import_courses_lance_analyse_async(): void
+    {
+        $file = UploadedFile::fake()->create('cours.pdf', 1024, 'application/pdf');
+
+        $response = $this->withToken($this->bearerToken)
+            ->postJson('/api/admin/import/courses', [
+                'file' => $file,
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.status', 'pending')
+            ->assertJsonStructure(['data' => ['analysis_id', 'status']]);
+
+        // Vérifier qu'un enregistrement Analyse existe en base
+        $this->assertDatabaseHas('analyses', [
+            'type' => 'courses',
+        ]);
+
+        // Tester le endpoint de statut
+        $analysisId = $response->json('data.analysis_id');
+        $statusResponse = $this->withToken($this->bearerToken)
+            ->getJson("/api/admin/import/analysis-status/{$analysisId}");
+
+        $statusResponse->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.type', 'courses')
+            ->assertJsonStructure([
+                'data' => ['analysis_id', 'status', 'type'],
+            ]);
     }
 
     public function test_import_schedule_echoue_sans_pdf(): void

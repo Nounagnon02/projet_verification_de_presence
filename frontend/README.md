@@ -1,16 +1,62 @@
-# React + Vite
+# UAC Présence — Frontend (React)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interface d'administration du Système de Gestion de Présence UAC.
 
-Currently, two official plugins are available:
+## Stack technique
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Framework :** React 19
+- **Router :** React Router 7
+- **UI :** Tailwind CSS 3.4, React Icons, Lucide React
+- **HTTP :** Axios avec intercepteurs
+- **Build :** Vite 8
 
-## React Compiler
+## Installation
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
+npm run dev     # Développement (proxy API → localhost:8000)
+npm run build   # Production (génère dist/)
+```
 
-## Expanding the ESLint configuration
+## Configuration
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Copier `.env.example` vers `.env` et ajuster :
+
+```
+VITE_API_URL=/api   # URL de l'API backend
+```
+
+## Structure du projet
+
+```
+src/
+├── api/           # Configuration Axios
+├── components/    # Composants réutilisables (UI, charts, layout)
+├── context/       # Contextes React (Auth, Toast)
+├── hooks/         # Hooks personnalisés (useApi, useDebounce)
+├── pages/         # Pages de l'application
+│   ├── auth/      # Connexion, erreurs
+│   ├── attendance/ # Présences, scan QR, statistiques
+│   ├── courses/   # Gestion des cours
+│   ├── dashboard/ # Tableau de bord
+│   ├── import/    # Import CSV/PDF + validation IA
+│   ├── reports/   # Rapports et exports
+│   ├── schedules/ # Emplois du temps
+│   ├── settings/  # Paramètres
+│   ├── students/  # Gestion des étudiants
+│   ├── support/   # Support et tickets
+│   ├── faq/       # FAQ
+│   └── help/      # Centre d'aide
+└── utils/         # Utilitaires
+```
+
+## Fonctionnalités
+
+- Dashboard avec KPIs en temps réel
+- Gestion des étudiants (individuel + CSV)
+- Import IA des emplois du temps (Gemini)
+- Validation de présence par QR Code dynamique
+- Statistiques et rapports PDF/CSV
+- Détection de fraude (device fingerprinting)
+- Centre d'aide et support tickets
+- Chat en direct

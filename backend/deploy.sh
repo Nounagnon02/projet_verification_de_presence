@@ -10,6 +10,10 @@ if [ -z "$APP_KEY" ]; then
     php artisan key:generate --force
 fi
 
+# Publish mail vendor views (nécessaire pour les templates d'email)
+echo "Publishing mail views..."
+php artisan vendor:publish --tag=laravel-mail --force
+
 # Clear all caches
 echo "Clearing caches..."
 php artisan config:clear

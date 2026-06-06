@@ -1,34 +1,39 @@
 import { useState, useEffect } from 'react';
 import { FiCheckCircle, FiAlertTriangle, FiLoader, FiHelpCircle } from 'react-icons/fi';
 import { MdAccountBalance } from 'react-icons/md';
+import { useSearchParams } from 'react-router-dom';
 import api from '../../api/axios';
 
 const PresenceValidationPage = () => {
+  const [searchParams] = useSearchParams();
+  const tokenFromUrl = searchParams.get('token') || '';
   const [matricule, setMatricule] = useState('');
   const [loading, setLoading] = useState(false);
   const [validated, setValidated] = useState(null);
   const [error, setError] = useState('');
   const [cours, setCours] = useState(null);
   const [coursLoading, setCoursLoading] = useState(true);
+  const qrToken = tokenFromUrl;
 
   useEffect(() => {
-    const fetchCoursEnCours = async () => {
+    const fetchCourseInfo = async () => {
+      if (!qrToken) {
+        setCoursLoading(false);
+        return;
+      }
       try {
-        const { data } = await api.get('/admin/evenements', {
-          params: { statut: 'en_cours', date: new Date().toISOString().split('T')[0] }
-        });
-        const evts = data.success ? data.data : (data.data || data);
-        if (Array.isArray(evts) && evts.length > 0) {
-          setCours(evts[0]);
+        const { data } = await api.get(`/presence/course-by-token/${qrToken}`);
+        if (data.success && data.data) {
+          setCours(data.data);
         }
       } catch {
-        // Pas de cours en cours
+        // Token invalide ou expiré
       } finally {
         setCoursLoading(false);
       }
     };
-    fetchCoursEnCours();
-  }, []);
+    fetchCourseInfo();
+  }, [qrToken]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -44,14 +49,14 @@ const PresenceValidationPage = () => {
     try {
       const { data } = await api.post('/presence/scan', {
         identifiant_unique: matricule.trim(),
-        token: cours?.qr_code?.token || '00000000-0000-0000-0000-000000000000',
+        token: qrToken || '00000000-0000-0000-0000-000000000000',
         device_fingerprint: navigator.userAgent || 'unknown',
       });
 
       if (data.success) {
         setValidated({
           success: true,
-          course: data.data?.cours || cours?.ec?.intitule || 'Cours',
+          course: data.data?.cours || cours?.cours || 'Cours',
           time: `${cours?.heure_debut || '--:--'} - ${cours?.heure_fin || '--:--'}`,
           message: data.message || 'Présence validée avec succès!'
         });
@@ -92,8 +97,8 @@ const PresenceValidationPage = () => {
             <MdAccountBalance />
           </div>
           <div className="flex flex-col">
-            <span className="font-headline font-black text-[#1A2B5E] text-xl leading-none">UAC</span>
-            <span className="font-headline font-bold text-[#1A2B5E] tracking-tight text-sm opacity-80">Présence</span>
+            <span className="font-headline font-black text-[#1A2B5E] text-xl leading-none">Présence</span>
+            <span className="font-headline font-bold text-[#1A2B5E] tracking-tight text-sm opacity-80">Étudiant</span>
           </div>
         </div>
       </header>
@@ -129,19 +134,19 @@ const PresenceValidationPage = () => {
           ) : cours ? (
             <div className="bg-surface-container-high rounded-2xl p-5 text-center">
               <p className="font-body font-semibold text-primary mb-1 text-sm">
-                {cours.ec?.intitule || cours.cours || 'Cours'}
+                {cours.cours || 'Cours'}
               </p>
               <p className="font-technical font-medium text-xs text-on-surface-variant">
                 {cours.heure_debut || '--:--'} - {cours.heure_fin || '--:--'}
               </p>
               <p className="font-technical font-medium text-xs text-on-surface-variant mt-1">
-                {cours.salle ? `Salle ${cours.salle}` : ''} {cours.filiere?.code ? `• ${cours.filiere.code}` : ''}
+                {cours.salle ? `Salle ${cours.salle}` : ''} {cours.filiere ? `• ${cours.filiere}` : ''}
               </p>
             </div>
           ) : (
             <div className="bg-surface-container-high rounded-2xl p-5 text-center">
               <p className="font-body font-semibold text-on-surface-variant text-sm">
-                Aucun cours en cours actuellement
+                {qrToken ? 'QR Code invalide ou expiré' : 'Scannez un QR code pour valider votre présence'}
               </p>
             </div>
           )}
@@ -189,7 +194,7 @@ const PresenceValidationPage = () => {
                   <input
                     className="w-full bg-surface-container-lowest border-none rounded-xl px-4 py-4 text-lg font-technical focus:ring-0 transition-all duration-200 peer"
                     id="matricule"
-                    placeholder="Ex: 22-UAC-1234"
+                    placeholder="Ex: 22-XXXX-XXXX"
                     value={matricule}
                     onChange={(e) => setMatricule(e.target.value)}
                     type="text"
@@ -235,7 +240,7 @@ const PresenceValidationPage = () => {
 
       <footer className="w-full py-8 mt-auto flex flex-col items-center border-t border-outline-variant/10">
         <p className="text-[10px] font-technical uppercase tracking-widest text-on-surface-variant">
-          UAC — Système de Gestion de Présence
+          Système de Gestion de Présence
         </p>
       </footer>
     </main>

@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\Admin\AnneeAcademiqueController;
 use App\Http\Controllers\Api\Admin\ChatController;
 use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\EcController;
+use App\Http\Controllers\Api\Admin\EnrollmentController;
 use App\Http\Controllers\Api\Admin\EvenementController;
 use App\Http\Controllers\Api\Admin\FiliereController;
 use App\Http\Controllers\Api\Admin\ImportController;
@@ -30,8 +31,40 @@ use Illuminate\Support\Facades\Route;
 // Route publique pour les statistiques de la landing page
 Route::get('/landing/stats', [LandingPageController::class, 'stats']);
 
+// Health check — monitoring de disponibilité (CDC 12)
+Route::get('/health', function () {
+    try {
+        \Illuminate\Support\Facades\DB::connection()->getPdo();
+        $dbStatus = 'connected';
+    } catch (\Exception $e) {
+        $dbStatus = 'disconnected';
+    }
+
+    return response()->json([
+        'success' => true,
+        'status' => 'healthy',
+        'timestamp' => now()->toIso8601String(),
+        'services' => [
+            'database' => $dbStatus,
+            'app' => 'running',
+            'version' => '1.0.0',
+        ],
+    ]);
+});
+
 // Route de login nommée — nécessaire pour les redirections de Sanctum
-Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login');
+// Rate limiting : 5 tentatives/min/IP (CDC 9.1)
+Route::post('/login', [AuthenticatedSessionController::class, 'store'])
+    ->middleware('throttle:login')
+    ->name('login');
+
+// Route de mot de passe oublié — envoi d'email avec lien de réinitialisation
+Route::post('/forgot-password', [\App\Http\Controllers\Auth\PasswordResetLinkController::class, 'store'])
+    ->middleware('throttle:6,1');
+
+// Route de réinitialisation du mot de passe
+Route::post('/reset-password', [\App\Http\Controllers\Auth\NewPasswordController::class, 'store'])
+    ->middleware('throttle:6,1');
 
 // Routes publiques pour les étudiants (Scan)
 // Rate limiting : max 3 requêtes/minute par device/IP (CDC 9.2.4)
@@ -39,6 +72,10 @@ Route::prefix('presence')->group(function () {
     Route::post('/scan', [PresenceController::class, 'scan'])
         ->middleware('throttle:scan-presence')
         ->name('api.presence.scan');
+
+    // Récupération publique des informations du cours via le token QR (CDC 7.4.1)
+    Route::get('/course-by-token/{token}', [PresenceController::class, 'courseByToken'])
+        ->name('api.presence.course-by-token');
 });
 
 // Routes protégées pour l'administration
@@ -53,6 +90,13 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
 
     // Étudiants
     Route::apiResource('students', StudentController::class);
+
+    // Inscriptions étudiant-cours (CDC 7.2.3)
+    Route::get('/students/{student}/ecs', [EnrollmentController::class, 'index']);
+    Route::get('/students/{student}/ecs-available', [EnrollmentController::class, 'available']);
+    Route::post('/students/{student}/ecs', [EnrollmentController::class, 'store']);
+    Route::delete('/students/{student}/ecs/{ec}', [EnrollmentController::class, 'destroy']);
+    Route::post('/students/{student}/ecs/reset', [EnrollmentController::class, 'reset']);
 
     // Présences / Historique
     Route::get('/presence/history', [PresenceHistoryController::class, 'index']);
@@ -81,6 +125,9 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     Route::get('/reports/presence/{evenementId}/csv', [\App\Http\Controllers\Api\Admin\ReportController::class, 'exportCsv']);
     Route::get('/reports/department/{filiere}', [\App\Http\Controllers\Api\Admin\ReportController::class, 'departmentReport']);
     Route::get('/reports/semester/{anneeAcademique}', [\App\Http\Controllers\Api\Admin\ReportController::class, 'semesterReport']);
+    Route::get('/reports/semester-comparison', [\App\Http\Controllers\Api\Admin\ReportController::class, 'semesterComparison']);
+    Route::get('/reports/filiere-stats', [\App\Http\Controllers\Api\Admin\ReportController::class, 'filiereStats']);
+    Route::get('/reports/filtered', [\App\Http\Controllers\Api\Admin\ReportController::class, 'filteredStats']);
     Route::get('/reports/excel/export', [\App\Http\Controllers\Api\Admin\ReportController::class, 'excelExport']);
 
     // Importations (Gemini / CSV)
@@ -89,6 +136,7 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     Route::post('/import/courses', [ImportController::class, 'courses']);
     Route::post('/import/validate-events', [ImportController::class, 'validateEvents']);
     Route::post('/import/validate-courses', [ImportController::class, 'validateCourses']);
+    Route::get('/import/analysis-status/{id}', [ImportController::class, 'analysisStatus']);
 
     // Alertes
     Route::get('/alerts', [\App\Http\Controllers\Api\Admin\AlertController::class, 'index']);
