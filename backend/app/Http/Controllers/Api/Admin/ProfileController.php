@@ -11,15 +11,15 @@ class ProfileController extends Controller
 {
     public function show(Request $request): JsonResponse
     {
-        $user = $request->user()->load(['member']);
+        $user = $request->user()->load(['members']);
         return $this->successResponse([
             'id'        => $user->id,
             'name'      => $user->name,
             'email'     => $user->email,
             'role'      => $user->role,
-            'member'    => $user->member ? [
-                'matricule' => $user->member->matricule,
-                'telephone' => $user->member->telephone,
+            'member'    => $user->members->first() ? [
+                'matricule' => $user->members->first()->matricule,
+                'telephone' => $user->members->first()->telephone,
             ] : null,
             'two_factor_enabled' => $user->two_factor_secret !== null,
             'created_at' => $user->created_at->format('Y-m-d'),

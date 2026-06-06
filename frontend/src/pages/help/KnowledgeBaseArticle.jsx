@@ -4,12 +4,12 @@ import { FiArrowLeft, FiClock, FiUser, FiPrinter, FiBookmark, FiChevronRight, Fi
 
 const articlesData = {
   1: {
-    title: 'Premiers pas avec UAC Présence',
-    author: 'Équipe UAC Présence',
+    title: 'Premiers pas avec Présence',
+    author: 'Équipe technique',
     date: '15 mai 2026',
     readTime: '5 min',
     sections: [
-      { id: 'introduction', title: 'Introduction', content: 'Bienvenue sur UAC Présence, le système de gestion de présence pour les établissements académiques. Cette plateforme vous permet de gérer efficacement les présences des étudiants, de générer des rapports détaillés et de suivre l\'assiduité en temps réel.' },
+      { id: 'introduction', title: 'Introduction', content: 'Bienvenue sur Présence, le système de gestion de présence académique. Cette plateforme vous permet de gérer efficacement les présences des étudiants, de générer des rapports détaillés et de suivre l\'assiduité en temps réel.' },
       { id: 'connexion', title: 'Connexion au système', content: 'Pour vous connecter, rendez-vous sur la page de connexion et saisissez vos identifiants administrateur. Si vous avez oublié votre mot de passe, utilisez le lien "Mot de passe oublié" sur la page de connexion. Pour des raisons de sécurité, déconnectez-vous toujours après utilisation, surtout sur un appareil partagé.' },
       { id: 'navigation', title: 'Navigation dans l\'interface', content: 'Le tableau de bord est votre point d\'entrée principal. Il affiche les statistiques clés : taux de présence global, nombre d\'étudiants, cours actifs et sessions aujourd\'hui. La barre latérale vous permet d\'accéder rapidement aux différentes sections : Dashboard, Étudiants, Cours, Présence, Rapports, Paramètres.' },
       { id: 'dashboard', title: 'Comprendre le tableau de bord', content: 'Le tableau de bord présente 4 indicateurs clés en haut de page, suivis d\'un graphique d\'évolution des présences sur 30 jours. Vous trouverez également la liste des étudiants avec le plus d\'absences et l\'historique des événements récents. Les données sont actualisées en temps réel.' },
@@ -22,7 +22,7 @@ const articlesData = {
   },
   2: {
     title: 'Gestion des étudiants',
-    author: 'Équipe UAC Présence',
+    author: 'Équipe technique',
     date: '12 mai 2026',
     readTime: '8 min',
     sections: [
@@ -32,7 +32,7 @@ const articlesData = {
       { id: 'recherche', title: 'Recherche et filtres', content: 'Utilisez la barre de recherche pour trouver un étudiant par nom, prénom, matricule ou email. Les filtres par filière et année académique vous permettent d\'affiner votre recherche. Les résultats sont triés par défaut par nom de famille.' },
     ],
     related: [
-      { id: 1, title: 'Premiers pas avec UAC Présence' },
+      { id: 1, title: 'Premiers pas avec Présence' },
       { id: 5, title: 'Validation de présence' },
     ],
   },

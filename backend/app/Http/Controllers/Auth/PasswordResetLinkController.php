@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
@@ -20,22 +21,37 @@ class PasswordResetLinkController extends Controller
 
     /**
      * Handle an incoming password reset link request.
+     * Support à la fois les réponses JSON (API) et les vues Blade.
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $request->validate([
             'email' => ['required', 'email'],
         ]);
 
-        // We will send the password reset link to this user. Once we have attempted
-        // to send the link, we will examine the response then see the message we
-        // need to show to the user. Finally, we'll send out a proper response.
         $status = Password::sendResetLink(
             $request->only('email')
         );
 
+        // Si la requête attend du JSON (appel API React)
+        if ($request->expectsJson()) {
+            if ($status == Password::RESET_LINK_SENT) {
+                return response()->json([
+                    'success' => true,
+                    'message' => __($status),
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => __($status),
+                'errors'  => ['email' => [__($status)]],
+            ], 422);
+        }
+
+        // Réponse classique pour les vues Blade
         return $status == Password::RESET_LINK_SENT
                     ? back()->with('status', __($status))
                     : back()->withInput($request->only('email'))

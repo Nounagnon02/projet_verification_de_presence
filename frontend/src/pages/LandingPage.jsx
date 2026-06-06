@@ -76,7 +76,7 @@ function Navbar() {
               <MdAccountBalance size={22} />
             </div>
             <div>
-              <span className="text-lg font-bold tracking-tight text-primary font-headline">UAC Présence</span>
+              <span className="text-lg font-bold tracking-tight text-primary font-headline">Présence</span>
               <p className="text-[10px] font-medium text-on-surface-variant uppercase tracking-[0.2em]">Academic Portal</p>
             </div>
           </Link>
@@ -126,12 +126,11 @@ function Footer() {
               <MdAccountBalance size={22} className="text-white" />
             </div>
             <div>
-              <span className="text-lg font-bold tracking-tight font-headline">UAC Présence</span>
+              <span className="text-lg font-bold tracking-tight font-headline">Présence</span>
               <p className="text-[10px] font-medium text-white/60 uppercase tracking-[0.2em]">Academic Portal</p>
             </div>
           </div>
-          <p className="text-sm text-white/60">© {new Date().getFullYear()} UAC Présence. Tous droits réservés.</p>
-          <p className="text-sm text-white/50">Développé avec ❤️ pour l'UAC</p>
+          <p className="text-sm text-white/60">© {new Date().getFullYear()} Présence. Tous droits réservés.</p>
         </div>
       </div>
     </footer>
@@ -172,12 +171,12 @@ export default function LandingPage() {
     <div className="bg-surface text-on-surface min-h-screen">
       <Navbar />
 
-      {/* ═══════════════ HERO — Image UAC en fond ═══════════════ */}
+      {/* ═══════════════ HERO ═══════════════ */}
       <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
         <div className="absolute inset-0">
           <img
             src="/images/rectorat-uac.jpg"
-            alt="Rectorat de l'Université d'Abomey-Calavi"
+            alt="Campus universitaire"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-primary/75 via-primary/60 to-primary/80"></div>
@@ -186,21 +185,14 @@ export default function LandingPage() {
 
         <div className="relative max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-24 w-full">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-full px-5 py-1.5 mb-8">
-              <MdSchool size={16} className="text-white/90" />
-              <span className="text-xs font-semibold text-white/90 tracking-wide">
-                Université d'Abomey-Calavi
-              </span>
-            </div>
-
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.08] font-headline mb-6">
               <span className="text-white">Gérez les présences</span><br />
               <span className="text-white/90">intelligemment</span>
             </h1>
 
             <p className="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto leading-relaxed mb-10">
-              Solution de gestion de présence académique nouvelle génération pour l'UAC.
-              QR codes, import IA, anti-fraude, et tableaux de bord en temps réel.
+              Gérez les présences de vos étudiants par QR code, import intelligent,
+              avec des tableaux de bord en temps réel.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

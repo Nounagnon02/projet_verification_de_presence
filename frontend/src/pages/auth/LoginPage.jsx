@@ -49,12 +49,12 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex">
-      {/* ===== PARTIE GAUCHE — Image UAC + Branding ===== */}
+      {/* ===== PARTIE GAUCHE — Branding ===== */}
       <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden">
         {/* Image de fond */}
         <img
           src="/images/rectorat-uac.jpg"
-          alt="Université d'Abomey-Calavi"
+          alt="Campus universitaire"
           className="absolute inset-0 w-full h-full object-cover"
         />
         {/* Overlay */}
@@ -68,17 +68,13 @@ const LoginPage = () => {
               <MdAccountBalance size={26} className="text-white" />
             </div>
             <div>
-              <span className="text-xl font-bold tracking-tight text-white font-headline">UAC Présence</span>
-              <p className="text-[10px] font-medium text-white/50 uppercase tracking-[0.2em]">Academic Portal</p>
+              <span className="text-xl font-bold tracking-tight text-white font-headline">Présence</span>
+              <p className="text-[10px] font-medium text-white/50 uppercase tracking-[0.2em]">Portail Académique</p>
             </div>
           </div>
 
           {/* Texte central */}
           <div className="space-y-6">
-            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/10 rounded-full px-4 py-1.5">
-              <MdSchool size={14} className="text-white/80" />
-              <span className="text-xs font-semibold text-white/80">Université d'Abomey-Calavi</span>
-            </div>
             <h2 className="text-3xl font-bold text-white font-headline leading-tight">
               Plateforme de gestion<br />des présences académiques
             </h2>
@@ -104,7 +100,7 @@ const LoginPage = () => {
           </div>
 
           {/* Footer */}
-          <p className="text-xs text-white/30">© {new Date().getFullYear()} UAC — Tous droits réservés</p>
+          <p className="text-xs text-white/30">© {new Date().getFullYear()} — Tous droits réservés</p>
         </div>
       </div>
 
@@ -116,7 +112,7 @@ const LoginPage = () => {
             <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white">
               <MdAccountBalance size={20} />
             </div>
-            <span className="text-lg font-bold text-primary font-headline">UAC Présence</span>
+            <span className="text-lg font-bold text-primary font-headline">Présence</span>
           </div>
           <span className="text-xs text-on-surface-variant">Academic Portal</span>
         </div>
@@ -182,9 +178,9 @@ const LoginPage = () => {
                     <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant ml-1" htmlFor="password">
                       Mot de passe
                     </label>
-                    <span className="text-xs font-semibold text-primary hover:underline cursor-pointer">
+                    <button type="button" onClick={() => navigate('/forgot-password')} className="text-xs font-semibold text-primary hover:underline cursor-pointer">
                       Mot de passe oublié?
-                    </span>
+                    </button>
                   </div>
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-on-surface-variant/60">
@@ -216,7 +212,7 @@ const LoginPage = () => {
 
             <p className="text-center text-xs text-on-surface-variant/70 mt-6">
               En vous connectant, vous acceptez les{' '}
-              <span className="underline hover:text-primary cursor-pointer">Conditions d'Utilisation</span>.
+              <span className="underline hover:text-primary cursor-pointer" onClick={() => navigate('/terms')}>Conditions d'Utilisation</span>.
             </p>
           </div>
         </main>

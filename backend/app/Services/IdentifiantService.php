@@ -30,7 +30,7 @@ class IdentifiantService
     /**
      * Normalise une chaîne : majuscules, sans accents, espaces -> _
      */
-    private static function normalize(string $str): string
+    public static function normalize(string $str): string
     {
         // Conversion en majuscules
         $str = mb_strtoupper($str, 'UTF-8');

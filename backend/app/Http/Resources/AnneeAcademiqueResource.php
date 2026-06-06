@@ -15,7 +15,7 @@ class AnneeAcademiqueResource extends JsonResource
             'libelle'     => $this->libelle,
             'date_debut'  => $this->date_debut?->format('Y-m-d'),
             'date_fin'    => $this->date_fin?->format('Y-m-d'),
-            'is_active'   => $this->is_active,
+            'is_active'   => $this->active,
             'created_at'  => $this->created_at?->format('Y-m-d'),
         ];
     }

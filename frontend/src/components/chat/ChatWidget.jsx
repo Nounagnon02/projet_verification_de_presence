@@ -58,7 +58,7 @@ export default function ChatWidget() {
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center text-sm font-bold">U</div>
           <div>
-            <h3 className="text-sm font-bold">Support UAC</h3>
+            <h3 className="text-sm font-bold">Support</h3>
             <p className="text-[10px] opacity-80">Réponse sous 5 min</p>
           </div>
         </div>

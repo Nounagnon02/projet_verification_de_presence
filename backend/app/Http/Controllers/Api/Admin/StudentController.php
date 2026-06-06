@@ -9,6 +9,7 @@ use App\Http\Resources\EtudiantResource;
 use App\Models\AnneeAcademique;
 use App\Models\Etudiant;
 use App\Models\Filiere;
+use App\Services\IdentifiantService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -79,18 +80,18 @@ class StudentController extends Controller
         $filiere = Filiere::findOrFail($request->filiere_id);
         $annee   = AnneeAcademique::findOrFail($request->annee_id);
 
-        $identifiantUnique = $this->generateDeterministicId(
+        $identifiantUnique = IdentifiantService::generate(
             $request->nom,
             $request->prenom,
             $matricule,
-            $filiere->code,
-            $annee->libelle
+            $request->filiere_id,
+            $request->annee_id
         );
 
         $etudiant = Etudiant::create([
             'id'                => (string) Str::uuid(),
-            'nom'               => mb_strtoupper($this->removeAccents($request->nom)),
-            'prenom'            => mb_strtoupper($this->removeAccents($request->prenom)),
+            'nom'               => IdentifiantService::normalize($request->nom),
+            'prenom'            => IdentifiantService::normalize($request->prenom),
             'matricule'         => $matricule,
             'filiere_id'        => $request->filiere_id,
             'annee_id'          => $request->annee_id,
@@ -98,13 +99,11 @@ class StudentController extends Controller
             'identifiant_unique' => $identifiantUnique,
         ]);
 
-        dispatch(function () use ($etudiant) {
-            try {
-                Mail::to($etudiant->email)->send(new \App\Mail\StudentRegisteredMail($etudiant));
-            } catch (\Exception $e) {
-                \Log::error("Email d'inscription échoué pour {$etudiant->email}: " . $e->getMessage());
-            }
-        });
+        // Auto-inscription aux ECs de la filière et année (CDC 7.2.3)
+        $etudiant->autoEnroll();
+
+        // Envoi de l'identifiant par email via queue (job asynchrone)
+        \App\Jobs\SendIdentifiantEmailJob::dispatch($etudiant);
 
         return $this->createdResponse(
             new EtudiantResource($etudiant->load(['filiere', 'anneeAcademique'])),
@@ -123,22 +122,20 @@ class StudentController extends Controller
         if ($request->filled('nom') || $request->filled('prenom')) {
             $nom     = $request->filled('nom') ? $request->nom : $student->nom;
             $prenom  = $request->filled('prenom') ? $request->prenom : $student->prenom;
-            $filiere = Filiere::findOrFail($data['filiere_id'] ?? $student->filiere_id);
-            $annee   = AnneeAcademique::findOrFail($data['annee_id'] ?? $student->annee_id);
 
-            $data['identifiant_unique'] = $this->generateDeterministicId(
+            $data['identifiant_unique'] = IdentifiantService::generate(
                 $nom, $prenom,
                 $data['matricule'] ?? $student->matricule,
-                $filiere->code,
-                $annee->libelle
+                $data['filiere_id'] ?? $student->filiere_id,
+                $data['annee_id'] ?? $student->annee_id
             );
         }
 
         if (isset($data['nom'])) {
-            $data['nom'] = mb_strtoupper($this->removeAccents($data['nom']));
+            $data['nom'] = IdentifiantService::normalize($data['nom']);
         }
         if (isset($data['prenom'])) {
-            $data['prenom'] = mb_strtoupper($this->removeAccents($data['prenom']));
+            $data['prenom'] = IdentifiantService::normalize($data['prenom']);
         }
 
         $student->update($data);
@@ -160,31 +157,4 @@ class StudentController extends Controller
         return $this->successResponse(null, 'Étudiant supprimé avec succès.');
     }
 
-    private function generateDeterministicId(
-        string $nom,
-        string $prenom,
-        string $matricule,
-        string $filiereCode,
-        string $anneeLibelle
-    ): string {
-        return implode('_', [
-            $this->sanitize($nom),
-            $this->sanitize($prenom),
-            $this->sanitize($matricule),
-            $this->sanitize($filiereCode),
-            $this->sanitize($anneeLibelle),
-        ]);
-    }
-
-    private function sanitize(string $value): string
-    {
-        return mb_strtoupper(str_replace([' ', '-'], '_', $this->removeAccents($value)));
-    }
-
-    private function removeAccents(string $value): string
-    {
-        return strtr(utf8_decode($value),
-            utf8_decode('àáâãäçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ'),
-            'aaaaaceeeeiiiinooooouuuuyyAAAAACEEEEIIIINOOOOOUUUUY');
-    }
 }

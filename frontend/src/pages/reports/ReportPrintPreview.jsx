@@ -49,7 +49,7 @@ export default function ReportPrintPreview() {
 
       <div className="bg-white rounded-xxl shadow-sm p-8 print:p-0 print:shadow-none max-w-4xl mx-auto">
         <div className="text-center mb-8 border-b pb-6">
-          <h1 className="text-xl font-bold text-primary font-headline">Université d'Abomey-Calavi</h1>
+          <h1 className="text-xl font-bold text-primary font-headline">Rapport de Présence</h1>
           <p className="text-sm text-on-surface-variant">Rapport de Présence - Synthèse Générale</p>
           <p className="text-xs text-on-surface-variant mt-1">Généré le {formatDate(new Date())}</p>
         </div>
@@ -78,7 +78,7 @@ export default function ReportPrintPreview() {
         </div>
 
         <div className="text-center text-xs text-on-surface-variant pt-6 border-t">
-          <p>Document généré automatiquement par le Système de Gestion de Présence UAC</p>
+          <p>Document généré automatiquement par le Système de Gestion de Présence</p>
         </div>
       </div>
 

@@ -54,7 +54,7 @@
     <p><strong>Total :</strong> {{ $evenement->presences->count() }} présence(s)</p>
 
     <div class="footer">
-        Rapport généré le {{ $date }} &mdash; Système de Gestion de Présence UAC
+        Rapport généré le {{ $date }} &mdash; Système de Gestion de Présence
     </div>
 </body>
 </html>

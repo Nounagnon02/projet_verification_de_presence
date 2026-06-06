@@ -6,15 +6,50 @@ use App\Actions\Gamification\CheckWeeklyAttendance;
 use App\Http\Controllers\Controller;
 use App\Models\Anomaly;
 use App\Models\Etudiant;
+use App\Models\Evenement;
 use App\Models\Presence;
 use App\Models\QrCode;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class PresenceController extends Controller
 {
+    /**
+     * Récupère les informations du cours associé à un token QR (public).
+     * Conforme CDC 7.4.1 : le QR code redirige vers un formulaire avec les infos du cours.
+     *
+     * GET /api/presence/course-by-token/{token}
+     */
+    public function courseByToken(string $token): JsonResponse
+    {
+        $qrCode = QrCode::where('token', $token)
+            ->where('actif', true)
+            ->where('expire_at', '>', now())
+            ->first();
+
+        if (!$qrCode) {
+            return $this->notFoundResponse('QR Code invalide ou expiré.');
+        }
+
+        $evenement = $qrCode->evenement;
+        if (!$evenement) {
+            return $this->notFoundResponse('Événement introuvable.');
+        }
+
+        return $this->successResponse([
+            'cours'       => $evenement->ec?->intitule ?? 'Cours',
+            'heure_debut' => $evenement->heure_debut,
+            'heure_fin'   => $evenement->heure_fin,
+            'salle'       => $evenement->salle,
+            'date'        => $evenement->date?->format('Y-m-d'),
+            'filiere'     => $evenement->filiere?->code ?? '',
+            'token'       => $token,
+        ]);
+    }
+
     /**
      * Valide le scan d'un étudiant et enregistre sa présence.
      * Conforme CDC US04 & US06 : validation QR code + détection fraude.
@@ -61,6 +96,12 @@ class PresenceController extends Controller
         $debut = Carbon::parse($evenement->date->format('Y-m-d') . ' ' . $evenement->heure_debut);
         $fin   = Carbon::parse($evenement->date->format('Y-m-d') . ' ' . $evenement->heure_fin)->addMinutes(15);
 
+        // Gestion du chevauchement de minuit : si l'heure de fin est <= l'heure de début,
+        // c'est que la séance traverse minuit, on décale d'un jour.
+        if ($fin->lte($debut)) {
+            $fin->addDay();
+        }
+
         if ($now->lt($debut) || $now->gt($fin)) {
             return $this->forbiddenResponse('Fenêtre de validation fermée (hors horaire).');
         }
@@ -75,9 +116,23 @@ class PresenceController extends Controller
         }
 
         // -----------------------------------------------------------------
-        // 5. Vérification filière (CDC 7.4.2)
+        // 5. Vérification inscription au cours (CDC 7.2.3 & 7.4.2)
+        //    On vérifie d'abord la table pivot etudiant_ec.
+        //    Si l'étudiant n'a encore aucune inscription (backfill pas encore fait),
+        //    on vérifie uniquement la filière (comportement précédent).
         // -----------------------------------------------------------------
-        if ($etudiant->filiere_id !== $evenement->filiere_id) {
+        $hasEnrollments = $etudiant->ecs()->exists();
+
+        if ($hasEnrollments) {
+            $isEnrolledInEc = $etudiant->ecs()
+                ->where('ec_id', $evenement->ec_id)
+                ->wherePivot('annee_id', $etudiant->annee_id)
+                ->exists();
+
+            if (!$isEnrolledInEc) {
+                return $this->forbiddenResponse('Étudiant non inscrit à ce cours.');
+            }
+        } elseif ($etudiant->filiere_id !== $evenement->filiere_id) {
             return $this->forbiddenResponse('Étudiant non inscrit à ce cours.');
         }
 
@@ -90,8 +145,8 @@ class PresenceController extends Controller
 
         if ($existing) {
             // Même étudiant, appareil différent → fraude potentielle
+            // Note : la présence originale reste 'valide'. Seule la tentative frauduleuse est bloquée.
             if ($existing->device_fingerprint !== $request->device_fingerprint) {
-                $existing->update(['statut' => 'suspect']);
 
                 Anomaly::create([
                     'etudiant_id' => $etudiant->id,
@@ -127,7 +182,18 @@ class PresenceController extends Controller
         ]);
 
         // -----------------------------------------------------------------
-        // 8. Gamification : vérification de la semaine parfaite (CDC 12.1)
+        // 8. Régénération immédiate du QR Code (CDC 9.2.1)
+        //    Après chaque scan, un nouveau token est généré pour l'événement.
+        // -----------------------------------------------------------------
+        QrCode::create([
+            'evenement_id' => $evenement->id,
+            'token'        => (string) Str::uuid(),
+            'expire_at'    => Carbon::now()->addSeconds(60),
+            'actif'        => true,
+        ]);
+
+        // -----------------------------------------------------------------
+        // 9. Gamification : vérification de la semaine parfaite (CDC 12.1)
         // -----------------------------------------------------------------
         $gamification = app(CheckWeeklyAttendance::class)->execute($etudiant);
 

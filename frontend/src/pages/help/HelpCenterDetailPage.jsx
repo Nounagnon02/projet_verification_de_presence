@@ -8,7 +8,7 @@ const categoriesData = {
     icon: <FiBookOpen />,
     desc: 'Documentation complète du système de gestion de présence',
     articles: [
-      { id: 1, title: 'Premiers pas avec UAC Présence', excerpt: 'Découvrez comment naviguer dans le système et comprendre les fonctionnalités de base.', readTime: '5 min', icon: <FiFileText /> },
+      { id: 1, title: 'Premiers pas avec Présence', excerpt: 'Découvrez comment naviguer dans le système et comprendre les fonctionnalités de base.', readTime: '5 min', icon: <FiFileText /> },
       { id: 2, title: 'Gestion des étudiants', excerpt: 'Apprenez à ajouter, modifier et supprimer des étudiants dans le système.', readTime: '8 min', icon: <FiFileText /> },
       { id: 3, title: 'Création de cours et UE', excerpt: 'Comment structurer vos cours et unités d\'enseignement.', readTime: '6 min', icon: <FiFileText /> },
       { id: 4, title: 'Génération de QR codes', excerpt: 'Guide pour générer et projeter les QR codes de vos séances.', readTime: '4 min', icon: <FiFileText /> },

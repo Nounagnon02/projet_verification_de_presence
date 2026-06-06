@@ -80,7 +80,10 @@ class AuthenticatedSessionController extends Controller
     {
         // Révoquer le token Sanctum si présent
         if ($request->user() && method_exists($request->user(), 'currentAccessToken')) {
-            $request->user()->currentAccessToken()?->delete();
+            $token = $request->user()->currentAccessToken();
+            if ($token && method_exists($token, 'delete')) {
+                $token->delete();
+            }
         }
 
         try {
