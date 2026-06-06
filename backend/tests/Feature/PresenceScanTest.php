@@ -100,6 +100,11 @@ class PresenceScanTest extends TestCase
             'expire_at'    => Carbon::now()->addMinutes(5),
             'actif'        => true,
         ]);
+
+        // Inscrire l'étudiant à l'EC (table pivot — CDC 7.2.3)
+        $this->etudiant->ecs()->syncWithoutDetaching([
+            $this->ec->id => ['annee_id' => $this->annee->id],
+        ]);
     }
 
     /**
@@ -231,11 +236,12 @@ class PresenceScanTest extends TestCase
             'severity'    => 'high',
         ]);
 
-        // Vérifier que la présence d'origine est passée en statut suspect
+        // Vérifier que la présence d'origine reste 'valide' (elle n'est PAS marquée suspect)
+        // Seule la tentative frauduleuse est bloquée ; la première présence légitime conserve son statut.
         $this->assertDatabaseHas('presences', [
             'etudiant_id'       => $this->etudiant->id,
             'device_fingerprint' => 'device-premier-001',
-            'statut'            => 'suspect',
+            'statut'            => 'valide',
         ]);
     }
 }

@@ -102,7 +102,11 @@ export default function ImportPage() {
       const { data } = await api.post('/admin/import/schedule', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      sessionStorage.setItem('import_analysis', JSON.stringify(data));
+      // Stocker l'analysis_id pour le polling asynchrone (CDC 8.1)
+      sessionStorage.setItem('import_analysis', JSON.stringify({
+        analysis_id: data.data?.analysis_id,
+        type: 'schedule',
+      }));
       navigate('/import/ai-analysis');
     } catch (err) {
       const message = err.response?.data?.message || 'Erreur lors de l\'analyse de l\'emploi du temps.';
@@ -122,8 +126,12 @@ export default function ImportPage() {
       const { data } = await api.post('/admin/import/courses', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      sessionStorage.setItem('import_courses_analysis', JSON.stringify(data));
-      navigate('/import/validate-courses');
+      // Stocker l'analysis_id pour le polling asynchrone (CDC 8.1)
+      sessionStorage.setItem('import_analysis', JSON.stringify({
+        analysis_id: data.data?.analysis_id,
+        type: 'courses',
+      }));
+      navigate('/import/ai-analysis');
     } catch (err) {
       const message = err.response?.data?.message || 'Erreur lors de l\'analyse des cours.';
       setError(message);

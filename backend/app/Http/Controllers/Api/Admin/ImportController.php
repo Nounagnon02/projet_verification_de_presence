@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\AnalysePdfJob;
+use App\Models\Analyse;
 use App\Models\AnneeAcademique;
 use App\Models\Etudiant;
 use App\Models\Filiere;
 use App\Services\GeminiService;
+use App\Services\IdentifiantService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -45,6 +49,27 @@ class ImportController extends Controller
 
         $header = array_map(fn ($h) => trim(mb_strtolower($h)), $header);
 
+        // Mapping des en-têtes CDC vers les champs internes
+        $columnMap = [
+            'nom' => 'nom',
+            'prenom' => 'prenom',
+            'matricule' => 'matricule',
+            'filiere' => 'filiere_code',
+            'annee' => 'annee_libelle',
+            'email' => 'email',
+            'telephone' => 'telephone',
+        ];
+
+        $mapped = [];
+        foreach ($header as $col) {
+            if (isset($columnMap[$col])) {
+                $mapped[] = $columnMap[$col];
+            } else {
+                $mapped[] = $col;
+            }
+        }
+        $header = $mapped;
+
         $results = ['success' => 0, 'errors' => [], 'total' => 0];
 
         while (($row = fgetcsv($handle, 1000, ',')) !== false) {
@@ -71,18 +96,25 @@ class ImportController extends Controller
             $filiere = Filiere::where('code', $data['filiere_code'])->first();
             $annee   = AnneeAcademique::where('libelle', $data['annee_libelle'])->first();
 
-            Etudiant::create([
+            $etudiant = Etudiant::create([
                 'id'                 => (string) Str::uuid(),
-                'nom'                => mb_strtoupper($data['nom']),
-                'prenom'             => mb_strtoupper($data['prenom']),
+                'nom'                => IdentifiantService::normalize($data['nom']),
+                'prenom'             => IdentifiantService::normalize($data['prenom']),
                 'matricule'          => $data['matricule'],
                 'filiere_id'         => $filiere->id,
                 'annee_id'           => $annee->id,
                 'email'              => $data['email'],
-                'identifiant_unique' => strtoupper(
-                    $data['nom'] . '_' . $data['prenom'] . '_' . $data['matricule'] . '_' . $filiere->code . '_' . $annee->libelle
+                'identifiant_unique' => IdentifiantService::generate(
+                    $data['nom'], $data['prenom'], $data['matricule'],
+                    $filiere->id, $annee->id
                 ),
             ]);
+
+            // Auto-inscription aux ECs de la filière et année (CDC 7.2.3)
+            $etudiant->autoEnroll();
+
+            // Envoi de l'identifiant par email via queue (job asynchrone) — CDC 7.1.2
+            \App\Jobs\SendIdentifiantEmailJob::dispatch($etudiant);
 
             $results['success']++;
         }
@@ -96,7 +128,8 @@ class ImportController extends Controller
     }
 
     /**
-     * Importation et analyse des cours (UEs/ECs) via PDF (Gemini IA).
+     * Importation et analyse des cours (UEs/ECs) via PDF (Gemini IA) — ASYNCHRONE.
+     * Conforme CDC 8.1 & 8.4 — l'analyse est déléguée à un job de queue.
      *
      * POST /api/admin/import/courses
      */
@@ -110,15 +143,29 @@ class ImportController extends Controller
             return $this->validationErrorResponse($validator->errors());
         }
 
-        $path     = $request->file('file')->store('imports/courses');
-        $analysis = $this->gemini->analyzeCourses(storage_path('app/' . $path));
+        $path    = $request->file('file')->store('imports/courses');
+        $absPath = storage_path('app/' . $path);
 
-        return $this->successResponse($analysis, 'Analyse des cours terminée.');
+        // Création de l'analyse en base (statut: pending)
+        $analyse = Analyse::create([
+            'type'      => 'courses',
+            'status'    => 'pending',
+            'file_path' => $absPath,
+            'user_id'   => Auth::id(),
+        ]);
+
+        // Dispatch du job asynchrone
+        AnalysePdfJob::dispatch($absPath, $analyse->id);
+
+        return $this->successResponse(
+            ['analysis_id' => $analyse->id, 'status' => 'pending'],
+            'Analyse des cours lancée en arrière-plan.'
+        );
     }
 
     /**
-     * Importation et analyse de l'emploi du temps via PDF (US03 - Gemini IA).
-     * Conforme CDC 8.1 & 8.2.
+     * Importation et analyse de l'emploi du temps via PDF (US03 - Gemini IA) — ASYNCHRONE.
+     * Conforme CDC 8.1 & 8.2 — l'analyse est déléguée à un job de queue.
      *
      * POST /api/admin/import/schedule
      */
@@ -132,10 +179,24 @@ class ImportController extends Controller
             return $this->validationErrorResponse($validator->errors());
         }
 
-        $path     = $request->file('file')->store('imports/schedule');
-        $analysis = $this->gemini->analyzeSchedule(storage_path('app/' . $path));
+        $path    = $request->file('file')->store('imports/schedule');
+        $absPath = storage_path('app/' . $path);
 
-        return $this->successResponse($analysis, 'Analyse de l\'emploi du temps terminée.');
+        // Création de l'analyse en base (statut: pending)
+        $analyse = Analyse::create([
+            'type'      => 'schedule',
+            'status'    => 'pending',
+            'file_path' => $absPath,
+            'user_id'   => Auth::id(),
+        ]);
+
+        // Dispatch du job asynchrone
+        AnalysePdfJob::dispatch($absPath, $analyse->id);
+
+        return $this->successResponse(
+            ['analysis_id' => $analyse->id, 'status' => 'pending'],
+            'Analyse de l\'emploi du temps lancée en arrière-plan.'
+        );
     }
 
     /**
@@ -214,5 +275,33 @@ class ImportController extends Controller
             'total_ues' => count($created),
             'ues' => $created,
         ], count($created) . ' UE(s) créée(s) avec succès.');
+    }
+
+    /**
+     * Récupération du statut d'une analyse asynchrone.
+     * Utilisé par le frontend pour le polling.
+     *
+     * GET /api/admin/import/analysis-status/{id}
+     */
+    public function analysisStatus(int $id): JsonResponse
+    {
+        $analyse = Analyse::find($id);
+
+        if (! $analyse) {
+            return $this->errorResponse('Analyse introuvable.', 404);
+        }
+
+        return $this->successResponse([
+            'analysis_id'        => $analyse->id,
+            'type'               => $analyse->type,
+            'status'             => $analyse->status,
+            'score_de_confiance' => $analyse->score_de_confiance,
+            'statut_analyse'     => $analyse->statut_analyse,
+            'warning'            => $analyse->warning,
+            'error_message'      => $analyse->error_message,
+            'result'             => $analyse->status === 'completed' ? $analyse->result : null,
+            'created_at'         => $analyse->created_at,
+            'updated_at'         => $analyse->updated_at,
+        ]);
     }
 }

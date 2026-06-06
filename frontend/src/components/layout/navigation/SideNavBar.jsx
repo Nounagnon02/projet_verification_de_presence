@@ -10,15 +10,22 @@ import {
   MdSettings,
   MdHelp,
   MdSupportAgent,
-  MdAccountCircle
+  MdAccountCircle,
+  MdNotifications,
+  MdLibraryBooks,
+  MdEvent,
+  MdWarning
 } from 'react-icons/md';
 
 const links = [
   { to: '/dashboard', icon: <MdDashboard />, label: 'Dashboard' },
   { to: '/students', icon: <MdGroup />, label: 'Étudiants' },
   { to: '/courses', icon: <MdBook />, label: 'Cours' },
+  { to: '/courses/ues', icon: <MdLibraryBooks />, label: 'UE / EC' },
   { to: '/schedules/weekly', icon: <MdCalendarMonth />, label: 'Emploi du temps' },
+  { to: '/schedules/events', icon: <MdEvent />, label: 'Événements' },
   { to: '/attendance/validate', icon: <MdHowToReg />, label: 'Présences' },
+  { to: '/alerts', icon: <MdWarning />, label: 'Alertes' },
   { to: '/reports', icon: <MdAssessment />, label: 'Rapports' },
   { to: '/import', icon: <MdCloudUpload />, label: 'Import' },
   { to: '/settings', icon: <MdSettings />, label: 'Paramètres' },
@@ -36,10 +43,10 @@ export default function SideNavBar() {
     <aside className="hidden md:flex flex-col h-screen p-5 fixed left-0 top-0 bg-[#f7f9fd] w-64 z-50">
       <div className="mb-8 px-2">
         <h1 className="text-lg font-bold text-[#011549] tracking-tight font-headline">
-          UAC Présence
+          Présence
         </h1>
         <p className="text-[10px] text-slate-500 font-medium tracking-widest uppercase">
-          Academic Portal
+          Portail Académique
         </p>
       </div>
 
@@ -53,6 +60,10 @@ export default function SideNavBar() {
       </nav>
 
       <div className="pt-4 border-t border-outline-variant/10 space-y-0.5">
+        <NavLink to="/notifications" end className={linkClass}>
+          <MdNotifications className="text-lg" />
+          <span>Notifications</span>
+        </NavLink>
         <NavLink to="/help" end className={linkClass}>
           <MdHelp className="text-lg" />
           <span>Aide</span>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -25,25 +26,23 @@ class NewPasswordController extends Controller
 
     /**
      * Handle an incoming new password request.
+     * Support à la fois les réponses JSON (API) et les vues Blade.
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $request->validate([
-            'token' => ['required'],
-            'email' => ['required', 'email'],
+            'token'    => ['required'],
+            'email'    => ['required', 'email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // Here we will attempt to reset the user's password. If it is successful we
-        // will update the password on an actual user model and persist it to the
-        // database. Otherwise we will parse the error and return the response.
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function (User $user) use ($request) {
                 $user->forceFill([
-                    'password' => Hash::make($request->password),
+                    'password'       => Hash::make($request->password),
                     'remember_token' => Str::random(60),
                 ])->save();
 
@@ -51,9 +50,23 @@ class NewPasswordController extends Controller
             }
         );
 
-        // If the password was successfully reset, we will redirect the user back to
-        // the application's home authenticated view. If there is an error we can
-        // redirect them back to where they came from with their error message.
+        // Si la requête attend du JSON (appel API React)
+        if ($request->expectsJson()) {
+            if ($status == Password::PASSWORD_RESET) {
+                return response()->json([
+                    'success' => true,
+                    'message' => __('Votre mot de passe a été réinitialisé avec succès.'),
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => __($status),
+                'errors'  => ['email' => [__($status)]],
+            ], 422);
+        }
+
+        // Réponse classique pour les vues Blade
         return $status == Password::PASSWORD_RESET
                     ? redirect()->route('login')->with('status', __($status))
                     : back()->withInput($request->only('email'))

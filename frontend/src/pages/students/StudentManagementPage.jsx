@@ -271,7 +271,7 @@ const StudentManagementPage = () => {
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-on-surface-variant">Matricule</label>
             <input className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono border-b-2 border-transparent focus:border-primary transition-all"
-              value={form.matricule} onChange={(e) => setForm({ ...form, matricule: e.target.value })} placeholder="22-UAC-XXXX" />
+              value={form.matricule} onChange={(e) => setForm({ ...form, matricule: e.target.value })} placeholder="22-XXXX-XXXX" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -293,7 +293,7 @@ const StudentManagementPage = () => {
                 <option value="">Sélectionner une année</option>
                 {annees.map((a) => (
                   <option key={a.id} value={a.id}>
-                    {a.annee || a.libelle} {a.is_active ? '(Active)' : ''}
+                    {a.libelle || a.annee} {a.active || a.is_active ? '(Active)' : ''}
                   </option>
                 ))}
               </select>

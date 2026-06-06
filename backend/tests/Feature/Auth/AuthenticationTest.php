@@ -10,45 +10,50 @@ class AuthenticationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_login_screen_can_be_rendered(): void
+    public function test_users_can_authenticate_via_api(): void
     {
-        $response = $this->get('/login');
+        $user = User::factory()->create([
+            'password' => bcrypt('password'),
+        ]);
 
-        $response->assertStatus(200);
-    }
-
-    public function test_users_can_authenticate_using_the_login_screen(): void
-    {
-        $user = User::factory()->create();
-
-        $response = $this->post('/login', [
-            'email' => $user->email,
+        $response = $this->postJson('/api/login', [
+            'email'    => $user->email,
             'password' => 'password',
         ]);
 
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonStructure(['data' => ['token', 'user']]);
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
     {
         $user = User::factory()->create();
 
-        $this->post('/login', [
-            'email' => $user->email,
+        $response = $this->postJson('/api/login', [
+            'email'    => $user->email,
             'password' => 'wrong-password',
         ]);
 
-        $this->assertGuest();
+        $response->assertStatus(422);
     }
 
-    public function test_users_can_logout(): void
+    public function test_users_can_logout_via_api(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create([
+            'password' => bcrypt('password'),
+        ]);
 
-        $response = $this->actingAs($user)->post('/logout');
+        $loginResponse = $this->postJson('/api/login', [
+            'email'    => $user->email,
+            'password' => 'password',
+        ]);
 
-        $this->assertGuest();
-        $response->assertRedirect('/');
+        $token = $loginResponse->json('data.token');
+
+        $response = $this->withToken($token)->postJson('/api/logout');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true);
     }
 }

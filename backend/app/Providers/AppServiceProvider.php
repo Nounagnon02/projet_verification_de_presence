@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
 
@@ -27,6 +28,11 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
+        // Enregistrement du namespace mail pour les templates d'email
+        // Les vues publiées sont dans resources/views/vendor/mail/
+        View::addNamespace('mail', resource_path('views/vendor/mail/html'));
+
+
         // Rate Limiting pour le scan de présence (CDC 9.2.4)
         // Limite : 3 requêtes par minute par device ou par IP
         RateLimiter::for('scan-presence', function (Request $request) {
@@ -40,6 +46,23 @@ class AppServiceProvider extends ServiceProvider
                     return response()->json([
                         'success' => false,
                         'message' => 'Trop de tentatives. Veuillez patienter avant de rescanner.',
+                    ], 429, $headers);
+                });
+        });
+
+        // Rate Limiting pour le login admin (CDC 9.1)
+        // Limite : 5 tentatives par minute par IP
+        RateLimiter::for('login', function (Request $request) {
+            $key = $request->input('email')
+                ?: $request->ip()
+                ?? 'unknown';
+
+            return Limit::perMinute(5)
+                ->by('login:' . $key)
+                ->response(function (Request $request, array $headers) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Trop de tentatives de connexion. Réessayez dans 1 minute.',
                     ], 429, $headers);
                 });
         });

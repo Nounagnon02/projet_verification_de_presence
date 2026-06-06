@@ -42,6 +42,7 @@ const ProgramComparison = lazy(() => import('./pages/reports/ProgramComparison')
 const AcademicYearComparison = lazy(() => import('./pages/reports/AcademicYearComparison'));
 const ExcelExportPage = lazy(() => import('./pages/reports/ExcelExportPage'));
 const ProgramReportDetail = lazy(() => import('./pages/reports/ProgramReportDetail'));
+const FilteredReportsPage = lazy(() => import('./pages/reports/FilteredReportsPage'));
 
 // Phase 7 - Settings pages
 const AcademicYearsPage = lazy(() => import('./pages/settings/AcademicYearsPage'));
@@ -50,6 +51,13 @@ const SecurityPage = lazy(() => import('./pages/settings/SecurityPage'));
 
 // Landing page
 const LandingPage = lazy(() => import('./pages/LandingPage'));
+
+// Auth pages
+const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
+const TermsOfServicePage = lazy(() => import('./pages/auth/TermsOfServicePage'));
+const PrivacyPolicyPage = lazy(() => import('./pages/auth/PrivacyPolicyPage'));
+const LegalNoticePage = lazy(() => import('./pages/auth/LegalNoticePage'));
 
 // Phase 8 - Support pages
 const HelpCenterDetailPage = lazy(() => import('./pages/help/HelpCenterDetailPage'));
@@ -60,6 +68,15 @@ const TicketsListPage = lazy(() => import('./pages/support/TicketsListPage'));
 const TicketDetailPage = lazy(() => import('./pages/support/TicketDetailPage'));
 const LiveChatDashboard = lazy(() => import('./pages/support/LiveChatDashboard'));
 const CreateFilierePage = lazy(() => import('./pages/settings/CreateFilierePage'));
+
+// Phase 9 - Profile & Notifications
+const ProfilePage = lazy(() => import('./pages/profile/ProfilePage'));
+const NotificationsPage = lazy(() => import('./pages/notifications/NotificationsPage'));
+
+// Phase 10 - UE/EC & Events & Alerts
+const UEManagementPage = lazy(() => import('./pages/courses/UEManagementPage'));
+const EvenementManagementPage = lazy(() => import('./pages/events/EvenementManagementPage'));
+const AnomaliesListPage = lazy(() => import('./pages/alerts/AnomaliesListPage'));
 
 function LoadingFallback() {
   return (
@@ -86,6 +103,11 @@ function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/terms" element={<TermsOfServicePage />} />
+            <Route path="/privacy" element={<PrivacyPolicyPage />} />
+            <Route path="/legal" element={<LegalNoticePage />} />
             <Route path="/session-expired" element={<SessionExpiredPage />} />
             <Route path="/login-error" element={<LoginErrorPage />} />
             <Route path="/attendance/validate" element={<PresenceValidationPage />} />
@@ -104,7 +126,9 @@ function App() {
               <Route path="attendance/scan" element={<QRValidationPage />} />
               <Route path="attendance/student-stats/:studentId" element={<StudentStatsPage />} />
               <Route path="courses" element={<CourseListPage />} />
+              <Route path="courses/ues" element={<UEManagementPage />} />
               <Route path="schedules/weekly" element={<WeeklySchedulePage />} />
+              <Route path="schedules/events" element={<EvenementManagementPage />} />
               <Route path="schedules/slate" element={<AcademicSlatePage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="reports/print/:id" element={<ReportPrintPreview />} />
@@ -113,6 +137,7 @@ function App() {
               <Route path="reports/comparison/semester" element={<SemesterComparison />} />
               <Route path="reports/comparison/filiere" element={<ProgramComparison />} />
               <Route path="reports/comparison/year" element={<AcademicYearComparison />} />
+              <Route path="reports/filtered" element={<FilteredReportsPage />} />
               <Route path="reports/export/excel" element={<ExcelExportPage />} />
               <Route path="reports/filiere/:id" element={<ProgramReportDetail />} />
               <Route path="settings" element={<SettingsPage />} />
@@ -120,6 +145,7 @@ function App() {
               <Route path="settings/filieres" element={<FilieresPage />} />
               <Route path="settings/security" element={<SecurityPage />} />
               <Route path="admin/filieres/create" element={<CreateFilierePage />} />
+              <Route path="alerts" element={<AnomaliesListPage />} />
               <Route path="import" element={<ImportPage />} />
               <Route path="import/ai-analysis" element={<AIAnalysisProgressPage />} />
               <Route path="import/validate-schedule" element={<ScheduleValidationPage />} />
@@ -133,6 +159,8 @@ function App() {
               <Route path="support/tickets" element={<TicketsListPage />} />
               <Route path="support/tickets/:id" element={<TicketDetailPage />} />
               <Route path="support/live-chat" element={<LiveChatDashboard />} />
+              <Route path="profile" element={<ProfilePage />} />
+              <Route path="notifications" element={<NotificationsPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>

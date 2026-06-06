@@ -1,29 +1,31 @@
 import { useState, useEffect } from 'react';
 import { FiCamera, FiCheckCircle, FiAlertTriangle, FiLoader, FiSmartphone, FiUser } from 'react-icons/fi';
 import { MdAccountBalance } from 'react-icons/md';
+import { useSearchParams } from 'react-router-dom';
 import api from '../../api/axios';
 
 export default function QRValidationPage() {
+  const [searchParams] = useSearchParams();
+  const tokenFromUrl = searchParams.get('token') || '';
   const [mode, setMode] = useState('scan');
   const [matricule, setMatricule] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [cours, setCours] = useState(null);
+  const qrToken = tokenFromUrl;
 
   useEffect(() => {
-    const fetchCours = async () => {
+    const fetchCourseInfo = async () => {
+      if (!qrToken) return;
       try {
-        const { data } = await api.get('/admin/evenements', {
-          params: { statut: 'en_cours', date: new Date().toISOString().split('T')[0] }
-        });
-        const evts = data.success ? data.data : (data.data || data);
-        if (Array.isArray(evts) && evts.length > 0) {
-          setCours(evts[0]);
+        const { data } = await api.get(`/presence/course-by-token/${qrToken}`);
+        if (data.success && data.data) {
+          setCours(data.data);
         }
-      } catch { /* pas de cours */ }
+      } catch { /* token invalide */ }
     };
-    fetchCours();
-  }, []);
+    fetchCourseInfo();
+  }, [qrToken]);
 
   const handleManualSubmit = async (e) => {
     e.preventDefault();
@@ -32,7 +34,7 @@ export default function QRValidationPage() {
     try {
       const { data } = await api.post('/presence/scan', {
         identifiant_unique: matricule.trim(),
-        token: cours?.qr_code?.token || '00000000-0000-0000-0000-000000000000',
+        token: qrToken || '00000000-0000-0000-0000-000000000000',
         device_fingerprint: navigator.userAgent || 'unknown',
       });
       setResult({ success: true, ...data.data });
@@ -96,7 +98,7 @@ export default function QRValidationPage() {
             <MdAccountBalance />
           </div>
           <div>
-            <span className="font-headline font-bold text-primary text-xl leading-none">UAC Présence</span>
+            <span className="font-headline font-bold text-primary text-xl leading-none">Présence</span>
           </div>
         </div>
         <div className="bg-secondary/10 px-3 py-1.5 rounded-full flex items-center gap-2">
@@ -108,11 +110,13 @@ export default function QRValidationPage() {
       <div className="max-w-md mx-auto px-6 pb-24">
         <div className="bg-surface-container-lowest rounded-xxl p-5 shadow-sm mb-8">
           <p className="text-xs text-on-surface-variant uppercase tracking-wider mb-1">Cours en cours</p>
-          <p className="text-base font-bold text-primary">{cours?.ec?.intitule || cours?.cours || 'Génie Logiciel'}</p>
-          <div className="flex items-center gap-4 mt-2 text-xs text-on-surface-variant">
-            <span>{cours?.salle ? `Salle ${cours.salle}` : 'Salle 204'}</span>
-            <span>{cours?.heure_debut || '10:30'} - {cours?.heure_fin || '12:30'}</span>
-          </div>
+          <p className="text-base font-bold text-primary">{cours?.cours || (qrToken ? 'Cours' : 'Scanner un QR code')}</p>
+          {cours && (
+            <div className="flex items-center gap-4 mt-2 text-xs text-on-surface-variant">
+              <span>{cours.salle ? `Salle ${cours.salle}` : ''}</span>
+              <span>{cours.heure_debut || ''} - {cours.heure_fin || ''}</span>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col items-center mb-8">
@@ -155,7 +159,7 @@ export default function QRValidationPage() {
             <form onSubmit={handleManualSubmit} className="space-y-4">
               <input
                 className="w-full px-4 py-3 bg-surface-container-high rounded-xl text-lg font-mono focus:outline-none border-b-2 border-transparent focus:border-primary transition-all"
-                placeholder="22-UAC-XXXX"
+                placeholder="22-XXXX-XXXX"
                 value={matricule}
                 onChange={(e) => setMatricule(e.target.value)}
                 disabled={loading}
