@@ -1,39 +1,60 @@
-import { useState, useEffect } from 'react';
-import { FiCheckCircle, FiAlertTriangle, FiLoader, FiHelpCircle } from 'react-icons/fi';
-import { MdAccountBalance } from 'react-icons/md';
+import { useState, useEffect, useRef } from 'react';
+import {
+  FiCheckCircle, FiAlertTriangle, FiLoader, FiHelpCircle,
+  FiSmartphone, FiCamera, FiUser, FiArrowRight, FiShield,
+  FiClock, FiMapPin, FiBookOpen
+} from 'react-icons/fi';
+import { MdAccountBalance, MdVerified } from 'react-icons/md';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../api/axios';
 
 const PresenceValidationPage = () => {
   const [searchParams] = useSearchParams();
   const tokenFromUrl = searchParams.get('token') || '';
+
+  const [step, setStep] = useState(tokenFromUrl ? 'scan' : 'idle');
   const [matricule, setMatricule] = useState('');
   const [loading, setLoading] = useState(false);
-  const [validated, setValidated] = useState(null);
+  const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [cours, setCours] = useState(null);
-  const [coursLoading, setCoursLoading] = useState(true);
+  const [coursLoading, setCoursLoading] = useState(!!tokenFromUrl);
+  const inputRef = useRef(null);
+
   const qrToken = tokenFromUrl;
 
+  // Charger les infos du cours depuis le token QR
   useEffect(() => {
-    const fetchCourseInfo = async () => {
-      if (!qrToken) {
-        setCoursLoading(false);
-        return;
-      }
+    if (!qrToken) {
+      setCoursLoading(false);
+      return;
+    }
+    const fetchCourse = async () => {
       try {
         const { data } = await api.get(`/presence/course-by-token/${qrToken}`);
         if (data.success && data.data) {
           setCours(data.data);
+          setStep('scan');
+        } else {
+          setError('QR Code invalide ou expiré.');
+          setStep('error');
         }
       } catch {
-        // Token invalide ou expiré
+        setError('QR Code invalide ou expiré. Veuillez scanner un nouveau code.');
+        setStep('error');
       } finally {
         setCoursLoading(false);
       }
     };
-    fetchCourseInfo();
+    fetchCourse();
   }, [qrToken]);
+
+  // Focus automatique sur le champ matricule
+  useEffect(() => {
+    if (step === 'scan' && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [step]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -44,7 +65,7 @@ const PresenceValidationPage = () => {
 
     setLoading(true);
     setError('');
-    setValidated(null);
+    setResult(null);
 
     try {
       const { data } = await api.post('/presence/scan', {
@@ -54,196 +75,347 @@ const PresenceValidationPage = () => {
       });
 
       if (data.success) {
-        setValidated({
+        setResult({
           success: true,
           course: data.data?.cours || cours?.cours || 'Cours',
           time: `${cours?.heure_debut || '--:--'} - ${cours?.heure_fin || '--:--'}`,
-          message: data.message || 'Présence validée avec succès!'
+          message: data.message || 'Présence validée avec succès !',
+          student: data.data?.etudiant || matricule.trim(),
         });
+        setStep('success');
       } else {
-        setValidated({ success: false, message: data.message || 'Erreur de validation' });
+        setError(data.message || 'Erreur de validation.');
+        setStep('error');
       }
     } catch (err) {
       const status = err.response?.status;
       const msg = err.response?.data?.message;
       if (status === 410) {
-        setValidated({ success: false, message: 'Session expirée. Veuillez scanner un nouveau QR code.' });
+        setError('Session expirée. Veuillez scanner un nouveau QR code.');
       } else if (status === 409) {
-        setValidated({ success: false, message: 'Présence déjà validée pour ce cours.' });
+        setError('Présence déjà validée pour ce cours.');
       } else if (status === 403) {
-        setValidated({ success: false, message: msg || 'Vous n\'êtes pas inscrit à ce cours ou la fenêtre de validation est fermée.' });
+        setError(msg || 'Vous n\'êtes pas inscrit à ce cours ou la fenêtre de validation est fermée.');
       } else if (status === 404) {
-        setValidated({ success: false, message: msg || 'Identifiant étudiant inconnu.' });
+        setError(msg || 'Identifiant étudiant inconnu. Vérifiez votre matricule.');
       } else {
-        setValidated({ success: false, message: msg || 'Erreur lors de la validation. Veuillez réessayer.' });
+        setError(msg || 'Erreur lors de la validation. Veuillez réessayer.');
       }
+      setStep('error');
     } finally {
       setLoading(false);
     }
   };
 
-  const reset = () => {
+  const resetAll = () => {
+    setStep('idle');
     setMatricule('');
-    setValidated(null);
+    setResult(null);
     setError('');
+    setCours(null);
   };
 
+  // ─── SCREEN: SUCCÈS ───────────────────────────────────
+  if (step === 'success' && result?.success) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#f0fdf4] to-[#dcfce7] flex flex-col">
+        <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+          {/* Animation check */}
+          <div className="relative mb-8">
+            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg shadow-success/20 animate-[bounce-in_0.5s_ease-out]">
+              <MdVerified className="text-success" size={56} />
+            </div>
+            <div className="absolute -top-1 -right-1 w-8 h-8 bg-success rounded-full flex items-center justify-center animate-[bounce-in_0.6s_ease-out_0.2s_both]">
+              <FiCheckCircle className="text-white" size={18} />
+            </div>
+          </div>
+
+          <h1 className="text-3xl font-bold font-headline text-on-surface mb-2 text-center">
+            Présence validée !
+          </h1>
+          <p className="text-on-surface-variant text-center mb-8 max-w-xs">
+            Votre présence a été enregistrée avec succès.
+          </p>
+
+          {/* Course info card */}
+          <div className="w-full max-w-sm bg-white/80 backdrop-blur-sm rounded-2xl p-5 shadow-sm border border-success/20 mb-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-success/10 rounded-xl flex items-center justify-center">
+                <FiBookOpen className="text-success" size={20} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm text-on-surface truncate">
+                  {result.course}
+                </p>
+                <p className="text-xs text-on-surface-variant">
+                  {result.time}
+                </p>
+              </div>
+            </div>
+            <div className="bg-success/5 rounded-xl p-3 flex items-center gap-3">
+              <FiUser className="text-success shrink-0" size={16} />
+              <div>
+                <p className="text-xs text-on-surface-variant">Étudiant</p>
+                <p className="text-sm font-semibold text-on-surface font-mono">{result.student}</p>
+              </div>
+            </div>
+          </div>
+
+          <button onClick={resetAll}
+            className="w-full max-w-sm py-3.5 bg-primary text-white rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+            <FiArrowRight size={16} />
+            Valider une autre présence
+          </button>
+        </div>
+
+        <footer className="py-6 text-center">
+          <p className="text-[10px] font-technical uppercase tracking-widest text-on-surface-variant/60">
+            Système de Gestion de Présence — UAC
+          </p>
+        </footer>
+
+        <style>{`
+          @keyframes bounce-in {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); opacity: 1; }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // ─── SCREEN: ERREUR ───────────────────────────────────
+  if (step === 'error') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#fef2f2] to-[#fee2e2] flex flex-col">
+        <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg shadow-error/20 mb-8">
+            <FiAlertTriangle className="text-error" size={48} />
+          </div>
+
+          <h1 className="text-2xl font-bold font-headline text-on-surface mb-2 text-center">
+            Validation échouée
+          </h1>
+          <p className="text-on-surface-variant text-center mb-8 max-w-xs">
+            {error}
+          </p>
+
+          <div className="flex flex-col w-full max-w-sm gap-3">
+            <button onClick={() => { setStep('scan'); setError(''); }}
+              className="w-full py-3.5 bg-primary text-white rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:opacity-90 active:scale-[0.98] transition-all">
+              Réessayer
+            </button>
+            <button onClick={resetAll}
+              className="w-full py-3 bg-surface-container-high text-on-surface-variant rounded-xl font-semibold text-sm hover:bg-surface-container-higher transition-all">
+              Nouveau scan
+            </button>
+          </div>
+        </div>
+
+        <footer className="py-6 text-center">
+          <p className="text-[10px] font-technical uppercase tracking-widest text-on-surface-variant/60">
+            Système de Gestion de Présence — UAC
+          </p>
+        </footer>
+      </div>
+    );
+  }
+
+  // ─── SCREEN: CHARGEMENT DU QR ─────────────────────────
+  if (coursLoading) {
+    return (
+      <div className="min-h-screen bg-surface flex flex-col items-center justify-center px-6">
+        <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
+          <FiLoader className="animate-spin text-primary" size={32} />
+        </div>
+        <p className="text-on-surface-variant text-sm">Récupération des informations du cours...</p>
+      </div>
+    );
+  }
+
+  // ─── SCREEN: SCAN (PRINCIPAL) ─────────────────────────
   return (
-    <main className="bg-surface text-on-surface font-body min-h-screen flex flex-col items-center">
-      {/* TopAppBar */}
-      <header className="w-full top-0 sticky z-50 bg-[#f7f9fd] transition-all duration-200 ease-in-out flex items-center justify-between px-6 py-6">
-        <div className="flex items-center gap-3 mx-auto">
-          <div className="flex items-center justify-center w-10 h-10 bg-primary rounded-xl">
-            <MdAccountBalance />
+    <div className="min-h-screen bg-surface flex flex-col">
+      {/* TopBar */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-outline-variant/10">
+        <div className="max-w-md mx-auto px-5 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-gradient-to-br from-primary to-primary-container rounded-xl flex items-center justify-center text-white shadow-sm">
+              <MdAccountBalance size={18} />
+            </div>
+            <div>
+              <span className="font-headline font-bold text-primary text-lg leading-none block">Présence</span>
+              <span className="text-[10px] text-on-surface-variant font-medium">Validation étudiant</span>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="font-headline font-black text-[#1A2B5E] text-xl leading-none">Présence</span>
-            <span className="font-headline font-bold text-[#1A2B5E] tracking-tight text-sm opacity-80">Étudiant</span>
-          </div>
+          {qrToken && (
+            <div className="bg-secondary/10 px-3 py-1.5 rounded-full flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+              <span className="text-[9px] font-bold uppercase tracking-widest text-secondary">Session active</span>
+            </div>
+          )}
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-md px-6 pt-4 pb-24 flex flex-col items-center">
-        {/* Hero Illustration / Visual Context */}
-        <div className="w-full mb-8 relative aspect-[16/10] overflow-hidden rounded-3xl">
-          <img
-            className="w-full h-full object-cover"
-            alt="Amphithéâtre universitaire moderne"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMVUYdUtdevU6je4s_NiWDnFTpzoj8T39uMa0v8U8W2s1u9TbcEHkJc15uIY4yrOCZlmKfYzAs2ee5PYarGMiKZV1qE90fFCT80zMPFwylTuJA5lrT1pHGDJszFexIQm3bcAg1IxBOEW8ZlWngQ0tr4OgDerqfK2-3KiPufEoUkG3w8gv1a-3wz4wrk0FavmUDpVv3bUFJp-4AL1zDhCvJM7Er6L75UVSDDAxrB4h-7SHYsbwDAq0fxYqJJoQijfAnqn8QBTHO5A"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-primary/40 to-transparent"></div>
-          <div className="absolute bottom-4 left-6 right-6">
-            <div className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full inline-flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant font-technical">
-                Session Active
-              </span>
+      <main className="flex-1 max-w-md mx-auto w-full px-5 pt-6 pb-12">
+        {/* Étape 1: Infos cours */}
+        {cours ? (
+          <div className="mb-6 animate-[fadeIn_0.3s_ease-out]">
+            <div className="bg-gradient-to-br from-primary to-primary-container rounded-2xl p-5 text-white shadow-lg shadow-primary/20">
+              <p className="text-white/70 text-[10px] font-bold uppercase tracking-wider mb-2">Cours en cours</p>
+              <h2 className="text-xl font-bold font-headline mb-3">{cours.cours || 'Cours'}</h2>
+              <div className="flex flex-wrap items-center gap-4 text-white/80 text-xs">
+                {cours.heure_debut && (
+                  <span className="flex items-center gap-1.5">
+                    <FiClock size={13} />
+                    {cours.heure_debut} - {cours.heure_fin}
+                  </span>
+                )}
+                {cours.salle && (
+                  <span className="flex items-center gap-1.5">
+                    <FiMapPin size={13} />
+                    {cours.salle}
+                  </span>
+                )}
+                {cours.filiere && (
+                  <span className="flex items-center gap-1.5">
+                    <FiBookOpen size={13} />
+                    {cours.filiere}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-
-        {/* Title Section */}
-        <section className="w-full text-center mb-8">
-          <h1 className="font-headline font-bold text-2xl text-on-surface mb-3 tracking-tight">
-            Valider votre présence
-          </h1>
-          {coursLoading ? (
-            <div className="bg-surface-container-high rounded-2xl p-5 text-center">
-              <FiLoader className="animate-spin mx-auto text-primary" />
-            </div>
-          ) : cours ? (
-            <div className="bg-surface-container-high rounded-2xl p-5 text-center">
-              <p className="font-body font-semibold text-primary mb-1 text-sm">
-                {cours.cours || 'Cours'}
-              </p>
-              <p className="font-technical font-medium text-xs text-on-surface-variant">
-                {cours.heure_debut || '--:--'} - {cours.heure_fin || '--:--'}
-              </p>
-              <p className="font-technical font-medium text-xs text-on-surface-variant mt-1">
-                {cours.salle ? `Salle ${cours.salle}` : ''} {cours.filiere ? `• ${cours.filiere}` : ''}
-              </p>
-            </div>
-          ) : (
-            <div className="bg-surface-container-high rounded-2xl p-5 text-center">
-              <p className="font-body font-semibold text-on-surface-variant text-sm">
-                {qrToken ? 'QR Code invalide ou expiré' : 'Scannez un QR code pour valider votre présence'}
-              </p>
-            </div>
-          )}
-        </section>
-
-        {/* Form Section */}
-        <section className="w-full space-y-6">
-          {error && (
-            <div className="bg-error-container/30 rounded-xl p-4 flex items-start gap-2 text-on-error-container">
-              <FiAlertTriangle className="text-lg" />
-              <p>{error}</p>
-            </div>
-          )}
-
-          {validated && validated.success && (
-            <div className="bg-secondary-container/30 rounded-xl p-6 flex items-start gap-4 text-on-secondary-container">
-              <FiCheckCircle className="text-2xl" />
-              <div>
-                <h2 className="font-bold text-2xl text-on-surface mb-2">Présence validée !</h2>
-                <p className="text-surface-variant">{validated.course}</p>
-                <p className="text-surface-variant">{validated.time}</p>
-                <p className="font-semibold text-primary mt-2">{validated.message}</p>
-                <button onClick={reset} className="mt-4 text-sm text-primary font-semibold hover:underline">
-                  Valider une autre présence
-                </button>
+        ) : (
+          <div className="mb-6">
+            <div className="bg-surface-container-high rounded-2xl p-5 text-center border border-outline-variant/10">
+              <div className="w-14 h-14 bg-surface-container-lowest rounded-full flex items-center justify-center mx-auto mb-3">
+                <FiCamera className="text-on-surface-variant" size={24} />
               </div>
+              <p className="text-sm text-on-surface-variant">
+                Scannez un QR code pour valider votre présence
+              </p>
             </div>
-          )}
+          </div>
+        )}
 
-          {validated && !validated.success && (
-            <div className="bg-error-container/30 rounded-xl p-4 flex items-start gap-2 text-on-error-container">
-              <FiAlertTriangle className="text-lg" />
-              <p>{validated.message}</p>
-              <button onClick={reset} className="ml-auto text-sm font-semibold hover:underline">Réessayer</button>
-            </div>
-          )}
-
-          {!validated && (
-            <form onSubmit={handleSubmit} className="w-full space-y-6">
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-on-surface-variant ml-1 uppercase tracking-wider" htmlFor="matricule">
-                  Identifiant unique
-                </label>
-                <div className="relative group">
-                  <input
-                    className="w-full bg-surface-container-lowest border-none rounded-xl px-4 py-4 text-lg font-technical focus:ring-0 transition-all duration-200 peer"
-                    id="matricule"
-                    placeholder="Ex: 22-XXXX-XXXX"
-                    value={matricule}
-                    onChange={(e) => setMatricule(e.target.value)}
-                    type="text"
-                    disabled={loading}
-                  />
-                  {loading && (
-                    <div className="absolute inset-y-0 right-4 flex items-center text-primary">
-                      <FiLoader className="h-4 w-4 animate-spin" />
-                    </div>
-                  )}
-                  <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-primary transition-all duration-300 peer-focus:w-full"></div>
+        {/* Étape 2: Formulaire matricule */}
+        <div className="animate-[fadeIn_0.3s_ease-out_0.1s_both]">
+          {/* Scan visuel */}
+          {qrToken && (
+            <div className="flex flex-col items-center mb-6">
+              <div className="relative w-48 h-48 mb-4">
+                <div className="absolute inset-0 border-[3px] border-primary/30 rounded-2xl"></div>
+                <div className="absolute inset-3 border-[3px] border-primary/20 rounded-xl"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
+                    <FiSmartphone className="text-primary" size={32} />
+                  </div>
                 </div>
-                <p className="text-[11px] text-on-surface-variant/70 italic ml-1">
-                  Saisissez votre matricule étudiant officiel.
-                </p>
+                <div className="absolute left-6 right-6 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent animate-[scanLine_2s_ease-in-out_infinite]"></div>
               </div>
-
-              <button
-                type="submit"
-                className={`w-full bg-gradient-to-br from-[#011549] to-[#1a2b5e] text-white py-4 px-6 rounded-xl font-headline font-bold text-lg shadow-[0_8px_20px_rgba(1,21,73,0.2)] active:scale-95 transition-transform flex items-center justify-center gap-3 ${loading ? 'opacity-70' : ''}`}
-                disabled={loading}
-              >
-                <FiCheckCircle style={{ fontVariationSettings: '"FILL" 1' }} />
-                Valider ma présence
-              </button>
-
-              <div className="flex items-center justify-center gap-4 pt-4">
-                <div className="h-[1px] flex-1 bg-outline-variant opacity-20"></div>
-                <span className="text-[10px] font-bold text-outline uppercase tracking-widest">Aide</span>
-                <div className="h-[1px] flex-1 bg-outline-variant opacity-20"></div>
-              </div>
-              <button
-                type="button"
-                className="w-full py-3 text-sm font-medium text-on-surface-variant hover:bg-surface-container-low rounded-xl transition-colors flex items-center justify-center gap-2"
-              >
-                <FiHelpCircle className="text-sm" />
-                Besoin d'assistance ?
-              </button>
-            </form>
+              <p className="text-xs text-on-surface-variant text-center mb-1">
+                Validez votre présence en saisissant votre matricule
+              </p>
+              <p className="text-[10px] text-on-surface-variant/60 text-center">
+                Le matricule se trouve sur votre carte d'étudiant
+              </p>
+            </div>
           )}
-        </section>
+
+          {/* Formulaire */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="bg-error/10 rounded-xl p-3.5 flex items-start gap-2.5 border border-error/10 animate-[shake_0.4s_ease-out]">
+                <FiAlertTriangle className="text-error shrink-0 mt-0.5" size={16} />
+                <p className="text-sm text-error font-medium">{error}</p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-on-surface-variant ml-1 uppercase tracking-wider" htmlFor="matricule">
+                Identifiant unique
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-outline group-focus-within:text-primary transition-colors">
+                  <FiUser size={16} />
+                </div>
+                <input
+                  ref={inputRef}
+                  id="matricule"
+                  type="text"
+                  value={matricule}
+                  onChange={(e) => setMatricule(e.target.value)}
+                  placeholder="Ex: 22-XXXX-XXXX"
+                  disabled={loading}
+                  className="w-full bg-surface-container-lowest border-2 border-outline-variant/20 rounded-xl pl-11 pr-4 py-3.5 text-base font-mono focus:border-primary focus:outline-none transition-all peer disabled:opacity-60"
+                  autoComplete="off"
+                />
+                <div className="absolute bottom-0 left-3 right-3 h-0.5 bg-gradient-to-r from-primary/50 to-primary scale-x-0 peer-focus:scale-x-100 transition-transform duration-300 rounded-full"></div>
+              </div>
+              <p className="text-[11px] text-on-surface-variant/60 italic ml-1 flex items-center gap-1">
+                <FiShield size={10} />
+                Saisissez le matricule officiel figurant sur votre carte d'étudiant.
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-br from-primary to-primary-container text-white py-4 rounded-xl font-headline font-bold text-base shadow-lg shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-70 hover:shadow-xl hover:shadow-primary/30"
+            >
+              {loading ? (
+                <FiLoader className="animate-spin" size={20} />
+              ) : (
+                <FiCheckCircle size={20} />
+              )}
+              {loading ? 'Validation...' : 'Valider ma présence'}
+            </button>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-outline-variant/10"></div>
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-surface px-3 text-[10px] text-outline uppercase tracking-widest">Aide</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="w-full py-3 text-sm font-medium text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors flex items-center justify-center gap-2"
+            >
+              <FiHelpCircle className="text-sm" />
+              Besoin d'assistance ? Contactez le support
+            </button>
+          </form>
+        </div>
       </main>
 
-      <footer className="w-full py-8 mt-auto flex flex-col items-center border-t border-outline-variant/10">
-        <p className="text-[10px] font-technical uppercase tracking-widest text-on-surface-variant">
-          Système de Gestion de Présence
+      {/* Footer */}
+      <footer className="py-5 border-t border-outline-variant/5">
+        <p className="text-[10px] font-technical uppercase tracking-widest text-on-surface-variant/60 text-center">
+          Université d'Abomey-Calavi — Système de Gestion de Présence
         </p>
       </footer>
-    </main>
+
+      <style>{`
+        @keyframes scanLine {
+          0%, 100% { top: 20%; }
+          50% { top: 75%; }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-4px); }
+          75% { transform: translateX(4px); }
+        }
+      `}</style>
+    </div>
   );
 };
 

@@ -28,8 +28,8 @@ export default function AcademicYearComparison() {
               const stats = res.data || res;
               return {
                 id: a.id,
-                year: a.annee || a.libelle || 'N/A',
-                label: a.annee || a.libelle || 'N/A',
+                year: a.libelle || 'N/A',
+                label: a.libelle || 'N/A',
                 rate: stats.taux_presence || 0,
                 students: stats.total_etudiants || 0,
                 presences: stats.total_presences || 0,
@@ -40,8 +40,8 @@ export default function AcademicYearComparison() {
             } catch {
               return {
                 id: a.id,
-                year: a.annee || a.libelle || 'N/A',
-                label: a.annee || a.libelle || 'N/A',
+                year: a.libelle || 'N/A',
+                label: a.libelle || 'N/A',
                 rate: 0,
                 students: 0,
                 presences: 0,
