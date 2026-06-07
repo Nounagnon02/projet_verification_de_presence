@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   FiPlus, FiEdit2, FiTrash2, FiSave, FiX, FiRefreshCw,
   FiCalendar, FiClock, FiMapPin, FiAlertTriangle,
-  FiSearch, FiFilter, FiCheckCircle, FiXCircle
+  FiSearch, FiFilter, FiCheckCircle, FiXCircle, FiGrid, FiCopy, FiExternalLink, FiSmartphone
 } from 'react-icons/fi';
 import api from '../../api/axios';
 
@@ -26,13 +26,17 @@ export default function EvenementManagementPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [qrGenerating, setQrGenerating] = useState(null);
 
   // Filtres
   const [filters, setFilters] = useState({ date_debut: '', date_fin: '', filiere_id: '', statut: '' });
   const [showFilters, setShowFilters] = useState(false);
 
-  // Modal
+  // Modal événement
   const [modal, setModal] = useState({ open: false, editing: false, data: INITIAL_EVENT, saving: false });
+
+  // Modal QR Code
+  const [qrModal, setQrModal] = useState({ open: false, event: null, qrUrl: '', token: '', expireAt: '' });
 
   const load = useCallback(async () => {
     try {
@@ -70,6 +74,52 @@ export default function EvenementManagementPage() {
   };
 
   const getStatutLabel = (statut) => STATUTS.find(s => s.value === statut)?.label || statut;
+
+  // ─── QR Code ─────────────────────────────────────────────
+
+  const generateQrCode = async (eventId) => {
+    setQrGenerating(eventId);
+    setError('');
+    setSuccess('');
+    try {
+      const { data: res } = await api.get(`/admin/qrcode/${eventId}/generate`);
+      const d = res.data || res;
+      const baseUrl = window.location.origin;
+      const validationUrl = `${baseUrl}/attendance/validate?token=${d.token}`;
+      setQrModal({
+        open: true,
+        event: events.find(e => e.id === eventId),
+        qrUrl: validationUrl,
+        token: d.token,
+        expireAt: d.expire_at,
+      });
+      setSuccess('QR Code généré avec succès !');
+      load();
+    } catch (err) {
+      setError('Erreur lors de la génération du QR Code.');
+    } finally {
+      setQrGenerating(null);
+    }
+  };
+
+  const viewQrCode = (ev) => {
+    if (!ev.qr_code?.token) return;
+    const baseUrl = window.location.origin;
+    const validationUrl = `${baseUrl}/attendance/validate?token=${ev.qr_code.token}`;
+    setQrModal({
+      open: true,
+      event: ev,
+      qrUrl: validationUrl,
+      token: ev.qr_code.token,
+      expireAt: ev.qr_code.expire_at,
+    });
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard?.writeText(text).then(() => {
+      setSuccess('Lien copié !');
+    }).catch(() => {});
+  };
 
   // ─── CRUD ──────────────────────────────────────────────
 
@@ -134,7 +184,7 @@ export default function EvenementManagementPage() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold text-primary font-headline">Événements</h1>
-          <p className="text-sm text-on-surface-variant">Gestion des séances de cours</p>
+          <p className="text-sm text-on-surface-variant">Gestion des séances de cours et codes QR</p>
         </div>
         <button onClick={openCreate}
           className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-primary to-primary-container text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-primary/20 active:scale-[0.99] transition-all">
@@ -243,6 +293,11 @@ export default function EvenementManagementPage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-bold text-sm text-on-surface truncate">{ev.ec?.intitule || '—'}</span>
                   <span className={getStatutBadge(ev.statut)}>{getStatutLabel(ev.statut)}</span>
+                  {ev.has_qr_code && (
+                    <span className="bg-secondary/10 text-secondary px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1">
+                      <FiGrid size={10} /> QR
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-4 mt-1 text-[11px] text-on-surface-variant flex-wrap">
                   <span className="flex items-center gap-1"><FiClock size={12} />{ev.heure_debut} - {ev.heure_fin}</span>
@@ -253,6 +308,28 @@ export default function EvenementManagementPage() {
                 <p className="text-[10px] text-outline mt-1">
                   {ev.presences_count ?? 0} présence{(ev.presences_count ?? 0) > 1 ? 's' : ''}
                 </p>
+
+                {/* QR Code Actions */}
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  {ev.has_qr_code && ev.qr_code && !ev.qr_code.is_expired ? (
+                    <button onClick={() => viewQrCode(ev)}
+                      className="flex items-center gap-1 px-2.5 py-1 bg-secondary/10 text-secondary rounded-lg text-[10px] font-bold hover:bg-secondary/20 transition-all">
+                      <FiGrid size={11} /> Voir QR Code
+                    </button>
+                  ) : (
+                    <>
+                      <button disabled
+                        className="flex items-center gap-1 px-2.5 py-1 bg-surface-container-high text-outline/50 rounded-lg text-[10px] font-bold cursor-not-allowed">
+                        <FiGrid size={11} /> Voir QR Code
+                      </button>
+                      <button onClick={() => generateQrCode(ev.id)} disabled={qrGenerating === ev.id}
+                        className="flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-lg text-[10px] font-bold hover:bg-primary/20 transition-all disabled:opacity-50">
+                        {qrGenerating === ev.id ? <FiRefreshCw className="animate-spin" size={11} /> : <FiRefreshCw size={11} />}
+                        Générer QR Code
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
 
               {/* Actions */}
@@ -271,7 +348,74 @@ export default function EvenementManagementPage() {
         </div>
       )}
 
-      {/* ─── Modal ─────────────────────────────────── */}
+      {/* ─── Modal QR Code ─────────────────────────────── */}
+      {qrModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={() => setQrModal(prev => ({ ...prev, open: false }))}>
+          <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-sm shadow-xl"
+            onClick={(e) => e.stopPropagation()}>
+            {/* Close */}
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-primary">Code QR</h2>
+              <button onClick={() => setQrModal(prev => ({ ...prev, open: false }))}
+                className="p-1 hover:bg-surface-container-high rounded-lg transition-colors">
+                <FiX size={20} className="text-outline" />
+              </button>
+            </div>
+
+            {/* Event info */}
+            {qrModal.event && (
+              <div className="bg-surface-container-high rounded-xl p-3 mb-4 text-center">
+                <p className="font-bold text-sm text-primary">{qrModal.event.ec?.intitule || 'Cours'}</p>
+                <p className="text-[11px] text-on-surface-variant mt-0.5">
+                  {qrModal.event.date} · {qrModal.event.heure_debut} - {qrModal.event.heure_fin}
+                </p>
+                {qrModal.event.salle && (
+                  <p className="text-[11px] text-on-surface-variant">{qrModal.event.salle}</p>
+                )}
+              </div>
+            )}
+
+            {/* QR Code Image */}
+            <div className="flex justify-center mb-4">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrModal.qrUrl)}`}
+                alt="QR Code"
+                className="w-56 h-56 rounded-xl bg-white p-2 shadow-sm"
+              />
+            </div>
+
+            {/* Lien de validation */}
+            <div className="bg-surface-container-high rounded-xl p-3 mb-4">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1">Lien de validation</p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-[10px] text-primary font-mono truncate bg-surface-container-lowest rounded-lg px-2 py-1.5">
+                  {qrModal.qrUrl}
+                </code>
+                <button onClick={() => copyToClipboard(qrModal.qrUrl)}
+                  className="p-1.5 text-outline hover:text-primary hover:bg-primary/10 rounded-lg transition-all" title="Copier">
+                  <FiCopy size={14} />
+                </button>
+              </div>
+            </div>
+
+            {/* Instructions */}
+            <div className="flex items-start gap-2 text-[11px] text-on-surface-variant p-3 bg-surface-container-high rounded-xl">
+              <FiSmartphone size={14} className="shrink-0 mt-0.5 text-secondary" />
+              <p>Les étudiants scannent ce QR code avec leur téléphone pour valider leur présence. Le code expire dans 60 secondes.</p>
+            </div>
+
+            <div className="mt-4">
+              <button onClick={() => setQrModal(prev => ({ ...prev, open: false }))}
+                className="w-full py-2.5 bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all">
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Modal événement ────────────────────────────── */}
       {modal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           onClick={() => setModal(prev => ({ ...prev, open: false }))}>
