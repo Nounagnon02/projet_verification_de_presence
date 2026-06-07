@@ -201,7 +201,7 @@ class ReportController extends Controller
             });
 
         return $this->successResponse([
-            'annee_academique'     => ['id' => $anneeAcademique->id, 'annee' => $anneeAcademique->annee],
+            'annee_academique'     => ['id' => $anneeAcademique->id, 'annee' => $anneeAcademique->libelle],
             'total_etudiants'      => $totalEtudiants,
             'total_evenements'     => $totalEvenements,
             'total_presences'      => $totalPresences,
@@ -359,12 +359,6 @@ class ReportController extends Controller
             $trimestre = $request->integer('trimestre');
             // L'année académique commence en septembre
             // T1: sept-oct-nov, T2: déc-janv-fév, T3: mars-avril-mai, T4: juin-juil-août
-            $trimestreMapping = [
-                1 => [9, 10, 11],
-                2 => [12, 1, 2],
-                3 => [3, 4, 5],
-                4 => [6, 7, 8],
-            ];
             if ($trimestre === 1) {
                 $query->where(function ($q) {
                     $q->whereMonth('evenements.date', '>=', 9)
@@ -372,7 +366,7 @@ class ReportController extends Controller
                 });
             } elseif ($trimestre === 2) {
                 $query->where(function ($q) {
-                    $q->whereIn(\DB::raw('EXTRACT(MONTH FROM evenements.date)'), [12, 1, 2]);
+                    $q->whereIn(DB::raw('EXTRACT(MONTH FROM evenements.date)'), [12, 1, 2]);
                 });
             } elseif ($trimestre === 3) {
                 $query->where(function ($q) {
@@ -391,6 +385,7 @@ class ReportController extends Controller
         $stats = $query->first();
 
         // ---- 5. Évolution journalière (pour graphique) ----
+        $jours = $request->integer('jours', 30); // Nombre de jours personnalisable, défaut 30
         $evolutionQuery = Presence::selectRaw('DATE(presences.heure_scan) as date, COUNT(*) as total')
             ->join('evenements', 'presences.evenement_id', '=', 'evenements.id')
             ->join('ecs', 'evenements.ec_id', '=', 'ecs.id')
@@ -417,7 +412,7 @@ class ReportController extends Controller
             if ($trimestre === 1) {
                 $evolutionQuery->whereMonth('evenements.date', '>=', 9)->whereMonth('evenements.date', '<=', 11);
             } elseif ($trimestre === 2) {
-                $evolutionQuery->whereIn(\DB::raw('EXTRACT(MONTH FROM evenements.date)'), [12, 1, 2]);
+                $evolutionQuery->whereIn(DB::raw('EXTRACT(MONTH FROM evenements.date)'), [12, 1, 2]);
             } elseif ($trimestre === 3) {
                 $evolutionQuery->whereMonth('evenements.date', '>=', 3)->whereMonth('evenements.date', '<=', 5);
             } elseif ($trimestre === 4) {
@@ -426,15 +421,15 @@ class ReportController extends Controller
         }
 
         $evolution = $evolutionQuery
-            ->where('presences.heure_scan', '>=', now()->subDays(30))
-            ->groupBy(\DB::raw('DATE(presences.heure_scan)'))
+            ->where('presences.heure_scan', '>=', now()->subDays($jours))
+            ->groupBy(DB::raw('DATE(presences.heure_scan)'))
             ->orderBy('date')
             ->get();
 
         // ---- 6. Stats par UE (pour graphique à barres) ----
         $statsParUeQuery = Ue::select('ues.id', 'ues.code', 'ues.intitule', 'ues.semestre',
-                \DB::raw('COUNT(DISTINCT presences.id) as total_presences'),
-                \DB::raw('COUNT(DISTINCT evenements.id) as total_evenements'))
+                DB::raw('COUNT(DISTINCT presences.id) as total_presences'),
+                DB::raw('COUNT(DISTINCT evenements.id) as total_evenements'))
             ->join('ecs', 'ecs.ue_id', '=', 'ues.id')
             ->join('evenements', 'evenements.ec_id', '=', 'ecs.id')
             ->leftJoin('presences', 'presences.evenement_id', '=', 'evenements.id');

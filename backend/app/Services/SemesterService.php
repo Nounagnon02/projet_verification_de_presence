@@ -106,9 +106,9 @@ class SemesterService
             ->join('ecs', 'ecs.ue_id', '=', 'ues.id')
             ->join('evenements', 'evenements.ec_id', '=', 'ecs.id')
             ->leftJoin('presences', 'presences.evenement_id', '=', 'evenements.id')
-            ->leftJoin('etudiant_ec', function ($join) {
+            ->leftJoin('etudiant_ec', function ($join) use ($anneeId) {
                 $join->on('etudiant_ec.ec_id', '=', 'ecs.id')
-                    ->on('etudiant_ec.annee_id', '=', \DB::raw($anneeId));
+                    ->on('etudiant_ec.annee_id', '=', \DB::raw((string) $anneeId));
             })
             ->where('ues.annee_id', $anneeId)
             ->groupBy('ues.semestre')

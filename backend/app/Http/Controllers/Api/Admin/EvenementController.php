@@ -11,7 +11,7 @@ class EvenementController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Evenement::with(['ec.ue', 'filiere', 'presences']);
+        $query = Evenement::with(['ec.ue', 'filiere', 'presences', 'qrCode']);
 
         if ($request->filled('date_debut')) {
             $query->where('date', '>=', $request->date_debut);
@@ -43,6 +43,14 @@ class EvenementController extends Controller
                 'ue'             => $e->ec && $e->ec->ue ? ['id' => $e->ec->ue->id, 'code' => $e->ec->ue->code] : null,
                 'filiere'        => $e->filiere ? ['id' => $e->filiere->id, 'code' => $e->filiere->code] : null,
                 'presences_count' => $e->presences->count(),
+                'has_qr_code'    => $e->qrCode ? true : false,
+                'qr_code'        => $e->qrCode ? [
+                    'id'         => $e->qrCode->id,
+                    'token'      => $e->qrCode->token,
+                    'expire_at'  => $e->qrCode->expire_at?->format('Y-m-d H:i:s'),
+                    'actif'      => $e->qrCode->actif,
+                    'is_expired' => $e->qrCode->isExpired(),
+                ] : null,
             ]);
 
         return $this->successResponse($evenements);

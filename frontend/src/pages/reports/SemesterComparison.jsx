@@ -113,7 +113,7 @@ export default function SemesterComparison() {
           >
             <option value="">Sélectionner une année</option>
             {annees.map(a => (
-              <option key={a.id} value={a.id}>{a.annee || a.libelle} {a.active ? '(active)' : ''}</option>
+              <option key={a.id} value={a.id}>{a.libelle} {a.active ? '(active)' : ''}</option>
             ))}
           </select>
         </div>
