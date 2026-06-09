@@ -17,7 +17,7 @@ const TRIMESTRES = [
 const SEMESTRES = Array.from({ length: 10 }, (_, i) => ({ value: i + 1, label: `S${i + 1}` }));
 
 export default function FilteredReportsPage() {
-  // ---- Filtres ----
+  //Filtres
   const [filieres, setFilieres] = useState([]);
   const [annees, setAnnees] = useState([]);
   const [ues, setUes] = useState([]);
@@ -33,13 +33,13 @@ export default function FilteredReportsPage() {
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
 
-  // ---- Données principales ----
+  //Données principales
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [exporting, setExporting] = useState(null);
 
-  // ---- Données comparaisons ----
+  //Données comparaisons
   const [semComp, setSemComp] = useState(null);
   const [filiereStats, setFiliereStats] = useState(null);
   const [yearStats, setYearStats] = useState(null);
@@ -47,12 +47,12 @@ export default function FilteredReportsPage() {
   const [loadingFiliere, setLoadingFiliere] = useState(false);
   const [loadingYear, setLoadingYear] = useState(false);
 
-  // ---- Sections repliables ----
+  //Sections repliables
   const [showSemComp, setShowSemComp] = useState(false);
   const [showFiliereComp, setShowFiliereComp] = useState(false);
   const [showYearComp, setShowYearComp] = useState(false);
 
-  // ---- Chargement initial ----
+  //Chargement initial
   useEffect(() => {
     const init = async () => {
       try {
@@ -80,7 +80,7 @@ export default function FilteredReportsPage() {
     init();
   }, []);
 
-  // ---- ECs dynamiques ----
+  //ECs dynamiques
   useEffect(() => {
     if (!ueId) { setEcs([]); setEcId(''); return; }
     const ue = ues.find(u => String(u.id) === ueId);
@@ -88,7 +88,7 @@ export default function FilteredReportsPage() {
     setEcId('');
   }, [ueId, ues]);
 
-  // ---- Chargement stats filtrées ----
+  //Chargement stats filtrées
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -112,13 +112,13 @@ export default function FilteredReportsPage() {
     }
   }, [filiereId, anneeId, semestre, trimestre, ueId, ecId, jours, dateDebut, dateFin]);
 
-  // ---- Chargement auto initial ----
+  //Chargement auto initial
   useEffect(() => {
     if (!initialLoading) loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialLoading]);
 
-  // ---- Chargement comparaison semestres ----
+  //Chargement comparaison semestres
   const loadSemesterComp = useCallback(async () => {
     if (!filiereId || !anneeId) return;
     setLoadingSem(true);
@@ -134,7 +134,7 @@ export default function FilteredReportsPage() {
     }
   }, [filiereId, anneeId]);
 
-  // ---- Chargement comparaison filières ----
+  //Chargement comparaison filières
   const loadFiliereComp = useCallback(async () => {
     if (!anneeId) return;
     setLoadingFiliere(true);
@@ -158,7 +158,7 @@ export default function FilteredReportsPage() {
     }
   }, [anneeId]);
 
-  // ---- Chargement comparaison années (au montage) ----
+  //Chargement comparaison années (au montage)
   useEffect(() => {
     const fetch = async () => {
       setLoadingYear(true);
@@ -199,17 +199,17 @@ export default function FilteredReportsPage() {
     fetch();
   }, []);
 
-  // ---- Ouvrir section comparaison semestres ----
+  //Ouvrir section comparaison semestres
   useEffect(() => {
     if (showSemComp && filiereId && anneeId && !semComp && !loadingSem) loadSemesterComp();
   }, [showSemComp, filiereId, anneeId, semComp, loadingSem, loadSemesterComp]);
 
-  // ---- Ouvrir section comparaison filières ----
+  //Ouvrir section comparaison filières
   useEffect(() => {
     if (showFiliereComp && anneeId && !filiereStats && !loadingFiliere) loadFiliereComp();
   }, [showFiliereComp, anneeId, filiereStats, loadingFiliere, loadFiliereComp]);
 
-  // ---- Exports ----
+  //Exports
   const exportReport = async (type) => {
     setExporting(type);
     try {
@@ -245,7 +245,7 @@ export default function FilteredReportsPage() {
     }
   };
 
-  // ---- Helpers ----
+  //Helpers
   const d = data || {};
   const evolution = Array.isArray(d.evolution) ? d.evolution : [];
   const statsParUe = Array.isArray(d.stats_par_ue) ? d.stats_par_ue : [];
@@ -267,7 +267,7 @@ export default function FilteredReportsPage() {
     setJours(30); setDateDebut(''); setDateFin('');
   };
 
-  // ---- Composant toggle pour une section ----
+  //Composant toggle pour une section
   const SectionToggle = ({ open, setOpen, title, badge }) => (
     <button
       onClick={() => setOpen(!open)}
@@ -287,7 +287,7 @@ export default function FilteredReportsPage() {
 
   return (
     <div>
-      {/* ===== En-tête ===== */}
+      {/* ==En-tête ==*/}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-primary font-headline">Rapports de Présence</h1>
@@ -308,7 +308,7 @@ export default function FilteredReportsPage() {
         </div>
       </div>
 
-      {/* ===== Filtres ===== */}
+      {/* ==Filtres ==*/}
       <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10 mb-4">
         <div className="flex items-center gap-2 mb-3">
           <FiFilter className="text-primary" size={16} />
@@ -382,7 +382,7 @@ export default function FilteredReportsPage() {
         </div>
       </div>
 
-      {/* ===== Loading / No data ===== */}
+      {/* ==Loading / No data ==*/}
       {loading ? (
         <div className="flex justify-center p-16"><FiLoader className="animate-spin text-primary w-8 h-8" /></div>
       ) : !data ? (
@@ -393,7 +393,7 @@ export default function FilteredReportsPage() {
       ) : (
         <>
 
-          {/* ===== KPIs ===== */}
+          {/* ==KPIs ==*/}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10">
               <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider mb-1">Taux Global</p>
@@ -421,7 +421,7 @@ export default function FilteredReportsPage() {
             </div>
           </div>
 
-          {/* ===== Exports ===== */}
+          {/* ==Exports ==*/}
           <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10 mb-6">
             <div className="flex items-center gap-2 mb-3">
               <FiDownload className="text-primary" size={16} />
@@ -443,7 +443,7 @@ export default function FilteredReportsPage() {
             </div>
           </div>
 
-          {/* ===== Graphiques ===== */}
+          {/* ==Graphiques ==*/}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
             <div className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10">
               <h2 className="text-sm font-bold font-headline text-primary mb-3">Évolution ({jours} jours)</h2>
@@ -464,7 +464,7 @@ export default function FilteredReportsPage() {
             </div>
           </div>
 
-          {/* ===== Gauge ===== */}
+          {/* ==Gauge ==*/}
           {(d.taux_global ?? null) !== null && (
             <div className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 mb-6 flex flex-col items-center">
               <h2 className="text-sm font-bold font-headline text-primary mb-3">Taux Global de Présence</h2>
@@ -472,7 +472,7 @@ export default function FilteredReportsPage() {
             </div>
           )}
 
-          {/* ===== Tableau détail UE ===== */}
+          {/* ==Tableau détail UE ==*/}
           {statsParUe.length > 0 && (
             <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 overflow-hidden mb-6">
               <div className="p-4 border-b border-outline-variant/10">
@@ -511,13 +511,13 @@ export default function FilteredReportsPage() {
         </>
       )}
 
-      {/* ============================================================ */}
-      {/* ===== SECTIONS COMPARAISONS (repliables) ===== */}
-      {/* ============================================================ */}
+      {/*  */}
+      {/* ==SECTIONS COMPARAISONS (repliables) ==*/}
+      {/*  */}
 
       <div className="space-y-3 mt-4">
 
-        {/* ---- Comparaison Semestrielle ---- */}
+        {/*Comparaison Semestrielle*/}
         <SectionToggle open={showSemComp} setOpen={setShowSemComp} title="Comparaison Semestrielle"
           badge={semComp?.semestres?.length ? `${semComp.semestres.length} semestres` : ''} />
         {showSemComp && (
@@ -546,7 +546,7 @@ export default function FilteredReportsPage() {
           </div>
         )}
 
-        {/* ---- Comparaison Filières ---- */}
+        {/*Comparaison Filières*/}
         <SectionToggle open={showFiliereComp} setOpen={setShowFiliereComp} title="Comparaison Filières (classement)"
           badge={filiereStats?.length ? `${filiereStats.length} filières` : ''} />
         {showFiliereComp && (
@@ -592,7 +592,7 @@ export default function FilteredReportsPage() {
           </div>
         )}
 
-        {/* ---- Comparaison Années ---- */}
+        {/*Comparaison Années*/}
         <SectionToggle open={showYearComp} setOpen={setShowYearComp} title="Comparaison Années Académiques"
           badge={yearStats?.filter(y => y.rate > 0).length ? `${yearStats.filter(y => y.rate > 0).length} années` : ''} />
         {showYearComp && (

@@ -39,6 +39,18 @@ class PresenceHistoryController extends Controller
             $query->whereHas('etudiant', fn($q) => $q->where('filiere_id', $request->filiere_id));
         }
 
+        if ($request->filled('annee_id')) {
+            $query->whereHas('evenement', fn($q) => $q->where('annee_id', $request->annee_id));
+        }
+
+        if ($request->filled('niveau')) {
+            $query->whereHas('etudiant.filiere', fn($q) => $q->where('niveau', $request->niveau));
+        }
+
+        if ($request->filled('semestre')) {
+            $query->whereHas('evenement.ec.ue', fn($q) => $q->where('semestre', $request->semestre));
+        }
+
         $perPage = min((int) $request->per_page, 100);
         $presences = $query->latest('heure_scan')->paginate($perPage ?: 15);
 

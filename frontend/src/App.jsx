@@ -1,6 +1,8 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
+import AttendanceLayout from './components/layout/AttendanceLayout';
+import SettingsLayout from './components/layout/SettingsLayout';
 import { useAuth } from './context/AuthContext';
 
 // Lazy-loaded pages
@@ -8,19 +10,15 @@ const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
 const StudentManagementPage = lazy(() => import('./pages/students/StudentManagementPage'));
 const PresenceValidationPage = lazy(() => import('./pages/attendance/PresenceValidationPage'));
-const AttendanceStatsPage = lazy(() => import('./pages/attendance/AttendanceStatsPage'));
 const PresenceHistoryPage = lazy(() => import('./pages/attendance/PresenceHistoryPage'));
 const ReportsPage = lazy(() => import('./pages/reports/ReportsPage'));
-const SettingsPage = lazy(() => import('./pages/settings/SettingsPage'));
 const HelpCenterPage = lazy(() => import('./pages/help/HelpCenterPage'));
-const ImportPage = lazy(() => import('./pages/import/ImportPage'));
 const FAQPage = lazy(() => import('./pages/faq/FAQPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // Phase 3 - New pages
 const QRValidationPage = lazy(() => import('./pages/attendance/QRValidationPage'));
 const StudentStatsPage = lazy(() => import('./pages/attendance/StudentStatsPage'));
-const CourseListPage = lazy(() => import('./pages/courses/CourseListPage'));
 const WeeklySchedulePage = lazy(() => import('./pages/schedules/WeeklySchedulePage'));
 const AcademicSlatePage = lazy(() => import('./pages/settings/AcademicSlatePage'));
 
@@ -120,12 +118,15 @@ function App() {
               <Route index element={<DashboardPage />} />
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="students" element={<StudentManagementPage />} />
-              <Route path="attendance/validate" element={<PresenceValidationPage />} />
-              <Route path="attendance/stats" element={<AttendanceStatsPage />} />
-              <Route path="attendance/history" element={<PresenceHistoryPage />} />
-              <Route path="attendance/scan" element={<QRValidationPage />} />
+              <Route path="attendance" element={<AttendanceLayout />}>
+                <Route index element={<Navigate to="validate" replace />} />
+                <Route path="validate" element={<PresenceValidationPage />} />
+                <Route path="alerts" element={<AnomaliesListPage />} />
+                <Route path="history" element={<PresenceHistoryPage />} />
+                <Route path="scan" element={<QRValidationPage />} />
+              </Route>
               <Route path="attendance/student-stats/:studentId" element={<StudentStatsPage />} />
-              <Route path="courses" element={<CourseListPage />} />
+              <Route path="courses" element={<UEManagementPage />} />
               <Route path="courses/ues" element={<UEManagementPage />} />
               <Route path="schedules/weekly" element={<WeeklySchedulePage />} />
               <Route path="schedules/events" element={<EvenementManagementPage />} />
@@ -140,13 +141,13 @@ function App() {
               <Route path="reports/filtered" element={<FilteredReportsPage />} />
               <Route path="reports/export/excel" element={<ExcelExportPage />} />
               <Route path="reports/filiere/:id" element={<ProgramReportDetail />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="settings/academic-years" element={<AcademicYearsPage />} />
-              <Route path="settings/filieres" element={<FilieresPage />} />
-              <Route path="settings/security" element={<SecurityPage />} />
+              <Route path="settings" element={<SettingsLayout />}>
+                <Route index element={<Navigate to="academic-years" replace />} />
+                <Route path="academic-years" element={<AcademicYearsPage />} />
+                <Route path="filieres" element={<FilieresPage />} />
+                <Route path="security" element={<SecurityPage />} />
+              </Route>
               <Route path="admin/filieres/create" element={<CreateFilierePage />} />
-              <Route path="alerts" element={<AnomaliesListPage />} />
-              <Route path="import" element={<ImportPage />} />
               <Route path="import/ai-analysis" element={<AIAnalysisProgressPage />} />
               <Route path="import/validate-schedule" element={<ScheduleValidationPage />} />
               <Route path="import/validate-courses" element={<CourseValidationPage />} />
