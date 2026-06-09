@@ -5,15 +5,21 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UeResource;
 use App\Models\Ue;
+use App\Traits\ScopedByEtablissement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class UeController extends Controller
 {
+    use ScopedByEtablissement;
+
     public function index(Request $request): AnonymousResourceCollection
     {
         $query = Ue::with(['filiere', 'ecs'])->withCount('ecs');
+
+        // Scope par établissement via la filière
+        $this->scopeViaRelation($query, $request, 'filiere');
 
         if ($request->filled('annee_id')) {
             $query->where('annee_id', $request->annee_id);

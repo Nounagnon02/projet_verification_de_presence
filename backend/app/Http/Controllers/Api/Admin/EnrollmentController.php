@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Ec;
 use App\Models\Etudiant;
+use App\Traits\ScopedByEtablissement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class EnrollmentController extends Controller
 {
+    use ScopedByEtablissement;
+
     /**
      * Liste des ECs auxquels un étudiant est inscrit.
      * GET /api/admin/students/{student}/ecs

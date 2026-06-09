@@ -10,19 +10,25 @@ use App\Models\AnneeAcademique;
 use App\Models\Etudiant;
 use App\Models\Filiere;
 use App\Services\IdentifiantService;
+use App\Traits\ScopedByEtablissement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class StudentController extends Controller
 {
+    use ScopedByEtablissement;
+
     /**
      * Liste paginée des étudiants avec filtres.
      * GET /api/admin/students?per_page=15&search=&filiere_id=&annee_id=
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $query = Etudiant::with(['filiere', 'anneeAcademique']);
+
+        // Scope par établissement via la filière
+        $this->scopeViaRelation($query, $request, 'filiere');
 
         if ($search = request('search')) {
             $query->where(function ($q) use ($search) {

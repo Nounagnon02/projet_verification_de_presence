@@ -11,6 +11,7 @@ use App\Models\Filiere;
 use App\Models\Presence;
 use App\Models\Ue;
 use App\Services\SemesterService;
+use App\Traits\ScopedByEtablissement;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
+    use ScopedByEtablissement;
     /**
      * Export des présences au format PDF (CDC 15.2 & 16).
      *
@@ -134,6 +136,8 @@ class ReportController extends Controller
      */
     public function semesterReport(Request $request, AnneeAcademique $anneeAcademique): JsonResponse
     {
+        $etablissementId = $this->getEtablissementId($request);
+
         $query = Ue::selectRaw('
                 ues.semestre,
                 COUNT(DISTINCT presences.id) as total_presences,
@@ -150,6 +154,12 @@ class ReportController extends Controller
             ->where('ues.annee_id', $anneeAcademique->id)
             ->groupBy('ues.semestre')
             ->orderBy('ues.semestre');
+
+        // Scope par établissement via la filière
+        if ($etablissementId) {
+            $query->join('filieres', 'ues.filiere_id', '=', 'filieres.id')
+                  ->where('filieres.etablissement_id', $etablissementId);
+        }
 
         // Filtre optionnel par filière
         if ($request->filled('filiere_id')) {
@@ -186,8 +196,14 @@ class ReportController extends Controller
             ->join('evenements', 'evenements.ec_id', '=', 'ecs.id')
             ->leftJoin('presences', 'presences.evenement_id', '=', 'evenements.id')
             ->where('ues.annee_id', $anneeAcademique->id)
-            ->groupBy('filieres.id', 'filieres.code', 'filieres.intitule', 'filieres.niveau')
-            ->get()
+            ->groupBy('filieres.id', 'filieres.code', 'filieres.intitule', 'filieres.niveau');
+
+        // Scope par établissement
+        if ($etablissementId) {
+            $filieres->where('filieres.etablissement_id', $etablissementId);
+        }
+
+        $filieres = $filieres->get()
             ->map(function ($f) {
                 $totalAttendus = ($f->total_evenements ?? 0) * Etudiant::where('filiere_id', $f->id)->where('annee_id', request()->route('anneeAcademique') ?: 0)->count();
                 return [
@@ -257,11 +273,14 @@ class ReportController extends Controller
     {
         $anneeId = $request->integer('annee_id');
 
-        $filieres = Filiere::select('filieres.*')
+        $filiereQuery = Filiere::select('filieres.*')
             ->withCount(['etudiants' => function ($q) use ($anneeId) {
                 $q->where('annee_id', $anneeId);
-            }])
-            ->get()
+            }]);
+
+        $this->scopeQuery($filiereQuery, $request);
+
+        $filieres = $filiereQuery->get()
             ->map(function ($filiere) use ($anneeId) {
                 $totalEvenements = Evenement::where('filiere_id', $filiere->id)
                     ->where('annee_id', $anneeId)
@@ -310,6 +329,8 @@ class ReportController extends Controller
      */
     public function filteredStats(Request $request): JsonResponse
     {
+        $etablissementId = $this->getEtablissementId($request);
+
         //1. Construire la requête de base
         $query = Presence::query()
             ->selectRaw('COUNT(DISTINCT presences.id) as total_presences')
@@ -320,6 +341,16 @@ class ReportController extends Controller
             ->join('ecs', 'evenements.ec_id', '=', 'ecs.id')
             ->join('ues', 'ecs.ue_id', '=', 'ues.id')
             ->join('etudiants', 'presences.etudiant_id', '=', 'etudiants.id');
+
+        // Scope par établissement via filières des UEs
+        if ($etablissementId) {
+            $query->whereExists(function ($q) use ($etablissementId) {
+                $q->selectRaw('1')
+                  ->from('filieres')
+                  ->whereColumn('filieres.id', 'ues.filiere_id')
+                  ->where('filieres.etablissement_id', $etablissementId);
+            });
+        }
 
         //2. Appliquer les filtres
         if ($request->filled('filiere_id')) {
@@ -391,6 +422,15 @@ class ReportController extends Controller
             ->join('ecs', 'evenements.ec_id', '=', 'ecs.id')
             ->join('ues', 'ecs.ue_id', '=', 'ues.id');
 
+        // Scope établissement pour l'évolution
+        if ($etablissementId) {
+            $evolutionQuery->whereExists(function ($q) use ($etablissementId) {
+                $q->selectRaw('1')->from('filieres')
+                  ->whereColumn('filieres.id', 'ues.filiere_id')
+                  ->where('filieres.etablissement_id', $etablissementId);
+            });
+        }
+
         if ($request->filled('filiere_id')) {
             $evolutionQuery->where('evenements.filiere_id', $request->integer('filiere_id'));
         }
@@ -434,6 +474,15 @@ class ReportController extends Controller
             ->join('evenements', 'evenements.ec_id', '=', 'ecs.id')
             ->leftJoin('presences', 'presences.evenement_id', '=', 'evenements.id');
 
+        // Scope établissement pour les stats par UE
+        if ($etablissementId) {
+            $statsParUeQuery->whereExists(function ($q) use ($etablissementId) {
+                $q->selectRaw('1')->from('filieres')
+                  ->whereColumn('filieres.id', 'ues.filiere_id')
+                  ->where('filieres.etablissement_id', $etablissementId);
+            });
+        }
+
         if ($request->filled('filiere_id')) {
             $statsParUeQuery->where('ues.filiere_id', $request->integer('filiere_id'));
         }
@@ -465,7 +514,11 @@ class ReportController extends Controller
         //7. Calcul du taux global
         $totalPresences = (int) ($stats->total_presences ?? 0);
         $totalEvenements = (int) ($stats->total_evenements ?? 0);
-        $totalEtudiants = Etudiant::count();
+        $etudiantBaseQuery = Etudiant::query();
+        if ($etablissementId) {
+            $etudiantBaseQuery->whereHas('filiere', fn($q) => $q->where('etablissement_id', $etablissementId));
+        }
+        $totalEtudiants = $etudiantBaseQuery->count();
 
         // Si un filtre filière est actif, compter les étudiants de cette filière
         if ($request->filled('filiere_id')) {
@@ -504,6 +557,9 @@ class ReportController extends Controller
     public function excelExport(Request $request): mixed
     {
         $query = Presence::with(['etudiant.filiere', 'evenement.ec']);
+
+        // Scope par établissement via l'étudiant → filière
+        $this->scopeViaRelation($query, $request, 'etudiant.filiere');
 
         if ($request->filled('filiere_id')) {
             $query->whereHas('etudiant', fn($q) => $q->where('filiere_id', $request->filiere_id));

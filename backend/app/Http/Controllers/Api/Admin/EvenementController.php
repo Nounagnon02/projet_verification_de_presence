@@ -4,14 +4,20 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Evenement;
+use App\Traits\ScopedByEtablissement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class EvenementController extends Controller
 {
+    use ScopedByEtablissement;
+
     public function index(Request $request): JsonResponse
     {
         $query = Evenement::with(['ec.ue', 'filiere', 'presences', 'qrCode']);
+
+        // Scope par établissement via la filière
+        $this->scopeViaRelation($query, $request, 'filiere');
 
         if ($request->filled('date_debut')) {
             $query->where('date', '>=', $request->date_debut);

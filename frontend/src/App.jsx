@@ -1,8 +1,10 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
+import SuperAdminLayout from './components/layout/SuperAdminLayout';
 import AttendanceLayout from './components/layout/AttendanceLayout';
 import SettingsLayout from './components/layout/SettingsLayout';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 import { useAuth } from './context/AuthContext';
 
 // Lazy-loaded pages
@@ -76,6 +78,13 @@ const UEManagementPage = lazy(() => import('./pages/courses/UEManagementPage'));
 const EvenementManagementPage = lazy(() => import('./pages/events/EvenementManagementPage'));
 const AnomaliesListPage = lazy(() => import('./pages/alerts/AnomaliesListPage'));
 
+// Super Admin pages
+const SuperAdminDashboardPage = lazy(() => import('./pages/super-admin/SuperAdminDashboardPage'));
+const EtablissementManagementPage = lazy(() => import('./pages/super-admin/EtablissementManagementPage'));
+const CreateEtablissementPage = lazy(() => import('./pages/super-admin/CreateEtablissementPage'));
+const EtablissementDetailPage = lazy(() => import('./pages/super-admin/EtablissementDetailPage'));
+const BulkImportPage = lazy(() => import('./pages/super-admin/BulkImportPage'));
+
 function LoadingFallback() {
   return (
     <div className="flex h-screen items-center justify-center bg-surface">
@@ -114,7 +123,18 @@ function App() {
           </Routes>
         ) : (
           <Routes>
-            <Route path="/" element={<MainLayout />}>
+            {/* Super Admin routes */}
+            <Route path="/super-admin" element={<ProtectedRoute role="super_admin"><SuperAdminLayout /></ProtectedRoute>}>
+              <Route index element={<SuperAdminDashboardPage />} />
+              <Route path="etablissements" element={<EtablissementManagementPage />} />
+              <Route path="etablissements/create" element={<CreateEtablissementPage />} />
+              <Route path="etablissements/:id" element={<EtablissementDetailPage />} />
+              <Route path="import" element={<BulkImportPage />} />
+              <Route path="settings" element={<div className="text-center py-16 text-slate-400">Paramètres globaux (à venir)</div>} />
+            </Route>
+
+            {/* Faculté Admin routes */}
+            <Route path="/" element={<ProtectedRoute role="faculte_admin"><MainLayout /></ProtectedRoute>}>
               <Route index element={<DashboardPage />} />
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="students" element={<StudentManagementPage />} />
