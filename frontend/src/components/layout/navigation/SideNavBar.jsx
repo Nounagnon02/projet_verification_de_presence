@@ -6,28 +6,20 @@ import {
   MdCalendarMonth,
   MdHowToReg,
   MdAssessment,
-  MdCloudUpload,
   MdSettings,
   MdHelp,
-  MdSupportAgent,
   MdAccountCircle,
-  MdNotifications,
-  MdLibraryBooks,
   MdEvent,
-  MdWarning
 } from 'react-icons/md';
 
 const links = [
   { to: '/dashboard', icon: <MdDashboard />, label: 'Dashboard' },
   { to: '/students', icon: <MdGroup />, label: 'Étudiants' },
-  { to: '/courses', icon: <MdBook />, label: 'Cours' },
-  { to: '/courses/ues', icon: <MdLibraryBooks />, label: 'UE / EC' },
+  { to: '/courses', icon: <MdBook />, label: 'Cours & UE/EC' },
   { to: '/schedules/weekly', icon: <MdCalendarMonth />, label: 'Emploi du temps' },
   { to: '/schedules/events', icon: <MdEvent />, label: 'Événements' },
   { to: '/attendance/validate', icon: <MdHowToReg />, label: 'Présences' },
-  { to: '/alerts', icon: <MdWarning />, label: 'Alertes' },
   { to: '/reports', icon: <MdAssessment />, label: 'Rapports' },
-  { to: '/import', icon: <MdCloudUpload />, label: 'Import' },
   { to: '/settings', icon: <MdSettings />, label: 'Paramètres' },
 ];
 
@@ -60,17 +52,9 @@ export default function SideNavBar() {
       </nav>
 
       <div className="pt-4 border-t border-outline-variant/10 space-y-0.5">
-        <NavLink to="/notifications" end className={linkClass}>
-          <MdNotifications className="text-lg" />
-          <span>Notifications</span>
-        </NavLink>
         <NavLink to="/help" end className={linkClass}>
           <MdHelp className="text-lg" />
           <span>Aide</span>
-        </NavLink>
-        <NavLink to="/support/tickets" end className={linkClass}>
-          <MdSupportAgent className="text-lg" />
-          <span>Support</span>
         </NavLink>
         <NavLink to="/profile" end className={linkClass}>
           <MdAccountCircle className="text-lg" />

@@ -30,7 +30,7 @@ export default function EvenementManagementPage() {
 
   // Filtres
   const [filters, setFilters] = useState({ date_debut: '', date_fin: '', filiere_id: '', statut: '' });
-  const [showFilters, setShowFilters] = useState(false);
+  // Filtres toujours visibles
 
   // Modal événement
   const [modal, setModal] = useState({ open: false, editing: false, data: INITIAL_EVENT, saving: false });
@@ -209,52 +209,46 @@ export default function EvenementManagementPage() {
       )}
 
       {/* Filtres */}
-      <div className="flex items-center gap-2">
-        <button onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-1.5 px-3 py-2 bg-surface-container-high rounded-xl text-xs font-semibold text-on-surface-variant hover:bg-surface-container-high/80 transition-all">
-          <FiFilter size={14} /> Filtres
-          {Object.values(filters).some(v => v) && <span className="w-2 h-2 bg-primary rounded-full" />}
-        </button>
-        {(filters.date_debut || filters.filiere_id || filters.statut) && (
-          <button onClick={() => setFilters({ date_debut: '', date_fin: '', filiere_id: '', statut: '' })}
-            className="text-xs text-primary hover:underline">Réinitialiser</button>
-        )}
-      </div>
-
-      {showFilters && (
-        <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/10 grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-on-surface mb-1">Date</label>
-            <input type="date" value={filters.date_debut}
-              onChange={(e) => setFilters(prev => ({ ...prev, date_debut: e.target.value }))}
-              className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+      <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/10">
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="space-y-1 min-w-[180px] flex-1">
+              <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Date</label>
+              <input type="date" value={filters.date_debut}
+                onChange={(e) => setFilters(prev => ({ ...prev, date_debut: e.target.value }))}
+                className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+            <div className="space-y-1 min-w-[180px] flex-1">
+              <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Filière</label>
+              <select value={filters.filiere_id}
+                onChange={(e) => setFilters(prev => ({ ...prev, filiere_id: e.target.value }))}
+                className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <option value="">Toutes</option>
+                {filieres.map(f => <option key={f.id} value={f.id}>{f.code}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1 min-w-[180px] flex-1">
+              <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Statut</label>
+              <select value={filters.statut}
+                onChange={(e) => setFilters(prev => ({ ...prev, statut: e.target.value }))}
+                className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <option value="">Tous</option>
+                {STATUTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+            </div>
+            <div className="min-w-[120px]">
+              <button onClick={load}
+                className="w-full flex items-center justify-center gap-1.5 px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:opacity-90 transition-all">
+                <FiRefreshCw size={14} /> Appliquer
+              </button>
+            </div>
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-on-surface mb-1">Filière</label>
-            <select value={filters.filiere_id}
-              onChange={(e) => setFilters(prev => ({ ...prev, filiere_id: e.target.value }))}
-              className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-              <option value="">Toutes</option>
-              {filieres.map(f => <option key={f.id} value={f.id}>{f.code}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-on-surface mb-1">Statut</label>
-            <select value={filters.statut}
-              onChange={(e) => setFilters(prev => ({ ...prev, statut: e.target.value }))}
-              className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-              <option value="">Tous</option>
-              {STATUTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-            </select>
-          </div>
-          <div className="flex items-end">
-            <button onClick={load}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-primary text-white rounded-xl text-xs font-bold hover:opacity-90 transition-all">
-              <FiRefreshCw size={14} /> Appliquer
-            </button>
-          </div>
+          {(filters.date_debut || filters.filiere_id || filters.statut) && (
+            <div className="mt-3 text-right">
+              <button onClick={() => setFilters({ date_debut: '', date_fin: '', filiere_id: '', statut: '' })}
+                className="text-xs text-primary hover:underline">Réinitialiser les filtres</button>
+            </div>
+          )}
         </div>
-      )}
 
       {/* Loading */}
       {loading ? (

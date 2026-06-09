@@ -310,7 +310,7 @@ class ReportController extends Controller
      */
     public function filteredStats(Request $request): JsonResponse
     {
-        // ---- 1. Construire la requête de base ----
+        //1. Construire la requête de base
         $query = Presence::query()
             ->selectRaw('COUNT(DISTINCT presences.id) as total_presences')
             ->selectRaw('COUNT(DISTINCT evenements.id) as total_evenements')
@@ -321,7 +321,7 @@ class ReportController extends Controller
             ->join('ues', 'ecs.ue_id', '=', 'ues.id')
             ->join('etudiants', 'presences.etudiant_id', '=', 'etudiants.id');
 
-        // ---- 2. Appliquer les filtres ----
+        //2. Appliquer les filtres
         if ($request->filled('filiere_id')) {
             $filiereId = $request->integer('filiere_id');
             $query->where('evenements.filiere_id', $filiereId)
@@ -354,7 +354,7 @@ class ReportController extends Controller
             $query->whereDate('presences.heure_scan', '<=', $request->date_fin);
         }
 
-        // ---- 3. Filtre trimestre (découpage de l'année académique) ----
+        //3. Filtre trimestre (découpage de l'année académique)
         if ($request->filled('trimestre')) {
             $trimestre = $request->integer('trimestre');
             // L'année académique commence en septembre
@@ -381,10 +381,10 @@ class ReportController extends Controller
             }
         }
 
-        // ---- 4. Exécuter la requête principale ----
+        //4. Exécuter la requête principale
         $stats = $query->first();
 
-        // ---- 5. Évolution journalière (pour graphique) ----
+        //5. Évolution journalière (pour graphique)
         $jours = $request->integer('jours', 30); // Nombre de jours personnalisable, défaut 30
         $evolutionQuery = Presence::selectRaw('DATE(presences.heure_scan) as date, COUNT(*) as total')
             ->join('evenements', 'presences.evenement_id', '=', 'evenements.id')
@@ -426,7 +426,7 @@ class ReportController extends Controller
             ->orderBy('date')
             ->get();
 
-        // ---- 6. Stats par UE (pour graphique à barres) ----
+        //6. Stats par UE (pour graphique à barres)
         $statsParUeQuery = Ue::select('ues.id', 'ues.code', 'ues.intitule', 'ues.semestre',
                 DB::raw('COUNT(DISTINCT presences.id) as total_presences'),
                 DB::raw('COUNT(DISTINCT evenements.id) as total_evenements'))
@@ -462,7 +462,7 @@ class ReportController extends Controller
                 ];
             });
 
-        // ---- 7. Calcul du taux global ----
+        //7. Calcul du taux global
         $totalPresences = (int) ($stats->total_presences ?? 0);
         $totalEvenements = (int) ($stats->total_evenements ?? 0);
         $totalEtudiants = Etudiant::count();
@@ -476,7 +476,7 @@ class ReportController extends Controller
             ? round(($totalPresences / ($totalEvenements * max($totalEtudiants, 1))) * 100, 1)
             : 0;
 
-        // ---- 8. Retourner la réponse ----
+        //8. Retourner la réponse
         return $this->successResponse([
             'taux_global'       => $tauxGlobal,
             'total_presences'   => $totalPresences,

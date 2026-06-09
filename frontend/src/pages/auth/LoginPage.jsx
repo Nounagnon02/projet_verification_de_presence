@@ -49,7 +49,7 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex">
-      {/* ===== PARTIE GAUCHE — Branding ===== */}
+      {/* ==PARTIE GAUCHE — Branding ==*/}
       <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden">
         {/* Image de fond */}
         <img
@@ -104,7 +104,7 @@ const LoginPage = () => {
         </div>
       </div>
 
-      {/* ===== PARTIE DROITE — Formulaire de connexion ===== */}
+      {/* ==PARTIE DROITE — Formulaire de connexion ==*/}
       <div className="flex-1 flex flex-col bg-surface">
         {/* Header mobile/tablette */}
         <div className="lg:hidden w-full px-6 py-5 flex items-center justify-between border-b border-outline-variant/10">

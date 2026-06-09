@@ -41,6 +41,14 @@ class StudentController extends Controller
             $query->where('annee_id', $anneeId);
         }
 
+        if ($niveau = request('niveau')) {
+            $query->whereHas('filiere', fn($q) => $q->where('niveau', $niveau));
+        }
+
+        if ($semestre = request('semestre')) {
+            $query->whereHas('ecs.ue', fn($q) => $q->where('semestre', $semestre));
+        }
+
         $perPage = min((int) request('per_page', 15), 100);
         $paginator = $query->orderBy('created_at', 'desc')->paginate($perPage);
 

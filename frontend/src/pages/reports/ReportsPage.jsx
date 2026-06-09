@@ -7,16 +7,10 @@ import api from '../../api/axios';
 import BarChart from '../../components/charts/BarChart';
 import GaugeChart from '../../components/charts/GaugeChart';
 
-const TRIMESTRES = [
-  { value: 1, label: 'T1 (Sep-Nov)' },
-  { value: 2, label: 'T2 (Déc-Fév)' },
-  { value: 3, label: 'T3 (Mar-Mai)' },
-  { value: 4, label: 'T4 (Jun-Aoû)' },
-];
 const SEMESTRES = Array.from({ length: 10 }, (_, i) => ({ value: i + 1, label: `S${i + 1}` }));
 
 const ReportsPage = () => {
-  // ==================== FILTRES ====================
+  //  FILTRES 
   const [filieres, setFilieres] = useState([]);
   const [annees, setAnnees] = useState([]);
   const [ues, setUes] = useState([]);
@@ -25,20 +19,19 @@ const ReportsPage = () => {
   const [filiereId, setFiliereId] = useState('');
   const [anneeId, setAnneeId] = useState('');
   const [semestre, setSemestre] = useState('');
-  const [trimestre, setTrimestre] = useState('');
   const [ueId, setUeId] = useState('');
   const [ecId, setEcId] = useState('');
   const [jours, setJours] = useState(30);
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
 
-  // ==================== DONNEES ====================
+  //  DONNEES 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [exporting, setExporting] = useState(null);
 
-  // ---- Comparaisons ----
+  //Comparaisons
   const [semComp, setSemComp] = useState(null);
   const [filiereStats, setFiliereStats] = useState(null);
   const [yearStats, setYearStats] = useState(null);
@@ -46,17 +39,17 @@ const ReportsPage = () => {
   const [loadingFiliere, setLoadingFiliere] = useState(false);
   const [loadingYear, setLoadingYear] = useState(false);
 
-  // ---- Sélecteurs propres aux sections comparaisons ----
+  //Sélecteurs propres aux sections comparaisons
   const [semFiliereId, setSemFiliereId] = useState('');
   const [semAnneeId, setSemAnneeId] = useState('');
   const [compFiliereAnneeId, setCompFiliereAnneeId] = useState('');
 
-  // ---- Sections repliables ----
+  //Sections repliables
   const [showSemComp, setShowSemComp] = useState(false);
   const [showFiliereComp, setShowFiliereComp] = useState(false);
   const [showYearComp, setShowYearComp] = useState(false);
 
-  // ==================== CHARGEMENT INITIAL ====================
+  //  CHARGEMENT INITIAL 
   useEffect(() => {
     const init = async () => {
       try {
@@ -87,7 +80,7 @@ const ReportsPage = () => {
     init();
   }, []);
 
-  // ---- ECs dynamiques ----
+  //ECs dynamiques
   useEffect(() => {
     if (!ueId) { setEcs([]); setEcId(''); return; }
     const ue = ues.find(u => String(u.id) === ueId);
@@ -95,7 +88,7 @@ const ReportsPage = () => {
     setEcId('');
   }, [ueId, ues]);
 
-  // ==================== CHARGEMENT STATS FILTREES ====================
+  //  CHARGEMENT STATS FILTREES 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -103,7 +96,6 @@ const ReportsPage = () => {
       if (filiereId) params.filiere_id = filiereId;
       if (anneeId) params.annee_id = anneeId;
       if (semestre) params.semestre = semestre;
-      if (trimestre) params.trimestre = trimestre;
       if (ueId) params.ue_id = ueId;
       if (ecId) params.ec_id = ecId;
       if (jours) params.jours = jours;
@@ -117,15 +109,15 @@ const ReportsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [filiereId, anneeId, semestre, trimestre, ueId, ecId, jours, dateDebut, dateFin]);
+  }, [filiereId, anneeId, semestre, ueId, ecId, jours, dateDebut, dateFin]);
 
-  // ---- Chargement auto au demarrage ----
+  //Chargement auto au demarrage
   useEffect(() => {
     if (!initialLoading) loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialLoading]);
 
-  // ==================== COMPARAISON SEMESTRES ====================
+  //  COMPARAISON SEMESTRES 
   const loadSemesterComp = useCallback(async () => {
     if (!semFiliereId || !semAnneeId) return;
     setLoadingSem(true);
@@ -141,7 +133,7 @@ const ReportsPage = () => {
     }
   }, [semFiliereId, semAnneeId]);
 
-  // ==================== COMPARAISON FILIERES ====================
+  //  COMPARAISON FILIERES 
   const loadFiliereComp = useCallback(async () => {
     if (!compFiliereAnneeId) return;
     setLoadingFiliere(true);
@@ -165,7 +157,7 @@ const ReportsPage = () => {
     }
   }, [compFiliereAnneeId]);
 
-  // ==================== COMPARAISON ANNEES ====================
+  //  COMPARAISON ANNEES 
   useEffect(() => {
     const fetch = async () => {
       setLoadingYear(true);
@@ -206,7 +198,7 @@ const ReportsPage = () => {
     fetch();
   }, []);
 
-  // ---- Chargement des comparaisons à l'ouverture ----
+  //Chargement des comparaisons à l'ouverture
   useEffect(() => {
     if (showSemComp && semFiliereId && semAnneeId && !semComp && !loadingSem) loadSemesterComp();
   }, [showSemComp, semFiliereId, semAnneeId, semComp, loadingSem, loadSemesterComp]);
@@ -215,7 +207,7 @@ const ReportsPage = () => {
     if (showFiliereComp && compFiliereAnneeId && !filiereStats && !loadingFiliere) loadFiliereComp();
   }, [showFiliereComp, compFiliereAnneeId, filiereStats, loadingFiliere, loadFiliereComp]);
 
-  // ==================== EXPORTS ====================
+  //EXPORTS 
   const exportReport = async (type) => {
     setExporting(type);
     try {
@@ -251,7 +243,7 @@ const ReportsPage = () => {
     }
   };
 
-  // ==================== HELPERS ====================
+  //  HELPERS 
   const d = data || {};
   const evolution = Array.isArray(d.evolution) ? d.evolution : [];
   const statsParUe = Array.isArray(d.stats_par_ue) ? d.stats_par_ue : [];
@@ -269,24 +261,22 @@ const ReportsPage = () => {
 
   const resetFilters = () => {
     setFiliereId(''); setAnneeId(''); setSemestre('');
-    setTrimestre(''); setUeId(''); setEcId('');
+    setUeId(''); setEcId('');
     setJours(30); setDateDebut(''); setDateFin('');
   };
 
-  // ==================== RENDU ====================
+  //  RENDU 
   if (initialLoading) {
     return <div className="flex justify-center p-16"><FiLoader className="animate-spin text-primary w-8 h-8" /></div>;
   }
 
   return (
     <div>
-      {/* ==================== EN-TETE ==================== */}
+      {/*  EN-TETE  */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-primary font-headline">Rapports de Présence</h1>
-          <p className="text-sm text-on-surface-variant">
-            Analyse, filtres, exports et comparaisons — tout sur une seule page
-          </p>
+          
         </div>
         <div className="flex gap-2">
           <button onClick={resetFilters}
@@ -301,13 +291,13 @@ const ReportsPage = () => {
         </div>
       </div>
 
-      {/* ==================== FILTRES ==================== */}
+      {/*  FILTRES  */}
       <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10 mb-4">
         <div className="flex items-center gap-2 mb-3">
           <FiFilter className="text-primary" size={16} />
           <span className="text-sm font-bold text-primary">Filtres</span>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-2.5">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2.5">
           <div>
             <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Filière</label>
             <select value={filiereId} onChange={e => setFiliereId(e.target.value)}
@@ -330,14 +320,6 @@ const ReportsPage = () => {
               className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface">
               <option value="">Tous</option>
               {SEMESTRES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Trimestre</label>
-            <select value={trimestre} onChange={e => setTrimestre(e.target.value)}
-              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface">
-              <option value="">Tous</option>
-              {TRIMESTRES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
           </div>
           <div>
@@ -375,7 +357,7 @@ const ReportsPage = () => {
         </div>
       </div>
 
-      {/* ==================== CONTENU PRINCIPAL ==================== */}
+      {/*  CONTENU PRINCIPAL  */}
       {loading ? (
         <div className="flex justify-center p-16"><FiLoader className="animate-spin text-primary w-8 h-8" /></div>
       ) : !data ? (
@@ -385,7 +367,7 @@ const ReportsPage = () => {
         </div>
       ) : (
         <>
-          {/* ==================== KPIS ==================== */}
+          {/*  KPIS  */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10">
               <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider mb-1">Taux Global</p>
@@ -413,7 +395,7 @@ const ReportsPage = () => {
             </div>
           </div>
 
-          {/* ==================== EXPORTS ==================== */}
+          {/*  EXPORTS  */}
           <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10 mb-6">
             <div className="flex items-center gap-2 mb-3">
               <FiDownload className="text-primary" size={16} />
@@ -435,7 +417,7 @@ const ReportsPage = () => {
             </div>
           </div>
 
-          {/* ==================== GRAPHIQUES ==================== */}
+          {/*  GRAPHIQUES  */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
             <div className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10">
               <h2 className="text-sm font-bold font-headline text-primary mb-3">Évolution ({jours} jours)</h2>
@@ -456,7 +438,7 @@ const ReportsPage = () => {
             </div>
           </div>
 
-          {/* ==================== JAUGE ==================== */}
+          {/*  JAUGE  */}
           {(d.taux_global ?? null) !== null && (
             <div className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 mb-6 flex flex-col items-center">
               <h2 className="text-sm font-bold font-headline text-primary mb-3">Taux Global de Présence</h2>
@@ -464,7 +446,7 @@ const ReportsPage = () => {
             </div>
           )}
 
-          {/* ==================== TABLEAU UE ==================== */}
+          {/*  TABLEAU UE  */}
           {statsParUe.length > 0 && (
             <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 overflow-hidden mb-6">
               <div className="p-4 border-b border-outline-variant/10">
@@ -503,14 +485,14 @@ const ReportsPage = () => {
         </>
       )}
 
-      {/* ================================================================ */}
-      {/* ==================== SECTIONS COMPARAISONS ==================== */}
-      {/* ================================================================ */}
+      {/* =*/}
+      {/*  SECTIONS COMPARAISONS  */}
+      {/* =*/}
 
       <div className="space-y-4 mt-6 border-t border-outline-variant/10 pt-6">
         <h2 className="text-lg font-bold text-primary font-headline">Comparaisons</h2>
 
-        {/* ---- 1. Comparaison Semestrielle ---- */}
+        {/*1. Comparaison Semestrielle*/}
         <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 overflow-hidden">
           <button onClick={() => setShowSemComp(!showSemComp)}
             className="flex items-center justify-between w-full px-5 py-3.5 hover:bg-surface-container-high/50 transition-all">
@@ -575,7 +557,7 @@ const ReportsPage = () => {
           )}
         </div>
 
-        {/* ---- 2. Comparaison Filières ---- */}
+        {/*2. Comparaison Filières*/}
         <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 overflow-hidden">
           <button onClick={() => setShowFiliereComp(!showFiliereComp)}
             className="flex items-center justify-between w-full px-5 py-3.5 hover:bg-surface-container-high/50 transition-all">
@@ -648,7 +630,7 @@ const ReportsPage = () => {
           )}
         </div>
 
-        {/* ---- 3. Comparaison Années ---- */}
+        {/*3. Comparaison Années*/}
         <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 overflow-hidden">
           <button onClick={() => setShowYearComp(!showYearComp)}
             className="flex items-center justify-between w-full px-5 py-3.5 hover:bg-surface-container-high/50 transition-all">
