@@ -14,7 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'locale' => \App\Http\Middleware\SetLocale::class,
+            'locale'             => \App\Http\Middleware\SetLocale::class,
+            'role'               => \App\Http\Middleware\CheckRole::class,
+            'scoped.etablissement' => \App\Http\Middleware\ScopeByEtablissement::class,
         ]);
 
         // Note : SPA stateful auth désactivé — on utilise exclusivement

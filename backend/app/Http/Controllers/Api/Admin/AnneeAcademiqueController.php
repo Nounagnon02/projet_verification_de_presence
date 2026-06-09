@@ -4,14 +4,19 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AnneeAcademique;
+use App\Traits\ScopedByEtablissement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AnneeAcademiqueController extends Controller
 {
-    public function index(): JsonResponse
+    use ScopedByEtablissement;
+
+    public function index(Request $request): JsonResponse
     {
-        $annees = AnneeAcademique::orderBy('date_debut', 'desc')->get();
+        $query = AnneeAcademique::orderBy('date_debut', 'desc');
+        $this->scopeQuery($query, $request);
+        $annees = $query->get();
         return $this->successResponse($annees);
     }
 
@@ -24,8 +29,13 @@ class AnneeAcademiqueController extends Controller
             'active'     => 'boolean',
         ]);
 
+        // Assigner automatiquement l'établissement scope
+        $validated['etablissement_id'] = $this->getEtablissementId($request);
+
         if ($request->boolean('active')) {
-            AnneeAcademique::where('active', true)->update(['active' => false]);
+            $query = AnneeAcademique::query();
+            $this->scopeQuery($query, $request);
+            $query->update(['active' => false]);
         }
 
         $annee = AnneeAcademique::create($validated);
@@ -46,19 +56,28 @@ class AnneeAcademiqueController extends Controller
             'active'     => 'boolean',
         ]);
 
+        // Empêcher un admin faculté de changer l'établissement
+        if ($this->getEtablissementId($request)) {
+            unset($validated['etablissement_id']);
+        }
+
         if ($request->boolean('active')) {
-            AnneeAcademique::where('active', true)->update(['active' => false]);
+            $query = AnneeAcademique::query();
+            $this->scopeQuery($query, $request);
+            $query->update(['active' => false]);
         }
 
         $anneeAcademique->update($validated);
         return $this->successResponse($anneeAcademique, 'Année académique mise à jour.');
     }
 
-    public function activate(AnneeAcademique $anneeAcademique): JsonResponse
+    public function activate(Request $request, AnneeAcademique $anneeAcademique): JsonResponse
     {
-        AnneeAcademique::where('active', true)->update(['active' => false]);
-        $anneeAcademique->update(['active' => true]);
+        $query = AnneeAcademique::query();
+        $this->scopeQuery($query, $request);
+        $query->where('active', true)->update(['active' => false]);
 
+        $anneeAcademique->update(['active' => true]);
         return $this->successResponse($anneeAcademique, 'Année académique activée.');
     }
 

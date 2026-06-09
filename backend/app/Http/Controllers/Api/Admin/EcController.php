@@ -4,14 +4,22 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Ec;
+use App\Traits\ScopedByEtablissement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class EcController extends Controller
 {
-    public function index(): JsonResponse
+    use ScopedByEtablissement;
+
+    public function index(Request $request): JsonResponse
     {
-        $ecs = Ec::with('ue.filiere')->orderBy('code')->get();
+        $query = Ec::with('ue.filiere');
+
+        // Scope par établissement via UE → filière
+        $this->scopeViaRelation($query, $request, 'ue.filiere');
+
+        $ecs = $query->orderBy('code')->get();
         return $this->successResponse($ecs);
     }
 
