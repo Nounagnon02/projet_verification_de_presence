@@ -25,6 +25,12 @@ class EvenementController extends Controller
         if ($request->filled('filiere_id')) {
             $query->where('filiere_id', $request->filiere_id);
         }
+        if ($request->filled('annee_id')) {
+            $query->where('annee_id', $request->annee_id);
+        }
+        if ($request->filled('semestre')) {
+            $query->whereHas('ec.ue', fn($q) => $q->where('semestre', $request->semestre));
+        }
         if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
         }

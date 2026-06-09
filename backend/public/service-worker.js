@@ -26,7 +26,7 @@ self.addEventListener('fetch', event => {
                 }
                 return fetch(event.request).catch(() => {
                     // Si hors ligne et la requête échoue, afficher la page hors ligne
-                    if (event.request.mode === 'navigate') {
+                    if (event.request.mode 'navigate') {
                         return caches.match('/offline');
                     }
                 });
@@ -40,7 +40,7 @@ self.addEventListener('activate', event => {
         caches.keys().then(cacheNames => {
             return Promise.all(
                 cacheNames.map(cacheName => {
-                    if (cacheWhitelist.indexOf(cacheName) === -1) {
+                    if (cacheWhitelist.indexOf(cacheName) -1) {
                         return caches.delete(cacheName);
                     }
                 })

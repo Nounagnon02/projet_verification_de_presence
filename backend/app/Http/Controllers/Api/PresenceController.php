@@ -58,9 +58,9 @@ class PresenceController extends Controller
      */
     public function scan(Request $request): JsonResponse
     {
-        // -----------------------------------------------------------------
+        //-------------------------------------------------------------
         // 1. Validation des entrées
-        // -----------------------------------------------------------------
+        //-------------------------------------------------------------
         $validator = Validator::make($request->all(), [
             'identifiant_unique' => 'required|string',
             'token'              => 'required|uuid',
@@ -73,9 +73,9 @@ class PresenceController extends Controller
             return $this->validationErrorResponse($validator->errors());
         }
 
-        // -----------------------------------------------------------------
+        //-------------------------------------------------------------
         // 2. Vérification du QR Code (CDC 7.4.2 & 9.2.1)
-        // -----------------------------------------------------------------
+        //-------------------------------------------------------------
         $qrCode = QrCode::where('token', $request->token)
             ->where('actif', true)
             ->first();
@@ -87,9 +87,9 @@ class PresenceController extends Controller
         // Invalidation immédiate du token (anti-rejeu, CDC 9.2.1)
         $qrCode->update(['actif' => false]);
 
-        // -----------------------------------------------------------------
+        //-------------------------------------------------------------
         // 3. Vérification de la fenêtre horaire (CDC 7.3.3)
-        // -----------------------------------------------------------------
+        //-------------------------------------------------------------
         $evenement = $qrCode->evenement;
         $now = Carbon::now();
 
@@ -106,21 +106,21 @@ class PresenceController extends Controller
             return $this->forbiddenResponse('Fenêtre de validation fermée (hors horaire).');
         }
 
-        // -----------------------------------------------------------------
+        //-------------------------------------------------------------
         // 4. Identification de l'étudiant (CDC 7.1.3)
-        // -----------------------------------------------------------------
+        //-------------------------------------------------------------
         $etudiant = Etudiant::where('identifiant_unique', $request->identifiant_unique)->first();
 
         if (!$etudiant) {
             return $this->notFoundResponse('Identifiant étudiant inconnu.');
         }
 
-        // -----------------------------------------------------------------
+        //-------------------------------------------------------------
         // 5. Vérification inscription au cours (CDC 7.2.3 & 7.4.2)
         //    On vérifie d'abord la table pivot etudiant_ec.
         //    Si l'étudiant n'a encore aucune inscription (backfill pas encore fait),
         //    on vérifie uniquement la filière (comportement précédent).
-        // -----------------------------------------------------------------
+        //-------------------------------------------------------------
         $hasEnrollments = $etudiant->ecs()->exists();
 
         if ($hasEnrollments) {
@@ -136,9 +136,9 @@ class PresenceController extends Controller
             return $this->forbiddenResponse('Étudiant non inscrit à ce cours.');
         }
 
-        // -----------------------------------------------------------------
+        //-------------------------------------------------------------
         // 6. Détection de double scan et fraude (CDC 9.2.2 & 9.2.3)
-        // -----------------------------------------------------------------
+        //-------------------------------------------------------------
         $existing = Presence::where('etudiant_id', $etudiant->id)
             ->where('evenement_id', $evenement->id)
             ->first();
@@ -167,9 +167,9 @@ class PresenceController extends Controller
             return $this->conflictResponse('Présence déjà enregistrée.');
         }
 
-        // -----------------------------------------------------------------
+        //-------------------------------------------------------------
         // 7. Enregistrement de la présence
-        // -----------------------------------------------------------------
+        //-------------------------------------------------------------
         $presence = Presence::create([
             'etudiant_id'       => $etudiant->id,
             'evenement_id'      => $evenement->id,
@@ -181,10 +181,10 @@ class PresenceController extends Controller
             'longitude'         => $request->longitude,
         ]);
 
-        // -----------------------------------------------------------------
+        //-------------------------------------------------------------
         // 8. Régénération immédiate du QR Code (CDC 9.2.1)
         //    Après chaque scan, un nouveau token est généré pour l'événement.
-        // -----------------------------------------------------------------
+        //-------------------------------------------------------------
         QrCode::create([
             'evenement_id' => $evenement->id,
             'token'        => (string) Str::uuid(),
@@ -192,9 +192,9 @@ class PresenceController extends Controller
             'actif'        => true,
         ]);
 
-        // -----------------------------------------------------------------
+        //-------------------------------------------------------------
         // 9. Gamification : vérification de la semaine parfaite (CDC 12.1)
-        // -----------------------------------------------------------------
+        //-------------------------------------------------------------
         $gamification = app(CheckWeeklyAttendance::class)->execute($etudiant);
 
         return $this->createdResponse([

@@ -67,7 +67,7 @@ return [
         'temp_dir' => sys_get_temp_dir(),
 
         /**
-         * ==== IMPORTANT ====
+         * =IMPORTANT=
          *
          * dompdf's "chroot": Prevents dompdf from accessing system files or other
          * files on the webserver.  All local files opened by dompdf must be in a
@@ -222,7 +222,7 @@ return [
          * If this setting is set to true then DOMPDF will automatically evaluate embedded PHP contained
          * within <script type="text/php"> ... </script> tags.
          *
-         * ==== IMPORTANT ==== Enabling this for documents you do not trust (e.g. arbitrary remote html pages)
+         * =IMPORTANT =Enabling this for documents you do not trust (e.g. arbitrary remote html pages)
          * is a security risk.
          * Embedded scripts are run with the same level of system access available to dompdf.
          * Set this option to false (recommended) if you wish to process untrusted documents.
@@ -253,7 +253,7 @@ return [
          *  If this setting is set to true, DOMPDF will access remote sites for
          *  images and CSS files as required.
          *
-         *  ==== IMPORTANT ====
+         *  =IMPORTANT=
          *  This can be a security risk, in particular in combination with isPhpEnabled and
          *  allowing remote html code to be passed to $dompdf = new DOMPDF(); $dompdf->load_html(...);
          *  This allows anonymous users to download legally doubtful internet content which on

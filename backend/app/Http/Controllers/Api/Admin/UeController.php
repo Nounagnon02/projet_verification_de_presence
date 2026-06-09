@@ -11,9 +11,21 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class UeController extends Controller
 {
-    public function index(): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection
     {
-        $ues = Ue::with(['filiere', 'ecs'])->withCount('ecs')->orderBy('code')->get();
+        $query = Ue::with(['filiere', 'ecs'])->withCount('ecs');
+
+        if ($request->filled('annee_id')) {
+            $query->where('annee_id', $request->annee_id);
+        }
+        if ($request->filled('filiere_id')) {
+            $query->where('filiere_id', $request->filiere_id);
+        }
+        if ($niveau = $request->niveau) {
+            $query->whereHas('filiere', fn($q) => $q->where('niveau', $niveau));
+        }
+
+        $ues = $query->orderBy('code')->get();
         return UeResource::collection($ues);
     }
 
