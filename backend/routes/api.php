@@ -28,6 +28,10 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+use App\Http\Controllers\Api\SuperAdmin\BulkRegistrationController;
+use App\Http\Controllers\Api\SuperAdmin\DashboardController as SuperAdminDashboardController;
+use App\Http\Controllers\Api\SuperAdmin\EtablissementController;
+
 // Route publique pour les statistiques de la landing page
 Route::get('/landing/stats', [LandingPageController::class, 'stats']);
 
@@ -78,8 +82,8 @@ Route::prefix('presence')->group(function () {
         ->name('api.presence.course-by-token');
 });
 
-// Routes protégées pour l'administration
-Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
+// Routes protégées pour l'administration (faculté scope via scoped.etablissement)
+Route::middleware(['auth:sanctum', 'scoped.etablissement'])->prefix('admin')->group(function () {
 
     // Dashboard & Stats
     Route::get('/dashboard', [DashboardController::class, 'index']);
@@ -168,9 +172,24 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     Route::put('/profile', [ProfileController::class, 'update']);
     Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
 
+    // Authentification à deux facteurs (2FA)
+    Route::post('/profile/2fa/enable', [ProfileController::class, 'enable2FA']);
+    Route::post('/profile/2fa/confirm', [ProfileController::class, 'confirm2FA']);
+    Route::post('/profile/2fa/disable', [ProfileController::class, 'disable2FA']);
+    Route::post('/profile/2fa/verify', [ProfileController::class, 'verify2FA']);
+
     // Sessions actives
     Route::get('/sessions', [SessionController::class, 'index']);
     Route::delete('/sessions/others', [SessionController::class, 'destroyOthers']);
+});
+
+// Routes Super Admin UAC
+Route::middleware(['auth:sanctum', 'role:super_admin'])->prefix('super-admin')->group(function () {
+    Route::get('/dashboard', [SuperAdminDashboardController::class, 'index']);
+    Route::apiResource('/etablissements', EtablissementController::class);
+    Route::post('/etablissements/import', [BulkRegistrationController::class, 'import']);
+    Route::get('/etablissements/{etablissement}/stats', [EtablissementController::class, 'stats']);
+    Route::post('/etablissements/{etablissement}/resend-credentials', [EtablissementController::class, 'resendCredentials']);
 });
 
 // Auth User Info & Logout

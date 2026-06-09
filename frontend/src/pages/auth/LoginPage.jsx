@@ -38,8 +38,13 @@ const LoginPage = () => {
     setError('');
 
     try {
-      await login(email, password);
-      navigate('/dashboard', { replace: true });
+      const userData = await login(email, password);
+      // Rediriger selon le rôle
+      if (userData?.role === 'super_admin') {
+        navigate('/super-admin', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Identifiants invalides. Veuillez réessayer.');
     } finally {

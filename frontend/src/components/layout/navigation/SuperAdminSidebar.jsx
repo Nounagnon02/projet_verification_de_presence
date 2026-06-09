@@ -1,28 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import {
-  MdDashboard,
-  MdGroup,
-  MdBook,
-  MdCalendarMonth,
-  MdHowToReg,
-  MdAssessment,
-  MdSettings,
-  MdHelp,
-  MdAccountCircle,
-  MdEvent,
-  MdLogout,
-} from 'react-icons/md';
+import { MdDashboard, MdBusiness, MdCloudUpload, MdSettings, MdHelp, MdAccountCircle, MdLogout } from 'react-icons/md';
 import { useAuth } from '../../../context/AuthContext';
 
 const links = [
-  { to: '/dashboard', icon: <MdDashboard />, label: 'Dashboard' },
-  { to: '/students', icon: <MdGroup />, label: 'Étudiants' },
-  { to: '/courses', icon: <MdBook />, label: 'Cours & UE/EC' },
-  { to: '/schedules/weekly', icon: <MdCalendarMonth />, label: 'Emploi du temps' },
-  { to: '/schedules/events', icon: <MdEvent />, label: 'Événements' },
-  { to: '/attendance/validate', icon: <MdHowToReg />, label: 'Présences' },
-  { to: '/reports', icon: <MdAssessment />, label: 'Rapports' },
-  { to: '/settings', icon: <MdSettings />, label: 'Paramètres' },
+  { to: '/super-admin', icon: <MdDashboard />, label: 'Dashboard UAC', end: true },
+  { to: '/super-admin/etablissements', icon: <MdBusiness />, label: 'Facultés / Écoles' },
+  { to: '/super-admin/import', icon: <MdCloudUpload />, label: 'Import CSV' },
+  { to: '/super-admin/settings', icon: <MdSettings />, label: 'Paramètres' },
 ];
 
 const linkClass = ({ isActive }) =>
@@ -32,8 +16,8 @@ const linkClass = ({ isActive }) =>
       : 'text-slate-500 hover:bg-[#e6e8ec] hover:text-[#011549] hover:translate-x-1'
   }`;
 
-export default function SideNavBar() {
-  const { logout } = useAuth();
+export default function SuperAdminSidebar() {
+  const { user, logout } = useAuth();
 
   const handleLogout = async () => {
     await logout();
@@ -42,17 +26,22 @@ export default function SideNavBar() {
   return (
     <aside className="hidden md:flex flex-col h-screen p-5 fixed left-0 top-0 bg-[#f7f9fd] w-64 z-50">
       <div className="mb-8 px-2">
-        <h1 className="text-lg font-bold text-[#011549] tracking-tight font-headline">
-          Présence
-        </h1>
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-8 h-8 bg-[#011549] rounded-xl flex items-center justify-center">
+            <MdBusiness size={16} className="text-white" />
+          </div>
+          <h1 className="text-lg font-bold text-[#011549] tracking-tight font-headline">
+            Super Admin
+          </h1>
+        </div>
         <p className="text-[10px] text-slate-500 font-medium tracking-widest uppercase">
-          Portail Académique
+          Portail UAC
         </p>
       </div>
 
       <nav className="flex-1 space-y-0.5">
         {links.map((link) => (
-          <NavLink key={link.to} to={link.to} end className={linkClass}>
+          <NavLink key={link.to} to={link.to} end={link.end} className={linkClass}>
             <span className="text-lg">{link.icon}</span>
             <span>{link.label}</span>
           </NavLink>
@@ -70,7 +59,7 @@ export default function SideNavBar() {
         </NavLink>
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all text-slate-500 hover:bg-red-50 hover:text-red-600"
+          className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all w-full text-left text-slate-500 hover:bg-red-50 hover:text-red-600"
         >
           <MdLogout className="text-lg" />
           <span>Déconnexion</span>

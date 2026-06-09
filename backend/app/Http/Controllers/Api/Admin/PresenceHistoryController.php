@@ -5,15 +5,21 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Etudiant;
 use App\Models\Presence;
+use App\Traits\ScopedByEtablissement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class PresenceHistoryController extends Controller
 {
+    use ScopedByEtablissement;
+
     public function index(Request $request): JsonResponse
     {
         $query = Presence::with(['etudiant.filiere', 'evenement.ec']);
+
+        // Scope par établissement via l'étudiant → filière
+        $this->scopeViaRelation($query, $request, 'etudiant.filiere');
 
         if ($search = $request->search) {
             $query->whereHas('etudiant', function ($q) use ($search) {
@@ -78,24 +84,52 @@ class PresenceHistoryController extends Controller
 
     public function stats(Request $request): JsonResponse
     {
-        $totalEtudiants = Etudiant::count();
-        $totalPresences = Presence::count();
-        $totalEvenements = DB::table('evenements')->count();
+        $etablissementId = $this->getEtablissementId($request);
 
-        $presencesParJour = Presence::select(
+        // Scoper les requêtes si admin faculté
+        $etudiantQuery = Etudiant::query();
+        $presenceQuery = Presence::query();
+        $evenementQuery = DB::table('evenements');
+
+        if ($etablissementId) {
+            $etudiantQuery->whereHas('filiere', fn($q) => $q->where('etablissement_id', $etablissementId));
+            $presenceQuery->whereHas('etudiant.filiere', fn($q) => $q->where('etablissement_id', $etablissementId));
+            $evenementQuery->join('filieres', 'evenements.filiere_id', '=', 'filieres.id')
+                ->where('filieres.etablissement_id', $etablissementId);
+        }
+
+        $totalEtudiants = $etudiantQuery->count();
+        $totalPresences = $presenceQuery->count();
+        $totalEvenements = $evenementQuery->count();
+
+        // Présences par jour — avec scope
+        $presencesParJourQuery = Presence::select(
             DB::raw("DATE(heure_scan) as date"),
             DB::raw('COUNT(*) as total'),
             DB::raw("SUM(CASE WHEN statut = 'valide' THEN 1 ELSE 0 END) as valides"),
             DB::raw("SUM(CASE WHEN statut = 'suspect' THEN 1 ELSE 0 END) as suspectes")
         )
-            ->where('heure_scan', '>=', now()->subDays(30))
+            ->where('heure_scan', '>=', now()->subDays(30));
+
+        if ($etablissementId) {
+            $presencesParJourQuery->whereHas('etudiant.filiere', fn($q) => $q->where('etablissement_id', $etablissementId));
+        }
+
+        $presencesParJour = $presencesParJourQuery
             ->groupBy('date')
             ->orderBy('date')
             ->get();
 
-        $statsParFiliere = Etudiant::select('filieres.code', 'filieres.intitule', DB::raw('COUNT(presences.id) as total_presences'))
+        // Stats par filière — scope
+        $statsParFiliereQuery = Etudiant::select('filieres.code', 'filieres.intitule', DB::raw('COUNT(presences.id) as total_presences'))
             ->join('filieres', 'etudiants.filiere_id', '=', 'filieres.id')
-            ->leftJoin('presences', 'etudiants.id', '=', 'presences.etudiant_id')
+            ->leftJoin('presences', 'etudiants.id', '=', 'presences.etudiant_id');
+
+        if ($etablissementId) {
+            $statsParFiliereQuery->where('filieres.etablissement_id', $etablissementId);
+        }
+
+        $statsParFiliere = $statsParFiliereQuery
             ->groupBy('filieres.id', 'filieres.code', 'filieres.intitule')
             ->get();
 

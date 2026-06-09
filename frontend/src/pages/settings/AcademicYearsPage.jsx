@@ -1,9 +1,20 @@
 import { useState } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiCheck } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiCheck, FiCalendar, FiArrowRight, FiStar } from 'react-icons/fi';
 import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
 import useApi from '../../hooks/useApi';
 import api from '../../api/axios';
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  try {
+    return new Date(dateStr).toLocaleDateString('fr-FR', {
+      day: 'numeric', month: 'long', year: 'numeric',
+    });
+  } catch {
+    return dateStr;
+  }
+}
 
 export default function AcademicYearsPage() {
   const { data: years, loading, refetch } = useApi('/admin/annees-academiques');
@@ -14,7 +25,7 @@ export default function AcademicYearsPage() {
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ annee: '', date_debut: '', date_fin: '' });
+    setForm({ libelle: '', date_debut: '', date_fin: '' });
     setShowModal(true);
   };
 
@@ -63,7 +74,8 @@ export default function AcademicYearsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      {/* En-tête */}
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold font-headline text-primary">Années Académiques</h1>
           <p className="text-sm text-on-surface-variant">Gérez les années académiques</p>
@@ -75,32 +87,82 @@ export default function AcademicYearsPage() {
 
       {loading ? (
         <div className="text-center py-12 text-on-surface-variant">Chargement...</div>
+      ) : !years || years.length === 0 ? (
+        <div className="text-center py-12 text-on-surface-variant bg-surface-container-lowest rounded-xxl">
+          Aucune année académique. Créez-en une !
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {(years || []).map((year) => (
-            <div key={year.id} className={`bg-surface-container-lowest rounded-xxl p-5 shadow-sm border transition-all ${year.active ? 'border-primary' : 'border-transparent'}`}>
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-primary">{year.annee}</h3>
-                    {year.active && <Badge variant="success">Active</Badge>}
+            <div
+              key={year.id}
+              className={`bg-surface-container-lowest rounded-xxl p-5 shadow-sm border-2 transition-all ${
+                year.active
+                  ? 'border-primary/30 bg-primary/[0.02]'
+                  : 'border-transparent hover:border-outline-variant/20'
+              }`}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-xl ${
+                    year.active ? 'bg-primary/10' : 'bg-surface-container-high'
+                  }`}>
+                    <FiCalendar className={`${year.active ? 'text-primary' : 'text-outline'}`} size={20} />
                   </div>
-                  <p className="text-xs text-on-surface-variant mt-1">
-                    {year.date_debut} → {year.date_fin}
-                  </p>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-primary text-base">{year.annee || year.libelle}</h3>
+                      {year.active && (
+                        <span className="flex items-center gap-1 px-2 py-0.5 bg-secondary/10 text-secondary rounded-full text-[10px] font-bold">
+                          <FiStar size={10} /> Active
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-on-surface-variant mt-0.5">Année académique</p>
+                  </div>
                 </div>
+
                 <div className="flex gap-1">
                   {!year.active && (
-                    <button onClick={() => setActive(year.id)} className="p-2 hover:bg-surface-container-high rounded-lg transition-colors" title="Définir comme active">
-                      <FiCheck className="text-on-surface-variant" size={16} />
+                    <button
+                      onClick={() => setActive(year.id)}
+                      className="p-2 hover:bg-secondary/10 rounded-lg transition-colors"
+                      title="Définir comme active"
+                    >
+                      <FiStar className="text-on-surface-variant hover:text-secondary" size={15} />
                     </button>
                   )}
-                  <button onClick={() => openEdit(year)} className="p-2 hover:bg-surface-container-high rounded-lg transition-colors">
-                    <FiEdit2 className="text-on-surface-variant" size={16} />
+                  <button
+                    onClick={() => openEdit(year)}
+                    className="p-2 hover:bg-surface-container-high rounded-lg transition-colors"
+                    title="Modifier"
+                  >
+                    <FiEdit2 className="text-on-surface-variant" size={15} />
                   </button>
-                  <button onClick={() => handleDelete(year.id)} className="p-2 hover:bg-error/10 rounded-lg transition-colors">
-                    <FiTrash2 className="text-error" size={16} />
+                  <button
+                    onClick={() => handleDelete(year.id)}
+                    className="p-2 hover:bg-error/10 rounded-lg transition-colors"
+                    title="Supprimer"
+                  >
+                    <FiTrash2 className="text-error" size={15} />
                   </button>
+                </div>
+              </div>
+
+              {/* Période */}
+              <div className="bg-surface-container-high rounded-xl p-3.5">
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="flex-1">
+                    <p className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider mb-0.5">Début</p>
+                    <p className="font-semibold text-on-surface">{formatDate(year.date_debut)}</p>
+                  </div>
+                  <div className="text-outline flex-shrink-0">
+                    <FiArrowRight size={16} />
+                  </div>
+                  <div className="flex-1 text-right">
+                    <p className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider mb-0.5">Fin</p>
+                    <p className="font-semibold text-on-surface">{formatDate(year.date_fin)}</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -108,6 +170,7 @@ export default function AcademicYearsPage() {
         </div>
       )}
 
+      {/* Modal */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editing ? "Modifier l'année" : 'Nouvelle année académique'}>
         <form onSubmit={handleSave} className="space-y-4">
           <div className="space-y-1.5">
