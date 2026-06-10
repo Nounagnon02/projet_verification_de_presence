@@ -21,9 +21,9 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            AdminUserSeeder::class,   // IFRI créé en premier
             AnneeAcademiqueSeeder::class,
             FiliereSeeder::class,
-            AdminUserSeeder::class,
             UeSeeder::class,
             EcSeeder::class,
             EtudiantSeeder::class,

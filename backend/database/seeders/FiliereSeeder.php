@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Etablissement;
 use App\Models\Filiere;
 use Illuminate\Database\Seeder;
 
@@ -9,6 +10,9 @@ class FiliereSeeder extends Seeder
 {
     public function run(): void
     {
+        $ifri = Etablissement::where('code', 'IFRI')->first();
+        $etablissementId = $ifri?->id;
+
         $filieres = [
             ['code' => 'IM-L1',    'intitule' => 'Informatique et Mathématiques (L1)',                  'niveau' => 'L1'],
             ['code' => 'IM-L2',    'intitule' => 'Informatique et Mathématiques (L2)',                  'niveau' => 'L2'],
@@ -23,7 +27,11 @@ class FiliereSeeder extends Seeder
         ];
 
         foreach ($filieres as $filiere) {
-            Filiere::firstOrCreate(['code' => $filiere['code']], $filiere);
+            $filiere['etablissement_id'] = $etablissementId;
+            Filiere::updateOrCreate(
+                ['code' => $filiere['code']],
+                $filiere
+            );
         }
 
         $this->command->info('Filières créées : ' . count($filieres));
