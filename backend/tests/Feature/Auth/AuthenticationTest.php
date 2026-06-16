@@ -23,7 +23,7 @@ class AuthenticationTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonPath('success', true)
-            ->assertJsonStructure(['data' => ['token', 'user']]);
+            ->assertJsonStructure(['data' => ['user']]);
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
@@ -44,14 +44,9 @@ class AuthenticationTest extends TestCase
             'password' => bcrypt('password'),
         ]);
 
-        $loginResponse = $this->postJson('/api/login', [
-            'email'    => $user->email,
-            'password' => 'password',
-        ]);
+        $this->actingAs($user);
 
-        $token = $loginResponse->json('data.token');
-
-        $response = $this->withToken($token)->postJson('/api/logout');
+        $response = $this->postJson('/api/logout');
 
         $response->assertStatus(200)
             ->assertJsonPath('success', true);

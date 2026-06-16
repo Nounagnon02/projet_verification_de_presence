@@ -14,7 +14,7 @@ class EvenementController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $query = Evenement::with(['ec.ue', 'filiere', 'presences', 'qrCode']);
+        $query = Evenement::with(['ec.ue', 'filiere', 'presences', 'qrCode', 'salleRef']);
 
         // Scope par établissement via la filière
         $this->scopeViaRelation($query, $request, 'filiere');
@@ -50,6 +50,12 @@ class EvenementController extends Controller
                 'heure_debut'    => $e->heure_debut,
                 'heure_fin'      => $e->heure_fin,
                 'salle'          => $e->salle,
+                'salle_id'       => $e->salle_id,
+                'salle_ref'      => $e->salleRef ? [
+                    'id'     => $e->salleRef->id,
+                    'nom'    => $e->salleRef->nom,
+                    'code'   => $e->salleRef->code,
+                ] : null,
                 'statut'         => $e->statut,
                 'ec'             => $e->ec ? ['id' => $e->ec->id, 'code' => $e->ec->code, 'intitule' => $e->ec->intitule] : null,
                 'ue'             => $e->ec && $e->ec->ue ? ['id' => $e->ec->ue->id, 'code' => $e->ec->ue->code] : null,
@@ -78,6 +84,7 @@ class EvenementController extends Controller
             'heure_debut' => 'required|date_format:H:i',
             'heure_fin'   => 'required|date_format:H:i|after:heure_debut',
             'salle'       => 'nullable|string|max:100',
+            'salle_id'    => 'nullable|exists:salles,id',
             'statut'      => 'sometimes|string|in:planifie,en_cours,termine,annule',
         ]);
 
@@ -85,14 +92,26 @@ class EvenementController extends Controller
         return $this->createdResponse($evenement, 'Événement créé avec succès.');
     }
 
-    public function show(Evenement $evenement): JsonResponse
+    public function show(Request $request, Evenement $evenement): JsonResponse
     {
-        $evenement->load(['ec.ue', 'filiere', 'presences.etudiant', 'qrCode']);
+        // Vérifier que l'admin a accès à cet événement (scope établissement)
+        $etablissementId = $this->getEtablissementId($request);
+        if ($etablissementId && $evenement->filiere?->etablissement_id !== $etablissementId) {
+            return $this->errorResponse('Événement non trouvé.', 404);
+        }
+
+        $evenement->load(['ec.ue', 'filiere', 'presences.etudiant', 'qrCode', 'salleRef']);
         return $this->successResponse($evenement);
     }
 
     public function update(Request $request, Evenement $evenement): JsonResponse
     {
+        // Vérifier que l'admin a accès à cet événement (scope établissement)
+        $etablissementId = $this->getEtablissementId($request);
+        if ($etablissementId && $evenement->filiere?->etablissement_id !== $etablissementId) {
+            return $this->errorResponse('Événement non trouvé.', 404);
+        }
+
         $validated = $request->validate([
             'ec_id'       => 'sometimes|exists:ecs,id',
             'filiere_id'  => 'sometimes|exists:filieres,id',
@@ -101,6 +120,7 @@ class EvenementController extends Controller
             'heure_debut' => 'sometimes|date_format:H:i',
             'heure_fin'   => 'sometimes|date_format:H:i|after:heure_debut',
             'salle'       => 'nullable|string|max:100',
+            'salle_id'    => 'nullable|exists:salles,id',
             'statut'      => 'sometimes|string|in:planifie,en_cours,termine,annule',
         ]);
 
@@ -108,8 +128,14 @@ class EvenementController extends Controller
         return $this->successResponse($evenement, 'Événement mis à jour.');
     }
 
-    public function destroy(Evenement $evenement): JsonResponse
+    public function destroy(Request $request, Evenement $evenement): JsonResponse
     {
+        // Vérifier que l'admin a accès à cet événement (scope établissement)
+        $etablissementId = $this->getEtablissementId($request);
+        if ($etablissementId && $evenement->filiere?->etablissement_id !== $etablissementId) {
+            return $this->errorResponse('Événement non trouvé.', 404);
+        }
+
         $evenement->delete();
         return $this->successResponse(null, 'Événement supprimé.');
     }

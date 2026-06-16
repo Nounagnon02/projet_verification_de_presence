@@ -12,6 +12,7 @@ use App\Models\Filiere;
 use App\Services\IdentifiantService;
 use App\Traits\ScopedByEtablissement;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 

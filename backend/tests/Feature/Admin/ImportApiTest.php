@@ -107,6 +107,8 @@ class ImportApiTest extends TestCase
     public function test_import_schedule_lance_analyse_async(): void
     {
         $file = UploadedFile::fake()->create('edt.pdf', 1024, 'application/pdf');
+        // Écrire des magic bytes PDF valides dans le fichier
+        file_put_contents($file->getPathname(), '%PDF-1.4 ' . str_repeat('x', 1016));
 
         $response = $this->withToken($this->bearerToken)
             ->postJson('/api/admin/import/schedule', [
@@ -141,6 +143,8 @@ class ImportApiTest extends TestCase
     public function test_import_courses_lance_analyse_async(): void
     {
         $file = UploadedFile::fake()->create('cours.pdf', 1024, 'application/pdf');
+        // Écrire des magic bytes PDF valides dans le fichier
+        file_put_contents($file->getPathname(), '%PDF-1.4 ' . str_repeat('x', 1016));
 
         $response = $this->withToken($this->bearerToken)
             ->postJson('/api/admin/import/courses', [

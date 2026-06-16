@@ -4,15 +4,12 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use App\Models\member;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\View\View;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Log;
-
+use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -32,17 +29,11 @@ class AuthenticatedSessionController extends Controller
         try {
             $request->authenticate();
 
-            // Régénérer la session uniquement si disponible (API Symfony)
+            // Régénérer la session uniquement si disponible
             try {
                 $request->session()->regenerate();
             } catch (\RuntimeException $e) {
                 // Session non disponible (routes API sans session middleware)
-            }
-
-            // Générer un token Sanctum pour les clients API (curl / frontend)
-            $token = null;
-            if (method_exists($request->user(), 'createToken')) {
-                $token = $request->user()->createToken('api-token')->plainTextToken;
             }
 
             if ($request->expectsJson() || $request->is('api/*')) {
@@ -50,20 +41,22 @@ class AuthenticatedSessionController extends Controller
                     'success' => true,
                     'message' => 'Connecté avec succès.',
                     'data'    => [
-                        'user'     => $request->user(),
-                        'token'    => $token,
+                        'user'  => $request->user(),
                     ],
                 ]);
             }
 
             return redirect()->intended(route('dashboard', absolute: false));
         } catch (\Exception $e) {
-            Log::error('Erreur de connexion: ' . $e->getMessage());
+            Log::error('Erreur de connexion', [
+                'email'      => $request->input('email', 'unknown'),
+                'error_type' => get_class($e),
+            ]);
 
             if ($request->expectsJson() || $request->is('api/*')) {
                 return response()->json([
                     'success' => false,
-                    'message' => $e->getMessage() ?: 'Erreur de connexion.',
+                    'message' => 'Identifiants invalides ou compte bloqué. Veuillez réessayer.',
                 ], 422);
             }
 
@@ -78,12 +71,9 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse|JsonResponse
     {
-        // Révoquer le token Sanctum si présent
-        if ($request->user() && method_exists($request->user(), 'currentAccessToken')) {
-            $token = $request->user()->currentAccessToken();
-            if ($token && method_exists($token, 'delete')) {
-                $token->delete();
-            }
+        // Révoquer TOUS les tokens Sanctum de l'utilisateur
+        if ($request->user()) {
+            $request->user()->tokens()->delete();
         }
 
         try {

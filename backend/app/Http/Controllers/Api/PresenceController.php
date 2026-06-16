@@ -9,6 +9,7 @@ use App\Models\Etudiant;
 use App\Models\Evenement;
 use App\Models\Presence;
 use App\Models\QrCode;
+use App\Models\Salle;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -39,20 +40,32 @@ class PresenceController extends Controller
             return $this->notFoundResponse('Événement introuvable.');
         }
 
+        $salle = $evenement->salleRef;
+
         return $this->successResponse([
-            'cours'       => $evenement->ec?->intitule ?? 'Cours',
-            'heure_debut' => $evenement->heure_debut,
-            'heure_fin'   => $evenement->heure_fin,
-            'salle'       => $evenement->salle,
-            'date'        => $evenement->date?->format('Y-m-d'),
-            'filiere'     => $evenement->filiere?->code ?? '',
-            'token'       => $token,
+            'cours'            => $evenement->ec?->intitule ?? 'Cours',
+            'heure_debut'      => $evenement->heure_debut,
+            'heure_fin'        => $evenement->heure_fin,
+            'salle'            => $evenement->salle,
+            'date'             => $evenement->date?->format('Y-m-d'),
+            'filiere'          => $evenement->filiere?->code ?? '',
+            'token'            => $token,
+            // Informations de vérification requises côté client
+            'verification'     => [
+                'gps_requis'    => $salle && $salle->actif && $salle->latitude !== null,
+                'wifi_requis'   => $salle && $salle->actif && !$salle->hors_reseau && ($salle->ssid_attendu || $salle->bssid_attendu),
+                'nom_salle'     => $salle?->nom ?? $evenement->salle,
+            ],
         ]);
     }
 
     /**
      * Valide le scan d'un étudiant et enregistre sa présence.
-     * Conforme CDC US04 & US06 : validation QR code + détection fraude.
+     *
+     * VÉRIFICATION TRIPLE FACTEUR (CDC US04 & US06) :
+     *   1. QR Code valide (facteur visuel)
+     *   2. Géolocalisation GPS dans le rayon de la salle
+     *   3. Réseau WiFi (SSID/BSSID) correspondant à la salle
      *
      * POST /api/presence/scan
      */
@@ -65,8 +78,12 @@ class PresenceController extends Controller
             'identifiant_unique' => 'required|string',
             'token'              => 'required|uuid',
             'device_fingerprint' => 'required|string',
+            // Géolocalisation
             'latitude'           => 'nullable|numeric|between:-90,90',
             'longitude'          => 'nullable|numeric|between:-180,180',
+            // Réseau WiFi
+            'ssid'               => 'nullable|string|max:255',
+            'bssid'              => 'nullable|string|max:17', // Format MAC: 00:11:22:33:44:55
         ]);
 
         if ($validator->fails()) {
@@ -74,7 +91,7 @@ class PresenceController extends Controller
         }
 
         //-------------------------------------------------------------
-        // 2. Vérification du QR Code (CDC 7.4.2 & 9.2.1)
+        // 2. Vérification du QR Code (Facteur 1 — Visuel)
         //-------------------------------------------------------------
         $qrCode = QrCode::where('token', $request->token)
             ->where('actif', true)
@@ -87,17 +104,15 @@ class PresenceController extends Controller
         // Invalidation immédiate du token (anti-rejeu, CDC 9.2.1)
         $qrCode->update(['actif' => false]);
 
-        //-------------------------------------------------------------
-        // 3. Vérification de la fenêtre horaire (CDC 7.3.3)
-        //-------------------------------------------------------------
         $evenement = $qrCode->evenement;
         $now = Carbon::now();
 
+        //-------------------------------------------------------------
+        // 3. Vérification de la fenêtre horaire (CDC 7.3.3)
+        //-------------------------------------------------------------
         $debut = Carbon::parse($evenement->date->format('Y-m-d') . ' ' . $evenement->heure_debut);
         $fin   = Carbon::parse($evenement->date->format('Y-m-d') . ' ' . $evenement->heure_fin)->addMinutes(15);
 
-        // Gestion du chevauchement de minuit : si l'heure de fin est <= l'heure de début,
-        // c'est que la séance traverse minuit, on décale d'un jour.
         if ($fin->lte($debut)) {
             $fin->addDay();
         }
@@ -107,7 +122,7 @@ class PresenceController extends Controller
         }
 
         //-------------------------------------------------------------
-        // 4. Identification de l'étudiant (CDC 7.1.3)
+        // 4. Identification de l'étudiant
         //-------------------------------------------------------------
         $etudiant = Etudiant::where('identifiant_unique', $request->identifiant_unique)->first();
 
@@ -116,10 +131,7 @@ class PresenceController extends Controller
         }
 
         //-------------------------------------------------------------
-        // 5. Vérification inscription au cours (CDC 7.2.3 & 7.4.2)
-        //    On vérifie d'abord la table pivot etudiant_ec.
-        //    Si l'étudiant n'a encore aucune inscription (backfill pas encore fait),
-        //    on vérifie uniquement la filière (comportement précédent).
+        // 5. Vérification inscription au cours
         //-------------------------------------------------------------
         $hasEnrollments = $etudiant->ecs()->exists();
 
@@ -137,26 +149,112 @@ class PresenceController extends Controller
         }
 
         //-------------------------------------------------------------
-        // 6. Détection de double scan et fraude (CDC 9.2.2 & 9.2.3)
+        // 6. VÉRIFICATION TRIPLE FACTEUR — Localisation + Réseau
+        //-------------------------------------------------------------
+        $salle = $evenement->salleRef;
+        $verificationLog = [
+            'qr_valide'   => true,
+            'gps_valide'  => null,
+            'wifi_valide' => null,
+            'ip_valide'   => null,
+            'mode'        => 'basique', // par défaut
+        ];
+
+        if ($salle && $salle->actif) {
+            $verificationLog['salle_id']   = $salle->id;
+            $verificationLog['salle_nom']  = $salle->nom;
+            $verificationLog['mode']       = 'strict';
+
+            // --- Facteur 2 : Géolocalisation GPS ---
+            if ($salle->latitude !== null && $salle->longitude !== null) {
+                $verificationLog['gps_valide'] = $salle->isWithinGeofence(
+                    $request->latitude,
+                    $request->longitude
+                );
+                $verificationLog['distance_metres'] = $salle->distanceMetres(
+                    $request->latitude,
+                    $request->longitude
+                );
+            } else {
+                // Salle sans GPS configuré → on skip
+                $verificationLog['gps_valide'] = 'non_config';
+            }
+
+            // --- Facteur 3 : Réseau WiFi (SSID/BSSID) ---
+            if (!$salle->hors_reseau && ($salle->ssid_attendu || $salle->bssid_attendu)) {
+                $verificationLog['wifi_valide'] = $salle->matchesWifi(
+                    $request->ssid,
+                    $request->bssid
+                );
+                $verificationLog['ssid_recu']  = $request->ssid;
+                $verificationLog['bssid_recu'] = $request->bssid;
+            } else {
+                $verificationLog['wifi_valide'] = 'non_config';
+            }
+
+            // --- Vérification IP ---
+            $verificationLog['ip_valide'] = $salle->matchesIpRange($request->ip());
+
+            // --- Décision : mode strict vs tolérance ---
+            $gpsCheck  = $verificationLog['gps_valide'];
+            $wifiCheck = $verificationLog['wifi_valide'];
+
+            // Déterminer si GPS est requis (non null et non 'non_config')
+            $gpsRequis    = $gpsCheck !== null && $gpsCheck !== 'non_config';
+            $wifiRequis   = $wifiCheck !== null && $wifiCheck !== 'non_config';
+
+            $gpsOk   = !$gpsRequis  || $gpsCheck === true;
+            $wifiOk  = !$wifiRequis || $wifiCheck === true;
+
+            // Les DEUX facteurs doivent être OK si configurés
+            if (!$gpsOk || !$wifiOk) {
+                $raisons = [];
+                if (!$gpsOk && $gpsRequis) {
+                    $distance = round($verificationLog['distance_metres'] ?? 0);
+                    $raisons[] = "GPS hors zone (distance: {$distance}m, max: {$salle->rayon_geofence_m}m)";
+                }
+                if (!$wifiOk && $wifiRequis) {
+                    $raisons[] = "Réseau WiFi non conforme (attendu: {$salle->ssid_attendu})";
+                }
+
+                // Enregistrer l'anomalie
+                Anomaly::create([
+                    'etudiant_id' => $etudiant->id,
+                    'type'        => 'verification_echouee',
+                    'description' => "Vérification localisation/réseau échouée pour {$etudiant->nom} {$etudiant->prenom} " .
+                        "— salle {$salle->nom} — " . implode('; ', $raisons),
+                    'severity' => 'medium',
+                    'metadata'  => $verificationLog,
+                ]);
+
+                return $this->forbiddenResponse(
+                    'Vérification de présence échouée. Vous devez être physiquement dans la salle de cours. ' .
+                    implode('. ', $raisons) . '.'
+                );
+            }
+
+            $verificationLog['statut'] = 'ok';
+        }
+        // Si pas de salle configurée → mode basique (QR seul), loggé
+
+        //-------------------------------------------------------------
+        // 7. Détection de double scan et fraude (CDC 9.2.2 & 9.2.3)
         //-------------------------------------------------------------
         $existing = Presence::where('etudiant_id', $etudiant->id)
             ->where('evenement_id', $evenement->id)
             ->first();
 
         if ($existing) {
-            // Même étudiant, appareil différent → fraude potentielle
-            // Note : la présence originale reste 'valide'. Seule la tentative frauduleuse est bloquée.
             if ($existing->device_fingerprint !== $request->device_fingerprint) {
-
                 Anomaly::create([
                     'etudiant_id' => $etudiant->id,
                     'type'        => 'double_scan_device_mismatch',
                     'description' => "Fraude suspectée : l'étudiant {$etudiant->nom} {$etudiant->prenom} " .
                         "a déjà scanné l'événement #{$evenement->id} avec un appareil différent.",
-                    'severity' => 'high',
-                    'metadata' => [
-                        'premier_device'  => $existing->device_fingerprint,
-                        'nouveau_device'  => $request->device_fingerprint,
+                    'severity'   => 'high',
+                    'metadata'   => [
+                        'premier_device'      => $existing->device_fingerprint,
+                        'nouveau_device'      => $request->device_fingerprint,
                         'premiere_presence_id' => $existing->id,
                     ],
                 ]);
@@ -168,7 +266,7 @@ class PresenceController extends Controller
         }
 
         //-------------------------------------------------------------
-        // 7. Enregistrement de la présence
+        // 8. Enregistrement de la présence
         //-------------------------------------------------------------
         $presence = Presence::create([
             'etudiant_id'       => $etudiant->id,
@@ -182,8 +280,7 @@ class PresenceController extends Controller
         ]);
 
         //-------------------------------------------------------------
-        // 8. Régénération immédiate du QR Code (CDC 9.2.1)
-        //    Après chaque scan, un nouveau token est généré pour l'événement.
+        // 9. Régénération immédiate du QR Code (CDC 9.2.1)
         //-------------------------------------------------------------
         QrCode::create([
             'evenement_id' => $evenement->id,
@@ -193,7 +290,7 @@ class PresenceController extends Controller
         ]);
 
         //-------------------------------------------------------------
-        // 9. Gamification : vérification de la semaine parfaite (CDC 12.1)
+        // 10. Gamification : vérification de la semaine parfaite (CDC 12.1)
         //-------------------------------------------------------------
         $gamification = app(CheckWeeklyAttendance::class)->execute($etudiant);
 
@@ -202,6 +299,7 @@ class PresenceController extends Controller
             'matricule'    => $etudiant->matricule,
             'heure'        => $presence->heure_scan->format('H:i:s'),
             'cours'        => $evenement->ec->intitule ?? 'N/A',
+            'verification' => $verificationLog,
             'gamification' => $gamification['perfect'] ? [
                 'perfect_week'   => true,
                 'points_awarded' => $gamification['points_awarded'],

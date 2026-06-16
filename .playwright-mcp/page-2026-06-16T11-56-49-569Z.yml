@@ -1,0 +1,40 @@
+- generic [ref=e8]:
+  - generic [ref=e9]:
+    - generic [ref=e10]:
+      - img [ref=e12]
+      - generic [ref=e15]: Présence
+    - generic [ref=e16]: Academic Portal
+  - main [ref=e17]:
+    - generic [ref=e18]:
+      - link "Retour à l'accueil" [ref=e19] [cursor=pointer]:
+        - /url: /
+        - img [ref=e20]
+        - text: Retour à l'accueil
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - heading "Accès Administrateur" [level=1] [ref=e24]
+          - paragraph [ref=e25]: Renseignez vos identifiants pour accéder au portail.
+        - generic [ref=e38]:
+          - img [ref=e39]
+          - paragraph [ref=e41]: CSRF token mismatch.
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - text: Email académique
+            - generic [ref=e28]:
+              - generic:
+                - img
+              - textbox "Email académique" [ref=e29]:
+                - /placeholder: nom.prenom@uac.bj
+                - text: admin@presence.uac.bj
+          - generic [ref=e30]:
+            - generic [ref=e31]:
+              - generic [ref=e32]: Mot de passe
+              - button "Mot de passe oublié?" [ref=e33] [cursor=pointer]
+            - generic [ref=e34]:
+              - generic:
+                - img
+              - textbox "Mot de passe" [ref=e35]:
+                - /placeholder: ••••••••••••
+                - text: admin123
+          - button "Se connecter" [ref=e36] [cursor=pointer]
+      - paragraph [ref=e37]: En vous connectant, vous acceptez les Conditions d'Utilisation.

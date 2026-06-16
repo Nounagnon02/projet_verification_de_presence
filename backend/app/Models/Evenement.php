@@ -20,6 +20,7 @@ class Evenement extends Model
         'heure_debut',
         'heure_fin',
         'salle',
+        'salle_id',
         'statut',
     ];
 
@@ -52,5 +53,10 @@ class Evenement extends Model
     public function qrCode(): HasOne
     {
         return $this->hasOne(QrCode::class)->where('actif', true);
+    }
+
+    public function salleRef(): BelongsTo
+    {
+        return $this->belongsTo(Salle::class, 'salle_id');
     }
 }

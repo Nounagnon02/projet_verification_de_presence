@@ -3,53 +3,62 @@ import api from '../api/axios';
 
 const AuthContext = createContext(null);
 
+const USER_KEY = 'presence_user';
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    const storedToken = localStorage.getItem('api_token');
-    if (storedUser) {
-      try { setUser(JSON.parse(storedUser)); } catch { localStorage.removeItem('user'); }
-    }
-    if (storedToken) {
-      setToken(storedToken);
-      api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+    // Restaure les infos utilisateur minimales depuis localStorage
+    // pour un affichage immédiat du menu (pas de flash)
+    const stored = localStorage.getItem(USER_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        // Ne garder que les champs non-sensibles
+        if (parsed && parsed.id) {
+          setUser({
+            id: parsed.id,
+            name: parsed.name,
+            email: parsed.email,
+            role: parsed.role,
+          });
+        }
+      } catch {
+        localStorage.removeItem(USER_KEY);
+      }
     }
     setLoading(false);
   }, []);
 
   const login = async (email, password) => {
-    try {
-      // Laisser le backend gérer les sessions via Sanctum si disponible
-    } catch { /* ignore */ }
-
+    // Récupérer le cookie CSRF avant le login (Sanctum SPA)
+    // Note: /sanctum/csrf-cookie est en dehors du prefix /api
+    await fetch('/sanctum/csrf-cookie', { credentials: 'include' });
     const res = await api.post('/login', { email, password });
     const result = res.data;
 
-    let userData, apiToken = null;
+    let userData;
 
     if (result.data) {
-      // Nouveau format avec token : { success, data: { user, token } }
       userData = result.data.user || result.data;
-      apiToken = result.data.token || null;
     } else {
-      // Ancien format : { success, user }
       userData = result.user || result;
     }
 
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
+    // Stocker uniquement les infos UI (pas de token — géré par cookie httpOnly Sanctum)
+    const uiUser = {
+      id: userData.id,
+      name: userData.name,
+      email: userData.email,
+      role: userData.role,
+    };
 
-    if (apiToken) {
-      setToken(apiToken);
-      localStorage.setItem('api_token', apiToken);
-      api.defaults.headers.common['Authorization'] = `Bearer ${apiToken}`;
-    }
+    setUser(uiUser);
+    localStorage.setItem(USER_KEY, JSON.stringify(uiUser));
 
-    return userData;
+    return uiUser;
   };
 
   const logout = async () => {
@@ -57,14 +66,11 @@ export function AuthProvider({ children }) {
       await api.post('/logout');
     } catch { /* ignore */ }
     setUser(null);
-    setToken(null);
-    localStorage.removeItem('user');
-    localStorage.removeItem('api_token');
-    delete api.defaults.headers.common['Authorization'];
+    localStorage.removeItem(USER_KEY);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, token }}>
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

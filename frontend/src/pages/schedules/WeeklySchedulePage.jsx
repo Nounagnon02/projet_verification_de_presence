@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiChevronLeft, FiChevronRight, FiMapPin, FiLoader, FiUpload, FiPlus, FiFileText, FiX, FiAlertTriangle } from 'react-icons/fi';
+import { FiChevronLeft, FiChevronRight, FiMapPin, FiLoader, FiUpload, FiPlus, FiFileText, FiX, FiAlertTriangle, FiCheck } from 'react-icons/fi';
 import api from '../../api/axios';
 
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
@@ -50,6 +50,16 @@ export default function WeeklySchedulePage() {
   const [filtreAnnee, setFiltreAnnee] = useState('');
   const [filtreFiliere, setFiltreFiliere] = useState('');
   const [filtreSemestre, setFiltreSemestre] = useState('');
+
+  // Modal Ajouter un cours
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [ecs, setEcs] = useState([]);
+  const [adding, setAdding] = useState(false);
+  const [addForm, setAddForm] = useState({
+    ec_id: '', filiere_id: '', annee_id: '',
+    date: '', heure_debut: '08:00', heure_fin: '10:00', salle: '',
+  });
+  const [addError, setAddError] = useState('');
 
   // Import EDT
   const [showImportModal, setShowImportModal] = useState(false);
@@ -127,6 +137,42 @@ export default function WeeklySchedulePage() {
     }
   };
 
+  // Charger les ECs quand le modal s'ouvre
+  useEffect(() => {
+    if (showAddModal && ecs.length === 0) {
+      (async () => {
+        try {
+          const { data: res } = await api.get('/admin/ecs');
+          const list = res.data || res;
+          setEcs(Array.isArray(list) ? list : []);
+        } catch { /* silencieux */ }
+      })();
+    }
+  }, [showAddModal]);
+
+  const handleAddSubmit = async (e) => {
+    e.preventDefault();
+    setAddError('');
+    setAdding(true);
+    try {
+      await api.post('/admin/evenements', addForm);
+      setShowAddModal(false);
+      setAddForm({ ec_id: '', filiere_id: '', annee_id: '', date: '', heure_debut: '08:00', heure_fin: '10:00', salle: '' });
+      // Recharger les événements
+      const params = { date_debut: weekRange.start, date_fin: weekRange.end };
+      if (filtreAnnee) params.annee_id = filtreAnnee;
+      if (filtreFiliere) params.filiere_id = filtreFiliere;
+      if (filtreSemestre) params.semestre = filtreSemestre;
+      const { data: res } = await api.get('/admin/evenements', { params });
+      const list = res.data || res;
+      setEvents(Array.isArray(list) ? list : []);
+    } catch (err) {
+      setAddError(err.response?.data?.message || "Erreur lors de la création du cours.");
+    } finally {
+      setAdding(false);
+    }
+  };
+
   const resetImport = () => {
     setImportFile(null);
     setImportError('');
@@ -186,7 +232,7 @@ export default function WeeklySchedulePage() {
             </select>
           </div>
           <div className="flex items-center gap-2 self-end pt-1">
-            <button onClick={() => navigate('/schedules/events')}
+            <button onClick={() => setShowAddModal(true)}
               className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-br from-primary to-primary-container text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-primary/20 active:scale-[0.99] transition-all">
               <FiPlus size={15} /> Ajouter un cours
             </button>
@@ -261,6 +307,100 @@ export default function WeeklySchedulePage() {
                 ))}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── Modal Ajouter un cours ──────────────────────── */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={() => { if (!adding) setShowAddModal(false); }}>
+          <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-bold text-primary">Ajouter un cours</h2>
+              <button onClick={() => setShowAddModal(false)} disabled={adding}
+                className="p-1 hover:bg-surface-container-high rounded-lg transition-colors">
+                <FiX size={20} className="text-outline" />
+              </button>
+            </div>
+
+            {addError && (
+              <div className="mb-4 flex items-center gap-2 p-3 bg-error-container/30 rounded-xl text-on-error-container text-sm">
+                <FiAlertTriangle /> {addError}
+              </div>
+            )}
+
+            <form onSubmit={handleAddSubmit} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">EC <span className="text-error">*</span></label>
+                <select required value={addForm.ec_id} onChange={(e) => setAddForm(f => ({ ...f, ec_id: e.target.value }))}
+                  className="w-full px-3 py-2.5 bg-surface-container-high rounded-xl text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
+                  <option value="">Sélectionner un EC</option>
+                  {ecs.map(ec => (
+                    <option key={ec.id} value={ec.id}>
+                      {ec.code} — {ec.intitule || ec.libelle}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Filière <span className="text-error">*</span></label>
+                  <select required value={addForm.filiere_id} onChange={(e) => setAddForm(f => ({ ...f, filiere_id: e.target.value }))}
+                    className="w-full px-3 py-2.5 bg-surface-container-high rounded-xl text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
+                    <option value="">Sélectionner</option>
+                    {filieres.map(f => <option key={f.id} value={f.id}>{f.code}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Année académique <span className="text-error">*</span></label>
+                  <select required value={addForm.annee_id} onChange={(e) => setAddForm(f => ({ ...f, annee_id: e.target.value }))}
+                    className="w-full px-3 py-2.5 bg-surface-container-high rounded-xl text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
+                    <option value="">Sélectionner</option>
+                    {annees.map(a => <option key={a.id} value={a.id}>{a.libelle || a.annee}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Date <span className="text-error">*</span></label>
+                <input type="date" required value={addForm.date} onChange={(e) => setAddForm(f => ({ ...f, date: e.target.value }))}
+                  className="w-full px-3 py-2.5 bg-surface-container-high rounded-xl text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Début <span className="text-error">*</span></label>
+                  <input type="time" required value={addForm.heure_debut} onChange={(e) => setAddForm(f => ({ ...f, heure_debut: e.target.value }))}
+                    className="w-full px-3 py-2.5 bg-surface-container-high rounded-xl text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Fin <span className="text-error">*</span></label>
+                  <input type="time" required value={addForm.heure_fin} onChange={(e) => setAddForm(f => ({ ...f, heure_fin: e.target.value }))}
+                    className="w-full px-3 py-2.5 bg-surface-container-high rounded-xl text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Salle</label>
+                <input type="text" value={addForm.salle} onChange={(e) => setAddForm(f => ({ ...f, salle: e.target.value }))} placeholder="Ex: Salle 101"
+                  className="w-full px-3 py-2.5 bg-surface-container-high rounded-xl text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setShowAddModal(false)} disabled={adding}
+                  className="flex-1 px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl font-semibold text-sm border border-outline-variant/20 hover:bg-surface-container-low transition-all">
+                  Annuler
+                </button>
+                <button type="submit" disabled={adding}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-br from-primary to-primary-container text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-primary/20 active:scale-[0.99] transition-all">
+                  {adding ? <FiLoader className="animate-spin" /> : <FiCheck />}
+                  {adding ? 'Ajout en cours...' : 'Ajouter le cours'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

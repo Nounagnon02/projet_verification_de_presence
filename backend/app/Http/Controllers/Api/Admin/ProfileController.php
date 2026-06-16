@@ -51,9 +51,9 @@ class ProfileController extends Controller
             'password'         => 'required|string|min:8|confirmed',
         ]);
 
-        $request->user()->update([
-            'password' => Hash::make($validated['password']),
-        ]);
+        $request->user()->forceFill([
+            'password' => $validated['password'],
+        ])->save();
 
         return $this->successResponse(null, 'Mot de passe mis à jour.');
     }

@@ -1,0 +1,151 @@
+- generic [ref=e2]:
+  - complementary [ref=e38]:
+    - generic [ref=e39]:
+      - heading "Présence" [level=1] [ref=e40]
+      - paragraph [ref=e41]: Portail Académique
+    - navigation [ref=e42]:
+      - link "Dashboard" [ref=e43] [cursor=pointer]:
+        - /url: /dashboard
+        - img [ref=e45]
+        - generic [ref=e48]: Dashboard
+      - link "Étudiants" [ref=e49] [cursor=pointer]:
+        - /url: /students
+        - img [ref=e51]
+        - generic [ref=e54]: Étudiants
+      - link "Cours & UE/EC" [ref=e55] [cursor=pointer]:
+        - /url: /courses
+        - img [ref=e57]
+        - generic [ref=e60]: Cours & UE/EC
+      - link "Emploi du temps" [ref=e61] [cursor=pointer]:
+        - /url: /schedules/weekly
+        - img [ref=e63]
+        - generic [ref=e66]: Emploi du temps
+      - link "Événements" [ref=e67] [cursor=pointer]:
+        - /url: /schedules/events
+        - img [ref=e69]
+        - generic [ref=e72]: Événements
+      - link "Présences" [ref=e73] [cursor=pointer]:
+        - /url: /attendance/validate
+        - img [ref=e75]
+        - generic [ref=e79]: Présences
+      - link "Rapports" [ref=e80] [cursor=pointer]:
+        - /url: /reports
+        - img [ref=e82]
+        - generic [ref=e85]: Rapports
+      - link "Paramètres" [active] [ref=e86] [cursor=pointer]:
+        - /url: /settings
+        - img [ref=e88]
+        - generic [ref=e91]: Paramètres
+    - generic [ref=e92]:
+      - link "Aide" [ref=e93] [cursor=pointer]:
+        - /url: /help
+        - img [ref=e94]
+        - generic [ref=e97]: Aide
+      - link "Profil" [ref=e98] [cursor=pointer]:
+        - /url: /profile
+        - img [ref=e99]
+        - generic [ref=e102]: Profil
+      - button "Déconnexion" [ref=e103] [cursor=pointer]:
+        - img [ref=e104]
+        - generic [ref=e107]: Déconnexion
+  - main [ref=e108]:
+    - generic [ref=e348]:
+      - generic [ref=e349]:
+        - link "Années académiques" [ref=e350] [cursor=pointer]:
+          - /url: /settings/academic-years
+          - img [ref=e351]
+          - generic [ref=e353]: Années académiques
+        - link "Filières" [ref=e354] [cursor=pointer]:
+          - /url: /settings/filieres
+          - img [ref=e355]
+          - generic [ref=e358]: Filières
+        - link "Salles" [ref=e359] [cursor=pointer]:
+          - /url: /settings/salles
+          - img [ref=e360]
+          - generic [ref=e363]: Salles
+        - link "Sécurité" [ref=e364] [cursor=pointer]:
+          - /url: /settings/security
+          - img [ref=e365]
+          - generic [ref=e367]: Sécurité
+      - generic [ref=e368]:
+        - generic [ref=e369]:
+          - generic [ref=e370]:
+            - heading "Années Académiques" [level=1] [ref=e371]
+            - paragraph [ref=e372]: Gérez les années académiques
+          - button "Nouvelle année" [ref=e373] [cursor=pointer]:
+            - img [ref=e374]
+            - text: Nouvelle année
+        - generic [ref=e375]:
+          - generic [ref=e376]:
+            - generic [ref=e377]:
+              - generic [ref=e378]:
+                - img [ref=e380]
+                - generic [ref=e382]:
+                  - generic [ref=e383]:
+                    - heading "2025-2026" [level=3] [ref=e384]
+                    - generic [ref=e385]:
+                      - img [ref=e386]
+                      - text: Active
+                  - paragraph [ref=e388]: Année académique
+              - generic [ref=e389]:
+                - button "Modifier" [ref=e390] [cursor=pointer]:
+                  - img [ref=e391]
+                - button "Supprimer" [ref=e393] [cursor=pointer]:
+                  - img [ref=e394]
+            - generic [ref=e397]:
+              - generic [ref=e398]:
+                - paragraph [ref=e399]: Début
+                - paragraph [ref=e400]: 1 octobre 2025
+              - img [ref=e402]
+              - generic [ref=e404]:
+                - paragraph [ref=e405]: Fin
+                - paragraph [ref=e406]: 30 septembre 2026
+          - generic [ref=e407]:
+            - generic [ref=e408]:
+              - generic [ref=e409]:
+                - img [ref=e411]
+                - generic [ref=e413]:
+                  - heading "2024-2025" [level=3] [ref=e415]
+                  - paragraph [ref=e416]: Année académique
+              - generic [ref=e417]:
+                - button "Définir comme active" [ref=e418] [cursor=pointer]:
+                  - img [ref=e419]
+                - button "Modifier" [ref=e421] [cursor=pointer]:
+                  - img [ref=e422]
+                - button "Supprimer" [ref=e424] [cursor=pointer]:
+                  - img [ref=e425]
+            - generic [ref=e428]:
+              - generic [ref=e429]:
+                - paragraph [ref=e430]: Début
+                - paragraph [ref=e431]: 1 octobre 2024
+              - img [ref=e433]
+              - generic [ref=e435]:
+                - paragraph [ref=e436]: Fin
+                - paragraph [ref=e437]: 30 septembre 2025
+          - generic [ref=e438]:
+            - generic [ref=e439]:
+              - generic [ref=e440]:
+                - img [ref=e442]
+                - generic [ref=e444]:
+                  - heading "2023-2024" [level=3] [ref=e446]
+                  - paragraph [ref=e447]: Année académique
+              - generic [ref=e448]:
+                - button "Définir comme active" [ref=e449] [cursor=pointer]:
+                  - img [ref=e450]
+                - button "Modifier" [ref=e452] [cursor=pointer]:
+                  - img [ref=e453]
+                - button "Supprimer" [ref=e455] [cursor=pointer]:
+                  - img [ref=e456]
+            - generic [ref=e459]:
+              - generic [ref=e460]:
+                - paragraph [ref=e461]: Début
+                - paragraph [ref=e462]: 1 octobre 2023
+              - img [ref=e464]
+              - generic [ref=e466]:
+                - paragraph [ref=e467]: Fin
+                - paragraph [ref=e468]: 30 septembre 2024
+  - link [ref=e341] [cursor=pointer]:
+    - /url: /attendance/validate
+    - img [ref=e342]
+  - button [ref=e345] [cursor=pointer]:
+    - img [ref=e346]

@@ -50,6 +50,20 @@ class AppServiceProvider extends ServiceProvider
                 });
         });
 
+        // Rate Limiting pour les routes API admin (CDC 9)
+        // Limite : 60 requêtes par minute par utilisateur
+        RateLimiter::for('api', function (Request $request) {
+            $key = $request->user()?->id ?: $request->ip() ?? 'unknown';
+            return Limit::perMinute(60)
+                ->by('api:' . $key)
+                ->response(function (Request $request, array $headers) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Trop de requêtes. Veuillez ralentir.',
+                    ], 429, $headers);
+                });
+        });
+
         // Rate Limiting pour le login admin (CDC 9.1)
         // Limite : 5 tentatives par minute par IP
         RateLimiter::for('login', function (Request $request) {
