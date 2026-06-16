@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Admin\ImportController;
 use App\Http\Controllers\Api\Admin\NotificationController;
 use App\Http\Controllers\Api\Admin\PresenceHistoryController;
 use App\Http\Controllers\Api\Admin\ProfileController;
+use App\Http\Controllers\Api\Admin\SalleController;
 use App\Http\Controllers\Api\Admin\SessionController;
 use App\Http\Controllers\Api\Admin\StudentController;
 use App\Http\Controllers\Api\Admin\TicketController;
@@ -83,7 +84,7 @@ Route::prefix('presence')->group(function () {
 });
 
 // Routes protégées pour l'administration (faculté scope via scoped.etablissement)
-Route::middleware(['auth:sanctum', 'scoped.etablissement'])->prefix('admin')->group(function () {
+Route::middleware(['auth:sanctum', 'scoped.etablissement', 'throttle:api'])->prefix('admin')->group(function () {
 
     // Dashboard & Stats
     Route::get('/dashboard', [DashboardController::class, 'index']);
@@ -116,6 +117,10 @@ Route::middleware(['auth:sanctum', 'scoped.etablissement'])->prefix('admin')->gr
 
     // Filières
     Route::apiResource('filieres', FiliereController::class);
+
+    // Salles (configuration géolocalisation + réseau)
+    Route::get('/salles/disponibles', [SalleController::class, 'disponibles']);
+    Route::apiResource('salles', SalleController::class);
 
     // Années académiques
     Route::apiResource('annees-academiques', AnneeAcademiqueController::class);

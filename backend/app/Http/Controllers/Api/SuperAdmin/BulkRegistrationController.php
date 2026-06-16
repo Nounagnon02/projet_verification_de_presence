@@ -69,14 +69,14 @@ class BulkRegistrationController extends Controller
                 ]);
 
                 $password = Str::random(12);
-                $admin = User::create([
+                $admin = new User([
                     'name'                => $etablissement->nom,
                     'email'               => $etablissement->email,
                     'role'                => 'faculte_admin',
                     'etablissement_id'    => $etablissement->id,
-                    'password'            => Hash::make($password),
                     'must_change_password' => true,
                 ]);
+                $admin->forceFill(['password' => $password])->save();
 
                 try {
                     Mail::to($admin->email)->send(new \App\Mail\WelcomeFaculteAdmin($admin, $password, $etablissement));

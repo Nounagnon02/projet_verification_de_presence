@@ -17,13 +17,14 @@ return Application::configure(basePath: dirname(__DIR__))
             'locale'             => \App\Http\Middleware\SetLocale::class,
             'role'               => \App\Http\Middleware\CheckRole::class,
             'scoped.etablissement' => \App\Http\Middleware\ScopeByEtablissement::class,
+            'security.headers'   => \App\Http\Middleware\SecurityHeaders::class,
         ]);
 
-        // Note : SPA stateful auth désactivé — on utilise exclusivement
-        // les tokens Bearer Sanctum pour l'authentification API.
-        // $middleware->api(prepend: [
-        //     \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-        // ]);
+        // SPA stateful auth (cookies httpOnly Sanctum) + Security headers
+        $middleware->api(prepend: [
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            \App\Http\Middleware\SecurityHeaders::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Forcer JSON pour toutes les routes API

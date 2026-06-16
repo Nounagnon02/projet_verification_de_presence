@@ -8,7 +8,7 @@ import api from '../../api/axios';
 
 const INITIAL_EVENT = {
   ec_id: '', filiere_id: '', annee_id: '',
-  date: '', heure_debut: '', heure_fin: '', salle: '', statut: 'planifie',
+  date: '', heure_debut: '', heure_fin: '', salle: '', salle_id: '', statut: 'planifie',
 };
 
 const STATUTS = [
@@ -23,6 +23,7 @@ export default function EvenementManagementPage() {
   const [ecs, setEcs] = useState([]);
   const [filieres, setFilieres] = useState([]);
   const [annees, setAnnees] = useState([]);
+  const [salles, setSalles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -48,16 +49,18 @@ export default function EvenementManagementPage() {
       if (filters.filiere_id) params.filiere_id = filters.filiere_id;
       if (filters.statut) params.statut = filters.statut;
 
-      const [eventsRes, ecsRes, filieresRes, anneesRes] = await Promise.all([
+      const [eventsRes, ecsRes, filieresRes, anneesRes, sallesRes] = await Promise.all([
         api.get('/admin/evenements', { params }),
         api.get('/admin/ecs'),
         api.get('/admin/filieres'),
         api.get('/admin/annees-academiques'),
+        api.get('/admin/salles/disponibles'),
       ]);
       setEvents(eventsRes.data?.data ?? eventsRes.data ?? []);
       setEcs(ecsRes.data?.data ?? ecsRes.data ?? []);
       setFilieres(filieresRes.data?.data ?? filieresRes.data ?? []);
       setAnnees(anneesRes.data?.data ?? anneesRes.data ?? []);
+      setSalles(sallesRes.data?.data ?? sallesRes.data ?? []);
     } catch (err) {
       setError('Erreur lors du chargement des événements.');
       console.error('[Evenements]', err);
@@ -133,7 +136,8 @@ export default function EvenementManagementPage() {
     open: true, editing: true,
     data: {
       ec_id: ev.ec?.id || '', filiere_id: ev.filiere?.id || '', annee_id: ev.annee_id || '',
-      date: ev.date, heure_debut: ev.heure_debut, heure_fin: ev.heure_fin, salle: ev.salle || '', statut: ev.statut,
+      date: ev.date, heure_debut: ev.heure_debut, heure_fin: ev.heure_fin,
+      salle: ev.salle || '', salle_id: ev.salle_id || '', statut: ev.statut,
     },
     saving: false,
   });
@@ -295,7 +299,11 @@ export default function EvenementManagementPage() {
                 </div>
                 <div className="flex items-center gap-4 mt-1 text-[11px] text-on-surface-variant flex-wrap">
                   <span className="flex items-center gap-1"><FiClock size={12} />{ev.heure_debut} - {ev.heure_fin}</span>
-                  {ev.salle && <span className="flex items-center gap-1"><FiMapPin size={12} />{ev.salle}</span>}
+                  {ev.salle_ref ? (
+                    <span className="flex items-center gap-1 text-secondary"><FiMapPin size={12} />{ev.salle_ref.nom} <span className="text-[9px] text-secondary/70">(GPS+WiFi)</span></span>
+                  ) : ev.salle ? (
+                    <span className="flex items-center gap-1"><FiMapPin size={12} />{ev.salle}</span>
+                  ) : null}
                   <span className="flex items-center gap-1">{ev.ue?.code || ev.ec?.code}</span>
                   <span>{ev.filiere?.code}</span>
                 </div>
@@ -469,17 +477,25 @@ export default function EvenementManagementPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-on-surface mb-1">Salle</label>
+                  <label className="block text-xs font-semibold text-on-surface mb-1">Salle (nom)</label>
                   <input type="text" value={modal.data.salle} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, salle: e.target.value } }))}
                     maxLength={100} className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Ex: Amphi 200" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-on-surface mb-1">Statut</label>
-                  <select value={modal.data.statut} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, statut: e.target.value } }))}
+                  <label className="block text-xs font-semibold text-on-surface mb-1">Salle configurée (GPS/WiFi)</label>
+                  <select value={modal.data.salle_id} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, salle_id: e.target.value } }))}
                     className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                    {STATUTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                    <option value="">Aucune (QR seul)</option>
+                    {salles.map(s => <option key={s.id} value={s.id}>{s.nom} ({s.code})</option>)}
                   </select>
                 </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-on-surface mb-1">Statut</label>
+                <select value={modal.data.statut} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, statut: e.target.value } }))}
+                  className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                  {STATUTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                </select>
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="submit" disabled={modal.saving}

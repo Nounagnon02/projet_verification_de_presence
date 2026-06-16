@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -19,11 +20,7 @@ class User extends Authenticatable
         'group',
         'role',
         'etablissement_id',
-        'password',
         'must_change_password',
-        'two_factor_secret',
-        'two_factor_recovery_codes',
-        'two_factor_confirmed_at',
     ];
 
     protected $hidden = [
@@ -36,11 +33,24 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'two_factor_confirmed_at' => 'datetime',
-            'must_change_password' => 'boolean',
+            'email_verified_at'         => 'datetime',
+            'two_factor_confirmed_at'   => 'datetime',
+            'must_change_password'      => 'boolean',
         ];
+    }
+
+    /**
+     * Mutateur : hash automatiquement le mot de passe.
+     * Permet de retirer 'password' de $fillable tout en gardant
+     * une API simple via forceFill(['password' => $plaintext]).
+     */
+    public function setPasswordAttribute(string $value): void
+    {
+        // Ne pas re-hasher si déjà hashé (ex: 60 chars bcrypt)
+        if (Hash::needsRehash($value)) {
+            $value = Hash::make($value);
+        }
+        $this->attributes['password'] = $value;
     }
 
     public function members()

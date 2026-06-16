@@ -1,9 +1,10 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { FiCalendar, FiBook, FiShield } from 'react-icons/fi';
+import { FiCalendar, FiBook, FiShield, FiMapPin } from 'react-icons/fi';
 
 const tabs = [
   { to: '/settings/academic-years', label: 'Années académiques', icon: FiCalendar },
   { to: '/settings/filieres', label: 'Filières', icon: FiBook },
+  { to: '/settings/salles', label: 'Salles', icon: FiMapPin },
   { to: '/settings/security', label: 'Sécurité', icon: FiShield },
 ];
 

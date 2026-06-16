@@ -282,7 +282,12 @@ export default function SecurityPage() {
                 </p>
                 <div className="flex justify-center bg-white p-4 rounded-xl border border-outline-variant/10">
                   {qrCodeSvg ? (
-                    <div dangerouslySetInnerHTML={{ __html: qrCodeSvg }} />
+                    <img
+                      src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrCodeSvg)}`}
+                      alt="QR Code pour l'authentification à deux facteurs"
+                      width={250}
+                      height={250}
+                    />
                   ) : (
                     <div className="w-[250px] h-[250px] bg-surface-container-high rounded-lg flex items-center justify-center text-on-surface-variant text-sm">
                       Chargement...
