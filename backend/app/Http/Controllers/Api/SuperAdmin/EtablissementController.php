@@ -37,14 +37,14 @@ class EtablissementController extends Controller
 
         // Créer automatiquement un admin faculté
         $password = Str::random(12);
-        $admin = User::create([
+        $admin = new User([
             'name'                => $validated['nom'],
             'email'               => $validated['email'],
             'role'                => 'faculte_admin',
             'etablissement_id'    => $etablissement->id,
-            'password'            => Hash::make($password),
             'must_change_password' => true,
         ]);
+        $admin->forceFill(['password' => $password])->save();
 
         // Envoyer l'email de bienvenue (si mail configuré)
         try {
@@ -143,10 +143,10 @@ class EtablissementController extends Controller
         }
 
         $password = Str::random(12);
-        $admin->update([
-            'password' => Hash::make($password),
+        $admin->forceFill([
+            'password'            => $password,
             'must_change_password' => true,
-        ]);
+        ])->save();
 
         try {
             Mail::to($admin->email)->send(new \App\Mail\WelcomeFaculteAdmin($admin, $password, $etablissement));

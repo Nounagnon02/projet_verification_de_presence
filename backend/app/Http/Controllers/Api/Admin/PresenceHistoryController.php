@@ -147,8 +147,14 @@ class PresenceHistoryController extends Controller
         ]);
     }
 
-    public function studentStats(Etudiant $student): JsonResponse
+    public function studentStats(Request $request, Etudiant $student): JsonResponse
     {
+        // Vérifier que l'admin a accès à cet étudiant (scope établissement)
+        $etablissementId = $this->getEtablissementId($request);
+        if ($etablissementId && $student->filiere?->etablissement_id !== $etablissementId) {
+            return $this->errorResponse('Étudiant non trouvé.', 404);
+        }
+
         $student->load(['filiere', 'presences.evenement.ec']);
 
         $totalEvenements = DB::table('evenements')

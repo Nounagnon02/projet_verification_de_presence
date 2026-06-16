@@ -10,6 +10,7 @@ use App\Models\Etudiant;
 use App\Models\Filiere;
 use App\Services\GeminiService;
 use App\Services\IdentifiantService;
+use App\Traits\ScopedByEtablissement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,6 +19,8 @@ use Illuminate\Support\Str;
 
 class ImportController extends Controller
 {
+    use ScopedByEtablissement;
+
     public function __construct(
         protected GeminiService $gemini
     ) {}
@@ -47,6 +50,20 @@ class ImportController extends Controller
             return $this->errorResponse('Le fichier CSV est invalide ou vide.', 422);
         }
 
+        $header = array_map(fn ($h) => trim(mb_strtolower($h)), $header);
+
+        // Vérifier que le CSV contient au moins une ligne de données
+        $firstRow = fgetcsv($handle, 1000, ',');
+        if ($firstRow === false || count($firstRow) < 2) {
+            fclose($handle);
+            return $this->errorResponse('Le fichier CSV ne contient aucune donnée.', 422);
+        }
+
+        // Réinjecter la première ligne dans le buffer pour le traitement
+        // On utilise un fichier temporaire pour rejouer tout le contenu
+        fclose($handle);
+        $handle = fopen($file->getRealPath(), 'r');
+        $header = fgetcsv($handle, 1000, ','); // relire le header
         $header = array_map(fn ($h) => trim(mb_strtolower($h)), $header);
 
         // Mapping des en-têtes CDC vers les champs internes
@@ -136,14 +153,25 @@ class ImportController extends Controller
     public function courses(Request $request): JsonResponse
     {
         $validator = validator($request->all(), [
-            'file' => 'required|file|mimes:pdf|max:20480',
+            'file' => 'required|file|mimes:pdf|mimetypes:application/pdf|max:20480',
         ]);
 
         if ($validator->fails()) {
             return $this->validationErrorResponse($validator->errors());
         }
 
-        $path    = $request->file('file')->store('imports/courses');
+        $file = $request->file('file');
+
+        // Vérification des magic bytes PDF (%PDF en début de fichier)
+        $handle = fopen($file->getRealPath(), 'r');
+        $magic = fread($handle, 4);
+        fclose($handle);
+
+        if ($magic !== '%PDF') {
+            return $this->errorResponse('Le fichier fourni n\'est pas un PDF valide.', 422);
+        }
+
+        $path    = $file->store('imports/courses');
         $absPath = storage_path('app/' . $path);
 
         // Création de l'analyse en base (statut: pending)
@@ -172,14 +200,25 @@ class ImportController extends Controller
     public function schedule(Request $request): JsonResponse
     {
         $validator = validator($request->all(), [
-            'file' => 'required|file|mimes:pdf|max:20480',
+            'file' => 'required|file|mimes:pdf|mimetypes:application/pdf|max:20480',
         ]);
 
         if ($validator->fails()) {
             return $this->validationErrorResponse($validator->errors());
         }
 
-        $path    = $request->file('file')->store('imports/schedule');
+        $file = $request->file('file');
+
+        // Vérification des magic bytes PDF (%PDF en début de fichier)
+        $handle = fopen($file->getRealPath(), 'r');
+        $magic = fread($handle, 4);
+        fclose($handle);
+
+        if ($magic !== '%PDF') {
+            return $this->errorResponse('Le fichier fourni n\'est pas un PDF valide.', 422);
+        }
+
+        $path    = $file->store('imports/schedule');
         $absPath = storage_path('app/' . $path);
 
         // Création de l'analyse en base (statut: pending)
@@ -217,6 +256,24 @@ class ImportController extends Controller
             'events.*.salle'    => 'nullable|string|max:100',
         ]);
 
+        // Vérifier que les filières appartiennent à l'établissement de l'admin
+        $etablissementId = $this->getEtablissementId($request);
+        if ($etablissementId) {
+            $filiereIds = array_unique(array_column($validated['events'], 'filiere_id'));
+            $validFilieres = Filiere::where('etablissement_id', $etablissementId)
+                ->whereIn('id', $filiereIds)
+                ->pluck('id')
+                ->toArray();
+
+            $invalidIds = array_diff($filiereIds, $validFilieres);
+            if (!empty($invalidIds)) {
+                return $this->errorResponse(
+                    'Une ou plusieurs filières ne sont pas autorisées pour votre établissement.',
+                    403
+                );
+            }
+        }
+
         $created = [];
         foreach ($validated['events'] as $eventData) {
             $eventData['statut'] = 'planifie';
@@ -250,6 +307,24 @@ class ImportController extends Controller
             'ues.*.ecs.*.intitule' => 'required_with:ues.*.ecs|string|max:255',
             'ues.*.ecs.*.volume_horaire' => 'required_with:ues.*.ecs|integer|min:1',
         ]);
+
+        // Vérifier que les filières appartiennent à l'établissement de l'admin
+        $etablissementId = $this->getEtablissementId($request);
+        if ($etablissementId) {
+            $filiereIds = array_unique(array_column($validated['ues'], 'filiere_id'));
+            $validFilieres = Filiere::where('etablissement_id', $etablissementId)
+                ->whereIn('id', $filiereIds)
+                ->pluck('id')
+                ->toArray();
+
+            $invalidIds = array_diff($filiereIds, $validFilieres);
+            if (!empty($invalidIds)) {
+                return $this->errorResponse(
+                    'Une ou plusieurs filières ne sont pas autorisées pour votre établissement.',
+                    403
+                );
+            }
+        }
 
         $created = [];
         foreach ($validated['ues'] as $ueData) {

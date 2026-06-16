@@ -48,6 +48,7 @@ const FilteredReportsPage = lazy(() => import('./pages/reports/FilteredReportsPa
 const AcademicYearsPage = lazy(() => import('./pages/settings/AcademicYearsPage'));
 const FilieresPage = lazy(() => import('./pages/settings/FilieresPage'));
 const SecurityPage = lazy(() => import('./pages/settings/SecurityPage'));
+const SallesPage = lazy(() => import('./pages/settings/SallesPage'));
 
 // Landing page
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -165,6 +166,7 @@ function App() {
                 <Route index element={<Navigate to="academic-years" replace />} />
                 <Route path="academic-years" element={<AcademicYearsPage />} />
                 <Route path="filieres" element={<FilieresPage />} />
+                <Route path="salles" element={<SallesPage />} />
                 <Route path="security" element={<SecurityPage />} />
               </Route>
               <Route path="admin/filieres/create" element={<CreateFilierePage />} />
