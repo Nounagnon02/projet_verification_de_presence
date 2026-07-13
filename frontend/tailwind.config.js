@@ -77,5 +77,5 @@ module.exports = {
       }
     },
   },
-  plugins: [require('@tailwindcss/forms'), require('@tailwindcss/container-queries')],
+  plugins: [require('@tailwindcss/container-queries')],
 }

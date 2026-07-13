@@ -5,12 +5,13 @@ import SuperAdminLayout from './components/layout/SuperAdminLayout';
 import AttendanceLayout from './components/layout/AttendanceLayout';
 import SettingsLayout from './components/layout/SettingsLayout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import SkipLink from './components/ui/SkipLink';
 import { useAuth } from './context/AuthContext';
 
-// Lazy-loaded pages
-const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
+// Lazy-loaded pages (using direct imports to prevent React 19 + Suspense remount issues)
+import LoginPage from './pages/auth/LoginPage';
+import StudentManagementPage from './pages/students/StudentManagementPage';
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
-const StudentManagementPage = lazy(() => import('./pages/students/StudentManagementPage'));
 const PresenceValidationPage = lazy(() => import('./pages/attendance/PresenceValidationPage'));
 const PresenceHistoryPage = lazy(() => import('./pages/attendance/PresenceHistoryPage'));
 const ReportsPage = lazy(() => import('./pages/reports/ReportsPage'));
@@ -106,6 +107,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <SkipLink />
       <Suspense fallback={<LoadingFallback />}>
         {!user ? (
           <Routes>

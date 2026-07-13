@@ -1,24 +1,26 @@
 import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { FiMail, FiLock, FiAlertTriangle, FiLoader, FiArrowLeft } from 'react-icons/fi';
 import { MdAccountBalance, MdQrCodeScanner, MdAutoAwesome, MdGroups, MdSchool } from 'react-icons/md';
 import { useAuth } from '../../context/AuthContext';
 
-const LoginPage = () => {
+function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
-  const errorType = searchParams.get('error');
-  const errorMessage = errorType === 'expired'
-    ? 'Votre session a expiré. Veuillez vous reconnecter.'
-    : errorType === 'invalid'
-    ? 'Identifiants invalides. Veuillez réessayer.'
-    : '';
+  // Parse error from URL params once (avoids useSearchParams which causes
+  // React Router v7 SyncExternalStore re-render cascade in React 19)
+  const [initialError] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const type = params.get('error');
+    if (type === 'expired') return 'Votre session a expiré. Veuillez vous reconnecter.';
+    if (type === 'invalid') return 'Identifiants invalides. Veuillez réessayer.';
+    return '';
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -149,10 +151,10 @@ const LoginPage = () => {
                 </p>
               </div>
 
-              {(error || errorMessage) && (
+              {(error || initialError) && (
                 <div className="flex items-start gap-2.5 p-4 bg-error/10 rounded-xl text-error border border-error/10 mb-5">
                   <FiAlertTriangle className="text-lg shrink-0 mt-0.5" />
-                  <p className="text-sm">{error || errorMessage}</p>
+                  <p className="text-sm">{error || initialError}</p>
                 </div>
               )}
 
@@ -166,7 +168,7 @@ const LoginPage = () => {
                       <FiMail size={16} />
                     </div>
                     <input
-                      className="w-full pl-11 pr-4 py-3.5 bg-surface-container-high rounded-xl border-b-2 border-transparent focus:border-primary focus:bg-surface-container-lowest transition-all text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none text-sm"
+                      className="w-full pl-11 pr-4 py-3.5 bg-surface-container-high rounded-xl border-b-2 border-transparent focus:border-primary focus:bg-surface-container-lowest transition-colors text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none text-sm"
                       id="email"
                       placeholder="nom.prenom@uac.bj"
                       value={email}
@@ -192,7 +194,7 @@ const LoginPage = () => {
                       <FiLock size={16} />
                     </div>
                     <input
-                      className="w-full pl-11 pr-4 py-3.5 bg-surface-container-high rounded-xl border-b-2 border-transparent focus:border-primary focus:bg-surface-container-lowest transition-all text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none text-sm"
+                      className="w-full pl-11 pr-4 py-3.5 bg-surface-container-high rounded-xl border-b-2 border-transparent focus:border-primary focus:bg-surface-container-lowest transition-colors text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none text-sm"
                       id="password"
                       placeholder="••••••••••••"
                       value={password}

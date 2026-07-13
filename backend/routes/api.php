@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\Admin\SessionController;
 use App\Http\Controllers\Api\Admin\StudentController;
 use App\Http\Controllers\Api\Admin\TicketController;
 use App\Http\Controllers\Api\Admin\UeController;
+use App\Http\Controllers\Api\ApiDocumentationController;
 use App\Http\Controllers\Api\LandingPageController;
 use App\Http\Controllers\Api\PresenceController;
 use App\Http\Controllers\Api\QrCodeController;
@@ -129,6 +130,13 @@ Route::middleware(['auth:sanctum', 'scoped.etablissement', 'throttle:api'])->pre
     // QR Code
     Route::get('/qrcode/{evenementId}/generate', [QrCodeController::class, 'generate']);
 
+    // Validation manuelle des présences (Admin)
+    Route::prefix('presence')->group(function () {
+        Route::get('/pending', [PresenceController::class, 'pendingValidations'])->name('admin.presence.pending');
+        Route::patch('/{presence}/validate', [PresenceController::class, 'validateManual'])->name('admin.presence.validate');
+        Route::patch('/{presence}/reject', [PresenceController::class, 'rejectManual'])->name('admin.presence.reject');
+    });
+
     // Exports / Rapports
     Route::get('/reports/presence/{evenementId}/pdf', [\App\Http\Controllers\Api\Admin\ReportController::class, 'exportPdf']);
     Route::get('/reports/presence/{evenementId}/csv', [\App\Http\Controllers\Api\Admin\ReportController::class, 'exportCsv']);
@@ -200,7 +208,30 @@ Route::middleware(['auth:sanctum', 'role:super_admin'])->prefix('super-admin')->
 // Auth User Info & Logout
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
-        return $request->user();
+        $user = $request->user();
+        $data = $user->toArray();
+
+        // Enrichir avec les données étudiant si disponibles
+        $etudiant = \App\Models\Etudiant::where('email', $user->email)->first();
+        if ($etudiant) {
+            $data['identifiant_unique'] = $etudiant->identifiant_unique;
+            $data['matricule']   = $etudiant->matricule;
+            $data['nom']         = $etudiant->nom;
+            $data['prenom']      = $etudiant->prenom;
+        }
+
+        return response()->json($data);
     });
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy']);
+
+    // Étudiant : historique & statistiques personnels
+    Route::get('/presence/my-history', [PresenceController::class, 'myHistory']);
+    Route::get('/presence/my-stats', [PresenceController::class, 'myStats']);
 });
+
+// ========================================================================
+// API DOCUMENTATION (OpenAPI/Swagger)
+// ========================================================================
+Route::get('/docs', [ApiDocumentationController::class, 'index'])->name('api.docs');
+Route::get('/docs/json', [ApiDocumentationController::class, 'json'])->name('api.docs.json');
+Route::get('/docs/yaml', [ApiDocumentationController::class, 'yaml'])->name('api.docs.yaml');

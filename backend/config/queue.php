@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'default' => env('QUEUE_CONNECTION', 'database'),
+    'default' => env('QUEUE_CONNECTION', 'redis'),
 
     /*
     |--------------------------------------------------------------------------
@@ -69,6 +69,26 @@ return [
             'queue' => env('REDIS_QUEUE', 'default'),
             'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
             'block_for' => null,
+            'after_commit' => false,
+        ],
+
+        // Queue dédiée pour les imports Gemini (longs, coûteux)
+        'redis-gemini' => [
+            'driver' => 'redis',
+            'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
+            'queue' => 'gemini-import',
+            'retry_after' => 300, // 5 minutes
+            'block_for' => 5,
+            'after_commit' => false,
+        ],
+
+        // Queue pour les notifications temps réel
+        'redis-notifications' => [
+            'driver' => 'redis',
+            'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
+            'queue' => 'notifications',
+            'retry_after' => 60,
+            'block_for' => 5,
             'after_commit' => false,
         ],
 

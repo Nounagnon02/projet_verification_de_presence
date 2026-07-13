@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import api from '../api/axios';
+import api, { TOKEN_KEY } from '../api/axios';
 
 const AuthContext = createContext(null);
 
@@ -16,7 +16,6 @@ export function AuthProvider({ children }) {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        // Ne garder que les champs non-sensibles
         if (parsed && parsed.id) {
           setUser({
             id: parsed.id,
@@ -27,27 +26,33 @@ export function AuthProvider({ children }) {
         }
       } catch {
         localStorage.removeItem(USER_KEY);
+        localStorage.removeItem(TOKEN_KEY);
       }
     }
     setLoading(false);
   }, []);
 
   const login = async (email, password) => {
-    // Récupérer le cookie CSRF avant le login (Sanctum SPA)
-    // Note: /sanctum/csrf-cookie est en dehors du prefix /api
-    await fetch('/sanctum/csrf-cookie', { credentials: 'include' });
     const res = await api.post('/login', { email, password });
     const result = res.data;
 
     let userData;
+    let token;
 
     if (result.data) {
       userData = result.data.user || result.data;
+      token = result.data.token;
     } else {
       userData = result.user || result;
+      token = result.token;
     }
 
-    // Stocker uniquement les infos UI (pas de token — géré par cookie httpOnly Sanctum)
+    // Stocker le token Bearer pour les appels API
+    if (token) {
+      localStorage.setItem(TOKEN_KEY, token);
+    }
+
+    // Stocker uniquement les infos UI
     const uiUser = {
       id: userData.id,
       name: userData.name,
@@ -67,6 +72,7 @@ export function AuthProvider({ children }) {
     } catch { /* ignore */ }
     setUser(null);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(TOKEN_KEY);
   };
 
   return (
