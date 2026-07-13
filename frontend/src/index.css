@@ -98,8 +98,91 @@ body {
 
   ::selection { background: rgba(1, 21, 73, 0.15); }
 
-  input:focus-visible, textarea:focus-visible, select:focus-visible {
+  /* Focus visible — limité aux éléments interactifs (pas tous les éléments) */
+  a:focus-visible,
+  button:focus-visible,
+  summary:focus-visible {
     outline: none;
-    border-bottom-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--primary);
   }
+
+  /* Inputs gardent le comportement natif du navigateur */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+  }
+
+  /* Skip link styles */
+  .skip-link {
+    position: absolute;
+    top: -100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 24px;
+    background: var(--primary);
+    color: var(--on-primary);
+    font-weight: 600;
+    border-radius: 8px;
+    z-index: 10000;
+    text-decoration: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .skip-link:focus {
+    top: 16px;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    :root {
+      --primary: #000080;
+      --secondary: #005000;
+      --error: #800000;
+      --surface-container-highest: #c0c0c0;
+      --on-surface-variant: #000;
+    }
+  }
+}
+
+/* Utility classes for screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sr-only:focus {
+  position: absolute;
+  width: auto;
+  height: auto;
+  padding: 12px 24px;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 600;
+  border-radius: 8px;
+  z-index: 10000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }

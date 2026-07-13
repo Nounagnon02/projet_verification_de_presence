@@ -375,29 +375,29 @@ const StudentManagementPage = () => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-on-surface-variant">Nom *</label>
-              <input className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-all"
+              <input className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
                 value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} />
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-on-surface-variant">Prénom *</label>
-              <input className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-all"
+              <input className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
                 value={form.prenom} onChange={(e) => setForm({ ...form, prenom: e.target.value })} />
             </div>
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-on-surface-variant">Email *</label>
-            <input type="email" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-all"
+            <input type="email" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
               value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-on-surface-variant">Matricule</label>
-            <input className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono border-b-2 border-transparent focus:border-primary transition-all"
+            <input className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono border-b-2 border-transparent focus:border-primary transition-colors"
               value={form.matricule} onChange={(e) => setForm({ ...form, matricule: e.target.value })} placeholder="22-XXXX-XXXX" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-on-surface-variant">Filière *</label>
-              <select className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-all"
+              <select className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
                 value={form.filiere_id} onChange={(e) => setForm({ ...form, filiere_id: e.target.value })}>
                 <option value="">Sélectionner une filière</option>
                 {filieres.map((f) => (
@@ -409,7 +409,7 @@ const StudentManagementPage = () => {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-on-surface-variant">Année académique *</label>
-              <select className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-all"
+              <select className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
                 value={form.annee_id} onChange={(e) => setForm({ ...form, annee_id: e.target.value })}>
                 <option value="">Sélectionner une année</option>
                 {annees.map((a) => (

@@ -18,18 +18,20 @@ const tabLinkClass = ({ isActive }) =>
 export default function SettingsLayout() {
   return (
     <div>
-      <div className="flex items-center gap-1 bg-surface-container-lowest rounded-xxl p-1.5 shadow-sm border border-outline-variant/5 mb-6 overflow-x-auto">
+      <div className="flex items-center gap-1 bg-surface-container-lowest rounded-xxl p-1.5 shadow-sm border border-outline-variant/5 mb-6 overflow-x-auto" role="tablist" aria-label="Onglets de configuration">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
-            <NavLink key={tab.to} to={tab.to} end className={tabLinkClass}>
-              <Icon size={16} />
+            <NavLink key={tab.to} to={tab.to} end className={tabLinkClass} role="tab" aria-selected={false}>
+              <Icon size={16} aria-hidden="true" />
               <span>{tab.label}</span>
             </NavLink>
           );
         })}
       </div>
-      <Outlet />
+      <main id="main-content" tabIndex={-1}>
+        <Outlet />
+      </main>
     </div>
   );
 }

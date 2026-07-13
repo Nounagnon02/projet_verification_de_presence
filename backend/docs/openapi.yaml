@@ -1,0 +1,2463 @@
+openapi: 3.1.0
+info:
+  title: Système de Vérification de Présence UAC - API
+  description: |
+    API REST pour le système de vérification de présence de l'Université d'Abomey-Calavi (UAC).
+
+    **Fonctionnalités principales :**
+    - Authentification Laravel Sanctum (SPA mode, cookies httpOnly + CSRF)
+    - Vérification triple facteur : QR Code visuel + GPS (Haversine) + WiFi (SSID/BSSID)
+    - Anti-fraude : rotation token QR 60s, invalidation post-scan, device fingerprinting
+    - Import IA (Gemini 2.5 Flash) pour planning PDF et catalogue cours
+    - Multi-locataire (établissements) avec RBAC 8 rôles UAC
+    - Exports PDF/CSV/Excel, rapports filtrés
+    - Temps réel via polling (5s) + WebSocket (Laravel Reverb futur)
+
+    **Spécifications techniques :**
+    - Laravel 12 (PHP 8.2+) API + React 19 (Vite) SPA
+    - Base de données : MySQL/PostgreSQL (production), SQLite (dev)
+    - Cache/Queues : Redis
+    - Stockage : S3-compatible / local
+
+  version: 1.0.0
+  contact:
+    name: Équipe Développement UAC
+    email: dev@uac.bj
+    url: https://github.com/uac/presence
+  license:
+    name: Propriétaire UAC
+    url: https://uac.bj/legal
+
+servers:
+  - url: https://api.presence.uac.bj/api
+    description: Serveur de production
+  - url: https://staging-api.presence.uac.bj/api
+    description: Serveur de staging
+  - url: http://localhost:8000/api
+    description: Développement local
+
+security:
+  - sanctum: []
+  - bearerAuth: []
+
+tags:
+  - name: Authentication
+    description: Authentification, inscription, 2FA, sessions
+  - name: Public Presence
+    description: Endpoints publics pour scan QR code étudiant
+  - name: Admin Dashboard
+    description: Tableau de bord et statistiques administrateur
+  - name: Admin Students
+    description: Gestion des étudiants (CRUD, import CSV, inscriptions)
+  - name: Admin Courses
+    description: Gestion UEs, ECs, événements, salles, filières, années
+  - name: Admin Presence
+    description: Historique présences, validation manuelle, exports
+  - name: Admin Imports
+    description: Import IA (Gemini) planning PDF + catalogue cours
+  - name: Admin Alerts
+    description: Gestion des alertes/anomalies
+  - name: Admin Tickets
+    description: Support tickets
+  - name: Admin Chat
+    description: Messagerie temps réel
+  - name: Admin Notifications
+    description: Notifications utilisateur
+  - name: Admin Profile
+    description: Profil utilisateur, 2FA, sessions
+  - name: Super Admin
+    description: Administration multi-établissements (UAC level)
+  - name: Health
+    description: Monitoring et health checks
+
+paths:
+  # ========================================================================
+  # HEALTH CHECK
+  # ========================================================================
+  /health:
+    get:
+      tags: [Health]
+      summary: Vérification de santé de l'API
+      description: |
+        Endpoint de monitoring pour vérifier la disponibilité de l'API et de la base de données.
+        Utilisé par les load balancers et outils de monitoring (Prometheus, Datadog, etc.).
+      responses:
+        '200':
+          description: Service opérationnel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                success: true
+                status: healthy
+                timestamp: "2026-07-09T10:30:00.000000Z"
+                services:
+                  database: connected
+                  app: running
+                  version: "1.0.0"
+        '503':
+          description: Service indisponible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ========================================================================
+  # AUTHENTICATION
+  # ========================================================================
+  /login:
+    post:
+      tags: [Authentication]
+      summary: Connexion utilisateur (Sanctum SPA)
+      description: |
+        Authentification par email/mot de passe. Retourne un cookie de session httpOnly.
+        Rate limiting : 5 tentatives/minute/IP (CDC 9.1).
+
+        **Réponse :** Cookie `presence_session` (httpOnly, secure, sameSite=lax) + token CSRF dans header `X-CSRF-TOKEN`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Connexion réussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              example:
+                success: true
+                message: "Connexion réussie"
+                data:
+                  user:
+                    id: "uuid"
+                    name: "Jean Dupont"
+                    email: "jean.dupont@uac.bj"
+                    roles: ["faculte_admin"]
+                    etablissement_id: "uuid"
+                  requires_2fa: false
+        '401':
+          description: Identifiants invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Trop de tentatives
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation échouée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+
+  /logout:
+    post:
+      tags: [Authentication]
+      summary: Déconnexion
+      description: Invalide la session et supprime les cookies.
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Déconnexion réussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Non authentifié
+
+  /forgot-password:
+    post:
+      tags: [Authentication]
+      summary: Demande de réinitialisation mot de passe
+      description: Envoie un email avec lien de réinitialisation (valide 60 min).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: Email envoyé si compte existe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '422':
+          description: Validation échouée
+
+  /reset-password:
+    post:
+      tags: [Authentication]
+      summary: Réinitialisation mot de passe
+      description: Valide le token et définit le nouveau mot de passe.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Mot de passe mis à jour
+        '400':
+          description: Token invalide ou expiré
+
+  /user:
+    get:
+      tags: [Authentication]
+      summary: Informations utilisateur connecté
+      description: Retourne le profil complet de l'utilisateur authentifié.
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Profil utilisateur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+  # ========================================================================
+  # PUBLIC PRESENCE (Scan QR Code - Étudiants)
+  # ========================================================================
+  /presence/scan:
+    post:
+      tags: [Public Presence]
+      summary: Scanner un QR code pour valider une présence
+      description: |
+        **VÉRIFICATION TRIPLE FACTEUR (CDC US04 & US06) :**
+        1. **QR Code visuel** : Token valide, non expiré, rotation 60s
+        2. **Géolocalisation GPS** : Distance Haversine < rayon géofence salle
+        3. **Réseau WiFi** : SSID/BSSID correspond à la configuration salle
+
+        **ANTI-FRAUDE (CDC 9.2) :**
+        - Invalidation immédiate du token QR après scan
+        - Device fingerprint + challenge cryptographique
+        - Détection cross-device (double scan appareil différent)
+        - Rate limiting : 3 req/min/device
+
+        Le QR code redirige vers `/scan?token={uuid}` sur le frontend.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScanPresenceRequest'
+      responses:
+        '201':
+          description: Présence enregistrée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScanPresenceResponse'
+              example:
+                success: true
+                message: "Présence enregistrée avec succès."
+                data:
+                  etudiant: "Dupont Jean"
+                  matricule: "22-12345-01"
+                  heure: "08:15:32"
+                  cours: "Programmation Web"
+                  verification:
+                    qr_valide: true
+                    gps_valide: true
+                    wifi_valide: true
+                    ip_valide: true
+                    mode: "strict"
+                    distance_metres: 3.2
+                    salle_nom: "Lab Info 1"
+                  gamification:
+                    perfect_week: true
+                    points_awarded: 50
+        '403':
+          description: Vérification échouée (hors zone, mauvais WiFi, hors horaire)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Vérification de présence échouée. Vous devez être physiquement dans la salle de cours. GPS hors zone (distance: 150m, max: 30m)."
+        '409':
+          description: Présence déjà enregistrée ou fraude détectée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '410':
+          description: QR Code expiré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Données invalides
+        '429':
+          description: Rate limit dépassé
+
+  /presence/course-by-token/{token}:
+    get:
+      tags: [Public Presence]
+      summary: Récupérer infos cours via token QR (CDC 7.4.1)
+      description: |
+        Endpoint public pour afficher les informations du cours avant scan.
+        Utilisé par la page de scan QR côté étudiant.
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Token QR code
+      responses:
+        '200':
+          description: Infos cours
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseByTokenResponse'
+        '404':
+          description: QR Code invalide ou expiré
+
+  # ========================================================================
+  # ADMIN DASHBOARD
+  # ========================================================================
+  /admin/dashboard:
+    get:
+      tags: [Admin Dashboard]
+      summary: Statistiques tableau de bord admin
+      description: |
+        KPIs principaux : taux de présence global, aujourd'hui, cette semaine,
+        alertes non résolues, événements à venir.
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Stats dashboard
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardStatsResponse'
+
+  /admin/dashboard/heatmap:
+    get:
+      tags: [Admin Dashboard]
+      summary: Heatmap présence par salle/heure
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Données heatmap
+
+  /admin/dashboard/attendance-trend:
+    get:
+      tags: [Admin Dashboard]
+      summary: Tendance présence sur 30 jours
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Série temporelle
+
+  /admin/dashboard/top-absences:
+    get:
+      tags: [Admin Dashboard]
+      summary: Top 10 étudiants les plus absents
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Liste top absences
+
+  /admin/dashboard/today-events:
+    get:
+      tags: [Admin Dashboard]
+      summary: Événements du jour
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Liste événements aujourd'hui
+
+  # ========================================================================
+  # ADMIN STUDENTS
+  # ========================================================================
+  /admin/students:
+    get:
+      tags: [Admin Students]
+      summary: Lister les étudiants (paginé, filtré)
+      description: |
+        Filtres disponibles : search (nom/prénom/matricule/email), filiere_id, annee_id, statut.
+        Pagination : page, per_page (max 100).
+      security:
+        - sanctum: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: filiere_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: annee_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: statut
+          in: query
+          schema: { type: string, enum: [actif, inactif, diplomé] }
+      responses:
+        '200':
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStudentsResponse'
+
+    post:
+      tags: [Admin Students]
+      summary: Créer un étudiant
+      security:
+        - sanctum: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStudentRequest'
+      responses:
+        '201':
+          description: Étudiant créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentResponse'
+        '422':
+          description: Validation échouée
+
+  /admin/students/{id}:
+    get:
+      tags: [Admin Students]
+      summary: Détail étudiant
+      security:
+        - sanctum: []
+      parameters:
+        - $ref: '#/components/parameters/StudentIdParam'
+      responses:
+        '200':
+          description: Détail étudiant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentDetailResponse'
+        '404':
+          description: Non trouvé
+
+    put:
+      tags: [Admin Students]
+      summary: Modifier un étudiant
+      security:
+        - sanctum: []
+      parameters:
+        - $ref: '#/components/parameters/StudentIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStudentRequest'
+      responses:
+        '200':
+          description: Mis à jour
+        '422':
+          description: Validation échouée
+
+    delete:
+      tags: [Admin Students]
+      summary: Supprimer un étudiant
+      security:
+        - sanctum: []
+      parameters:
+        - $ref: '#/components/parameters/StudentIdParam'
+      responses:
+        '200':
+          description: Supprimé
+        '404':
+          description: Non trouvé
+
+  /admin/students/{id}/ecs:
+    get:
+      tags: [Admin Students]
+      summary: ECs inscrites de l'étudiant
+      security:
+        - sanctum: []
+      parameters:
+        - $ref: '#/components/parameters/StudentIdParam'
+      responses:
+        '200':
+          description: Liste ECs
+
+  /admin/students/{id}/ecs-available:
+    get:
+      tags: [Admin Students]
+      summary: ECs disponibles pour inscription (CDC 7.2.3)
+      security:
+        - sanctum: []
+      parameters:
+        - $ref: '#/components/parameters/StudentIdParam'
+      responses:
+        '200':
+          description: ECs disponibles
+
+  /admin/students/{id}/ecs:
+    post:
+      tags: [Admin Students]
+      summary: Inscrire étudiant à un EC
+      security:
+        - sanctum: []
+      parameters:
+        - $ref: '#/components/parameters/StudentIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrollStudentRequest'
+      responses:
+        '201':
+          description: Inscription créée
+
+  /admin/students/{id}/ecs/{ecId}:
+    delete:
+      tags: [Admin Students]
+      summary: Désinscrire étudiant d'un EC
+      security:
+        - sanctum: []
+      parameters:
+        - $ref: '#/components/parameters/StudentIdParam'
+        - name: ecId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Désinscription effectuée
+
+  /admin/students/{id}/ecs/reset:
+    post:
+      tags: [Admin Students]
+      summary: Réinitialiser inscriptions (nouvelle année)
+      security:
+        - sanctum: []
+      parameters:
+        - $ref: '#/components/parameters/StudentIdParam'
+      responses:
+        '200':
+          description: Inscriptions réinitialisées
+
+  /admin/import/students:
+    post:
+      tags: [Admin Students]
+      summary: Import étudiants par CSV (CDC 7.2)
+      description: |
+        Import massif via CSV avec colonnes CDC : nom, prenom, matricule, filiere, annee, email, telephone.
+        Génération automatique identifiant_unique + envoi email identifiants (queue).
+      security:
+        - sanctum: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ImportStudentsRequest'
+      responses:
+        '200':
+          description: Résultat import
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportStudentsResponse'
+
+  # ========================================================================
+  # ADMIN COURSES (UEs, ECs, Événements, Salles, Filières, Années)
+  # ========================================================================
+  /admin/ues:
+    get:
+      tags: [Admin Courses]
+      summary: Lister UEs
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Liste UEs
+
+    post:
+      tags: [Admin Courses]
+      summary: Créer UE
+      security:
+        - sanctum: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUeRequest'
+      responses:
+        '201':
+          description: UE créée
+
+  /admin/ues/{id}:
+    get:
+      tags: [Admin Courses]
+      summary: Détail UE avec ECs
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: UE avec ECs
+
+    put:
+      tags: [Admin Courses]
+      summary: Modifier UE
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: UE modifiée
+
+    delete:
+      tags: [Admin Courses]
+      summary: Supprimer UE
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: UE supprimée
+
+  /admin/ecs:
+    get:
+      tags: [Admin Courses]
+      summary: Lister ECs
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Liste ECs
+
+    post:
+      tags: [Admin Courses]
+      summary: Créer EC
+      security:
+        - sanctum: []
+      responses:
+        '201':
+          description: EC créé
+
+  /admin/ecs/{id}:
+    put:
+      tags: [Admin Courses]
+      summary: Modifier EC
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: EC modifié
+
+    delete:
+      tags: [Admin Courses]
+      summary: Supprimer EC
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: EC supprimé
+
+  /admin/evenements:
+    get:
+      tags: [Admin Courses]
+      summary: Lister événements (cours planifiés)
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Liste événements
+
+    post:
+      tags: [Admin Courses]
+      summary: Créer événement
+      security:
+        - sanctum: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEvenementRequest'
+      responses:
+        '201':
+          description: Événement créé
+
+  /admin/evenements/{id}:
+    get:
+      tags: [Admin Courses]
+      summary: Détail événement
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Détail événement
+
+    put:
+      tags: [Admin Courses]
+      summary: Modifier événement
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Événement modifié
+
+    delete:
+      tags: [Admin Courses]
+      summary: Supprimer événement
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Événement supprimé
+
+  /admin/filieres:
+    get:
+      tags: [Admin Courses]
+      summary: Lister filières
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Liste filières
+
+    post:
+      tags: [Admin Courses]
+      summary: Créer filière
+      security:
+        - sanctum: []
+      responses:
+        '201':
+          description: Filière créée
+
+  /admin/salles:
+    get:
+      tags: [Admin Courses]
+      summary: Lister salles
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Liste salles
+
+    post:
+      tags: [Admin Courses]
+      summary: Créer salle (avec GPS + WiFi config)
+      description: |
+        Configuration géolocalisation (lat/long, rayon geofence) et réseau (SSID/BSSID, plage IP).
+        Utilisé pour la vérification triple facteur.
+      security:
+        - sanctum: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSalleRequest'
+      responses:
+        '201':
+          description: Salle créée
+
+  /admin/salles/{id}:
+    get:
+      tags: [Admin Courses]
+      summary: Détail salle
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Détail salle
+
+    put:
+      tags: [Admin Courses]
+      summary: Modifier salle
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Salle modifiée
+
+    delete:
+      tags: [Admin Courses]
+      summary: Supprimer salle
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Salle supprimée
+
+  /admin/salles/disponibles:
+    get:
+      tags: [Admin Courses]
+      summary: Salles disponibles pour un créneau
+      security:
+        - sanctum: []
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: heure_debut
+          in: query
+          required: true
+          schema: { type: string, pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$' }
+        - name: heure_fin
+          in: query
+          required: true
+          schema: { type: string, pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$' }
+      responses:
+        '200':
+          description: Salles libres
+
+  /admin/annees-academiques:
+    get:
+      tags: [Admin Courses]
+      summary: Lister années académiques
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Liste années
+
+    post:
+      tags: [Admin Courses]
+      summary: Créer année académique
+      security:
+        - sanctum: []
+      responses:
+        '201':
+          description: Année créée
+
+  /admin/annees-academiques/{id}/activate:
+    patch:
+      tags: [Admin Courses]
+      summary: Activer une année (désactive les autres)
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Année activée
+
+  # ========================================================================
+  # ADMIN PRESENCE (Historique, Validation manuelle, Exports)
+  # ========================================================================
+  /admin/presence/history:
+    get:
+      tags: [Admin Presence]
+      summary: Historique présences (filtré, paginé)
+      description: |
+        Filtres : etudiant_id, evenement_id, filiere_id, annee_id, date_from, date_to, statut.
+        Inclus relations : etudiant, evenement, ec, filiere, salle.
+      security:
+        - sanctum: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - name: etudiant_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: evenement_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: filiere_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: annee_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: date_from
+          in: query
+          schema: { type: string, format: date }
+        - name: date_to
+          in: query
+          schema: { type: string, format: date }
+        - name: statut
+          in: query
+          schema: { type: string, enum: [valide, invalide, suspect, en_attente, rejete] }
+      responses:
+        '200':
+          description: Historique paginé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPresencesResponse'
+
+  /admin/presence/stats:
+    get:
+      tags: [Admin Presence]
+      summary: Statistiques présence globales
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Stats présence
+
+  /admin/students/{id}/stats:
+    get:
+      tags: [Admin Presence]
+      summary: Stats présence par étudiant
+      security:
+        - sanctum: []
+      parameters:
+        - $ref: '#/components/parameters/StudentIdParam'
+      responses:
+        '200':
+          description: Stats étudiant
+
+  /admin/presence/pending:
+    get:
+      tags: [Admin Presence]
+      summary: Présences en attente validation (suspectes, sans scan)
+      description: |
+        Liste des présences avec statut 'suspect', 'en_attente', 'invalide'
+        nécessitant validation manuelle par admin/enseignant.
+      security:
+        - sanctum: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - name: filiere_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: evenement_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: date_from
+          in: query
+          schema: { type: string, format: date }
+        - name: date_to
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Présences en attente
+
+  /admin/presence/{id}/validate:
+    patch:
+      tags: [Admin Presence]
+      summary: Valider manuellement une présence
+      description: |
+        Action admin (enseignant, chef département, scolarité).
+        Change statut vers 'valide' + log audit.
+      security:
+        - sanctum: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidatePresenceRequest'
+      responses:
+        '200':
+          description: Présence validée
+        '403':
+          description: Non autorisé (périmètre établissement)
+        '409':
+          description: Déjà validée
+
+  /admin/presence/{id}/reject:
+    patch:
+      tags: [Admin Presence]
+      summary: Rejeter manuellement une présence
+      description: |
+        Action admin avec motif obligatoire.
+        Change statut vers 'rejete' + log audit.
+      security:
+        - sanctum: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectPresenceRequest'
+      responses:
+        '200':
+          description: Présence rejetée
+        '409':
+          description: Déjà rejetée
+
+  # Exports / Rapports
+  /admin/reports/presence/{evenementId}/pdf:
+    get:
+      tags: [Admin Presence]
+      summary: Export PDF présence par événement
+      security:
+        - sanctum: []
+      parameters:
+        - name: evenementId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Fichier PDF
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Non trouvé
+
+  /admin/reports/presence/{evenementId}/csv:
+    get:
+      tags: [Admin Presence]
+      summary: Export CSV présence par événement (UTF-8 BOM)
+      security:
+        - sanctum: []
+      parameters:
+        - name: evenementId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Fichier CSV
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /admin/reports/department/{filiere}:
+    get:
+      tags: [Admin Presence]
+      summary: Rapport par département/filière
+      security:
+        - sanctum: []
+      parameters:
+        - name: filiere
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Rapport département
+
+  /admin/reports/semester/{anneeAcademique}:
+    get:
+      tags: [Admin Presence]
+      summary: Rapport semestriel
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Rapport semestre
+
+  /admin/reports/semester-comparison:
+    get:
+      tags: [Admin Presence]
+      summary: Comparaison semestres
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Comparatif
+
+  /admin/reports/filiere-stats:
+    get:
+      tags: [Admin Presence]
+      summary: Stats par filière
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Stats filières
+
+  /admin/reports/filtered:
+    get:
+      tags: [Admin Presence]
+      summary: Statistiques filtrées avancées
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Stats filtrées
+
+  /admin/reports/excel/export:
+    get:
+      tags: [Admin Presence]
+      summary: Export Excel multi-onglets
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Fichier .xlsx
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+
+  # ========================================================================
+  # ADMIN IMPORTS (Gemini IA)
+  # ========================================================================
+  /admin/import/schedule:
+    post:
+      tags: [Admin Imports]
+      summary: Import planning PDF (Gemini IA) - ASYNCHRONE
+      description: |
+        Upload PDF planning → analyse Gemini 2.5 Flash → extraction événements.
+        Traitement asynchrone via queue 'gemini-import' (timeout 5min, retry exponentiel).
+        Polling via GET /admin/import/analysis-status/{id}
+      security:
+        - sanctum: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ImportPdfRequest'
+      responses:
+        '200':
+          description: Analyse lancée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportAnalysisResponse'
+              example:
+                success: true
+                message: "Analyse de l'emploi du temps lancée en arrière-plan."
+                data:
+                  analysis_id: 123
+                  status: "pending"
+
+  /admin/import/courses:
+    post:
+      tags: [Admin Imports]
+      summary: Import catalogue cours PDF (Gemini IA) - ASYNCHRONE
+      description: |
+        Upload PDF catalogue UEs/ECs → analyse Gemini → extraction structurée.
+        Queue dédiée 'gemini-import'.
+      security:
+        - sanctum: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ImportPdfRequest'
+      responses:
+        '200':
+          description: Analyse lancée
+
+  /admin/import/validate-events:
+    post:
+      tags: [Admin Imports]
+      summary: Valider et sauvegarder événements extraits
+      description: |
+        Après review frontend des événements extraits par Gemini,
+        validation en masse avec vérification périmètre établissement.
+      security:
+        - sanctum: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateEventsRequest'
+      responses:
+        '201':
+          description: Événements créés
+
+  /admin/import/validate-courses:
+    post:
+      tags: [Admin Imports]
+      summary: Valider et sauvegarder UEs/ECs extraits
+      security:
+        - sanctum: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateCoursesRequest'
+      responses:
+        '201':
+          description: UEs/ECs créées
+
+  /admin/import/analysis-status/{id}:
+    get:
+      tags: [Admin Imports]
+      summary: Statut analyse Gemini (pour polling frontend)
+      description: |
+        Retourne status: pending | processing | completed | failed
+        Si completed: inclut result (données extraites), score_de_confiance, warnings.
+      security:
+        - sanctum: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Statut analyse
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisStatusResponse'
+
+  # ========================================================================
+  # ADMIN ALERTS
+  # ========================================================================
+  /admin/alerts:
+    get:
+      tags: [Admin Alerts]
+      summary: Lister alertes/anomalies
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Liste alertes
+
+  /admin/alerts/{id}/resolve:
+    post:
+      tags: [Admin Alerts]
+      summary: Résoudre une alerte
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Alerte résolue
+
+  # ========================================================================
+  # ADMIN TICKETS
+  # ========================================================================
+  /admin/tickets:
+    get:
+      tags: [Admin Tickets]
+      summary: Lister tickets support
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Liste tickets
+
+    post:
+      tags: [Admin Tickets]
+      summary: Créer ticket
+      security:
+        - sanctum: []
+      responses:
+        '201':
+          description: Ticket créé
+
+  /admin/tickets/{id}:
+    get:
+      tags: [Admin Tickets]
+      summary: Détail ticket
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Détail ticket
+
+  /admin/tickets/{id}/reply:
+    post:
+      tags: [Admin Tickets]
+      summary: Répondre au ticket
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Réponse ajoutée
+
+  /admin/tickets/{id}/status:
+    patch:
+      tags: [Admin Tickets]
+      summary: Changer statut ticket
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Statut mis à jour
+
+  /admin/tickets/{id}:
+    delete:
+      tags: [Admin Tickets]
+      summary: Supprimer ticket
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Ticket supprimé
+
+  # ========================================================================
+  # ADMIN CHAT
+  # ========================================================================
+  /admin/chat/conversations:
+    get:
+      tags: [Admin Chat]
+      summary: Conversations utilisateur
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Liste conversations
+
+  /admin/chat/conversations/{id}/messages:
+    get:
+      tags: [Admin Chat]
+      summary: Messages d'une conversation
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Messages
+
+  /admin/chat/conversations/{id}/messages:
+    post:
+      tags: [Admin Chat]
+      summary: Envoyer message
+      security:
+        - sanctum: []
+      responses:
+        '201':
+          description: Message envoyé
+
+  /admin/chat/conversations/{id}/close:
+    post:
+      tags: [Admin Chat]
+      summary: Fermer conversation
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Conversation fermée
+
+  # ========================================================================
+  # ADMIN NOTIFICATIONS
+  # ========================================================================
+  /admin/notifications:
+    get:
+      tags: [Admin Notifications]
+      summary: Notifications utilisateur
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Liste notifications
+
+  /admin/notifications/unread-count:
+    get:
+      tags: [Admin Notifications]
+      summary: Nombre non lues
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Compteur
+
+  /admin/notifications/{id}/read:
+    post:
+      tags: [Admin Notifications]
+      summary: Marquer comme lue
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Marquée lue
+
+  /admin/notifications/read-all:
+    post:
+      tags: [Admin Notifications]
+      summary: Tout marquer comme lu
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Tout lu
+
+  /admin/notifications/{id}:
+    delete:
+      tags: [Admin Notifications]
+      summary: Supprimer notification
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Supprimée
+
+  # ========================================================================
+  # ADMIN PROFILE (2FA, Sessions)
+  # ========================================================================
+  /admin/profile:
+    get:
+      tags: [Admin Profile]
+      summary: Profil utilisateur
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Profil
+
+    put:
+      tags: [Admin Profile]
+      summary: Modifier profil
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Profil mis à jour
+
+  /admin/profile/password:
+    put:
+      tags: [Admin Profile]
+      summary: Changer mot de passe
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Mot de passe changé
+
+  /admin/profile/2fa/enable:
+    post:
+      tags: [Admin Profile]
+      summary: Activer 2FA (TOTP)
+      description: |
+        Génère secret + QR code pour Google Authenticator/Authy.
+        À scanner puis confirmer via /admin/profile/2fa/confirm
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Secret + QR code générés
+
+  /admin/profile/2fa/confirm:
+    post:
+      tags: [Admin Profile]
+      summary: Confirmer activation 2FA
+      security:
+        - sanctum: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Confirm2FARequest'
+      responses:
+        '200':
+          description: 2FA activé
+
+  /admin/profile/2fa/disable:
+    post:
+      tags: [Admin Profile]
+      summary: Désactiver 2FA
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: 2FA désactivé
+
+  /admin/profile/2fa/verify:
+    post:
+      tags: [Admin Profile]
+      summary: Vérifier code 2FA (login)
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Code valide
+
+  /admin/sessions:
+    get:
+      tags: [Admin Profile]
+      summary: Sessions actives
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Liste sessions
+
+  /admin/sessions/others:
+    delete:
+      tags: [Admin Profile]
+      summary: Révoquer autres sessions
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Sessions révoquées
+
+  # ========================================================================
+  # SUPER ADMIN (UAC Level)
+  # ========================================================================
+  /super-admin/dashboard:
+    get:
+      tags: [Super Admin]
+      summary: Dashboard global UAC
+      description: Stats agrégées multi-établissements
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Dashboard super admin
+
+  /super-admin/etablissements:
+    get:
+      tags: [Super Admin]
+      summary: Lister établissements
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Liste établissements
+
+    post:
+      tags: [Super Admin]
+      summary: Créer établissement
+      security:
+        - sanctum: []
+      responses:
+        '201':
+          description: Établissement créé
+
+  /super-admin/etablissements/{id}:
+    get:
+      tags: [Super Admin]
+      summary: Détail établissement
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Détail
+
+    put:
+      tags: [Super Admin]
+      summary: Modifier établissement
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Modifié
+
+    delete:
+      tags: [Super Admin]
+      summary: Supprimer établissement
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Supprimé
+
+  /super-admin/etablissements/import:
+    post:
+      tags: [Super Admin]
+      summary: Import massif établissements (CSV)
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Import terminé
+
+  /super-admin/etablissements/{id}/stats:
+    get:
+      tags: [Super Admin]
+      summary: Stats établissement
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Stats
+
+  /super-admin/etablissements/{id}/resend-credentials:
+    post:
+      tags: [Super Admin]
+      summary: Renvoyer identifiants admin établissement
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Email envoyé
+
+  # ========================================================================
+  # PUBLIC LANDING
+  # ========================================================================
+  /landing/stats:
+    get:
+      tags: [Health]
+      summary: Stats publiques landing page
+      description: Compteurs publics pour page d'accueil (étudiants, cours, taux présence)
+      responses:
+        '200':
+          description: Stats publiques
+
+components:
+  securitySchemes:
+    sanctum:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Laravel Sanctum SPA authentication via httpOnly cookie.
+        Le token CSRF doit être envoyé dans le header `X-CSRF-TOKEN`
+        (récupéré via `/sanctum/csrf-cookie` ou meta tag `csrf-token`).
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token API personnel (PAT) pour intégrations serveur-à-serveur
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: Numéro de page
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PerPageParam:
+      name: per_page
+      in: query
+      description: Éléments par page (max 100)
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    StudentIdParam:
+      name: id
+      in: path
+      required: true
+      description: UUID de l'étudiant
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    # ========================================================================
+    # COMMON RESPONSES
+    # ========================================================================
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        data:
+          type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+    ValidationErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+        - type: object
+          properties:
+            errors:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+
+    PaginatedResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            type: object
+        meta:
+          type: object
+          properties:
+            current_page:
+              type: integer
+            last_page:
+              type: integer
+            per_page:
+              type: integer
+            total:
+              type: integer
+            from:
+              type: integer
+            to:
+              type: integer
+        links:
+          type: object
+          properties:
+            first:
+              type: string
+            last:
+              type: string
+            prev:
+              type: string
+            next:
+              type: string
+
+    HealthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        services:
+          type: object
+          properties:
+            database:
+              type: string
+              enum: [connected, disconnected]
+            app:
+              type: string
+              enum: [running, stopped]
+            version:
+              type: string
+
+    # ========================================================================
+    # AUTH SCHEMAS
+    # ========================================================================
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: "admin@fst.uac.bj"
+        password:
+          type: string
+          format: password
+          example: "password123"
+        remember:
+          type: boolean
+          default: false
+        two_factor_code:
+          type: string
+          pattern: '^\d{6}$'
+          description: Code 2FA si activé
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+            requires_2fa:
+              type: boolean
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        roles:
+          type: array
+          items:
+            type: string
+        etablissement_id:
+          type: string
+          format: uuid
+        filiere_id:
+          type: string
+          format: uuid
+        two_factor_enabled:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    UserResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/User'
+
+    ForgotPasswordRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    ResetPasswordRequest:
+      type: object
+      required: [token, email, password, password_confirmation]
+      properties:
+        token:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 8
+        password_confirmation:
+          type: string
+          format: password
+
+    Confirm2FARequest:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          pattern: '^\d{6}$'
+
+    # ========================================================================
+    # PUBLIC PRESENCE SCHEMAS
+    # ========================================================================
+    ScanPresenceRequest:
+      type: object
+      required: [identifiant_unique, token, device_fingerprint]
+      properties:
+        identifiant_unique:
+          type: string
+          description: Matricule ou identifiant unique étudiant
+          example: "22-12345-01"
+        token:
+          type: string
+          format: uuid
+          description: Token QR code scanné
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        device_fingerprint:
+          type: string
+          description: Empreinte device (fingerprintjs)
+          example: "fp_abc123def456"
+        scan_challenge:
+          type: string
+          description: Challenge cryptographique optionnel
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          description: GPS latitude
+          example: 6.4281
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          description: GPS longitude
+          example: 2.3575
+        ssid:
+          type: string
+          maxLength: 255
+          description: WiFi SSID détecté
+          example: "UAC-LabInfo1"
+        bssid:
+          type: string
+          pattern: '^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$'
+          description: WiFi BSSID (MAC)
+          example: "00:11:22:33:44:55"
+
+    ScanPresenceResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            etudiant:
+              type: string
+            matricule:
+              type: string
+            heure:
+              type: string
+            cours:
+              type: string
+            verification:
+              type: object
+              properties:
+                qr_valide:
+                  type: boolean
+                gps_valide:
+                  type: [boolean, string]
+                wifi_valide:
+                  type: [boolean, string]
+                ip_valide:
+                  type: boolean
+                mode:
+                  type: string
+                  enum: [basique, strict]
+                distance_metres:
+                  type: number
+                salle_nom:
+                  type: string
+            gamification:
+              type: object
+              properties:
+                perfect_week:
+                  type: boolean
+                points_awarded:
+                  type: integer
+
+    CourseByTokenResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            cours:
+              type: string
+            heure_debut:
+              type: string
+            heure_fin:
+              type: string
+            salle:
+              type: string
+            date:
+              type: string
+              format: date
+            filiere:
+              type: string
+            token:
+              type: string
+            verification:
+              type: object
+              properties:
+                gps_requis:
+                  type: boolean
+                wifi_requis:
+                  type: boolean
+                nom_salle:
+                  type: string
+
+    # ========================================================================
+    # STUDENT SCHEMAS
+    # ========================================================================
+    CreateStudentRequest:
+      type: object
+      required: [nom, prenom, matricule, filiere_id, annee_id, email]
+      properties:
+        nom:
+          type: string
+          maxLength: 100
+        prenom:
+          type: string
+          maxLength: 100
+        matricule:
+          type: string
+          maxLength: 50
+        filiere_id:
+          type: string
+          format: uuid
+        annee_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        telephone:
+          type: string
+          maxLength: 20
+
+    UpdateStudentRequest:
+      type: object
+      properties:
+        nom:
+          type: string
+          maxLength: 100
+        prenom:
+          type: string
+          maxLength: 100
+        matricule:
+          type: string
+          maxLength: 50
+        filiere_id:
+          type: string
+          format: uuid
+        annee_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        telephone:
+          type: string
+          maxLength: 20
+        statut:
+          type: string
+          enum: [actif, inactif, diplomé]
+
+    StudentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Student'
+
+    Student:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nom:
+          type: string
+        prenom:
+          type: string
+        matricule:
+          type: string
+        identifiant_unique:
+          type: string
+        email:
+          type: string
+        telephone:
+          type: string
+        filiere_id:
+          type: string
+          format: uuid
+        annee_id:
+          type: string
+          format: uuid
+        statut:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    StudentDetailResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            student:
+              $ref: '#/components/schemas/Student'
+            filiere:
+              type: object
+            annee:
+              type: object
+            ecs:
+              type: array
+              items:
+                type: object
+            presences_count:
+              type: integer
+            stats:
+              type: object
+
+    PaginatedStudentsResponse:
+      allOf:
+        - $ref: '#/components/schemas/PaginatedResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Student'
+
+    EnrollStudentRequest:
+      type: object
+      required: [ec_id]
+      properties:
+        ec_id:
+          type: string
+          format: uuid
+
+    ImportStudentsRequest:
+      type: object
+      required: [file]
+      properties:
+        file:
+          type: string
+          format: binary
+          description: Fichier CSV (max 5MB, colonnes: nom,prenom,matricule,filiere,annee,email,telephone)
+
+    ImportStudentsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            success:
+              type: integer
+            errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  row:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: string
+            total:
+              type: integer
+
+    # ========================================================================
+    # COURSE SCHEMAS
+    # ========================================================================
+    CreateUeRequest:
+      type: object
+      required: [code, intitule, filiere_id, annee_id, semestre, volume_horaire]
+      properties:
+        code:
+          type: string
+          maxLength: 20
+        intitule:
+          type: string
+          maxLength: 255
+        filiere_id:
+          type: string
+          format: uuid
+        annee_id:
+          type: string
+          format: uuid
+        semestre:
+          type: integer
+          minimum: 1
+          maximum: 6
+        volume_horaire:
+          type: integer
+          minimum: 1
+
+    CreateEvenementRequest:
+      type: object
+      required: [ec_id, filiere_id, annee_id, date, heure_debut, heure_fin]
+      properties:
+        ec_id:
+          type: string
+          format: uuid
+        filiere_id:
+          type: string
+          format: uuid
+        annee_id:
+          type: string
+          format: uuid
+        salle_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        heure_debut:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+        heure_fin:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+        type:
+          type: string
+          enum: [cours, td, tp, examen, autre]
+          default: cours
+
+    CreateSalleRequest:
+      type: object
+      required: [nom, capacite]
+      properties:
+        nom:
+          type: string
+          maxLength: 100
+        capacite:
+          type: integer
+          minimum: 1
+        etage:
+          type: integer
+          minimum: 0
+        batiment:
+          type: string
+          maxLength: 100
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+        rayon_geofence_m:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 30
+        ssid_attendu:
+          type: string
+          maxLength: 255
+        bssid_attendu:
+          type: string
+          pattern: '^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$'
+        ip_range_debut:
+          type: string
+          format: ipv4
+        ip_range_fin:
+          type: string
+          format: ipv4
+        hors_reseau:
+          type: boolean
+          default: false
+
+    # ========================================================================
+    # PRESENCE ADMIN SCHEMAS
+    # ========================================================================
+    ValidatePresenceRequest:
+      type: object
+      required: [action, motif]
+      properties:
+        action:
+          type: string
+          enum: [valider]
+        motif:
+          type: string
+          maxLength: 500
+
+    RejectPresenceRequest:
+      type: object
+      required: [action, motif]
+      properties:
+        action:
+          type: string
+          enum: [rejeter]
+        motif:
+          type: string
+          maxLength: 500
+
+    PaginatedPresencesResponse:
+      allOf:
+        - $ref: '#/components/schemas/PaginatedResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  etudiant:
+                    type: object
+                  evenement:
+                    type: object
+                  heure_scan:
+                    type: string
+                    format: date-time
+                  statut:
+                    type: string
+                  verification_log:
+                    type: object
+
+    # ========================================================================
+    # IMPORT GEMINI SCHEMAS
+    # ========================================================================
+    ImportPdfRequest:
+      type: object
+      required: [file]
+      properties:
+        file:
+          type: string
+          format: binary
+          description: Fichier PDF (max 20MB)
+
+    ImportAnalysisResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            analysis_id:
+              type: integer
+            status:
+              type: string
+              enum: [pending, processing, completed, failed]
+
+    ValidateEventsRequest:
+      type: object
+      required: [events]
+      properties:
+        events:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [ec_id, filiere_id, annee_id, date, heure_debut, heure_fin]
+            properties:
+              ec_id:
+                type: string
+                format: uuid
+              filiere_id:
+                type: string
+                format: uuid
+              annee_id:
+                type: string
+                format: uuid
+              date:
+                type: string
+                format: date
+              heure_debut:
+                type: string
+                pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+              heure_fin:
+                type: string
+                pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+              salle:
+                type: string
+                maxLength: 100
+
+    ValidateCoursesRequest:
+      type: object
+      required: [ues]
+      properties:
+        ues:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [code, intitule, filiere_id, annee_id, semestre, volume_horaire]
+            properties:
+              code:
+                type: string
+                maxLength: 20
+              intitule:
+                type: string
+                maxLength: 255
+              filiere_id:
+                type: string
+                format: uuid
+              annee_id:
+                type: string
+                format: uuid
+              semestre:
+                type: integer
+                minimum: 1
+                maximum: 6
+              volume_horaire:
+                type: integer
+                minimum: 1
+              ecs:
+                type: array
+                items:
+                  type: object
+                  required: [code, intitule, volume_horaire]
+                  properties:
+                    code:
+                      type: string
+                      maxLength: 20
+                    intitule:
+                      type: string
+                      maxLength: 255
+                    volume_horaire:
+                      type: integer
+                      minimum: 1
+
+    AnalysisStatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            analysis_id:
+              type: integer
+            type:
+              type: string
+              enum: [schedule, courses]
+            status:
+              type: string
+              enum: [pending, processing, completed, failed]
+            score_de_confiance:
+              type: number
+              format: float
+            statut_analyse:
+              type: string
+            warning:
+              type: string
+            error_message:
+              type: string
+            result:
+              type: object
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time

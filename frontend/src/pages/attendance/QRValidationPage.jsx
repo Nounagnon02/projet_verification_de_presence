@@ -3,6 +3,7 @@ import { FiCamera, FiCheckCircle, FiAlertTriangle, FiLoader, FiSmartphone, FiUse
 import { MdAccountBalance } from 'react-icons/md';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../api/axios';
+import { useFingerprint } from '../../hooks/useFingerprint';
 
 export default function QRValidationPage() {
   const [searchParams] = useSearchParams();
@@ -13,6 +14,9 @@ export default function QRValidationPage() {
   const [result, setResult] = useState(null);
   const [cours, setCours] = useState(null);
   const qrToken = tokenFromUrl;
+
+  // Device fingerprinting pour anti-fraude
+  const { visitorId, fingerprint, loading: fpLoading, createScanChallenge, isReady } = useFingerprint();
 
   useEffect(() => {
     const fetchCourseInfo = async () => {
@@ -30,12 +34,23 @@ export default function QRValidationPage() {
   const handleManualSubmit = async (e) => {
     e.preventDefault();
     if (!matricule.trim()) return;
+
+    // Attendre que le fingerprint soit prêt
+    if (!isReady && fpLoading) {
+      // Attendre un peu que le fingerprint soit prêt
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
     setLoading(true);
     try {
+      // Générer un challenge de scan avec fingerprint
+      const { challenge, visitorId: fpVisitorId } = await createScanChallenge();
+
       const { data } = await api.post('/presence/scan', {
         identifiant_unique: matricule.trim(),
         token: qrToken || '00000000-0000-0000-0000-000000000000',
-        device_fingerprint: navigator.userAgent || 'unknown',
+        device_fingerprint: fpVisitorId || 'unknown',
+        scan_challenge: challenge,
       });
       setResult({ success: true, ...data.data });
       setMode('success');
@@ -45,6 +60,8 @@ export default function QRValidationPage() {
         setResult({ success: false, message: 'Session expirée. Veuillez scanner un nouveau QR code.' });
       } else if (status === 409) {
         setResult({ success: false, message: 'Présence déjà validée pour ce cours.' });
+      } else if (status === 403) {
+        setResult({ success: false, message: err.response?.data?.message || 'Appareil non reconnu. Veuillez contacter l\'administration.' });
       } else {
         setResult({ success: false, message: err.response?.data?.message || 'Matricule invalide. Veuillez vérifier votre saisie.' });
       }
