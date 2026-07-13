@@ -21,7 +21,6 @@ class Etudiant extends Model
         'annee_id',
         'email',
         'identifiant_unique',
-        'points',
     ];
 
     public function filiere(): BelongsTo

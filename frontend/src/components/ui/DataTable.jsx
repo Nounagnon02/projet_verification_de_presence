@@ -17,15 +17,17 @@ export default function DataTable({
   emptyMessage = 'Aucune donnée',
   emptyAction,
   className = '',
+  'aria-label': ariaLabel,
+  caption,
 }) {
   const renderSortIcon = (field) => {
-    if (sortField !== field) return <FiChevronUp size={14} className="text-on-surface-variant/40" />;
-    return sortDirection === 'asc' ? <FiArrowUp size={14} /> : <FiArrowDown size={14} />;
+    if (sortField !== field) return <FiChevronUp size={14} className="text-on-surface-variant/40" aria-hidden="true" />;
+    return sortDirection === 'asc' ? <FiArrowUp size={14} aria-hidden="true" /> : <FiArrowDown size={14} aria-hidden="true" />;
   };
 
   if (loading) {
     return (
-      <div className={className}>
+      <div className={className} role="status" aria-live="polite" aria-label="Chargement des données">
         <LoadingSkeleton rows={5} cols={columns.length} />
       </div>
     );
@@ -38,9 +40,10 @@ export default function DataTable({
   return (
     <div className={className}>
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full" role="grid" aria-label={ariaLabel}>
+          {caption && <caption className="sr-only">{caption}</caption>}
           <thead>
-            <tr className="border-b border-outline-variant/10">
+            <tr className="border-b border-outline-variant/10" role="row">
               {columns.map(col => (
                 <th
                   key={col.key}
@@ -51,10 +54,12 @@ export default function DataTable({
                   )}
                   onClick={() => col.sortable && onSort?.(col.key)}
                   style={col.width ? { width: col.width } : undefined}
+                  scope="col"
+                  aria-sort={sortField === col.key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
                 >
                   <span className="flex items-center gap-1">
                     {col.label}
-                    {col.sortable && renderSortIcon(col.key)}
+                    {col.sortable && <span aria-hidden="true">{renderSortIcon(col.key)}</span>}
                   </span>
                 </th>
               ))}
@@ -69,9 +74,13 @@ export default function DataTable({
                   onRowClick ? 'cursor-pointer hover:bg-surface-container-low' : '',
                 )}
                 onClick={() => onRowClick?.(row)}
+                onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && onRowClick) { e.preventDefault(); onRowClick(row); }}}
+                tabIndex={onRowClick ? 0 : undefined}
+                role="row"
+                aria-selected={false}
               >
                 {columns.map(col => (
-                  <td key={col.key} className="px-4 py-3 text-sm text-on-surface">
+                  <td key={col.key} className="px-4 py-3 text-sm text-on-surface" role="gridcell">
                     {col.render ? col.render(row[col.key], row) : row[col.key]}
                   </td>
                 ))}

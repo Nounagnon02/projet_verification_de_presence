@@ -1,0 +1,105 @@
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.suo
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Dependencies
+node_modules/
+vendor/
+**/node_modules/
+**/vendor/
+
+# Laravel / PHP
+/storage/*.key
+bootstrap/cache/
+storage/app/public/
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+storage/logs/
+.phpunit.result.cache
+.phpunit.cache/
+
+# Frontend / Vite / Tailwind
+/dist/
+/build/
+coverage/
+*.tsbuildinfo
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+vite*.log
+
+# Mobile app (Expo / React Native)
+.expo/
+.expo-shared/
+android/.gradle/
+android/app/build/
+android/build/
+ios/build/
+ios/Pods/
+web-build/
+*.jks
+*.p8
+*.mobileprovision
+
+# Test and reports
+coverage/
+test-results/
+playwright-report/
+cypress/videos/
+cypress/screenshots/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.orig
+
+# Project-specific documents and exports to exclude from version control
+CDC_UAC_Presence_v2.docx
+fonctionnalites_a_ajouter.md
+tests-students-erreurs.csv
+tests-students-valides.csv
+*offre*formation*.pdf
+Mémoire_de_prince/
+maquette/
+.playwright/
+
+
+# Python cache (if any tooling uses it)
+__pycache__/
+.pytest_cache/
+
+# Claude files
+.claude/
+CLAUDE.md
+
+# Other AI agent/tooling files
+.cursor/
+.windsurf/
+.aider*
+.github/copilot-instructions.md
+copilot-instructions.md
+*.prompt
+*.instructions
+*.agent.md

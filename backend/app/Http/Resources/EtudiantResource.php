@@ -18,7 +18,6 @@ class EtudiantResource extends JsonResource
             'identifiant_unique' => $this->identifiant_unique,
             'filiere' => new \App\Http\Resources\FiliereResource($this->whenLoaded('filiere')),
             'annee' => new \App\Http\Resources\AnneeAcademiqueResource($this->whenLoaded('anneeAcademique')),
-            'points' => $this->points,
             'created_at' => $this->created_at,
         ];
     }

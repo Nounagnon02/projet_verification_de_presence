@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\AnalysePdfJob;
+use App\Jobs\ProcessGeminiImportJob;
 use App\Models\Analyse;
 use App\Models\AnneeAcademique;
 use App\Models\Etudiant;
@@ -182,8 +182,9 @@ class ImportController extends Controller
             'user_id'   => Auth::id(),
         ]);
 
-        // Dispatch du job asynchrone
-        AnalysePdfJob::dispatch($absPath, $analyse->id);
+        // Dispatch du job asynchrone sur queue dédiée
+        ProcessGeminiImportJob::dispatch($analyse, 'courses')
+            ->onQueue('gemini-import');
 
         return $this->successResponse(
             ['analysis_id' => $analyse->id, 'status' => 'pending'],
@@ -229,8 +230,9 @@ class ImportController extends Controller
             'user_id'   => Auth::id(),
         ]);
 
-        // Dispatch du job asynchrone
-        AnalysePdfJob::dispatch($absPath, $analyse->id);
+        // Dispatch du job asynchrone sur queue dédiée
+        ProcessGeminiImportJob::dispatch($analyse, 'schedule')
+            ->onQueue('gemini-import');
 
         return $this->successResponse(
             ['analysis_id' => $analyse->id, 'status' => 'pending'],

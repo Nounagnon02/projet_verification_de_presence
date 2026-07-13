@@ -37,11 +37,16 @@ class AuthenticatedSessionController extends Controller
             }
 
             if ($request->expectsJson() || $request->is('api/*')) {
+                $user = $request->user();
+                // Créer un token Sanctum API pour les clients mobiles / SPA JSON
+                $token = $user->createToken('api-token')->plainTextToken;
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Connecté avec succès.',
                     'data'    => [
-                        'user'  => $request->user(),
+                        'user'  => $user,
+                        'token' => $token,
                     ],
                 ]);
             }

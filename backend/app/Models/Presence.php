@@ -19,10 +19,14 @@ class Presence extends Model
         'statut',
         'latitude',
         'longitude',
+        'validated_by',
+        'validated_at',
+        'validation_motif',
     ];
 
     protected $casts = [
         'heure_scan' => 'datetime',
+        'validated_at' => 'datetime',
     ];
 
     public function etudiant(): BelongsTo
@@ -33,5 +37,10 @@ class Presence extends Model
     public function evenement(): BelongsTo
     {
         return $this->belongsTo(Evenement::class);
+    }
+
+    public function validator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'validated_by');
     }
 }

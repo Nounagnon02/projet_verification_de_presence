@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Actions\Gamification\CheckWeeklyAttendance;
 use App\Http\Controllers\Controller;
 use App\Models\Anomaly;
 use App\Models\Etudiant;
@@ -15,6 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
 
 class PresenceController extends Controller
 {
@@ -67,6 +67,11 @@ class PresenceController extends Controller
      *   2. Géolocalisation GPS dans le rayon de la salle
      *   3. Réseau WiFi (SSID/BSSID) correspondant à la salle
      *
+     * ANTI-FRAUDE (CDC 9.2) :
+     *   - QR Token rotation 60s + invalidation post-scan
+     *   - Device fingerprint + challenge cryptographique
+     *   - Détection cross-device double-scan
+     *
      * POST /api/presence/scan
      */
     public function scan(Request $request): JsonResponse
@@ -78,6 +83,7 @@ class PresenceController extends Controller
             'identifiant_unique' => 'required|string',
             'token'              => 'required|uuid',
             'device_fingerprint' => 'required|string',
+            'scan_challenge'     => 'nullable|string', // Challenge cryptographique optionnel
             // Géolocalisation
             'latitude'           => 'nullable|numeric|between:-90,90',
             'longitude'          => 'nullable|numeric|between:-180,180',
@@ -149,7 +155,33 @@ class PresenceController extends Controller
         }
 
         //-------------------------------------------------------------
-        // 6. VÉRIFICATION TRIPLE FACTEUR — Localisation + Réseau
+        // 6. VÉRIFICATION DEVICE FINGERPRINT + CHALLENGE (Anti-fraude)
+        //-------------------------------------------------------------
+        // Vérifier le challenge cryptographique si fourni
+        if ($request->filled('scan_challenge')) {
+            $challengeValid = $this->verifyScanChallenge(
+                $request->scan_challenge,
+                $request->device_fingerprint
+            );
+
+            if (!$challengeValid) {
+                Anomaly::create([
+                    'etudiant_id' => $etudiant->id,
+                    'type'        => 'invalid_scan_challenge',
+                    'description' => "Challenge de scan invalide pour {$etudiant->nom} {$etudiant->prenom}. Tentative de contournement possible.",
+                    'severity'   => 'high',
+                    'metadata'   => [
+                        'challenge_recu'   => $request->scan_challenge,
+                        'device_fingerprint' => $request->device_fingerprint,
+                    ],
+                ]);
+
+                return $this->forbiddenResponse('Échec de la vérification de sécurité. Veuillez réessayer.');
+            }
+        }
+
+        //-------------------------------------------------------------
+        // 7. VÉRIFICATION TRIPLE FACTEUR — Localisation + Réseau
         //-------------------------------------------------------------
         $salle = $evenement->salleRef;
         $verificationLog = [
@@ -238,7 +270,7 @@ class PresenceController extends Controller
         // Si pas de salle configurée → mode basique (QR seul), loggé
 
         //-------------------------------------------------------------
-        // 7. Détection de double scan et fraude (CDC 9.2.2 & 9.2.3)
+        // 8. Détection de double scan et fraude (CDC 9.2.2 & 9.2.3)
         //-------------------------------------------------------------
         $existing = Presence::where('etudiant_id', $etudiant->id)
             ->where('evenement_id', $evenement->id)
@@ -266,7 +298,7 @@ class PresenceController extends Controller
         }
 
         //-------------------------------------------------------------
-        // 8. Enregistrement de la présence
+        // 9. Enregistrement de la présence
         //-------------------------------------------------------------
         $presence = Presence::create([
             'etudiant_id'       => $etudiant->id,
@@ -280,7 +312,7 @@ class PresenceController extends Controller
         ]);
 
         //-------------------------------------------------------------
-        // 9. Régénération immédiate du QR Code (CDC 9.2.1)
+        // 10. Régénération immédiate du QR Code (CDC 9.2.1)
         //-------------------------------------------------------------
         QrCode::create([
             'evenement_id' => $evenement->id,
@@ -289,21 +321,203 @@ class PresenceController extends Controller
             'actif'        => true,
         ]);
 
-        //-------------------------------------------------------------
-        // 10. Gamification : vérification de la semaine parfaite (CDC 12.1)
-        //-------------------------------------------------------------
-        $gamification = app(CheckWeeklyAttendance::class)->execute($etudiant);
-
         return $this->createdResponse([
             'etudiant'     => "{$etudiant->nom} {$etudiant->prenom}",
             'matricule'    => $etudiant->matricule,
             'heure'        => $presence->heure_scan->format('H:i:s'),
             'cours'        => $evenement->ec->intitule ?? 'N/A',
             'verification' => $verificationLog,
-            'gamification' => $gamification['perfect'] ? [
-                'perfect_week'   => true,
-                'points_awarded' => $gamification['points_awarded'],
-            ] : null,
         ], 'Présence enregistrée avec succès.');
+    }
+
+    /**
+     * Validation manuelle d'une présence par un administrateur.
+     *
+     * Permet à un admin (enseignant, chef département, scolarité) de valider
+     * ou rejeter une présence suspecte ou non scannée.
+     *
+     * POST /api/admin/presence/{id}/validate
+     */
+    public function validateManual(Request $request, int $id): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'action' => 'required|in:valider,rejeter',
+            'motif'  => 'required_if:action,rejeter|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->validationErrorResponse($validator->errors());
+        }
+
+        $presence = Presence::with(['etudiant', 'evenement.ec', 'evenement.filiere'])->find($id);
+
+        if (!$presence) {
+            return $this->notFoundResponse('Présence introuvable.');
+        }
+
+        // Vérifier les permissions (le middleware vérifie le rôle, ici on vérifie le périmètre)
+        $user = $request->user();
+        if ($user->isFaculteAdmin() && $user->etablissement_id !== $presence->etudiant->filiere->etablissement_id) {
+            return $this->forbiddenResponse('Vous n\'êtes pas autorisé à valider cette présence.');
+        }
+
+        $action = $request->action;
+        $motif = $request->motif ?? null;
+
+        if ($action === 'valider') {
+            if ($presence->statut === 'valide') {
+                return $this->conflictResponse('Cette présence est déjà validée.');
+            }
+
+            $presence->update([
+                'statut' => 'valide',
+                'validated_by' => $user->id,
+                'validated_at' => now(),
+                'validation_motif' => $motif,
+            ]);
+
+            // Créer une entrée d'audit
+            $this->logAudit('presence.validate_manual', $presence, $user, [
+                'old_status' => 'invalide',
+                'new_status' => 'valide',
+                'motif' => $motif,
+            ]);
+
+            return $this->successResponse([
+                'presence' => $presence->load('etudiant'),
+                'message' => 'Présence validée manuellement.',
+            ], 'Présence validée avec succès.');
+        }
+
+        if ($action === 'rejeter') {
+            if ($presence->statut === 'rejete') {
+                return $this->conflictResponse('Cette présence est déjà rejetée.');
+            }
+
+            $presence->update([
+                'statut' => 'rejete',
+                'validated_by' => $user->id,
+                'validated_at' => now(),
+                'validation_motif' => $motif,
+            ]);
+
+            // Créer une entrée d'audit
+            $this->logAudit('presence.reject_manual', $presence, $user, [
+                'old_status' => $presence->statut,
+                'new_status' => 'rejete',
+                'motif' => $motif,
+            ]);
+
+            return $this->successResponse([
+                'presence' => $presence->load('etudiant'),
+                'message' => 'Présence rejetée.',
+            ], 'Présence rejetée avec succès.');
+        }
+
+        return $this->validationErrorResponse(['action' => ['Action invalide.']]);
+    }
+
+    /**
+     * Lister les présences en attente de validation (suspectes ou sans scan)
+     *
+     * GET /api/admin/presence/pending
+     */
+    public function pendingValidations(Request $request): JsonResponse
+    {
+        $query = Presence::with(['etudiant.filiere', 'evenement.ec', 'evenement.filiere', 'evenement.salleRef'])
+            ->whereIn('statut', ['suspect', 'en_attente', 'invalide'])
+            ->orderBy('created_at', 'desc');
+
+        // Filtres
+        if ($request->filled('filiere_id')) {
+            $query->whereHas('etudiant', fn ($q) => $q->where('filiere_id', $request->filiere_id));
+        }
+
+        if ($request->filled('evenement_id')) {
+            $query->where('evenement_id', $request->evenement_id);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereHas('evenement', fn ($q) => $q->whereDate('date', '>=', $request->date_from));
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereHas('evenement', fn ($q) => $q->whereDate('date', '<=', $request->date_to));
+        }
+
+        // Pagination
+        $perPage = min($request->integer('per_page', 20), 100);
+        $presences = $query->paginate($perPage);
+
+        return $this->successResponse($presences);
+    }
+
+    /**
+     * Logger une action d'audit
+     */
+    private function logAudit(string $action, $model, $user, array $changes = []): void
+    {
+        \App\Models\AuditLog::create([
+            'action'      => $action,
+            'model_type'  => get_class($model),
+            'model_id'    => $model->id,
+            'user_id'     => $user->id,
+            'old_values'  => $changes['old_values'] ?? null,
+            'new_values'  => $changes['new_values'] ?? null,
+            'ip_address'  => request()->ip(),
+            'user_agent'  => request()->userAgent(),
+        ]);
+    }
+
+    /**
+     * Historique des présences de l'étudiant connecté.
+     * GET /api/presence/my-history
+     */
+    public function myHistory(Request $request): JsonResponse
+    {
+        $etudiant = Etudiant::where('email', $request->user()->email)->first();
+
+        if (!$etudiant) {
+            return response()->json(['data' => []], 200);
+        }
+
+        $perPage = min((int) $request->input('per_page', 20), 50);
+        $presences = Presence::with(['evenement.ec'])
+            ->where('etudiant_id', $etudiant->id)
+            ->latest('heure_scan')
+            ->paginate($perPage);
+
+        return response()->json($presences);
+    }
+
+    /**
+     * Statistiques de présence de l'étudiant connecté.
+     * GET /api/presence/my-stats
+     */
+    public function myStats(Request $request): JsonResponse
+    {
+        $etudiant = Etudiant::where('email', $request->user()->email)->first();
+
+        if (!$etudiant) {
+            return $this->errorResponse('Profil étudiant introuvable.', 404);
+        }
+
+        $total = Presence::where('etudiant_id', $etudiant->id)->count();
+        $validees = Presence::where('etudiant_id', $etudiant->id)
+            ->where('statut', 'valide')->count();
+        $rejetees = Presence::where('etudiant_id', $etudiant->id)
+            ->where('statut', 'rejete')->count();
+        $enAttente = Presence::where('etudiant_id', $etudiant->id)
+            ->whereIn('statut', ['en_attente', 'suspect'])->count();
+
+        return $this->successResponse([
+            'total'           => $total,
+            'validees'         => $validees,
+            'rejetees'         => $rejetees,
+            'en_attente'       => $enAttente,
+            'taux_validation'  => $total > 0
+                ? round($validees / $total * 100, 1)
+                : 0,
+        ]);
     }
 }

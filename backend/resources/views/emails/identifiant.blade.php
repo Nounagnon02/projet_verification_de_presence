@@ -16,8 +16,8 @@ Votre inscription dans le système de gestion de présence a été finalisée.
 
 Cet identifiant vous permet de **valider votre présence** aux cours.
 
-@component('mail::button', ['url' => config('app.url')])
-Accéder à la plateforme
+@component('mail::button', ['url' => config('app.frontend_url') . '/attendance/validate'])
+Valider ma présence
 @endcomponent
 
 Cordialement,<br>

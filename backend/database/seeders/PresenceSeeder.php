@@ -23,7 +23,7 @@ class PresenceSeeder extends Seeder
 
         $total = 0;
         $stats = ['present' => 0, 'absent' => 0, 'retard' => 0];
-        $statuses = ['valide', 'valide', 'valide', 'valide', 'valide', 'valide', 'valide', 'suspect', 'rejete'];
+        $statuses = ['present', 'present', 'present', 'present', 'present', 'present', 'present', 'retard', 'absent'];
 
         foreach ($evenements as $evenement) {
             // Récupérer les étudiants inscrits aux ECs de cet événement
