@@ -133,23 +133,6 @@ export default function ProfilePage() {
             />
           </div>
 
-          {profile?.member && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-on-surface-variant mb-1">Matricule membre</label>
-                <div className="flex items-center gap-2 px-4 py-2.5 bg-surface-container-high rounded-xl text-sm text-on-surface">
-                  <FiShield size={14} className="text-outline" />
-                  {profile.member.matricule || 'Non renseigné'}
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-on-surface-variant mb-1">Téléphone</label>
-                <div className="flex items-center gap-2 px-4 py-2.5 bg-surface-container-high rounded-xl text-sm text-on-surface">
-                  {profile.member.telephone || 'Non renseigné'}
-                </div>
-              </div>
-            </div>
-          )}
 
           <button
             type="submit"

@@ -214,10 +214,6 @@ const ReportsPage = () => {
       let url = '';
       let filename = '';
       switch (type) {
-        case 'global-pdf':
-          url = '/admin/reports/presence/1/pdf';
-          filename = `rapport_global_${Date.now()}.pdf`;
-          break;
         case 'presences-csv':
           url = '/admin/reports/excel/export';
           filename = `presences_${Date.now()}.csv`;
@@ -229,7 +225,11 @@ const ReportsPage = () => {
         default:
           return;
       }
-      const { data: blobData } = await api.get(url, { responseType: 'blob' });
+      const params = {};
+      if (filiereId) params.filiere_id = filiereId;
+      if (dateDebut) params.date_debut = dateDebut;
+      if (dateFin) params.date_fin = dateFin;
+      const { data: blobData } = await api.get(url, { params, responseType: 'blob' });
       const blob = new Blob([blobData]);
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
@@ -402,10 +402,6 @@ const ReportsPage = () => {
               <span className="text-sm font-bold text-primary">Exports</span>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button onClick={() => exportReport('global-pdf')} disabled={exporting}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-xs font-semibold hover:bg-primary/20 transition-all disabled:opacity-50">
-                <FiFileText /> {exporting === 'global-pdf' ? '...' : 'Rapport Global PDF'}
-              </button>
               <button onClick={() => exportReport('presences-csv')} disabled={exporting}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-success/10 text-success rounded-lg text-xs font-semibold hover:bg-success/20 transition-all disabled:opacity-50">
                 <FiFileText /> {exporting === 'presences-csv' ? '...' : 'Liste Présences CSV'}

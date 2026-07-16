@@ -89,7 +89,6 @@ Route::middleware(['auth:sanctum', 'scoped.etablissement', 'throttle:api'])->pre
 
     // Dashboard & Stats
     Route::get('/dashboard', [DashboardController::class, 'index']);
-    Route::get('/dashboard/heatmap', [DashboardController::class, 'heatmap']);
     Route::get('/dashboard/attendance-trend', [DashboardController::class, 'attendanceTrend']);
     Route::get('/dashboard/top-absences', [DashboardController::class, 'topAbsences']);
     Route::get('/dashboard/today-events', [DashboardController::class, 'todayEvents']);
@@ -139,7 +138,6 @@ Route::middleware(['auth:sanctum', 'scoped.etablissement', 'throttle:api'])->pre
 
     // Exports / Rapports
     Route::get('/reports/presence/{evenementId}/pdf', [\App\Http\Controllers\Api\Admin\ReportController::class, 'exportPdf']);
-    Route::get('/reports/presence/{evenementId}/csv', [\App\Http\Controllers\Api\Admin\ReportController::class, 'exportCsv']);
     Route::get('/reports/department/{filiere}', [\App\Http\Controllers\Api\Admin\ReportController::class, 'departmentReport']);
     Route::get('/reports/semester/{anneeAcademique}', [\App\Http\Controllers\Api\Admin\ReportController::class, 'semesterReport']);
     Route::get('/reports/semester-comparison', [\App\Http\Controllers\Api\Admin\ReportController::class, 'semesterComparison']);

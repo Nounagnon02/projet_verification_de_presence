@@ -58,6 +58,18 @@ class Etudiant extends Model
         }
     }
 
+    /**
+     * Recalcule les inscriptions aux ECs.
+     * Supprime toutes les inscriptions existantes et ré-inscrit
+     * l'étudiant aux ECs de sa filière et année actuelles.
+     * Utile lors d'un changement de filière ou d'année.
+     */
+    public function recalculateEnrollments(): void
+    {
+        $this->ecs()->detach();
+        $this->autoEnroll();
+    }
+
     public function presences(): HasMany
     {
         return $this->hasMany(Presence::class);

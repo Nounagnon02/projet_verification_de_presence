@@ -153,7 +153,15 @@ class StudentController extends Controller
             $data['prenom'] = IdentifiantService::normalize($data['prenom']);
         }
 
+        $oldFiliereId = $student->filiere_id;
+        $oldAnneeId   = $student->annee_id;
+
         $student->update($data);
+
+        // Si la filière ou l'année a changé, recalculer les inscriptions aux ECs
+        if ($student->filiere_id !== $oldFiliereId || $student->annee_id !== $oldAnneeId) {
+            $student->recalculateEnrollments();
+        }
 
         return $this->successResponse(
             new EtudiantResource($student->load(['filiere', 'anneeAcademique'])),
