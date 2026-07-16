@@ -110,26 +110,6 @@ class DashboardController extends Controller
     }
 
     /**
-     * Données pour la Heatmap hebdomadaire (CDC 4.3).
-     * GET /api/admin/dashboard/heatmap
-     */
-    public function heatmap(Request $request): JsonResponse
-    {
-        $data = $this->scopePresence(Presence::select(
-            DB::raw('EXTRACT(HOUR FROM heure_scan) as hour'),
-            DB::raw('EXTRACT(DOW FROM heure_scan) as day'),
-            DB::raw('COUNT(*) as count')
-        )
-        ->where('heure_scan', '>=', now()->subDays(30)), $this->getEtablissementId($request))
-        ->groupBy('hour', 'day')
-        ->orderBy('day')
-        ->orderBy('hour')
-        ->get();
-
-        return $this->successResponse($data);
-    }
-
-    /**
      * Tendance des présences sur 30 jours pour les graphiques.
      * GET /api/admin/dashboard/attendance-trend
      */

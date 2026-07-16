@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Ec;
+use App\Models\Ue;
+use App\Observers\EcObserver;
+use App\Observers\UeObserver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -49,6 +53,12 @@ class AppServiceProvider extends ServiceProvider
                     ], 429, $headers);
                 });
         });
+
+        // Observateurs pour l'auto-inscription aux cours (CDC 7.2.3)
+        // Quand une UE ou un EC est créé/modifié, les inscriptions des étudiants
+        // de la filière et année correspondante sont mises à jour automatiquement.
+        Ue::observe(UeObserver::class);
+        Ec::observe(EcObserver::class);
 
         // Rate Limiting pour les routes API admin (CDC 9)
         // Limite : 60 requêtes par minute par utilisateur

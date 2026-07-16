@@ -59,7 +59,7 @@ const PresenceValidationPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!matricule.trim()) {
-      setError('Veuillez saisir votre matricule');
+      setError('Veuillez saisir votre identifiant unique');
       return;
     }
 
@@ -97,7 +97,7 @@ const PresenceValidationPage = () => {
       } else if (status === 403) {
         setError(msg || 'Vous n\'êtes pas inscrit à ce cours ou la fenêtre de validation est fermée.');
       } else if (status === 404) {
-        setError(msg || 'Identifiant étudiant inconnu. Vérifiez votre matricule.');
+        setError(msg || 'Identifiant étudiant inconnu. Vérifiez votre identifiant unique (NOM_PRENOM_MATRICULE_FILIERE_ANNEE).');
       } else {
         setError(msg || 'Erreur lors de la validation. Veuillez réessayer.');
       }
@@ -316,10 +316,10 @@ const PresenceValidationPage = () => {
                 <div className="absolute left-6 right-6 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent animate-[scanLine_2s_ease-in-out_infinite]"></div>
               </div>
               <p className="text-xs text-on-surface-variant text-center mb-1">
-                Validez votre présence en saisissant votre matricule
+                Validez votre présence en saisissant votre identifiant unique
               </p>
               <p className="text-[10px] text-on-surface-variant/60 text-center">
-                Le matricule se trouve sur votre carte d'étudiant
+                Format : NOM_PRENOM_MATRICULE_FILIERE_ANNEE (ex: DOE_JOHN_22A1234_GLT_L3)
               </p>
             </div>
           )}
@@ -347,7 +347,7 @@ const PresenceValidationPage = () => {
                   type="text"
                   value={matricule}
                   onChange={(e) => setMatricule(e.target.value)}
-                  placeholder="Ex: 22-XXXX-XXXX"
+                  placeholder="Ex: DOE_JOHN_22A1234_GLT_L3"
                   disabled={loading}
                   className="w-full bg-surface-container-lowest border-2 border-outline-variant/20 rounded-xl pl-11 pr-4 py-3.5 text-base font-mono focus:border-primary focus:outline-none transition-all peer disabled:opacity-60"
                   autoComplete="off"
@@ -356,7 +356,7 @@ const PresenceValidationPage = () => {
               </div>
               <p className="text-[11px] text-on-surface-variant/60 italic ml-1 flex items-center gap-1">
                 <FiShield size={10} />
-                Saisissez le matricule officiel figurant sur votre carte d'étudiant.
+                Saisissez votre identifiant unique complet : NOM_PRENOM_MATRICULE_FILIERE_ANNEE
               </p>
             </div>
 

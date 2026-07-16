@@ -13,6 +13,7 @@ use App\Models\QrCode;
 use App\Models\Ue;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -39,6 +40,9 @@ class PresenceScanTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Désactiver le rate limiter pour les tests
+        $this->withoutMiddleware(ThrottleRequests::class);
 
         // Création des dépendances de base
         $this->filiere = Filiere::create([
