@@ -135,6 +135,7 @@ export default function EvenementManagementPage() {
   const openEdit = (ev) => setModal({
     open: true, editing: true,
     data: {
+      id: ev.id,
       ec_id: ev.ec?.id || '', filiere_id: ev.filiere?.id || '', annee_id: ev.annee_id || '',
       date: ev.date, heure_debut: ev.heure_debut, heure_fin: ev.heure_fin,
       salle: ev.salle || '', salle_id: ev.salle_id || '', statut: ev.statut,
@@ -149,8 +150,7 @@ export default function EvenementManagementPage() {
     setSuccess('');
     try {
       if (modal.editing) {
-        const ev = events.find(v => v.date === modal.data.date && v.ec?.id == modal.data.ec_id);
-        await api.put(`/admin/evenements/${ev?.id}`, modal.data);
+        await api.put(`/admin/evenements/${modal.data.id}`, modal.data);
         setSuccess('Événement mis à jour.');
       } else {
         await api.post('/admin/evenements', modal.data);
@@ -215,10 +215,16 @@ export default function EvenementManagementPage() {
       {/* Filtres */}
       <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/10">
         <div className="flex flex-wrap items-end gap-4">
-          <div className="space-y-1 min-w-[180px] flex-1">
-              <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Date</label>
+          <div className="space-y-1 min-w-[160px] flex-1">
+              <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Du</label>
               <input type="date" value={filters.date_debut}
                 onChange={(e) => setFilters(prev => ({ ...prev, date_debut: e.target.value }))}
+                className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+            <div className="space-y-1 min-w-[160px] flex-1">
+              <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Au</label>
+              <input type="date" value={filters.date_fin}
+                onChange={(e) => setFilters(prev => ({ ...prev, date_fin: e.target.value }))}
                 className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20" />
             </div>
             <div className="space-y-1 min-w-[180px] flex-1">
@@ -246,7 +252,7 @@ export default function EvenementManagementPage() {
               </button>
             </div>
           </div>
-          {(filters.date_debut || filters.filiere_id || filters.statut) && (
+          {(filters.date_debut || filters.date_fin || filters.filiere_id || filters.statut) && (
             <div className="mt-3 text-right">
               <button onClick={() => setFilters({ date_debut: '', date_fin: '', filiere_id: '', statut: '' })}
                 className="text-xs text-primary hover:underline">Réinitialiser les filtres</button>

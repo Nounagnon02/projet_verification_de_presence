@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AnneeAcademique extends Model
@@ -26,6 +27,15 @@ class AnneeAcademique extends Model
 
     public function etudiants(): HasMany { return $this->hasMany(Etudiant::class, 'annee_id'); }
     public function evenements(): HasMany { return $this->hasMany(Evenement::class, 'annee_id'); }
+
+    /**
+     * Filières rattachées à cette année académique.
+     */
+    public function filieres(): BelongsToMany
+    {
+        return $this->belongsToMany(Filiere::class, 'filiere_annee', 'annee_id', 'filiere_id')
+            ->withTimestamps();
+    }
 
     public function scopeForEtablissement($query, ?int $etablissementId)
     {

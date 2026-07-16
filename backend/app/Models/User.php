@@ -53,16 +53,6 @@ class User extends Authenticatable
         $this->attributes['password'] = $value;
     }
 
-    public function members()
-    {
-        return $this->hasMany(Member::class, 'users_id');
-    }
-
-    public function presences()
-    {
-        return $this->hasManyThrough(Presence::class, Member::class);
-    }
-
     public function etablissement(): BelongsTo
     {
         return $this->belongsTo(Etablissement::class);
