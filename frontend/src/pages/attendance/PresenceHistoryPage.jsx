@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { FiDownload, FiRefreshCw } from 'react-icons/fi';
+import { useState, useEffect, useRef } from 'react';
+import { FiDownload, FiRefreshCw, FiChevronDown } from 'react-icons/fi';
 import { useToastCtx } from '../../context/ToastContext';
 import DataTable from '../../components/ui/DataTable';
 import SearchInput from '../../components/ui/SearchInput';
@@ -27,6 +27,9 @@ const PresenceHistoryPage = () => {
   const [filtreSemestre, setFiltreSemestre] = useState('');
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const exportRef = useRef(null);
 
   // Chargement initial des listes de filtres
   useEffect(() => {
@@ -88,6 +91,59 @@ const PresenceHistoryPage = () => {
 
   const hasActiveFilters = filtreAnnee || filtreFiliere || filtreNiveau || filtreSemestre || dateDebut || dateFin;
 
+  // Fermer le menu d'export si on clique ailleurs
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (exportRef.current && !exportRef.current.contains(e.target)) {
+        setExportMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleExport = async (format) => {
+    setExportMenuOpen(false);
+    setExporting(true);
+    try {
+      const params = {};
+      if (search.trim()) params.search = search;
+      if (filter !== 'all') params.statut = filter;
+      if (filtreAnnee) params.annee_id = filtreAnnee;
+      if (filtreFiliere) params.filiere_id = filtreFiliere;
+      if (filtreNiveau) params.niveau = filtreNiveau;
+      if (filtreSemestre) params.semestre = filtreSemestre;
+      if (dateDebut) params.date_debut = dateDebut;
+      if (dateFin) params.date_fin = dateFin;
+      params.format = format;
+
+      const { data, headers } = await api.get('/admin/presence/export', {
+        params,
+        responseType: 'blob',
+      });
+
+      // Créer un lien de téléchargement
+      const ext = format === 'pdf' ? 'pdf' : format === 'xlsx' ? 'xlsx' : 'csv';
+      const contentDisposition = headers?.['content-disposition'];
+      const filename = contentDisposition
+        ? contentDisposition.split('filename=')[1]?.replace(/['"]/g, '') || `historique.${ext}`
+        : `historique_presences.${ext}`;
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      addToast?.('Export terminé avec succès', 'success');
+    } catch {
+      addToast?.("Erreur lors de l'export", 'error');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const badgeVariant = { valide: 'success', absent: 'error', suspect: 'warning', en_retard: 'warning' };
   const badgeLabel = { valide: 'Présent', absent: 'Absent', suspect: 'Suspect', en_retard: 'Retard' };
 
@@ -127,12 +183,49 @@ const PresenceHistoryPage = () => {
           <h1 className="text-2xl font-bold text-primary font-headline">Historique des Présences</h1>
           <p className="text-sm text-on-surface-variant">Consultez l'historique complet des validations</p>
         </div>
-        <button
-          onClick={() => addToast?.('Export CSV en cours de développement', 'info')}
-          className="flex items-center gap-2 px-4 py-2 bg-surface-container-low rounded-xl text-sm text-on-surface-variant hover:bg-surface-container-high transition-colors"
-        >
-          <FiDownload /> Exporter CSV
-        </button>
+        <div ref={exportRef} className="relative">
+          <button
+            onClick={() => setExportMenuOpen(prev => !prev)}
+            disabled={exporting}
+            className="flex items-center gap-2 px-4 py-2 bg-surface-container-low rounded-xl text-sm text-on-surface-variant hover:bg-surface-container-high transition-colors disabled:opacity-50"
+          >
+            {exporting ? (
+              <FiRefreshCw className="animate-spin" size={16} />
+            ) : (
+              <FiDownload size={16} />
+            )}
+            {exporting ? 'Export en cours...' : 'Exporter'}
+            <FiChevronDown size={14} className={`transition-transform ${exportMenuOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {exportMenuOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant/10 overflow-hidden z-50">
+              <button onClick={() => handleExport('csv')}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-high transition-colors text-left">
+                <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">CSV</span>
+                <div>
+                  <p className="font-medium">Fichier CSV</p>
+                  <p className="text-[10px] text-on-surface-variant">Tableur (texte)</p>
+                </div>
+              </button>
+              <button onClick={() => handleExport('xlsx')}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-high transition-colors text-left border-t border-outline-variant/5">
+                <span className="w-7 h-7 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 flex items-center justify-center text-xs font-bold">XLSX</span>
+                <div>
+                  <p className="font-medium">Fichier Excel</p>
+                  <p className="text-[10px] text-on-surface-variant">Tableur (formaté)</p>
+                </div>
+              </button>
+              <button onClick={() => handleExport('pdf')}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-high transition-colors text-left border-t border-outline-variant/5">
+                <span className="w-7 h-7 rounded-lg bg-error/10 text-error flex items-center justify-center text-xs font-bold">PDF</span>
+                <div>
+                  <p className="font-medium">Fichier PDF</p>
+                  <p className="text-[10px] text-on-surface-variant">Document imprimable</p>
+                </div>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Barre de filtres */}

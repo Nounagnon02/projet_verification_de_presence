@@ -20,7 +20,7 @@ Cet identifiant vous servira à **valider votre présence** lors de chaque séan
 
 > ⚠️ **Important :** Conservez précieusement cet identifiant. Il est personnel et non modifiable.
 
-@component('mail::button', ['url' => config('app.url')])
+@component('mail::button', ['url' => config('app.frontend_url')])
 Accéder à la plateforme
 @endcomponent
 

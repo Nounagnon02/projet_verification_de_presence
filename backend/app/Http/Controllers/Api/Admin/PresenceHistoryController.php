@@ -6,15 +6,24 @@ use App\Http\Controllers\Controller;
 use App\Models\Etudiant;
 use App\Models\Presence;
 use App\Traits\ScopedByEtablissement;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class PresenceHistoryController extends Controller
 {
     use ScopedByEtablissement;
 
-    public function index(Request $request): JsonResponse
+    /**
+     * Construit la requête de base avec les filtres (réutilisable par index et export).
+     */
+    private function buildFilteredQuery(Request $request)
     {
         $query = Presence::with(['etudiant.filiere', 'evenement.ec']);
 
@@ -57,6 +66,13 @@ class PresenceHistoryController extends Controller
             $query->whereHas('evenement.ec.ue', fn($q) => $q->where('semestre', $request->semestre));
         }
 
+        return $query;
+    }
+
+    public function index(Request $request): JsonResponse
+    {
+        $query = $this->buildFilteredQuery($request);
+
         $perPage = min((int) $request->per_page, 100);
         $presences = $query->latest('heure_scan')->paginate($perPage ?: 15);
 
@@ -80,6 +96,160 @@ class PresenceHistoryController extends Controller
                 'ip_address' => $p->ip_address,
             ])
         );
+    }
+
+    /**
+     * Export des présences filtrées au format CSV, PDF ou Excel.
+     *
+     * GET /api/admin/presence/export?format=csv|pdf|xlsx
+     */
+    public function export(Request $request): mixed
+    {
+        $format = $request->query('format', 'csv');
+        if (!in_array($format, ['csv', 'pdf', 'xlsx'])) {
+            $format = 'csv';
+        }
+
+        $query = $this->buildFilteredQuery($request);
+        $presences = $query->orderBy('heure_scan')->get();
+        $dateLabel = now()->format('Y-m-d_Hi');
+
+        return match ($format) {
+            'pdf'  => $this->exportPdf($presences, $dateLabel),
+            'xlsx' => $this->exportXlsx($presences, $dateLabel),
+            default => $this->exportCsv($presences, $dateLabel),
+        };
+    }
+
+    private function exportCsv($presences, string $dateLabel): mixed
+    {
+        $filename = "historique_presences_{$dateLabel}.csv";
+
+        $headers = [
+            'Content-Type'              => 'text/csv; charset=UTF-8',
+            'Content-Disposition'       => "attachment; filename={$filename}",
+        ];
+
+        $callback = function () use ($presences) {
+            $output = fopen('php://output', 'w');
+            fputs($output, "\xEF\xBB\xBF"); // BOM UTF-8
+
+            fputcsv($output, ['Étudiant', 'Prénom', 'Nom', 'Matricule', 'Filière', 'Cours', 'Date', 'Heure Scan', 'Statut', 'IP']);
+
+            foreach ($presences as $p) {
+                fputcsv($output, [
+                    ($p->etudiant->prenom ?? '') . ' ' . ($p->etudiant->nom ?? ''),
+                    $p->etudiant->prenom ?? '',
+                    $p->etudiant->nom ?? '',
+                    $p->etudiant->matricule ?? 'N/A',
+                    $p->etudiant->filiere?->code ?? 'N/A',
+                    $p->evenement->ec?->intitule ?? 'N/A',
+                    $p->evenement->date?->format('Y-m-d') ?? 'N/A',
+                    $p->heure_scan?->format('Y-m-d H:i:s') ?? 'N/A',
+                    match ($p->statut) {
+                        'valide'  => 'Présent',
+                        'absent'  => 'Absent',
+                        'suspect' => 'Suspect',
+                        'en_retard' => 'En retard',
+                        default   => $p->statut,
+                    },
+                    $p->ip_address ?? '',
+                ]);
+            }
+
+            fclose($output);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    private function exportPdf($presences, string $dateLabel): mixed
+    {
+        $data = [
+            'presences' => $presences,
+            'date'      => now()->format('d/m/Y H:i'),
+            'title'     => 'Historique des Présences',
+            'total'     => $presences->count(),
+        ];
+
+        $pdf = Pdf::loadView('reports.history', $data);
+        return $pdf->download("historique_presences_{$dateLabel}.pdf");
+    }
+
+    private function exportXlsx($presences, string $dateLabel): mixed
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Présences');
+
+        // En-têtes
+        $headers = ['Étudiant', 'Prénom', 'Nom', 'Matricule', 'Filière', 'Cours', 'Date', 'Heure Scan', 'Statut', 'IP'];
+        $colLetters = range('A', 'J');
+
+        // Style des en-têtes
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1E40AF']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+        ];
+
+        foreach ($colLetters as $i => $col) {
+            $sheet->setCellValue($col . '1', $headers[$i]);
+            $sheet->getStyle($col . '1')->applyFromArray($headerStyle);
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Données
+        $row = 2;
+        foreach ($presences as $p) {
+            $sheet->setCellValue('A' . $row, ($p->etudiant->prenom ?? '') . ' ' . ($p->etudiant->nom ?? ''));
+            $sheet->setCellValue('B' . $row, $p->etudiant->prenom ?? '');
+            $sheet->setCellValue('C' . $row, $p->etudiant->nom ?? '');
+            $sheet->setCellValue('D' . $row, $p->etudiant->matricule ?? 'N/A');
+            $sheet->setCellValue('E' . $row, $p->etudiant->filiere?->code ?? 'N/A');
+            $sheet->setCellValue('F' . $row, $p->evenement->ec?->intitule ?? 'N/A');
+            $sheet->setCellValue('G' . $row, $p->evenement->date?->format('Y-m-d') ?? 'N/A');
+            $sheet->setCellValue('H' . $row, $p->heure_scan?->format('Y-m-d H:i:s') ?? 'N/A');
+
+            $statutLabel = match ($p->statut) {
+                'valide'  => 'Présent',
+                'absent'  => 'Absent',
+                'suspect' => 'Suspect',
+                'en_retard' => 'En retard',
+                default   => $p->statut,
+            };
+            $sheet->setCellValue('I' . $row, $statutLabel);
+            $sheet->setCellValue('J' . $row, $p->ip_address ?? '');
+
+            // Alternance de couleurs pour les lignes
+            if ($row % 2 === 0) {
+                $sheet->getStyle('A' . $row . ':J' . $row)
+                    ->getFill()->setFillType(Fill::FILL_SOLID)
+                    ->setStartColor(['rgb' => 'F3F4F6']);
+            }
+
+            $row++;
+        }
+
+        // Ajuster la largeur des colonnes après avoir rempli
+        foreach ($colLetters as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $writer = new Xlsx($spreadsheet);
+        $filename = "historique_presences_{$dateLabel}.xlsx";
+
+        $headers = [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => "attachment; filename={$filename}",
+        ];
+
+        ob_start();
+        $writer->save('php://output');
+        $content = ob_get_clean();
+
+        return response($content, 200, $headers);
     }
 
     public function stats(Request $request): JsonResponse

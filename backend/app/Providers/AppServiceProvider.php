@@ -10,6 +10,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
 
@@ -52,6 +53,12 @@ class AppServiceProvider extends ServiceProvider
                         'message' => 'Trop de tentatives. Veuillez patienter avant de rescanner.',
                     ], 429, $headers);
                 });
+        });
+
+        // Personnalisation de l'URL de réinitialisation du mot de passe
+        // Le lien dans l'email pointe vers le frontend (SPA React)
+        ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
+            return config('app.frontend_url') . '/reset-password?token=' . $token . '&email=' . $notifiable->getEmailForPasswordReset();
         });
 
         // Observateurs pour l'auto-inscription aux cours (CDC 7.2.3)
