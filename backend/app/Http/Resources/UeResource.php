@@ -15,6 +15,7 @@ class UeResource extends JsonResource
             'intitule'       => $this->intitule,
             'semestre'       => $this->semestre,
             'volume_horaire' => $this->volume_horaire,
+            'statut'         => $this->statut,
             'filiere'        => new FiliereResource($this->whenLoaded('filiere')),
             'annee'          => new AnneeAcademiqueResource($this->whenLoaded('annee')),
             'ecs'            => EcResource::collection($this->whenLoaded('ecs')),

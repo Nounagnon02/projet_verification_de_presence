@@ -11,6 +11,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\CleanExpiredQrCodes::class,
         \App\Console\Commands\GenerateEventsFromSchedule::class,
         \App\Console\Commands\AutoGenerateQrCode::class,
+        \App\Console\Commands\SyncEcStatus::class,
     ];
 
     protected function schedule(Schedule $schedule): void
@@ -35,6 +36,13 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->runInBackground()
             ->appendOutputTo(storage_path('logs/qrcode-auto.log'));
+
+        // Synchronisation quotidienne des statuts EC/UE (volume horaire vs heures effectuées)
+        $schedule->command('ecs:sync-statut')
+            ->dailyAt('01:00')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/ec-sync.log'));
     }
 
     protected function commands(): void
