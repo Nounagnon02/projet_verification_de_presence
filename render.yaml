@@ -44,20 +44,20 @@ services:
         value: presence-uac
       - key: FILESYSTEM_DISK
         value: supabase
+
+      # CORS
       - key: ALLOWED_ORIGINS
         value: https://presence-uac.vercel.app
-
-      # Frontend URL (pour Sanctum)
       - key: FRONTEND_URL
         value: https://presence-uac.vercel.app
 
-      # Mail (à configurer)
+      # Mail
       - key: MAIL_MAILER
         value: log
 
       # Gemini IA
       - key: GEMINI_API_KEY
-        sync: false
+        value: AIzaSyBHemsdB4b4QuLkVTXFU1OpDwaCCHxAuY0
 
       # Logs
       - key: LOG_CHANNEL
