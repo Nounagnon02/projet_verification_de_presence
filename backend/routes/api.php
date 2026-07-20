@@ -105,6 +105,7 @@ Route::middleware(['auth:sanctum', 'scoped.etablissement', 'throttle:api'])->pre
 
     // Présences / Historique
     Route::get('/presence/history', [PresenceHistoryController::class, 'index']);
+    Route::get('/presence/export', [PresenceHistoryController::class, 'export']);
     Route::get('/presence/stats', [PresenceHistoryController::class, 'stats']);
     Route::get('/students/{student}/stats', [PresenceHistoryController::class, 'studentStats']);
 
