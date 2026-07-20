@@ -377,6 +377,7 @@ export default function UEManagementPage() {
                           </div>
                           <p className="text-[10px] text-on-surface-variant">{ec.volume_horaire}h</p>
                           <StatutBadge statut={ec.statut} size="xs" />
+                        </div>
                         <div className="flex items-center gap-1">
                           <button onClick={() => openEditEc(ec, ue.id)}
                             className="p-1.5 text-outline hover:text-primary hover:bg-primary/10 rounded-lg transition-all" title="Modifier">
