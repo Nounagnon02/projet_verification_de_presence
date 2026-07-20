@@ -67,9 +67,10 @@ class SecurityHeaders
         // camera, microphone, geolocation non utilisés par l'app
         // payment, usb, bluetooth, etc. bloqués par défaut
         $response->headers->set('Permissions-Policy', implode(', ', [
+            // Géolocalisation autorisée pour l'app mobile de scan (CDC 7.4.2)
+            'geolocation=(self)',
             'camera=()',
             'microphone=()',
-            'geolocation=()',
             'payment=()',
             'usb=()',
             'bluetooth=()',

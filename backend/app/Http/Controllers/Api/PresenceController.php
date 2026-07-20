@@ -83,7 +83,7 @@ class PresenceController extends Controller
             'identifiant_unique' => 'required|string',
             'token'              => 'required|uuid',
             'device_fingerprint' => 'required|string',
-            'scan_challenge'     => 'nullable|string', // Challenge cryptographique optionnel
+            'scan_challenge'     => 'required|string', // Challenge cryptographique anti-fraude
             // Géolocalisation
             'latitude'           => 'nullable|numeric|between:-90,90',
             'longitude'          => 'nullable|numeric|between:-180,180',

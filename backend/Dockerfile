@@ -81,13 +81,12 @@ WORKDIR /var/www/html
 # Copier les fichiers de l'application
 COPY --chown=www-data:www-data . .
 
-# Créer le fichier .env à partir de .env.example
-RUN if [ -f .env.example ]; then cp .env.example .env; else echo "APP_NAME=Laravel" > .env; fi
+# Le .env est généré au démarrage par start.sh — ne PAS copier .env.example vers .env
 
 # Copier les assets buildés depuis le stage Node.js
 COPY --from=node-builder --chown=www-data:www-data /app/public/build ./public/build
 
-# Installer les dépendances PHP
+# Installer les dépendances PHP (avec S3/Supabase Storage)
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Create storage directories and set permissions

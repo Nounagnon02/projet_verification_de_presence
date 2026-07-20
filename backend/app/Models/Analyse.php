@@ -32,11 +32,15 @@ class Analyse extends Model
         'warning',
         'error_message',
         'user_id',
+        'started_at',
+        'completed_at',
     ];
 
     protected $casts = [
         'result' => 'array',
         'score_de_confiance' => 'float',
+        'started_at' => 'datetime',
+        'completed_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

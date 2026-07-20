@@ -52,7 +52,8 @@ class IdentifiantService
      */
     public static function validate(string $identifiant): bool
     {
-        // Format attendu: TEXTE_TEXTE_TEXTE_TEXTE_TEXTE
-        return preg_match('/^[A-Z0-9_]+_[A-Z0-9_]+_[A-Z0-9_]+_[A-Z0-9_]+_[0-9]{4}_[0-9]{4}$/', $identifiant) === 1;
+        // Format attendu: NOM_PRENOM_MATRICULE_CODEFILIERE_ANNEE
+        // Exemple: AGOSSOU_MARC_2024001_IM-L2_2025-2026
+        return preg_match('/^[A-Z0-9_]+_[A-Z0-9_]+_[A-Z0-9_]+_[A-Z0-9_-]+_[0-9]{4}-[0-9]{4}$/', $identifiant) === 1;
     }
 }

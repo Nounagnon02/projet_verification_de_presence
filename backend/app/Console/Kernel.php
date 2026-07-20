@@ -9,6 +9,8 @@ class Kernel extends ConsoleKernel
 {
     protected $commands = [
         \App\Console\Commands\CleanExpiredQrCodes::class,
+        \App\Console\Commands\GenerateEventsFromSchedule::class,
+        \App\Console\Commands\AutoGenerateQrCode::class,
     ];
 
     protected function schedule(Schedule $schedule): void
@@ -20,8 +22,19 @@ class Kernel extends ConsoleKernel
             ->runInBackground()
             ->appendOutputTo(storage_path('logs/qr-cleanup.log'));
 
-        // Nettoyage des sessions expirées (Laravel par défaut)
-        // $schedule->command('session:gc')->daily();
+        // Génération des événements depuis l'emploi du temps (chaque nuit)
+        $schedule->command('events:generate-from-schedule --days=14')
+            ->dailyAt('00:05')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/events-generate.log'));
+
+        // Génération automatique des QR codes 15 min avant la fin des cours (régénération toutes les 150s)
+        $schedule->command('qrcode:auto-generate')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/qrcode-auto.log'));
     }
 
     protected function commands(): void

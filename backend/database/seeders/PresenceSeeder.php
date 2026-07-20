@@ -22,8 +22,8 @@ class PresenceSeeder extends Seeder
         }
 
         $total = 0;
-        $stats = ['present' => 0, 'absent' => 0, 'retard' => 0];
-        $statuses = ['present', 'present', 'present', 'present', 'present', 'present', 'present', 'retard', 'absent'];
+        $stats = ['valide' => 0, 'rejete' => 0, 'suspect' => 0];
+        $statuses = ['valide', 'valide', 'valide', 'valide', 'valide', 'valide', 'valide', 'suspect', 'suspect', 'rejete'];
 
         foreach ($evenements as $evenement) {
             // Récupérer les étudiants inscrits aux ECs de cet événement
@@ -61,12 +61,13 @@ class PresenceSeeder extends Seeder
                 ]);
                 $total++;
 
-                $stats[$isRetard ? 'retard' : 'present']++;
+                $stats[$statut]++;
             }
         }
 
         $this->command->info("Présences créées : {$total}");
-        $this->command->line("  - Présents : {$stats['present']}");
-        $this->command->line("  - Retards : {$stats['retard']}");
+        $this->command->line("  - Valides : {$stats['valide']}");
+        $this->command->line("  - Suspects : {$stats['suspect']}");
+        $this->command->line("  - Rejetés : {$stats['rejete']}");
     }
 }
