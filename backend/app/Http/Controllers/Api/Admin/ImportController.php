@@ -171,14 +171,14 @@ class ImportController extends Controller
             return $this->errorResponse('Le fichier fourni n\'est pas un PDF valide.', 422);
         }
 
-        $path    = $file->store('imports/courses');
-        $absPath = storage_path('app/' . $path);
+        $path    = $file->store('imports/courses', 'supabase');
 
         // Création de l'analyse en base (statut: pending)
+        // On stocke le chemin RELATIF — le job utilise Storage::path() pour le résoudre
         $analyse = Analyse::create([
             'type'      => 'courses',
             'status'    => 'pending',
-            'file_path' => $absPath,
+            'file_path' => $path,
             'user_id'   => Auth::id(),
         ]);
 
@@ -219,14 +219,14 @@ class ImportController extends Controller
             return $this->errorResponse('Le fichier fourni n\'est pas un PDF valide.', 422);
         }
 
-        $path    = $file->store('imports/schedule');
-        $absPath = storage_path('app/' . $path);
+        $path    = $file->store('imports/schedule', 'supabase');
 
         // Création de l'analyse en base (statut: pending)
+        // On stocke le chemin RELATIF — le job utilise Storage::path() pour le résoudre
         $analyse = Analyse::create([
             'type'      => 'schedule',
             'status'    => 'pending',
-            'file_path' => $absPath,
+            'file_path' => $path,
             'user_id'   => Auth::id(),
         ]);
 

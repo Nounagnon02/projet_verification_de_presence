@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiMail, FiLock, FiAlertTriangle, FiLoader, FiArrowLeft } from 'react-icons/fi';
 import { MdAccountBalance, MdQrCodeScanner, MdAutoAwesome, MdGroups, MdSchool } from 'react-icons/md';
 import { useAuth } from '../../context/AuthContext';
+import { assets } from '../../utils/assets';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -60,7 +61,7 @@ function LoginPage() {
       <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden">
         {/* Image de fond */}
         <img
-          src="/images/rectorat-uac.jpg"
+          src={assets.rectoratUac}
           alt="Campus universitaire"
           className="absolute inset-0 w-full h-full object-cover"
         />

@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'default' => env('FILESYSTEM_DISK', 'local'),
+    'default' => env('FILESYSTEM_DISK', 'supabase'),
 
     /*
     |--------------------------------------------------------------------------
@@ -58,6 +58,21 @@ return [
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
             'throw' => false,
             'report' => false,
+        ],
+
+        // Supabase Storage — compatible S3
+        'supabase' => [
+            'driver'                  => 's3',
+            'key'                     => env('SUPABASE_KEY'),
+            'secret'                  => env('SUPABASE_SECRET'),
+            'region'                  => 'eu-west-1',
+            'bucket'                  => env('SUPABASE_BUCKET', 'presence-uac'),
+            'endpoint'                => env('SUPABASE_URL') . '/storage/v1/s3',
+            'use_path_style_endpoint' => true,
+            'url'                     => env('SUPABASE_URL') . '/storage/v1/object/public/' . env('SUPABASE_BUCKET', 'presence-uac'),
+            'visibility'              => 'public',
+            'throw'                   => true,
+            'report'                  => false,
         ],
 
     ],

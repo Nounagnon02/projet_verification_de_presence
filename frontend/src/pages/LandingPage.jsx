@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FiChevronRight, FiArrowRight, FiShield, FiSmartphone, FiBarChart2, FiDownload, FiLock, FiMenu, FiX, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import { MdAccountBalance, MdQrCodeScanner, MdAutoAwesome, MdSchool, MdGroups, MdCalendarMonth, MdCloudDone } from 'react-icons/md';
 import api from '../api/axios';
+import { assets } from '../utils/assets';
 
 const ALL_FEATURES = [
   { icon: MdQrCodeScanner, title: 'Validation par QR Code', desc: 'Scannez les QR codes générés pour chaque séance et validez les présences en un instant depuis votre appareil mobile.' },
@@ -175,7 +176,7 @@ export default function LandingPage() {
       <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
         <div className="absolute inset-0">
           <img
-            src="/images/rectorat-uac.jpg"
+            src={assets.rectoratUac}
             alt="Campus universitaire"
             className="w-full h-full object-cover"
           />

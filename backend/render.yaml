@@ -1,45 +1,65 @@
-# render.yaml
 services:
   - type: web
-    name: laravel-app
+    name: presence-uac-backend
     runtime: docker
     dockerfilePath: Dockerfile
     plan: free
     envVars:
+      - key: APP_NAME
+        value: "Présence UAC"
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
         value: false
+      - key: APP_KEY
+        generateValue: true
       - key: APP_URL
-        value: https://your-app.onrender.com
+        value: https://presence-uac-backend.onrender.com
+
+      # Supabase PostgreSQL
       - key: DB_CONNECTION
         value: pgsql
-      - key: DB_HOST
-        fromService:
-          type: postgres
-          name: laravel-database
-          property: host
-      - key: DB_PORT
-        value: 5432
-      - key: DB_DATABASE
-        fromService:
-          type: postgres
-          name: laravel-database
-          property: database
-      - key: DB_USERNAME
-        fromService:
-          type: postgres
-          name: laravel-database
-          property: user
-      - key: DB_PASSWORD
-        fromService:
-          type: postgres
-          name: laravel-database
-          property: password
-    autoDeploy: true
+      - key: DB_URL
+        value: postgresql://postgres.kvgzlngijxrjjdvashph:Mesetudeskp12@aws-0-eu-west-1.pooler.supabase.com:6543/postgres
+      - key: DB_SSLMODE
+        value: require
 
-  - type: postgres
-    name: laravel-database
-    plan: free
-    databaseName: laravel_prod
-    ipAllowList: []
+      # Session / Cache / Queue — database (pas de Redis sur free tier)
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: database
+
+      # Supabase Storage
+      - key: SUPABASE_URL
+        value: https://kvgzlngijxrjjdvashph.supabase.co
+      - key: SUPABASE_KEY
+        value: 7e5d79f57e3c9810c607e236f0b30d09
+      - key: SUPABASE_SECRET
+        value: 2f9847ba53cc86ca97f219451e5e1a3bf6c54c5ea3308caf464e9a80091d178c
+      - key: SUPABASE_BUCKET
+        value: presence-uac
+      - key: FILESYSTEM_DISK
+        value: supabase
+      - key: ALLOWED_ORIGINS
+        value: https://presence-uac.vercel.app
+
+      # Frontend URL (pour Sanctum)
+      - key: FRONTEND_URL
+        value: https://presence-uac.vercel.app
+
+      # Mail (à configurer)
+      - key: MAIL_MAILER
+        value: log
+
+      # Gemini IA
+      - key: GEMINI_API_KEY
+        sync: false
+
+      # Logs
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: error

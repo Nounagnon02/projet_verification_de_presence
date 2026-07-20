@@ -9,16 +9,12 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // 1. Supprimer les tables orphelines (members, badges, rewards, member_badges, redemptions)
-        // Ces tables ne sont pas utilisées dans le code métier principal (Etudiant n'a pas de relation Member)
-        // Désactiver les FK checks pour contourner les contraintes (anomalies.member_id, member_badges.member_id, redemptions.member_id)
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
-        Schema::dropIfExists('redemptions');
-        Schema::dropIfExists('member_badges');
-        Schema::dropIfExists('badges');
-        Schema::dropIfExists('rewards');
-        Schema::dropIfExists('members');
-        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        // 1. Supprimer les tables orphelines avec CASCADE pour PostgreSQL
+        DB::statement('DROP TABLE IF EXISTS redemptions CASCADE');
+        DB::statement('DROP TABLE IF EXISTS member_badges CASCADE');
+        DB::statement('DROP TABLE IF EXISTS badges CASCADE');
+        DB::statement('DROP TABLE IF EXISTS rewards CASCADE');
+        DB::statement('DROP TABLE IF EXISTS members CASCADE');
 
         // 2. Ajouter les index manquants sur les tables critiques
 
