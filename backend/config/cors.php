@@ -19,7 +19,12 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:5173'), 'http://localhost:3000'],
+    'allowed_origins' => array_filter(array_map('trim', explode(',', env('ALLOWED_ORIGINS', '')))) ?: [
+        env('FRONTEND_URL', 'http://localhost:5173'),
+        'http://localhost:3000',
+        'https://presence-uac.vercel.app',
+        'https://presence.uac.bj',
+    ],
 
     'allowed_origins_patterns' => [],
 

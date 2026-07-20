@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiMail, FiArrowLeft, FiCheckCircle, FiAlertTriangle, FiLoader } from 'react-icons/fi';
 import { MdAccountBalance } from 'react-icons/md';
 import api from '../../api/axios';
+import { assets } from '../../utils/assets';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -38,7 +39,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen bg-surface flex">
       {/* Bannière gauche */}
       <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden">
-        <img src="/images/rectorat-uac.jpg" alt="Campus universitaire"
+        <img src={assets.rectoratUac} alt="Campus universitaire"
           className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-br from-[#011549]/90 via-[#011549]/75 to-[#0a1a3a]/90"></div>
         <div className="relative flex flex-col justify-between p-12 w-full">

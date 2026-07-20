@@ -3,67 +3,46 @@
 namespace App\Observers;
 
 use App\Models\Ec;
-use App\Models\Etudiant;
 
+/**
+ * Met à jour automatiquement le volume_horaire de l'UE
+ * quand un EC est créé, modifié ou supprimé.
+ */
 class EcObserver
 {
     /**
-     * Quand un EC est créé, inscrit tous les étudiants de la filière+année
-     * de son UE parente.
+     * Recalcule le volume_horaire de l'UE en faisant la somme
+     * des volume_horaire de tous ses ECs.
      */
+    private function syncUeVolume(Ec $ec): void
+    {
+        $total = Ec::where('ue_id', $ec->ue_id)->sum('volume_horaire');
+        $ec->ue()->update(['volume_horaire' => $total]);
+    }
+
     public function created(Ec $ec): void
     {
-        $ec->load('ue');
+        $this->syncUeVolume($ec);
+    }
 
-        if (!$ec->ue) {
-            return;
+    public function updated(Ec $ec): void
+    {
+        // Si l'EC a changé d'UE, recalculer aussi l'ancienne UE
+        if ($ec->isDirty('ue_id')) {
+            $oldUeId = $ec->getOriginal('ue_id');
+            if ($oldUeId) {
+                $oldTotal = Ec::where('ue_id', $oldUeId)->sum('volume_horaire');
+                \App\Models\Ue::where('id', $oldUeId)->update(['volume_horaire' => $oldTotal]);
+            }
         }
 
-        $students = Etudiant::where('filiere_id', $ec->ue->filiere_id)
-            ->where('annee_id', $ec->ue->annee_id)
-            ->get();
-
-        foreach ($students as $student) {
-            $student->ecs()->syncWithoutDetaching([
-                $ec->id => ['annee_id' => $ec->ue->annee_id],
-            ]);
+        if ($ec->isDirty('volume_horaire') || $ec->isDirty('ue_id')) {
+            $this->syncUeVolume($ec);
         }
     }
 
-    /**
-     * Quand un EC change d'UE parente, recalcule les inscriptions.
-     */
-    public function updated(Ec $ec): void
+    public function deleted(Ec $ec): void
     {
-        if ($ec->wasChanged('ue_id')) {
-            $ec->load('ue');
-
-            $oldUeId = $ec->getOriginal('ue_id');
-            $oldUe   = \App\Models\Ue::find($oldUeId);
-
-            // Désinscrire les étudiants de l'ancienne UE
-            if ($oldUe) {
-                $oldStudents = Etudiant::where('filiere_id', $oldUe->filiere_id)
-                    ->where('annee_id', $oldUe->annee_id)
-                    ->get();
-
-                foreach ($oldStudents as $student) {
-                    $student->ecs()->detach($ec->id);
-                }
-            }
-
-            // Inscrire les étudiants de la nouvelle UE
-            if ($ec->ue) {
-                $newStudents = Etudiant::where('filiere_id', $ec->ue->filiere_id)
-                    ->where('annee_id', $ec->ue->annee_id)
-                    ->get();
-
-                foreach ($newStudents as $student) {
-                    $student->ecs()->syncWithoutDetaching([
-                        $ec->id => ['annee_id' => $ec->ue->annee_id],
-                    ]);
-                }
-            }
-        }
+        $this->syncUeVolume($ec);
     }
 }

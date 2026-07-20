@@ -10,16 +10,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use SimpleSoftwareIO\QrCode\Facades\QrCode as QrGenerator;
 
+/**
+ * @deprecated Utiliser App\Http\Controllers\Api\QrCodeController (API moderne)
+ *             Ce contrôleur legacy n'est plus routé depuis la migration Laravel 12.
+ */
 class QrCodeController extends Controller
 {
-    protected $geofenceService;
     protected $anomalyService;
 
     public function __construct(
-        \App\Services\GeofenceService $geofenceService,
         \App\Services\AnomalyDetectionService $anomalyService
     ) {
-        $this->geofenceService = $geofenceService;
         $this->anomalyService = $anomalyService;
     }
 
@@ -135,18 +136,24 @@ class QrCodeController extends Controller
             'accuracy' => 'nullable|numeric'
         ]);
 
-        // Vérifier la géolocalisation si disponible
+        // Vérifier la géolocalisation si disponible (via Salle)
         if ($request->latitude && $request->longitude) {
-            $geoResult = $this->geofenceService->isLocationValid(
-                $qrCode, 
-                (float)$request->latitude, 
-                (float)$request->longitude
-            );
+            $salle = \App\Models\Salle::where('code', $qrCode->group)->first();
+            if ($salle && $salle->actif && $salle->latitude !== null) {
+                $valid = $salle->isWithinGeofence(
+                    (float)$request->latitude,
+                    (float)$request->longitude
+                );
 
-            if (!$geoResult['valid']) {
-                return response()->json([
-                    'error' => "Vous êtes trop loin du lieu de l'événement ({$geoResult['distance']}m). Rayon autorisé: {$geoResult['radius']}m."
-                ], 403);
+                if (!$valid) {
+                    $distance = $salle->distanceMetres(
+                        (float)$request->latitude,
+                        (float)$request->longitude
+                    );
+                    return response()->json([
+                        'error' => "Vous êtes trop loin du lieu de l'événement (" . round($distance) . "m). Rayon autorisé: {$salle->rayon_geofence_m}m."
+                    ], 403);
+                }
             }
         }
 

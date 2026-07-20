@@ -7,8 +7,8 @@ use App\Models\Etablissement;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class EtablissementController extends Controller
@@ -31,7 +31,13 @@ class EtablissementController extends Controller
             'email'     => 'required|email|max:255|unique:etablissements,email',
             'telephone' => 'nullable|string|max:20',
             'adresse'   => 'nullable|string',
+            'logo'      => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
+
+        if ($request->hasFile('logo')) {
+            $validated['logo'] = Storage::disk('supabase')
+                ->putFile('logos', $request->file('logo'), 'public');
+        }
 
         $etablissement = Etablissement::create($validated);
 
@@ -88,7 +94,17 @@ class EtablissementController extends Controller
             'telephone' => 'nullable|string|max:20',
             'adresse'   => 'nullable|string',
             'actif'     => 'boolean',
+            'logo'      => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
+
+        if ($request->hasFile('logo')) {
+            // Supprimer l'ancien logo
+            if ($etablissement->logo) {
+                Storage::disk('supabase')->delete($etablissement->logo);
+            }
+            $validated['logo'] = Storage::disk('supabase')
+                ->putFile('logos', $request->file('logo'), 'public');
+        }
 
         $etablissement->update($validated);
 

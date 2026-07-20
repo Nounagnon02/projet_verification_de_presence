@@ -2,79 +2,61 @@
 
 namespace App\Services;
 
+use App\Models\Salle;
+
+/**
+ * Service de géolocalisation — détermine si une position est valide
+ * en la comparant aux salles configurées dans l'établissement.
+ *
+ * CONFORME CDC 7.4.2 : vérification de présence par géolocalisation.
+ *
+ * @see \App\Models\Salle::isWithinGeofence()
+ */
 class GeolocationService
 {
-    // Coordonnées autorisées (exemple: bureau principal)
-    private const ALLOWED_LOCATIONS = [
-        [
-            'name' => 'Bureau Principal',
-            'latitude' => 48.8566,
-            'longitude' => 2.3522,
-            'radius' => 100 // mètres
-        ]
-    ];
-
-    public function isLocationValid(float $latitude, float $longitude): bool
+    /**
+     * Vérifie si les coordonnées sont valides pour une salle donnée.
+     * Délègue au modèle Salle qui contient les coordonnées réelles.
+     */
+    public function isLocationValid(float $latitude, float $longitude, ?int $salleId = null): bool
     {
-        foreach (self::ALLOWED_LOCATIONS as $location) {
-            $distance = $this->calculateDistance(
-                $latitude, 
-                $longitude, 
-                $location['latitude'], 
-                $location['longitude']
-            );
-            
-            if ($distance <= $location['radius']) {
-                return true;
+        if ($salleId) {
+            $salle = Salle::find($salleId);
+            if ($salle && $salle->actif && $salle->latitude !== null) {
+                return $salle->isWithinGeofence($latitude, $longitude);
             }
         }
-        
-        return false;
+
+        // Aucune salle spécifique — vérifier si les coordonnées sont valides
+        // (latitude entre -90 et 90, longitude entre -180 et 180)
+        return $latitude >= -90 && $latitude <= 90
+            && $longitude >= -180 && $longitude <= 180;
     }
 
-    private function calculateDistance(float $lat1, float $lon1, float $lat2, float $lon2): float
+    /**
+     * Retourne les informations de localisation pour une salle.
+     */
+    public function getLocationInfo(float $latitude, float $longitude, ?int $salleId = null): array
     {
-        $earthRadius = 6371000; // mètres
-        
-        $dLat = deg2rad($lat2 - $lat1);
-        $dLon = deg2rad($lon2 - $lon1);
-        
-        $a = sin($dLat/2) * sin($dLat/2) + 
-             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * 
-             sin($dLon/2) * sin($dLon/2);
-             
-        $c = 2 * atan2(sqrt($a), sqrt(1-$a));
-        
-        return $earthRadius * $c;
-    }
-
-    public function getLocationInfo(float $latitude, float $longitude): array
-    {
-        return [
-            'is_valid' => $this->isLocationValid($latitude, $longitude),
-            'nearest_location' => $this->getNearestLocation($latitude, $longitude)
+        $info = [
+            'is_valid' => false,
+            'nearest_location' => null,
         ];
-    }
 
-    private function getNearestLocation(float $latitude, float $longitude): ?array
-    {
-        $nearest = null;
-        $minDistance = PHP_FLOAT_MAX;
-
-        foreach (self::ALLOWED_LOCATIONS as $location) {
-            $distance = $this->calculateDistance(
-                $latitude, 
-                $longitude, 
-                $location['latitude'], 
-                $location['longitude']
-            );
-            
-            if ($distance < $minDistance) {
-                $minDistance = $distance;
-                $nearest = array_merge($location, ['distance' => round($distance)]);
+        if ($salleId) {
+            $salle = Salle::find($salleId);
+            if ($salle && $salle->latitude !== null) {
+                $info['is_valid'] = $salle->isWithinGeofence($latitude, $longitude);
+                $info['nearest_location'] = [
+                    'name'     => $salle->nom,
+                    'latitude' => $salle->latitude,
+                    'longitude' => $salle->longitude,
+                    'radius'   => $salle->rayon_geofence_m,
+                    'distance' => round($salle->distanceMetres($latitude, $longitude) ?? 0),
+                ];
             }
         }
 
-        return $nearest;
+        return $info;
     }
 }

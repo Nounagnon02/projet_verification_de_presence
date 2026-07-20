@@ -52,10 +52,14 @@ class ProcessGeminiImportJob implements ShouldQueue
         ]);
 
         $filePath = $this->analyse->file_path;
-        $fullPath = Storage::disk('local')->path($filePath);
+
+        // Télécharger le fichier depuis Supabase Storage vers un fichier temporaire
+        $tmpPath = tempnam(sys_get_temp_dir(), 'gemini_') . '.pdf';
+        file_put_contents($tmpPath, Storage::disk('supabase')->get($filePath));
+        $fullPath = $tmpPath;
 
         if (!file_exists($fullPath)) {
-            $this->fail(new \Exception("Fichier introuvable : {$filePath}"));
+            $this->fail(new \Exception("Fichier introuvable sur Supabase : {$filePath}"));
             return;
         }
 
@@ -104,7 +108,12 @@ class ProcessGeminiImportJob implements ShouldQueue
             $this->analyse->update([
                 'error_message' => $e->getMessage(),
             ]);
-            throw $e; // Déclencher le retry
+            throw $e;
+        } finally {
+            // Nettoyer le fichier temporaire
+            if (isset($tmpPath) && file_exists($tmpPath)) {
+                unlink($tmpPath);
+            }
         }
     }
 
