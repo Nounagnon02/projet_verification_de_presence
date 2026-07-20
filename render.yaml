@@ -15,7 +15,7 @@ services:
       - key: APP_KEY
         generateValue: true
       - key: APP_URL
-        value: https://presence-uac-backend.onrender.com
+        value: https://presence-uac-api.onrender.com
 
       # Supabase PostgreSQL
       - key: DB_CONNECTION

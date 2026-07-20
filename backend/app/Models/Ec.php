@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Ec extends Model
 {
     use HasFactory;
-    protected $fillable = ['ue_id', 'code', 'intitule', 'volume_horaire'];
+    protected $fillable = ['ue_id', 'code', 'intitule', 'volume_horaire', 'statut'];
 
     public function ue(): BelongsTo { return $this->belongsTo(Ue::class); }
     public function evenements(): HasMany { return $this->hasMany(Evenement::class); }
