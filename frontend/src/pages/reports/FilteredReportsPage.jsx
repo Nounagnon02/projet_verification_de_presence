@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   FiFilter, FiLoader, FiRefreshCw, FiBarChart2, FiCalendar, FiUsers,
-  FiCheckCircle, FiAlertTriangle, FiDownload, FiFileText, FiChevronDown, FiChevronUp
+  FiCheckCircle, FiAlertTriangle, FiDownload, FiFileText, FiChevronDown, FiChevronUp,
+  FiChevronLeft, FiChevronRight
 } from 'react-icons/fi';
 import api from '../../api/axios';
 import BarChart from '../../components/charts/BarChart';
@@ -51,6 +52,10 @@ export default function FilteredReportsPage() {
   const [showSemComp, setShowSemComp] = useState(false);
   const [showFiliereComp, setShowFiliereComp] = useState(false);
   const [showYearComp, setShowYearComp] = useState(false);
+
+  //Pagination UE
+  const [uePage, setUePage] = useState(1);
+  const UE_PER_PAGE = 10;
 
   //Chargement initial
   useEffect(() => {
@@ -250,6 +255,10 @@ export default function FilteredReportsPage() {
   const evolution = Array.isArray(d.evolution) ? d.evolution : [];
   const statsParUe = Array.isArray(d.stats_par_ue) ? d.stats_par_ue : [];
 
+  // Pagination des UE
+  const ueTotalPages = Math.max(1, Math.ceil(statsParUe.length / UE_PER_PAGE));
+  const uePaginated = statsParUe.slice((uePage - 1) * UE_PER_PAGE, uePage * UE_PER_PAGE);
+
   const chartData = evolution.map(e => ({
     label: typeof e.date === 'string' ? e.date.slice(5, 10) : '',
     value: e.total || 0,
@@ -265,6 +274,7 @@ export default function FilteredReportsPage() {
     setFiliereId(''); setAnneeId(''); setSemestre('');
     setTrimestre(''); setUeId(''); setEcId('');
     setJours(30); setDateDebut(''); setDateFin('');
+    setUePage(1);
   };
 
   //Composant toggle pour une section
@@ -475,8 +485,11 @@ export default function FilteredReportsPage() {
           {/* ==Tableau détail UE ==*/}
           {statsParUe.length > 0 && (
             <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 overflow-hidden mb-6">
-              <div className="p-4 border-b border-outline-variant/10">
-                <h2 className="text-sm font-bold font-headline text-primary">Détail par UE</h2>
+              <div className="p-4 border-b border-outline-variant/10 flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-bold font-headline text-primary">Détail par UE</h2>
+                  <p className="text-[10px] text-on-surface-variant mt-0.5">{statsParUe.length} UE{statsParUe.length > 1 ? 's' : ''}</p>
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -491,7 +504,7 @@ export default function FilteredReportsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {statsParUe.map((ue, i) => (
+                    {uePaginated.map((ue, i) => (
                       <tr key={i} className="border-b last:border-0 hover:bg-surface-container-low/50 transition-colors">
                         <td className="p-3 font-mono text-xs">{ue.code}</td>
                         <td className="p-3">{ue.intitule}</td>
@@ -506,6 +519,35 @@ export default function FilteredReportsPage() {
                   </tbody>
                 </table>
               </div>
+              {/* Pagination UE */}
+              {ueTotalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 border-t border-outline-variant/10">
+                  <p className="text-[10px] text-on-surface-variant">
+                    Page {uePage} / {ueTotalPages} ({statsParUe.length} UE{statsParUe.length > 1 ? 's' : ''})
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => setUePage(p => Math.max(1, p - 1))} disabled={uePage <= 1}
+                      className="p-1.5 text-outline hover:text-primary hover:bg-primary/10 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+                      <FiChevronLeft size={16} />
+                    </button>
+                    {Array.from({ length: Math.min(ueTotalPages, 5) }, (_, i) => {
+                      const start = Math.max(1, Math.min(uePage - 2, ueTotalPages - 4));
+                      const page = start + i;
+                      if (page > ueTotalPages) return null;
+                      return (
+                        <button key={page} onClick={() => setUePage(page)}
+                          className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${page === uePage ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container-high'}`}>
+                          {page}
+                        </button>
+                      );
+                    })}
+                    <button onClick={() => setUePage(p => Math.min(ueTotalPages, p + 1))} disabled={uePage >= ueTotalPages}
+                      className="p-1.5 text-outline hover:text-primary hover:bg-primary/10 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+                      <FiChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </>
