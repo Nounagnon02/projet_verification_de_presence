@@ -17,7 +17,11 @@ LOG_CHANNEL=stderr
 LOG_LEVEL=${LOG_LEVEL:-error}
 
 DB_CONNECTION=pgsql
-DB_URL=${DB_URL}
+DB_HOST=aws-0-eu-west-1.pooler.supabase.com
+DB_PORT=6543
+DB_DATABASE=postgres
+DB_USERNAME=postgres.kvgzlngijxrjjdvashph
+DB_PASSWORD=Mesetudeskp12@
 DB_SSLMODE=require
 
 FILESYSTEM_DISK=supabase
