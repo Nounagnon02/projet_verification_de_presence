@@ -88,6 +88,15 @@ class EvenementController extends Controller
             'statut'      => 'sometimes|string|in:planifie,en_cours,termine,annule',
         ]);
 
+        // Vérifier que l'EC n'est pas terminé
+        $ec = \App\Models\Ec::find($validated['ec_id']);
+        if ($ec && $ec->statut === 'termine') {
+            return $this->errorResponse(
+                "L'EC {$ec->code} ({$ec->intitule}) a déjà atteint son volume horaire ({$ec->volume_horaire}h). Il n'est plus possible d'ajouter des événements.",
+                422
+            );
+        }
+
         $evenement = Evenement::create($validated);
         return $this->createdResponse($evenement, 'Événement créé avec succès.');
     }
@@ -123,6 +132,17 @@ class EvenementController extends Controller
             'salle_id'    => 'nullable|exists:salles,id',
             'statut'      => 'sometimes|string|in:planifie,en_cours,termine,annule',
         ]);
+
+        // Vérifier que le nouvel EC (si changé) n'est pas terminé
+        if (!empty($validated['ec_id']) && $validated['ec_id'] != $evenement->ec_id) {
+            $ec = \App\Models\Ec::find($validated['ec_id']);
+            if ($ec && $ec->statut === 'termine') {
+                return $this->errorResponse(
+                    "L'EC {$ec->code} ({$ec->intitule}) a déjà atteint son volume horaire ({$ec->volume_horaire}h).",
+                    422
+                );
+            }
+        }
 
         $evenement->update($validated);
         return $this->successResponse($evenement, 'Événement mis à jour.');

@@ -178,8 +178,18 @@ export default function EvenementManagementPage() {
 
   const getEcsForFiliere = () => {
     const filiereId = filters.filiere_id || modal.data.filiere_id;
-    if (!filiereId) return ecs;
-    return ecs.filter(ec => ec.ue?.filiere_id == filiereId || ec.ue?.filiere?.id == filiereId);
+    let filtered = filiereId ? ecs.filter(ec => ec.ue?.filiere_id == filiereId || ec.ue?.filiere?.id == filiereId) : ecs;
+    // Filtrer les ECs terminés (volume horaire atteint) — ils ne peuvent plus être sélectionnés
+    return filtered.filter(ec => ec.statut !== 'termine');
+  };
+
+  const getStatutClass = (statut) => {
+    const variants = {
+      termine: 'text-green-600 dark:text-green-400',
+      en_cours: 'text-amber-600 dark:text-amber-400',
+      non_demarre: 'text-gray-400 dark:text-gray-500',
+    };
+    return variants[statut] || '';
   };
 
   return (
@@ -462,6 +472,9 @@ export default function EvenementManagementPage() {
                   {getEcsForFiliere().map(ec => (
                     <option key={ec.id} value={ec.id}>{ec.code} — {ec.intitule}</option>
                   ))}
+                  {ecs.filter(ec => ec.statut === 'termine').length > 0 && (
+                    <option disabled className="text-gray-400">─ ECs terminés (indisponibles) ─</option>
+                  )}
                 </select>
               </div>
               <div>

@@ -39,6 +39,7 @@ class GenerateEventsFromSchedule extends Command
 
         $total = 0;
         $ignored = 0;
+        $skippedTermine = 0;
 
         for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
             $jourSemaine = $date->dayOfWeekIso;
@@ -46,6 +47,12 @@ class GenerateEventsFromSchedule extends Command
             $creneauxDuJour = $creneaux->where('jour_semaine', $jourSemaine);
 
             foreach ($creneauxDuJour as $creneau) {
+                // Ignorer les ECs dont le volume horaire est déjà atteint
+                if ($creneau->ec && $creneau->ec->statut === 'termine') {
+                    $skippedTermine++;
+                    continue;
+                }
+
                 $existe = Evenement::where('ec_id', $creneau->ec_id)
                     ->where('date', $date->format('Y-m-d'))
                     ->where('heure_debut', $creneau->heure_debut)
@@ -76,6 +83,9 @@ class GenerateEventsFromSchedule extends Command
         $this->line("  Période : {$startDate->format('d/m/Y')} → {$endDate->format('d/m/Y')}");
         if ($ignored > 0) {
             $this->line("  Ignorés (déjà existants) : {$ignored}");
+        }
+        if ($skippedTermine > 0) {
+            $this->line("  Ignorés (EC terminés) : {$skippedTermine}");
         }
 
         return Command::SUCCESS;

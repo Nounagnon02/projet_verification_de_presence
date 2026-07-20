@@ -14,6 +14,7 @@ class EcResource extends JsonResource
             'code'           => $this->code,
             'intitule'       => $this->intitule,
             'volume_horaire' => $this->volume_horaire,
+            'statut'         => $this->statut,
             'ue'             => new UeResource($this->whenLoaded('ue')),
             'evenements'     => EvenementResource::collection($this->whenLoaded('evenements')),
             'created_at'     => $this->created_at?->format('Y-m-d'),

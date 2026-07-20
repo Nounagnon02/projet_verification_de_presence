@@ -201,6 +201,22 @@ export default function UEManagementPage() {
   const getFiliere = (id) => filieres.find(f => String(f.id) === String(id))?.intitule || filieres.find(f => String(f.id) === String(id))?.code || '—';
   const getAnnee = (id) => annees.find(a => String(a.id) === String(id))?.libelle || '—';
 
+  const StatutBadge = ({ statut, size = 'sm' }) => {
+    const variants = {
+      termine: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', dot: 'bg-green-500', label: 'Terminé' },
+      en_cours: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400', dot: 'bg-amber-500', label: 'En cours' },
+      non_demarre: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-500 dark:text-gray-400', dot: 'bg-gray-400', label: 'Non démarré' },
+    };
+    const v = variants[statut] || variants.non_demarre;
+    const sizeClass = size === 'xs' ? 'text-[9px] px-1.5 py-0.5' : 'text-[10px] px-2 py-0.5';
+    return (
+      <span className={`inline-flex items-center gap-1.5 rounded-full font-semibold ${v.bg} ${v.text} ${sizeClass}`}>
+        <span className={`w-1.5 h-1.5 rounded-full ${v.dot}`} />
+        {v.label}
+      </span>
+    );
+  };
+
   // ─── RENDER ────────────────────────────────────────────
 
   return (
@@ -322,6 +338,7 @@ export default function UEManagementPage() {
                     <span>{getFiliere(ue.filiere?.id || ue.filiere_id)}</span>
                     <span>Semestre {ue.semestre}</span>
                     <span>{ue.volume_horaire}h</span>
+                    <StatutBadge statut={ue.statut} />
                     <span>{ue.ecs?.length || ue.ecs_count || 0} EC{((ue.ecs?.length || ue.ecs_count || 0) > 1) ? 's' : ''}</span>
                   </div>
                 </div>
@@ -359,7 +376,7 @@ export default function UEManagementPage() {
                             <span className="text-sm text-on-surface truncate">{ec.intitule}</span>
                           </div>
                           <p className="text-[10px] text-on-surface-variant">{ec.volume_horaire}h</p>
-                        </div>
+                          <StatutBadge statut={ec.statut} size="xs" />
                         <div className="flex items-center gap-1">
                           <button onClick={() => openEditEc(ec, ue.id)}
                             className="p-1.5 text-outline hover:text-primary hover:bg-primary/10 rounded-lg transition-all" title="Modifier">
