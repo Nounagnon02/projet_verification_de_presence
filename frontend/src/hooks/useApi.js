@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../api/axios';
 
 export default function useApi(url, params = {}, options = {}) {
@@ -9,14 +9,20 @@ export default function useApi(url, params = {}, options = {}) {
   const [pagination, setPagination] = useState(null);
 
   const paramsKey = JSON.stringify(params);
+  const abortRef = useRef(null);
 
   const fetchData = useCallback(async (overrideParams) => {
     if (!url) return;
+    // Annule la requête précédente si elle est encore en cours
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setError(null);
     try {
       const mergedParams = { ...params, ...overrideParams };
-      const response = await api.get(url, { params: mergedParams });
+      const response = await api.get(url, { params: mergedParams, signal: controller.signal });
       const result = response.data;
 
       if (result.success !== undefined) {
@@ -32,22 +38,21 @@ export default function useApi(url, params = {}, options = {}) {
         setData(result);
       }
     } catch (err) {
+      if (err.name === 'CanceledError' || err.name === 'AbortError') return;
       const message = err.response?.data?.message || err.message || 'Erreur de connexion';
       setError(message);
     } finally {
       setLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, paramsKey]);
 
   useEffect(() => {
-    if (immediate && url) {
-      fetchData();
-    }
+    if (immediate && url) fetchData();
+    return () => abortRef.current?.abort();
   }, [immediate, url, fetchData]);
 
-  const refetch = useCallback((overrideParams) => {
-    return fetchData(overrideParams);
-  }, [fetchData]);
+  const refetch = useCallback((overrideParams) => fetchData(overrideParams), [fetchData]);
 
   return { data, loading, error, pagination, refetch, setData };
 }

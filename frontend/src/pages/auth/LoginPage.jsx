@@ -49,7 +49,11 @@ function LoginPage() {
         navigate('/dashboard', { replace: true });
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Identifiants invalides. Veuillez réessayer.');
+      const data = err.response?.data;
+      const msg = data?.message
+        || (data?.errors && Object.values(data.errors).flat()[0])
+        || 'Identifiants invalides. Veuillez réessayer.';
+      setError(msg);
     } finally {
       setLoading(false);
     }

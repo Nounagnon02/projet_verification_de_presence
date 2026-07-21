@@ -423,6 +423,7 @@ class ReportController extends Controller
         $statsParUeQuery = Ue::select('ues.id', 'ues.code', 'ues.intitule', 'ues.semestre',
                 DB::raw('COUNT(DISTINCT presences.id) as total_presences'),
                 DB::raw('COUNT(DISTINCT evenements.id) as total_evenements'))
+            ->with('filiere:id,code,intitule')
             ->join('ecs', 'ecs.ue_id', '=', 'ues.id')
             ->join('evenements', 'evenements.ec_id', '=', 'ecs.id')
             ->leftJoin('presences', 'presences.evenement_id', '=', 'evenements.id');
@@ -454,13 +455,16 @@ class ReportController extends Controller
                 $totalEtudiants = Etudiant::whereHas('ecs', fn($q) => $q->where('ue_id', $ue->id))->count();
                 $totalAttendus = ($ue->total_evenements ?? 0) * max($totalEtudiants, 1);
                 return [
-                    'ue_id'           => $ue->id,
-                    'code'            => $ue->code,
-                    'intitule'        => $ue->intitule,
-                    'semestre'        => (int) $ue->semestre,
-                    'total_presences' => (int) $ue->total_presences,
+                    'ue_id'            => $ue->id,
+                    'code'             => $ue->code,
+                    'intitule'         => $ue->intitule,
+                    'semestre'         => (int) $ue->semestre,
+                    'filiere_code'     => $ue->filiere?->code ?? null,
+                    'filiere_intitule' => $ue->filiere?->intitule ?? null,
+                    'total_presences'  => (int) $ue->total_presences,
                     'total_evenements' => (int) $ue->total_evenements,
-                    'taux'            => $totalAttendus > 0 ? round(($ue->total_presences / $totalAttendus) * 100, 1) : 0,
+                    'total_etudiants'  => $totalEtudiants,
+                    'taux'             => $totalAttendus > 0 ? round(($ue->total_presences / $totalAttendus) * 100, 1) : 0,
                 ];
             });
 
