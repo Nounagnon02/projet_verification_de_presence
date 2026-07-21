@@ -1,29 +1,21 @@
 import { Platform } from 'react-native';
 
 /**
- * URL de l'API backend Ngrok pour les tests.
- * À remplacer par la nouvelle URL si le tunnel est redémarré.
+ * URL de l'API backend Render (production).
+ * En développement sur appareil physique, utiliser le backend Render directement.
  */
-const NGROK_API_URL = 'https://7a9a-156-0-212-164.ngrok-free.app';
+const RENDER_API_URL = 'https://presence-uac-api.onrender.com';
 
-/**
- * Détecte l'URL de l'API backend selon l'environnement.
- *
- * - Développement : utilise le tunnel Ngrok pour les tests mobiles
- * - Android émulateur : 10.0.2.2 pointe vers le host (localhost)
- * - iOS simulateur   : localhost fonctionne directement
- * - Production       : api.presence.uac.bj
- */
 function getApiBaseUrl(): string {
   if (__DEV__) {
-    // Émulateur Android : 10.0.2.2 pointe vers localhost
+    // Émulateur Android uniquement : 10.0.2.2 pointe vers localhost
     if (Platform.OS === 'android') {
-      return `http://10.0.2.2:8000/api`;
+      return 'http://10.0.2.2:8000/api';
     }
-    // Appareil physique ou simulateur iOS : utiliser le tunnel Ngrok
-    return `${NGROK_API_URL}/api`;
+    // Appareil physique iOS ou Android réel : utiliser le backend Render
+    return `${RENDER_API_URL}/api`;
   }
-  return 'https://api.presence.uac.bj/api';
+  return `${RENDER_API_URL}/api`;
 }
 
 export const CONFIG = {

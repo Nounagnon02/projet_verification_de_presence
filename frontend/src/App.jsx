@@ -10,7 +10,7 @@ import { useAuth } from './context/AuthContext';
 
 // Lazy-loaded pages (using direct imports to prevent React 19 + Suspense remount issues)
 import LoginPage from './pages/auth/LoginPage';
-import StudentManagementPage from './pages/students/StudentManagementPage';
+const StudentManagementPage = lazy(() => import('./pages/students/StudentManagementPage'));
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
 const PresenceValidationPage = lazy(() => import('./pages/attendance/PresenceValidationPage'));
 const PresenceHistoryPage = lazy(() => import('./pages/attendance/PresenceHistoryPage'));
