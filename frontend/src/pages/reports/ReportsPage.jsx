@@ -111,11 +111,11 @@ const ReportsPage = () => {
     }
   }, [filiereId, anneeId, semestre, ueId, ecId, jours, dateDebut, dateFin]);
 
-  //Chargement auto au demarrage
+  //Chargement auto au demarrage et à chaque changement de filtre
   useEffect(() => {
-    if (!initialLoading) loadData();
+    if (!initialLoading) { setUePage(1); loadData(); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialLoading]);
+  }, [initialLoading, filiereId, anneeId, semestre, ueId, ecId]);
 
   //  COMPARAISON SEMESTRES 
   const loadSemesterComp = useCallback(async () => {
@@ -242,6 +242,11 @@ const ReportsPage = () => {
       setExporting(null);
     }
   };
+
+  // PAGINATION & FILTRE UE
+  const [ueSemFilter, setUeSemFilter] = useState('');
+  const [uePage, setUePage] = useState(1);
+  const UE_PER_PAGE = 10;
 
   //  HELPERS 
   const d = data || {};
@@ -443,41 +448,70 @@ const ReportsPage = () => {
           )}
 
           {/*  TABLEAU UE  */}
-          {statsParUe.length > 0 && (
-            <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 overflow-hidden mb-6">
-              <div className="p-4 border-b border-outline-variant/10">
-                <h2 className="text-sm font-bold font-headline text-primary">Détail par UE</h2>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-xs text-on-surface-variant uppercase tracking-wider">
-                      <th className="p-3 font-semibold">Code</th>
-                      <th className="p-3 font-semibold">Intitulé</th>
-                      <th className="p-3 font-semibold text-right">Semestre</th>
-                      <th className="p-3 font-semibold text-right">Séances</th>
-                      <th className="p-3 font-semibold text-right">Présences</th>
-                      <th className="p-3 font-semibold text-right">Taux</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {statsParUe.map((ue, i) => (
-                      <tr key={i} className="border-b last:border-0 hover:bg-surface-container-low/50 transition-colors">
-                        <td className="p-3 font-mono text-xs">{ue.code}</td>
-                        <td className="p-3">{ue.intitule}</td>
-                        <td className="p-3 text-right text-on-surface-variant">S{ue.semestre}</td>
-                        <td className="p-3 text-right">{ue.total_evenements}</td>
-                        <td className="p-3 text-right">{ue.total_presences}</td>
-                        <td className="p-3 text-right font-bold" style={{ color: ue.taux >= 80 ? '#2E7D32' : ue.taux >= 50 ? '#F57F17' : '#C62828' }}>
-                          {ue.taux}%
-                        </td>
+          {statsParUe.length > 0 && (() => {
+            const semestresDispos = [...new Set(statsParUe.map(u => u.semestre))].sort((a, b) => a - b);
+            const filtered = ueSemFilter ? statsParUe.filter(u => String(u.semestre) === ueSemFilter) : statsParUe;
+            const totalPages = Math.ceil(filtered.length / UE_PER_PAGE);
+            const paginated = filtered.slice((uePage - 1) * UE_PER_PAGE, uePage * UE_PER_PAGE);
+            return (
+              <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 overflow-hidden mb-6">
+                <div className="p-4 border-b border-outline-variant/10 flex items-center justify-between gap-3 flex-wrap">
+                  <h2 className="text-sm font-bold font-headline text-primary">Détail par UE</h2>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant">Semestre</label>
+                    <select value={ueSemFilter} onChange={e => { setUeSemFilter(e.target.value); setUePage(1); }}
+                      className="px-2 py-1 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface">
+                      <option value="">Tous</option>
+                      {semestresDispos.map(s => <option key={s} value={s}>S{s}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-xs text-on-surface-variant uppercase tracking-wider">
+                        <th className="p-3 font-semibold">Code</th>
+                        <th className="p-3 font-semibold">Intitulé</th>
+                        <th className="p-3 font-semibold text-right">Semestre</th>
+                        <th className="p-3 font-semibold text-right">Séances</th>
+                        <th className="p-3 font-semibold text-right">Présences</th>
+                        <th className="p-3 font-semibold text-right">Taux</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {paginated.map((ue, i) => (
+                        <tr key={i} className="border-b last:border-0 hover:bg-surface-container-low/50 transition-colors">
+                          <td className="p-3 font-mono text-xs">{ue.code}</td>
+                          <td className="p-3">{ue.intitule}</td>
+                          <td className="p-3 text-right text-on-surface-variant">S{ue.semestre}</td>
+                          <td className="p-3 text-right">{ue.total_evenements}</td>
+                          <td className="p-3 text-right">{ue.total_presences}</td>
+                          <td className="p-3 text-right font-bold" style={{ color: ue.taux >= 80 ? '#2E7D32' : ue.taux >= 50 ? '#F57F17' : '#C62828' }}>
+                            {ue.taux}%
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between px-4 py-3 border-t border-outline-variant/10">
+                    <span className="text-xs text-on-surface-variant">{filtered.length} UE · page {uePage}/{totalPages}</span>
+                    <div className="flex gap-1">
+                      <button onClick={() => setUePage(p => Math.max(1, p - 1))} disabled={uePage === 1}
+                        className="px-3 py-1 text-xs rounded-lg bg-surface-container-high hover:bg-surface-container-higher disabled:opacity-40 transition-all">‹ Préc</button>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                        <button key={p} onClick={() => setUePage(p)}
+                          className={`px-3 py-1 text-xs rounded-lg transition-all ${p === uePage ? 'bg-primary text-on-primary' : 'bg-surface-container-high hover:bg-surface-container-higher'}`}>{p}</button>
+                      ))}
+                      <button onClick={() => setUePage(p => Math.min(totalPages, p + 1))} disabled={uePage === totalPages}
+                        className="px-3 py-1 text-xs rounded-lg bg-surface-container-high hover:bg-surface-container-higher disabled:opacity-40 transition-all">Suiv ›</button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            );
+          })()}
         </>
       )}
 
