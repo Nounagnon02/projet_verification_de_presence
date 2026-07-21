@@ -97,9 +97,10 @@ RUN mkdir -p /var/www/html/storage/database \
     && chmod -R 775 /var/www/html/storage \
     && chmod -R 775 /var/www/html/bootstrap/cache
 
-# Copier et configurer le script de démarrage
+# Copier et configurer les scripts de démarrage
 COPY start.sh /usr/local/bin/start.sh
-RUN chmod +x /usr/local/bin/start.sh
+COPY start-worker.sh /usr/local/bin/start-worker.sh
+RUN chmod +x /usr/local/bin/start.sh /usr/local/bin/start-worker.sh
 
 EXPOSE 80
 
