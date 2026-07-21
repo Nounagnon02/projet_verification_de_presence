@@ -21,6 +21,7 @@ export default function SallesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [showDelete, setShowDelete] = useState(null);
+  const [userEntity, setUserEntity] = useState(null);
 
   const fetchSalles = useCallback(async () => {
     try {
@@ -32,9 +33,23 @@ export default function SallesPage() {
 
   useEffect(() => { fetchSalles(); }, [fetchSalles]);
 
+  useEffect(() => {
+    Promise.all([
+      api.get('/admin/etablissements'),
+      api.get('/user'),
+    ]).then(([etabRes, userRes]) => {
+      const entities = etabRes.data?.data ?? etabRes.data ?? [];
+      const user = userRes.data;
+      if (user?.etablissement_id) {
+        const entity = entities.find(e => e.id === user.etablissement_id);
+        if (entity) setUserEntity(entity);
+      }
+    }).catch(() => {});
+  }, []);
+
   const openCreate = () => {
     setEditing(null);
-    setForm(EMPTY_SALLE);
+    setForm({ ...EMPTY_SALLE, etablissement_id: userEntity?.id || '' });
     setError('');
     setShowModal(true);
   };
@@ -99,13 +114,6 @@ export default function SallesPage() {
       addToast?.(err.response?.data?.message || 'Erreur lors de la suppression.', 'error');
     }
   };
-
-  const Field = ({ label, children }) => (
-    <div className="space-y-1">
-      <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">{label}</label>
-      {children}
-    </div>
-  );
 
   if (loading) {
     return (
@@ -236,11 +244,12 @@ export default function SallesPage() {
                 </Field>
               </div>
 
-              {!editing && (
-                <Field label="Établissement *">
-                  <input type="number" required placeholder="ID de l'établissement" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all" value={form.etablissement_id} onChange={(e) => setForm({ ...form, etablissement_id: e.target.value })} />
-                </Field>
-              )}
+              <Field label="Entité">
+                <div className="flex items-center gap-2 px-3 py-2.5 bg-surface-container-high rounded-lg text-sm text-on-surface-variant">
+                  <FiMapPin size={14} className="text-secondary" />
+                  <span className="font-medium text-on-surface">{userEntity?.nom || userEntity?.code || 'Entité non définie'}</span>
+                </div>
+              </Field>
 
               {/* Géolocalisation */}
               <div className="border-t border-outline-variant/20 pt-4">
@@ -322,3 +331,10 @@ export default function SallesPage() {
     </div>
   );
 }
+
+const Field = ({ label, children }) => (
+  <div className="space-y-1">
+    <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">{label}</label>
+    {children}
+  </div>
+);

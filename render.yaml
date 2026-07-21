@@ -1,4 +1,65 @@
+# ============================================================
+# KEEP-ALIVE : Cron job qui ping le backend toutes les 10 min
+# pour éviter le sleep du plan free Render
+# ============================================================
+cronJobs:
+  - name: laravel-scheduler
+    schedule: "* * * * *"
+    command: php /var/www/html/artisan schedule:run >> /dev/null 2>&1
+
 services:
+  - type: worker
+    name: presence-uac-queue-worker
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    startCommand: /usr/local/bin/start-worker.sh
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_KEY
+        fromService:
+          name: presence-uac-backend
+          type: web
+          envVarKey: APP_KEY
+      - key: APP_URL
+        value: https://presence-uac-api.onrender.com
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        value: aws-0-eu-west-1.pooler.supabase.com
+      - key: DB_PORT
+        value: 6543
+      - key: DB_DATABASE
+        value: postgres
+      - key: DB_USERNAME
+        value: postgres.kvgzlngijxrjjdvashph
+      - key: DB_PASSWORD
+        value: Mesetudeskp12@
+      - key: DB_SSLMODE
+        value: require
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: FILESYSTEM_DISK
+        value: supabase
+      - key: SUPABASE_URL
+        value: https://kvgzlngijxrjjdvashph.supabase.co
+      - key: SUPABASE_KEY
+        value: 7e5d79f57e3c9810c607e236f0b30d09
+      - key: SUPABASE_SECRET
+        value: 2f9847ba53cc86ca97f219451e5e1a3bf6c54c5ea3308caf464e9a80091d178c
+      - key: SUPABASE_BUCKET
+        value: presence-uac
+      - key: GEMINI_API_KEY
+        value: AIzaSyBHemsdB4b4QuLkVTXFU1OpDwaCCHxAuY0
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: error
+
   - type: web
     name: presence-uac-backend
     runtime: docker

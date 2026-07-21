@@ -1,0 +1,10 @@
+.git
+node_modules
+src
+public
+.eslintrc*
+.gitignore
+*.md
+postcss.config.*
+tailwind.config.*
+vite.config.*

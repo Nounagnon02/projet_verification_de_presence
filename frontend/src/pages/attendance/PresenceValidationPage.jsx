@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  FiCheckCircle, FiAlertTriangle, FiLoader, FiHelpCircle,
-  FiSmartphone, FiCamera, FiUser, FiArrowRight, FiShield,
+  FiCheckCircle, FiAlertTriangle, FiLoader,
+  FiSmartphone, FiUser, FiArrowRight,
   FiClock, FiMapPin, FiBookOpen
 } from 'react-icons/fi';
 import { MdAccountBalance, MdVerified } from 'react-icons/md';
@@ -245,8 +245,8 @@ const PresenceValidationPage = () => {
               <MdAccountBalance size={18} />
             </div>
             <div>
-              <span className="font-headline font-bold text-primary text-lg leading-none block">Présence</span>
-              <span className="text-[10px] text-on-surface-variant font-medium">Validation étudiant</span>
+              <span className="font-headline font-bold text-primary text-lg leading-none block">Enregistrement de présence</span>
+              <span className="text-[10px] text-on-surface-variant font-medium">Saisissez votre identifiant pour confirmer votre présence</span>
             </div>
           </div>
           {qrToken && (
@@ -260,7 +260,7 @@ const PresenceValidationPage = () => {
 
       <main className="flex-1 max-w-md mx-auto w-full px-5 pt-6 pb-12">
         {/* Étape 1: Infos cours */}
-        {cours ? (
+        {cours && (
           <div className="mb-6 animate-[fadeIn_0.3s_ease-out]">
             <div className="bg-gradient-to-br from-primary to-primary-container rounded-2xl p-5 text-white shadow-lg shadow-primary/20">
               <p className="text-white/70 text-[10px] font-bold uppercase tracking-wider mb-2">Cours en cours</p>
@@ -285,17 +285,6 @@ const PresenceValidationPage = () => {
                   </span>
                 )}
               </div>
-            </div>
-          </div>
-        ) : (
-          <div className="mb-6">
-            <div className="bg-surface-container-high rounded-2xl p-5 text-center border border-outline-variant/10">
-              <div className="w-14 h-14 bg-surface-container-lowest rounded-full flex items-center justify-center mx-auto mb-3">
-                <FiCamera className="text-on-surface-variant" size={24} />
-              </div>
-              <p className="text-sm text-on-surface-variant">
-                Scannez un QR code pour valider votre présence
-              </p>
             </div>
           </div>
         )}
@@ -354,10 +343,7 @@ const PresenceValidationPage = () => {
                 />
                 <div className="absolute bottom-0 left-3 right-3 h-0.5 bg-gradient-to-r from-primary/50 to-primary scale-x-0 peer-focus:scale-x-100 transition-transform duration-300 rounded-full"></div>
               </div>
-              <p className="text-[11px] text-on-surface-variant/60 italic ml-1 flex items-center gap-1">
-                <FiShield size={10} />
-                Saisissez votre identifiant unique complet : NOM_PRENOM_MATRICULE_FILIERE_ANNEE
-              </p>
+
             </div>
 
             <button
@@ -373,22 +359,7 @@ const PresenceValidationPage = () => {
               {loading ? 'Validation...' : 'Valider ma présence'}
             </button>
 
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-outline-variant/10"></div>
-              </div>
-              <div className="relative flex justify-center">
-                <span className="bg-surface px-3 text-[10px] text-outline uppercase tracking-widest">Aide</span>
-              </div>
-            </div>
 
-            <button
-              type="button"
-              className="w-full py-3 text-sm font-medium text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors flex items-center justify-center gap-2"
-            >
-              <FiHelpCircle className="text-sm" />
-              Besoin d'assistance ? Contactez le support
-            </button>
           </form>
         </div>
       </main>

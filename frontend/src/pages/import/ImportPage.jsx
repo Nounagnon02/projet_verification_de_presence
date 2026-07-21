@@ -103,13 +103,17 @@ export default function ImportPage() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       // Stocker l'analysis_id pour le polling asynchrone (CDC 8.1)
+      const analysisId = data.data?.analysis_id;
+      if (!analysisId) {
+        throw new Error('Réponse invalide du serveur : identifiant d\'analyse manquant.');
+      }
       sessionStorage.setItem('import_analysis', JSON.stringify({
-        analysis_id: data.data?.analysis_id,
+        analysis_id: analysisId,
         type: 'schedule',
       }));
       navigate('/import/ai-analysis');
     } catch (err) {
-      const message = err.response?.data?.message || 'Erreur lors de l\'analyse de l\'emploi du temps.';
+      const message = err.response?.data?.message || err.message || 'Erreur lors de l\'analyse de l\'emploi du temps.';
       setError(message);
     } finally {
       setUploading(false);
@@ -127,13 +131,17 @@ export default function ImportPage() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       // Stocker l'analysis_id pour le polling asynchrone (CDC 8.1)
+      const analysisId = data.data?.analysis_id;
+      if (!analysisId) {
+        throw new Error('Réponse invalide du serveur : identifiant d\'analyse manquant.');
+      }
       sessionStorage.setItem('import_analysis', JSON.stringify({
-        analysis_id: data.data?.analysis_id,
+        analysis_id: analysisId,
         type: 'courses',
       }));
       navigate('/import/ai-analysis');
     } catch (err) {
-      const message = err.response?.data?.message || 'Erreur lors de l\'analyse des cours.';
+      const message = err.response?.data?.message || err.message || 'Erreur lors de l\'analyse des cours.';
       setError(message);
     } finally {
       setUploading(false);

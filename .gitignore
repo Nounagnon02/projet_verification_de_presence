@@ -105,3 +105,4 @@ copilot-instructions.md
 *.prompt
 *.instructions
 *.agent.md
+.vercel
