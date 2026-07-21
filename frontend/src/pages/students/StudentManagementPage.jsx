@@ -40,20 +40,29 @@ const StudentManagementPage = () => {
 
   // Charger les filières et années académiques pour les selects
   useEffect(() => {
-    api.get('/admin/filieres').then(({ data }) => {
+    const controller = new AbortController();
+    const { signal } = controller;
+    api.get('/admin/filieres', { signal }).then(({ data }) => {
       if (data.success) setFilieres(data.data || []);
       else if (Array.isArray(data)) setFilieres(data);
       else if (data.data) setFilieres(data.data);
-    }).catch(() => {});
+    }).catch((err) => { if (err.name !== 'CanceledError' && err.name !== 'AbortError') {} });
 
-    api.get('/admin/annees-academiques').then(({ data }) => {
+    api.get('/admin/annees-academiques', { signal }).then(({ data }) => {
       if (data.success) setAnnees(data.data || []);
       else if (Array.isArray(data)) setAnnees(data);
       else if (data.data) setAnnees(data.data);
-    }).catch(() => {});
+    }).catch((err) => { if (err.name !== 'CanceledError' && err.name !== 'AbortError') {} });
+
+    return () => controller.abort();
   }, []);
 
+  const abortFetchRef = useRef(null);
+
   const fetchStudents = useCallback(async () => {
+    abortFetchRef.current?.abort();
+    const controller = new AbortController();
+    abortFetchRef.current = controller;
     setLoading(true);
     setError(null);
     try {
@@ -63,7 +72,7 @@ const StudentManagementPage = () => {
       if (filtreFiliere) params.filiere_id = filtreFiliere;
       if (filtreSemestre) params.semestre = filtreSemestre;
       if (filtreNiveau) params.niveau = filtreNiveau;
-      const response = await api.get('/admin/students', { params });
+      const response = await api.get('/admin/students', { params, signal: controller.signal });
       const result = response.data;
 
       if (result.success) {
@@ -74,6 +83,7 @@ const StudentManagementPage = () => {
         setStudents([]);
       }
     } catch (err) {
+      if (err.name === 'CanceledError' || err.name === 'AbortError') return;
       const message = err.response?.data?.message || err.message || 'Erreur de connexion au serveur';
       setError(message);
       setStudents([]);
@@ -82,7 +92,10 @@ const StudentManagementPage = () => {
     }
   }, [page, search, filtreAnnee, filtreFiliere, filtreSemestre, filtreNiveau]);
 
-  useEffect(() => { fetchStudents(); }, [fetchStudents]);
+  useEffect(() => {
+    fetchStudents();
+    return () => abortFetchRef.current?.abort();
+  }, [fetchStudents]);
 
   const openCreate = () => {
     setEditing(null);
