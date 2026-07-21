@@ -43,6 +43,7 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->runInBackground()
             ->appendOutputTo(storage_path('logs/ec-sync.log'));
+je 
     }
 
     protected function commands(): void

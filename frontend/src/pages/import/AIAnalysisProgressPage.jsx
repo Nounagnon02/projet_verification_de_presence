@@ -38,13 +38,12 @@ export default function AIAnalysisProgressPage() {
 
         if (status === 'completed') {
           // Analyse terminée — stocker le résultat et naviguer
-          sessionStorage.setItem('import_analysis_result', JSON.stringify(data.data));
-
-          // Rediriger vers la bonne page de validation selon le type
           const type = data.data.type || analysisType;
           if (type === 'courses') {
+            sessionStorage.setItem('import_courses_analysis', JSON.stringify(data.data));
             navigate('/import/validate-courses');
           } else {
+            sessionStorage.setItem('import_analysis', JSON.stringify(data.data));
             navigate('/import/validate-schedule');
           }
           return true; // Arrêter le polling
@@ -80,7 +79,13 @@ export default function AIAnalysisProgressPage() {
       return;
     }
 
-    setAnalysisId(stored.analysis_id);
+    const id = Number(stored.analysis_id);
+    if (!id || isNaN(id)) {
+      setError('Identifiant d\'analyse invalide. Veuillez relancer l\'import.');
+      return;
+    }
+
+    setAnalysisId(id);
     setAnalysisType(stored.type);
     setCurrentStage(getStageFromStatus('pending'));
 
@@ -93,7 +98,7 @@ export default function AIAnalysisProgressPage() {
       if (cancelled) return;
       setPollCount(prev => prev + 1);
 
-      const done = await pollAnalysisStatus(stored.analysis_id);
+      const done = await pollAnalysisStatus(id);
       if (done || cancelled) return;
 
       retries++;
@@ -115,6 +120,10 @@ export default function AIAnalysisProgressPage() {
   }, [pollAnalysisStatus]);
 
   const handleRetry = () => {
+    if (!analysisId || isNaN(Number(analysisId))) {
+      setError("Impossible de réessayer : l'analyse n'est plus disponible. Veuillez réimporter le fichier.");
+      return;
+    }
     setError(null);
     setCurrentStage(0);
     setPollCount(0);

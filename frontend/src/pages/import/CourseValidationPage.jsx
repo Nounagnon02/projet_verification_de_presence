@@ -21,8 +21,10 @@ export default function CourseValidationPage() {
     if (dedicated) {
       try {
         const parsed = JSON.parse(dedicated);
-        const root = parsed?.data || parsed;
-        const uesData = root?.data?.ues || root?.ues || [];
+        // Le job stocke analyse.result = gemini.data = { ues: [...] }
+        // L'API retourne { analysis_id, type, status, result: { ues: [...] }, ... }
+        const root = parsed?.result || parsed?.data || parsed;
+        const uesData = root?.ues || root?.data?.ues || [];
 
         if (Array.isArray(uesData) && uesData.length > 0) {
           // Aplatir UEs + ECs en lignes de cours
@@ -53,8 +55,8 @@ export default function CourseValidationPage() {
           setCourses(flat);
           setSourceType('dedicated');
           setAnalysisMeta({
-            filename: root?.metadata?.filename || 'Catalogue cours.pdf',
-            score: root?.score_de_confiance ?? 0.95,
+            filename: parsed?.metadata?.filename || root?.metadata?.filename || 'Catalogue cours.pdf',
+            score: parsed?.score_de_confiance ?? root?.score_de_confiance ?? 0.95,
             total: uesData.length,
           });
           return;

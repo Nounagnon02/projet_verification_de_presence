@@ -360,8 +360,14 @@ class ImportController extends Controller
      *
      * GET /api/admin/import/analysis-status/{id}
      */
-    public function analysisStatus(int $id): JsonResponse
+    public function analysisStatus(mixed $id): JsonResponse
     {
+        $id = is_numeric($id) ? (int) $id : 0;
+
+        if ($id <= 0) {
+            return $this->errorResponse('Identifiant d\'analyse invalide.', 400);
+        }
+
         $analyse = Analyse::find($id);
 
         if (! $analyse) {
