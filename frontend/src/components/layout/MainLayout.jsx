@@ -2,9 +2,6 @@ import { Outlet } from 'react-router-dom';
 import SideNavBar from './navigation/SideNavBar';
 import TopNavBar from './navigation/TopNavBar';
 import BottomNavBar from './navigation/BottomNavBar';
-import FloatingActionButton from './buttons/FloatingActionButton';
-import ChatWidget from '../chat/ChatWidget';
-
 const MainLayout = () => {
   return (
     <>
@@ -13,8 +10,6 @@ const MainLayout = () => {
         <Outlet />
       </main>
       <BottomNavBar />
-      <FloatingActionButton />
-      <ChatWidget />
     </>
   );
 };
