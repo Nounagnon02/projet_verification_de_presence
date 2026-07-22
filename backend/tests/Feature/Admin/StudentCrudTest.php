@@ -6,7 +6,6 @@ use App\Models\AnneeAcademique;
 use App\Models\Etudiant;
 use App\Models\Filiere;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -21,7 +20,6 @@ use Tests\TestCase;
  */
 class StudentCrudTest extends TestCase
 {
-    use RefreshDatabase;
 
     private User $admin;
     private Filiere $filiere;

@@ -13,8 +13,8 @@ use App\Models\QrCode;
 use App\Models\Salle;
 use App\Models\Ue;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -25,7 +25,6 @@ use Tests\TestCase;
  */
 class TripleFactorScanTest extends TestCase
 {
-    use RefreshDatabase;
 
     private Etablissement $etablissement;
     private Filiere $filiere;
@@ -35,6 +34,14 @@ class TripleFactorScanTest extends TestCase
     private Etudiant $etudiant;
     private Salle $salle;
     private string $token;
+
+    /**
+     * Calcule le scan_challenge attendu pour un device fingerprint donné.
+     */
+    private function scanChallenge(string $deviceFingerprint): string
+    {
+        return hash('sha256', $deviceFingerprint . ':' . (Config::get('app.key') ?? 'uac-presence-secret'));
+    }
 
     protected function setUp(): void
     {
@@ -151,6 +158,7 @@ class TripleFactorScanTest extends TestCase
             'identifiant_unique' => $this->etudiant->identifiant_unique,
             'token'              => $this->token,
             'device_fingerprint' => 'device-abc-123',
+            'scan_challenge'     => $this->scanChallenge('device-abc-123'),
             'latitude'           => 6.3608,
             'longitude'          => 2.4354,
             'ssid'               => 'ASIN-STAFF',
@@ -172,6 +180,7 @@ class TripleFactorScanTest extends TestCase
             'identifiant_unique' => $this->etudiant->identifiant_unique,
             'token'              => $this->token,
             'device_fingerprint' => 'device-abc-123',
+            'scan_challenge'     => $this->scanChallenge('device-abc-123'),
             'latitude'           => 6.3720,
             'longitude'          => 2.4220,
             'ssid'               => 'ASIN-STAFF',
@@ -194,6 +203,7 @@ class TripleFactorScanTest extends TestCase
             'identifiant_unique' => $this->etudiant->identifiant_unique,
             'token'              => $this->token,
             'device_fingerprint' => 'device-abc-123',
+            'scan_challenge'     => $this->scanChallenge('device-abc-123'),
             'latitude'           => 6.3608,
             'longitude'          => 2.4354,
             'ssid'               => 'CAFE-NEIGHBOUR',
@@ -216,6 +226,7 @@ class TripleFactorScanTest extends TestCase
             'identifiant_unique' => $this->etudiant->identifiant_unique,
             'token'              => $this->token,
             'device_fingerprint' => 'device-abc-123',
+            'scan_challenge'     => $this->scanChallenge('device-abc-123'),
             'latitude'           => 6.3720,
             'longitude'          => 2.4220,
             'ssid'               => 'CAFE-NEIGHBOUR',
@@ -238,6 +249,7 @@ class TripleFactorScanTest extends TestCase
             'identifiant_unique' => $this->etudiant->identifiant_unique,
             'token'              => $this->token,
             'device_fingerprint' => 'device-abc-123',
+            'scan_challenge'     => $this->scanChallenge('device-abc-123'),
             'ssid'               => 'ASIN-STAFF',
             'bssid'              => '20:58:69:69:ac:7c',
         ]);
@@ -291,6 +303,7 @@ class TripleFactorScanTest extends TestCase
             'identifiant_unique' => $this->etudiant->identifiant_unique,
             'token'              => $tokenDegrade,
             'device_fingerprint' => 'device-degrade-001',
+            'scan_challenge'     => $this->scanChallenge('device-degrade-001'),
             'latitude'           => 6.3608,
             'longitude'          => 2.4354,
         ]);
@@ -321,6 +334,7 @@ class TripleFactorScanTest extends TestCase
             'identifiant_unique' => $this->etudiant->identifiant_unique,
             'token'              => $tokenInactif,
             'device_fingerprint' => 'device-inactif-001',
+            'scan_challenge'     => $this->scanChallenge('device-inactif-001'),
             // Pas de GPS, pas de WiFi → doit passer quand même
         ]);
 
@@ -364,6 +378,7 @@ class TripleFactorScanTest extends TestCase
             'identifiant_unique' => $this->etudiant->identifiant_unique,
             'token'              => $this->token,
             'device_fingerprint' => 'device-case-001',
+            'scan_challenge'     => $this->scanChallenge('device-case-001'),
             'latitude'           => 6.3608,
             'longitude'          => 2.4354,
             'ssid'               => 'asin-staff',

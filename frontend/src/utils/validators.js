@@ -1,5 +1,5 @@
 export function required(value) {
-  if (!value || (typeof value 'string' && !value.trim())) {
+  if (!value || (typeof value === 'string' && !value.trim())) {
     return 'Ce champ est requis';
   }
   return null;

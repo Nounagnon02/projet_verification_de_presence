@@ -54,7 +54,7 @@ services:
       - key: SUPABASE_BUCKET
         value: presence-uac
       - key: GEMINI_API_KEY
-        value: AIzaSyBHemsdB4b4QuLkVTXFU1OpDwaCCHxAuY0
+        sync: false
       - key: LOG_CHANNEL
         value: stderr
       - key: LOG_LEVEL
@@ -124,9 +124,9 @@ services:
       - key: MAIL_MAILER
         value: log
 
-      # Gemini IA
+      # Gemini IA — clé à définir manuellement dans le dashboard Render
       - key: GEMINI_API_KEY
-        value: AIzaSyBHemsdB4b4QuLkVTXFU1OpDwaCCHxAuY0
+        sync: false
 
       # Logs
       - key: LOG_CHANNEL

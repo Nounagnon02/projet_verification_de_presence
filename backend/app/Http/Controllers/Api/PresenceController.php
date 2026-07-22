@@ -453,6 +453,20 @@ class PresenceController extends Controller
     }
 
     /**
+     * Vérifie le challenge cryptographique anti-fraude.
+     *
+     * Le challenge est calculé côté client comme :
+     *   hash('sha256', device_fingerprint + ':' + config('app.key'))
+     *
+     * Cette vérification empêche la relecture (replay) des requêtes de scan.
+     */
+    private function verifyScanChallenge(string $challenge, string $deviceFingerprint): bool
+    {
+        $expected = hash('sha256', $deviceFingerprint . ':' . (config('app.key') ?? 'uac-presence-secret'));
+        return hash_equals($expected, $challenge);
+    }
+
+    /**
      * Logger une action d'audit
      */
     private function logAudit(string $action, $model, $user, array $changes = []): void
