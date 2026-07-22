@@ -12,6 +12,7 @@ class Ec extends Model
 {
     use HasFactory;
     protected $fillable = ['ue_id', 'code', 'intitule', 'volume_horaire', 'statut'];
+    protected $attributes = ['statut' => 'non_demarre'];
 
     public function ue(): BelongsTo { return $this->belongsTo(Ue::class); }
     public function evenements(): HasMany { return $this->hasMany(Evenement::class); }

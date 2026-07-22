@@ -12,8 +12,8 @@ use App\Models\Presence;
 use App\Models\QrCode;
 use App\Models\Ue;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -28,7 +28,6 @@ use Tests\TestCase;
  */
 class PresenceScanTest extends TestCase
 {
-    use RefreshDatabase;
 
     private Filiere $filiere;
     private AnneeAcademique $annee;
@@ -36,6 +35,14 @@ class PresenceScanTest extends TestCase
     private Evenement $evenement;
     private Etudiant $etudiant;
     private string $token;
+
+    /**
+     * Calcule le scan_challenge attendu pour un device fingerprint donné.
+     */
+    private function scanChallenge(string $deviceFingerprint): string
+    {
+        return hash('sha256', $deviceFingerprint . ':' . (Config::get('app.key') ?? 'uac-presence-secret'));
+    }
 
     protected function setUp(): void
     {
@@ -120,6 +127,7 @@ class PresenceScanTest extends TestCase
             'identifiant_unique' => $this->etudiant->identifiant_unique,
             'token'              => $this->token,
             'device_fingerprint' => 'device-abc-123',
+            'scan_challenge'     => $this->scanChallenge('device-abc-123'),
             'latitude'           => 6.3608,
             'longitude'          => 2.4354,
         ]);
@@ -160,6 +168,7 @@ class PresenceScanTest extends TestCase
             'identifiant_unique' => $this->etudiant->identifiant_unique,
             'token'              => $expiredToken,
             'device_fingerprint' => 'device-abc-123',
+            'scan_challenge'     => $this->scanChallenge('device-abc-123'),
         ]);
 
         $response->assertStatus(410)
@@ -194,6 +203,7 @@ class PresenceScanTest extends TestCase
             'identifiant_unique' => $autreEtudiant->identifiant_unique,
             'token'              => $this->token,
             'device_fingerprint' => 'device-xyz-789',
+            'scan_challenge'     => $this->scanChallenge('device-xyz-789'),
         ]);
 
         $response->assertStatus(403)
@@ -211,6 +221,7 @@ class PresenceScanTest extends TestCase
             'identifiant_unique' => $this->etudiant->identifiant_unique,
             'token'              => $this->token,
             'device_fingerprint' => 'device-premier-001',
+            'scan_challenge'     => $this->scanChallenge('device-premier-001'),
         ])->assertStatus(201);
 
         // Créer un nouveau QR code pour un deuxième scan (le premier a été invalidé)
@@ -227,6 +238,7 @@ class PresenceScanTest extends TestCase
             'identifiant_unique' => $this->etudiant->identifiant_unique,
             'token'              => $secondToken,
             'device_fingerprint' => 'device-frauduleux-999',
+            'scan_challenge'     => $this->scanChallenge('device-frauduleux-999'),
         ]);
 
         $response->assertStatus(409)

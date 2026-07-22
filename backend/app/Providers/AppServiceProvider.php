@@ -2,10 +2,15 @@
 
 namespace App\Providers;
 
+use App\Contracts\AiProviderInterface;
 use App\Models\Ec;
 use App\Models\Ue;
 use App\Observers\EcObserver;
 use App\Observers\UeObserver;
+use App\Services\AiAnalysisService;
+use App\Services\Providers\GeminiProvider;
+use App\Services\Providers\GroqProvider;
+use App\Services\Providers\OpenRouterProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -21,7 +26,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Binding du provider IA — interchangeable via AI_PROVIDER
+        $this->app->bind(AiProviderInterface::class, function ($app) {
+            return match (config('ai.default')) {
+                'groq'       => new GroqProvider(config('ai.providers.groq.api_key')),
+                'openrouter' => new OpenRouterProvider(config('ai.providers.openrouter.api_key')),
+                default      => new GeminiProvider(config('ai.providers.gemini.api_key')),
+            };
+        });
+
+        // Enregistrement du service d'analyse IA
+        $this->app->singleton(AiAnalysisService::class, function ($app) {
+            return new AiAnalysisService($app->make(AiProviderInterface::class));
+        });
     }
 
     /**
