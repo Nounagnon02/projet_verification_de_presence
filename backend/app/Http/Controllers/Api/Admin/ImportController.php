@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\ProcessGeminiImportJob;
+use App\Jobs\ProcessAiImportJob;
 use App\Models\Analyse;
 use App\Models\AnneeAcademique;
 use App\Models\Etudiant;
 use App\Models\Filiere;
-use App\Services\GeminiService;
+use App\Services\AiAnalysisService;
 use App\Services\IdentifiantService;
 use App\Traits\ScopedByEtablissement;
 use Illuminate\Http\JsonResponse;
@@ -22,7 +22,7 @@ class ImportController extends Controller
     use ScopedByEtablissement;
 
     public function __construct(
-        protected GeminiService $gemini
+        protected AiAnalysisService $aiAnalysis
     ) {}
 
     /**
@@ -183,8 +183,8 @@ class ImportController extends Controller
         ]);
 
         // Dispatch du job asynchrone sur queue dédiée
-        ProcessGeminiImportJob::dispatch($analyse, 'courses')
-            ->onQueue('gemini-import');
+        ProcessAiImportJob::dispatch($analyse)
+            ->onQueue('ai-import');
 
         return $this->successResponse(
             ['analysis_id' => $analyse->id, 'status' => 'pending'],
@@ -231,8 +231,8 @@ class ImportController extends Controller
         ]);
 
         // Dispatch du job asynchrone sur queue dédiée
-        ProcessGeminiImportJob::dispatch($analyse, 'schedule')
-            ->onQueue('gemini-import');
+        ProcessAiImportJob::dispatch($analyse)
+            ->onQueue('ai-import');
 
         return $this->successResponse(
             ['analysis_id' => $analyse->id, 'status' => 'pending'],

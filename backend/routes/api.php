@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Admin\EcController;
 use App\Http\Controllers\Api\Admin\EnrollmentController;
 use App\Http\Controllers\Api\Admin\EvenementController;
 use App\Http\Controllers\Api\Admin\FiliereController;
+use App\Http\Controllers\Api\Admin\CsvImportController;
 use App\Http\Controllers\Api\Admin\ImportController;
 use App\Http\Controllers\Api\Admin\NotificationController;
 use App\Http\Controllers\Api\Admin\PresenceHistoryController;
@@ -153,6 +154,13 @@ Route::middleware(['auth:sanctum', 'scoped.etablissement', 'throttle:api'])->pre
     Route::post('/import/validate-events', [ImportController::class, 'validateEvents']);
     Route::post('/import/validate-courses', [ImportController::class, 'validateCourses']);
     Route::get('/import/analysis-status/{id}', [ImportController::class, 'analysisStatus']);
+
+    // Import CSV (UE/EC et Emploi du temps)
+    Route::prefix('import/csv')->group(function () {
+        Route::post('/courses', [CsvImportController::class, 'importCourses']);
+        Route::post('/schedule', [CsvImportController::class, 'importSchedule']);
+        Route::get('/template/{type}', [CsvImportController::class, 'downloadTemplate']);
+    });
 
     // Alertes
     Route::get('/alerts', [\App\Http\Controllers\Api\Admin\AlertController::class, 'index']);

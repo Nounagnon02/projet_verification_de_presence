@@ -30,7 +30,7 @@ const TopNavBar = () => {
         <p className="text-[10px] text-on-surface-variant">{user?.name || 'Administrateur'}</p>
       </div>
       <div className="flex items-center gap-2">
-        <button onClick={() => navigate('/notifications')} className="p-2 hover:bg-surface-container-high rounded-xl transition-colors relative">
+        <button onClick={() => navigate('/notifications')} aria-label="Notifications" className="p-2 hover:bg-surface-container-high rounded-xl transition-colors relative">
           <FiBell className="text-outline" />
           {unreadCount > 0 && (
             <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-error text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1">

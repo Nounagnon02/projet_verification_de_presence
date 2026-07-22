@@ -14,6 +14,7 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class PresenceHistoryController extends Controller
@@ -189,7 +190,7 @@ class PresenceHistoryController extends Controller
         // Style des en-têtes
         $headerStyle = [
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
-            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1E40AF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF1E40AF']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
             'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
         ];
@@ -226,7 +227,7 @@ class PresenceHistoryController extends Controller
             if ($row % 2 === 0) {
                 $sheet->getStyle('A' . $row . ':J' . $row)
                     ->getFill()->setFillType(Fill::FILL_SOLID)
-                    ->setStartColor(['rgb' => 'F3F4F6']);
+                    ->setStartColor(new Color('FFF3F4F6'));
             }
 
             $row++;
