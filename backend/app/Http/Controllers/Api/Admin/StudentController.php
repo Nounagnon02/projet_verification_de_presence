@@ -117,8 +117,21 @@ class StudentController extends Controller
         // Auto-inscription aux ECs de la filière et année (CDC 7.2.3)
         $etudiant->autoEnroll();
 
-        // Envoi de l'identifiant par email via queue (job asynchrone)
-        \App\Jobs\SendIdentifiantEmailJob::dispatch($etudiant);
+        // Envoi de l'identifiant par email (synchrone — pas de worker en prod)
+        try {
+            Mail::send('emails.identifiant', [
+                'nom' => $etudiant->nom,
+                'prenom' => $etudiant->prenom,
+                'identifiant' => $etudiant->identifiant_unique,
+                'filiere' => $etudiant->filiere->intitule,
+                'annee' => $etudiant->anneeAcademique->libelle,
+            ], function ($message) use ($etudiant) {
+                $message->to($etudiant->email)
+                    ->subject('Votre identifiant unique - Système de présence UAC');
+            });
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Erreur envoi email étudiant {$etudiant->matricule}: " . $e->getMessage());
+        }
 
         return $this->createdResponse(
             new EtudiantResource($etudiant->load(['filiere', 'anneeAcademique'])),
