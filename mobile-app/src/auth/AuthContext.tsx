@@ -56,8 +56,8 @@ export interface AuthContextType {
   isLoading: boolean;
   /** true si l'utilisateur est authentifié */
   isAuthenticated: boolean;
-  /** Connecte l'utilisateur avec email/mot de passe */
-  login: (email: string, password: string) => Promise<void>;
+  /** Connecte l'étudiant avec email et identifiant unique */
+  login: (email: string, identifiantUnique: string) => Promise<void>;
   /** Déconnecte et nettoie le stockage local */
   logout: () => Promise<void>;
   /** Rafraîchit les infos utilisateur depuis l'API */
@@ -114,8 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const { data } = await apiClient.post('/login', { email, password });
+  const login = useCallback(async (email: string, identifiantUnique: string) => {
+    const { data } = await apiClient.post('/auth/student/login', { email, identifiant_unique: identifiantUnique });
     if (!data.success) {
       throw new Error(data.message || 'Identifiants invalides.');
     }

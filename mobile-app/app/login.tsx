@@ -5,14 +5,14 @@ import { useAuth } from '../src/auth/AuthContext';
 import { Button } from '../src/components/ui/Button';
 import { Input } from '../src/components/ui/Input';
 import { showToast } from '../src/utils/toast-config';
-import { Mail, Lock, LogIn } from 'lucide-react-native';
+import { Mail, Key, LogIn } from 'lucide-react-native';
 
 export default function LoginScreen() {
   const { login, isAuthenticated } = useAuth();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [identifiantUnique, setIdentifiantUnique] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; identifiantUnique?: string }>({});
 
   if (isAuthenticated) {
     router.replace('/(tabs)');
@@ -20,9 +20,9 @@ export default function LoginScreen() {
   }
 
   async function handleLogin() {
-    const newErrors: { email?: string; password?: string } = {};
+    const newErrors: { email?: string; identifiantUnique?: string } = {};
     if (!email.trim()) newErrors.email = "L'email est requis.";
-    if (!password) newErrors.password = 'Le mot de passe est requis.';
+    if (!identifiantUnique.trim()) newErrors.identifiantUnique = "L'identifiant unique est requis.";
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -31,7 +31,7 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      await login(email.trim(), password);
+      await login(email.trim(), identifiantUnique);
       router.replace('/(tabs)');
     } catch (err: unknown) {
       const message =
@@ -80,17 +80,16 @@ export default function LoginScreen() {
           />
 
           <Input
-            label="Mot de passe"
-            placeholder="••••••••"
-            value={password}
+            label="Identifiant unique"
+            placeholder="NOM_PRENOM_MATRICULE_FILIERE_ANNEE"
+            value={identifiantUnique}
             onChangeText={(t) => {
-              setPassword(t);
-              if (errors.password) setErrors((e) => ({ ...e, password: undefined }));
+              setIdentifiantUnique(t);
+              if (errors.identifiantUnique) setErrors((e) => ({ ...e, identifiantUnique: undefined }));
             }}
-            error={errors.password}
-            secureTextEntry
-            autoComplete="password"
-            leftIcon={<Lock size={20} color="#757680" />}
+            error={errors.identifiantUnique}
+            autoCapitalize="characters"
+            leftIcon={<Key size={20} color="#757680" />}
           />
 
           <Button
