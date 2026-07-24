@@ -14,8 +14,11 @@ ENVEOF
 php artisan config:clear
 php artisan migrate --force --no-interaction
 
-# Peuplement de la DB si vide (tous les seeders utilisent updateOrCreate/firstOrCreate = idempotent)
-php artisan db:seed --force
+# Données essentielles uniquement (évite le timeout avec les grosses données de démo)
+php artisan db:seed --class=AdminUserSeeder --force
+php artisan db:seed --class=AnneeAcademiqueSeeder --force
+php artisan db:seed --class=FiliereSeeder --force
+php artisan db:seed --class=FiliereAnneeSeeder --force
 
 php artisan config:cache
 php artisan route:cache
