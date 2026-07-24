@@ -1,10 +1,13 @@
 import { Fragment, forwardRef } from 'react';
+import { Loader2 } from 'lucide-react';
 
 const Button = forwardRef(({
   children,
   variant = 'primary',
   size = 'md',
   className = '',
+  loading = false,
+  disabled = false,
   asChild = false,
   'aria-label': ariaLabel,
   'aria-expanded': ariaExpanded,
@@ -36,12 +39,16 @@ const Button = forwardRef(({
     <Component
       ref={ref}
       className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      disabled={disabled || loading}
       aria-label={ariaLabel}
       aria-expanded={ariaExpanded}
       aria-controls={ariaControls}
       aria-pressed={ariaPressed}
       {...props}
     >
+      {loading && (
+        <Loader2 size={size === 'sm' ? 14 : size === 'lg' ? 22 : 18} className="animate-spin shrink-0" />
+      )}
       {children}
     </Component>
   );

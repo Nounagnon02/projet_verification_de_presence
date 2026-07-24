@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AnneeAcademique;
 use App\Models\Filiere;
 use App\Traits\ScopedByEtablissement;
 use Illuminate\Http\JsonResponse;
@@ -36,6 +37,13 @@ class FiliereController extends Controller
         $validated['etablissement_id'] = $this->getEtablissementId($request);
 
         $filiere = Filiere::create($validated);
+
+        // Lier automatiquement à l'année académique active
+        $activeAnnee = AnneeAcademique::where('active', true)->first();
+        if ($activeAnnee) {
+            $filiere->anneesAcademiques()->syncWithoutDetaching([$activeAnnee->id]);
+        }
+
         $filiere->loadCount(['etudiants', 'ues']);
         return $this->createdResponse($filiere, 'Filière créée avec succès.');
     }
@@ -69,5 +77,29 @@ class FiliereController extends Controller
     {
         $filiere->delete();
         return $this->successResponse(null, 'Filière supprimée.');
+    }
+
+    /**
+     * Reconduire les filières d'une année source vers une année cible.
+     */
+    public function reconduire(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'source_annee_id' => 'required|exists:annees_academiques,id',
+            'target_annee_id' => 'required|exists:annees_academiques,id|different:source_annee_id',
+        ]);
+
+        $sourceAnnee = AnneeAcademique::findOrFail($validated['source_annee_id']);
+        $targetAnnee = AnneeAcademique::findOrFail($validated['target_annee_id']);
+
+        $filiereIds = $sourceAnnee->filieres()->pluck('filieres.id')->toArray();
+        $targetAnnee->filieres()->syncWithoutDetaching($filiereIds);
+
+        $count = count($filiereIds);
+        return $this->successResponse([
+            'reconduites' => $count,
+            'source'       => $sourceAnnee->libelle,
+            'target'       => $targetAnnee->libelle,
+        ], "{$count} filière(s) reconduite(s) de {$sourceAnnee->libelle} vers {$targetAnnee->libelle}");
     }
 }

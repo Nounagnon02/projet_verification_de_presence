@@ -126,6 +126,7 @@ Route::middleware(['auth:sanctum', 'scoped.etablissement', 'throttle:api'])->pre
     Route::apiResource('evenements', EvenementController::class);
 
     // Filières
+    Route::post('/filieres/reconduire', [FiliereController::class, 'reconduire']);
     Route::apiResource('filieres', FiliereController::class);
 
     // Salles (configuration géolocalisation + réseau)

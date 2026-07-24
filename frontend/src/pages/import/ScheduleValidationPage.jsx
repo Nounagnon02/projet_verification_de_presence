@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiChevronRight, FiEdit, FiSave, FiAlertCircle, FiInfo, FiZoomIn, FiCheck } from 'react-icons/fi';
+import { FiChevronRight, FiEdit, FiSave, FiAlertCircle, FiInfo, FiZoomIn, FiCheck, FiLoader } from 'react-icons/fi';
 import { MdAutoAwesome } from 'react-icons/md';
 import api from '../../api/axios';
 
@@ -326,7 +326,7 @@ export default function ScheduleValidationPage() {
             <button onClick={handleSave} disabled={saving || selectedCount === 0}
               className="px-8 py-2.5 rounded-lg font-bold text-sm text-white bg-gradient-to-br from-primary to-primary-container shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2">
               <FiSave className="text-sm" />
-              {saving ? 'Enregistrement...' : 'Valider et enregistrer'}
+              {saving ? <><FiLoader className="animate-spin" /> Enregistrement...</> : 'Valider et enregistrer'}
             </button>
           </div>
         </div>
