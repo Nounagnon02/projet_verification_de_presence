@@ -1,0 +1,27 @@
+{
+  "name": "tests",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "./scripts/run-tests.sh",
+    "test:prod": "./scripts/run-tests.sh prod",
+    "test:prod:api": "./scripts/run-tests.sh prod api",
+    "test:prod:health": "./scripts/run-tests.sh prod health",
+    "test:prod:auth": "./scripts/run-tests.sh prod auth",
+    "test:local": "./scripts/run-tests.sh local",
+    "test:local:api": "./scripts/run-tests.sh local api",
+    "test:all": "./scripts/run-tests.sh all",
+    "report": "npx playwright show-report"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@playwright/test": "^1.61.1",
+    "dotenv": "^17.4.2",
+    "playwright": "^1.61.1",
+    "typescript": "^7.0.2"
+  }
+}

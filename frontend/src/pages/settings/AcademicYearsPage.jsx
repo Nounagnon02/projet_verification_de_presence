@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiCheck, FiCalendar, FiArrowRight, FiStar } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiCheck, FiCalendar, FiArrowRight, FiStar, FiLoader, FiCopy } from 'react-icons/fi';
 import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
 import useApi from '../../hooks/useApi';
 import api from '../../api/axios';
+import { useToastCtx } from '../../context/ToastContext';
 
 function formatDate(dateStr) {
   if (!dateStr) return '—';
@@ -22,6 +23,9 @@ export default function AcademicYearsPage() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ libelle: '', date_debut: '', date_fin: '' });
   const [saving, setSaving] = useState(false);
+  const [reconduireLoading, setReconduireLoading] = useState(null);
+  const { addToast } = useToastCtx();
+  const activeYear = (years || []).find(y => y.active);
 
   const openCreate = () => {
     setEditing(null);
@@ -69,6 +73,22 @@ export default function AcademicYearsPage() {
       refetch();
     } catch (err) {
       alert(err.response?.data?.message || "Erreur lors de l'activation");
+    }
+  };
+
+  const handleReconduire = async (targetId, activeId) => {
+    setReconduireLoading(targetId);
+    try {
+      const { data } = await api.post('/admin/filieres/reconduire', {
+        source_annee_id: activeId,
+        target_annee_id: targetId,
+      });
+      addToast?.(data?.message || 'Filières reconduites avec succès', 'success');
+      refetch();
+    } catch (err) {
+      addToast?.(err.response?.data?.message || 'Erreur lors de la reconduction', 'error');
+    } finally {
+      setReconduireLoading(null);
     }
   };
 
@@ -164,6 +184,16 @@ export default function AcademicYearsPage() {
                     <p className="font-semibold text-on-surface">{formatDate(year.date_fin)}</p>
                   </div>
                 </div>
+                {!year.active && activeYear && (
+                  <button
+                    onClick={() => handleReconduire(year.id, activeYear.id)}
+                    disabled={reconduireLoading === year.id}
+                    className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 bg-primary/10 text-primary rounded-lg text-xs font-semibold hover:bg-primary/20 transition-all disabled:opacity-50"
+                  >
+                    {reconduireLoading === year.id ? <FiLoader className="animate-spin" size={12} /> : <FiCopy size={12} />}
+                    {reconduireLoading === year.id ? 'Reconduction...' : 'Reconduire les filières'}
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -189,7 +219,7 @@ export default function AcademicYearsPage() {
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors">Annuler</button>
-            <button type="submit" disabled={saving} className="px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-all">{saving ? 'Enregistrement...' : editing ? 'Modifier' : 'Créer'}</button>
+            <button type="submit" disabled={saving} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-all">{saving && <FiLoader className="animate-spin" />}{saving ? 'Enregistrement...' : editing ? 'Modifier' : 'Créer'}</button>
           </div>
         </form>
       </Modal>

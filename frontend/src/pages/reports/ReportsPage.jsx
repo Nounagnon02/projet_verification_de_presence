@@ -593,11 +593,11 @@ const ReportsPage = () => {
             <div className="flex flex-wrap gap-2">
               <button onClick={() => exportReport('presences-csv')} disabled={exporting}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-success/10 text-success rounded-lg text-xs font-semibold hover:bg-success/20 transition-all disabled:opacity-50">
-                <FiFileText /> {exporting === 'presences-csv' ? '...' : 'Liste Présences CSV'}
+                {exporting === 'presences-csv' ? <FiLoader className="animate-spin" size={12} /> : <FiFileText size={12} />} {exporting === 'presences-csv' ? 'Export...' : 'Liste Présences CSV'}
               </button>
               <button onClick={() => exportReport('filiere-pdf')} disabled={exporting || !filiereId}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-warning/10 text-warning rounded-lg text-xs font-semibold hover:bg-warning/20 transition-all disabled:opacity-50">
-                <FiFileText /> {exporting === 'filiere-pdf' ? '...' : 'Rapport Filière PDF'}
+                {exporting === 'filiere-pdf' ? <FiLoader className="animate-spin" size={12} /> : <FiFileText size={12} />} {exporting === 'filiere-pdf' ? 'Export...' : 'Rapport Filière PDF'}
               </button>
             </div>
           </div>

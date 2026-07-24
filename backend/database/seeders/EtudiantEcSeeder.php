@@ -17,6 +17,8 @@ class EtudiantEcSeeder extends Seeder
         $filieres = Filiere::all()->keyBy('code');
 
         $total = 0;
+        $now = now();
+        $chunks = [];
 
         foreach ($filieres as $filiere) {
             // Récupérer les étudiants de cette filière
@@ -33,16 +35,27 @@ class EtudiantEcSeeder extends Seeder
             // Enrôler chaque étudiant dans tous les ECs de sa filière
             foreach ($etudiants as $etudiant) {
                 foreach ($ecs as $ec) {
-                    DB::table('etudiant_ec')->insertOrIgnore([
+                    $chunks[] = [
                         'etudiant_id' => $etudiant->id,
                         'ec_id'       => $ec->id,
                         'annee_id'    => $activeAnnee,
-                        'created_at'  => now(),
-                        'updated_at'  => now(),
-                    ]);
+                        'created_at'  => $now,
+                        'updated_at'  => $now,
+                    ];
                     $total++;
+
+                    // Insérer par lots de 100 pour éviter les timeouts
+                    if (count($chunks) >= 100) {
+                        DB::table('etudiant_ec')->insertOrIgnore($chunks);
+                        $chunks = [];
+                    }
                 }
             }
+        }
+
+        // Dernier lot
+        if (!empty($chunks)) {
+            DB::table('etudiant_ec')->insertOrIgnore($chunks);
         }
 
         $this->command->info("Inscriptions étudiant-EC créées : {$total}");

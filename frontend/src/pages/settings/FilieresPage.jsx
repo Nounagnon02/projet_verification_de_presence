@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiBook, FiFilter } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiBook, FiFilter, FiLoader } from 'react-icons/fi';
 import Modal from '../../components/ui/Modal';
 import Badge from '../../components/ui/Badge';
 import useApi from '../../hooks/useApi';
@@ -186,7 +186,7 @@ export default function FilieresPage() {
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors">Annuler</button>
-            <button type="submit" disabled={saving} className="px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-all">{saving ? 'Enregistrement...' : editing ? 'Modifier' : 'Créer'}</button>
+            <button type="submit" disabled={saving} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-all">{saving && <FiLoader className="animate-spin" />}{saving ? 'Enregistrement...' : editing ? 'Modifier' : 'Créer'}</button>
           </div>
         </form>
       </Modal>

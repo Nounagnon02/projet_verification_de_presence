@@ -19,6 +19,7 @@ const StudentManagementPage = () => {
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const [filieres, setFilieres] = useState([]);
   const [annees, setAnnees] = useState([]);
   const { addToast } = useToastCtx();
@@ -167,6 +168,7 @@ const StudentManagementPage = () => {
 
   const confirmDelete = async () => {
     if (!deleteId) return;
+    setDeleting(true);
     try {
       await api.delete(`/admin/students/${deleteId}`);
       addToast?.('Étudiant supprimé', 'success');
@@ -176,6 +178,8 @@ const StudentManagementPage = () => {
       const msg = err.response?.data?.message || 'Erreur lors de la suppression';
       addToast?.(msg, 'error');
       setDeleteId(null);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -319,7 +323,8 @@ const StudentManagementPage = () => {
         <div className="mb-6 flex items-center gap-3 p-4 bg-error/10 rounded-xl text-error border border-error/10">
           <FiAlertTriangle />
           <p className="flex-1 text-sm">Supprimer cet étudiant ? Cette action est irréversible.</p>
-          <button onClick={confirmDelete} className="px-4 py-1.5 bg-error text-white rounded-lg text-sm font-semibold">Confirmer</button>
+          <button onClick={confirmDelete} disabled={deleting} className="flex items-center gap-2 px-4 py-1.5 bg-error text-white rounded-lg text-sm font-semibold disabled:opacity-50">
+            {deleting && <FiLoader className="animate-spin" />} Confirmer</button>
           <button onClick={() => setDeleteId(null)} className="px-4 py-1.5 text-sm font-semibold hover:bg-surface-container-high rounded-lg transition-colors">Annuler</button>
         </div>
       )}
@@ -437,8 +442,8 @@ const StudentManagementPage = () => {
             <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors">
               Annuler
             </button>
-            <button type="submit" disabled={saving} className="px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50">
-              {saving ? 'Enregistrement...' : editing ? 'Modifier' : 'Créer'}
+            <button type="submit" disabled={saving} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50">
+              {saving && <FiLoader className="animate-spin" />}{saving ? 'Enregistrement...' : editing ? 'Modifier' : 'Créer'}
             </button>
           </div>
         </form>
