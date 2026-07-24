@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
+    "postinstall": "find node_modules/@expo-google-fonts -name '*.ttf.png' -exec sh -c 'mv \"$1\" \"${1%.png}\"' _ {} \\;",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
