@@ -92,9 +92,8 @@ docs/
 __pycache__/
 .pytest_cache/
 
-# Claude files
+# Claude files (local config, memory, plans — pas CLAUDE.md qui est versionné)
 .claude/
-CLAUDE.md
 
 # Other AI agent/tooling files
 .cursor/
