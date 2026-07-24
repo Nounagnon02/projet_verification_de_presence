@@ -36,7 +36,7 @@ services:
       - key: DB_USERNAME
         value: postgres.kvgzlngijxrjjdvashph
       - key: DB_PASSWORD
-        value: Mesetudeskp12@
+        value: Mesetudeskp12
       - key: DB_SSLMODE
         value: require
       - key: QUEUE_CONNECTION
@@ -90,7 +90,7 @@ services:
       - key: DB_USERNAME
         value: postgres.kvgzlngijxrjjdvashph
       - key: DB_PASSWORD
-        value: Mesetudeskp12@
+        value: Mesetudeskp12
       - key: DB_SSLMODE
         value: require
 
