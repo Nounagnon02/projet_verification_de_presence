@@ -13,6 +13,10 @@ ENVEOF
 # Optimisations Laravel
 php artisan config:clear
 php artisan migrate --force --no-interaction
+
+# Création des utilisateurs admin si inexistants (firstOrCreate = idempotent)
+php artisan db:seed --class=AdminUserSeeder --force
+
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
