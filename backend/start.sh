@@ -14,8 +14,8 @@ ENVEOF
 php artisan config:clear
 php artisan migrate --force --no-interaction
 
-# Création des utilisateurs admin si inexistants (firstOrCreate = idempotent)
-php artisan db:seed --class=AdminUserSeeder --force
+# Peuplement de la DB si vide (tous les seeders utilisent updateOrCreate/firstOrCreate = idempotent)
+php artisan db:seed --force
 
 php artisan config:cache
 php artisan route:cache
