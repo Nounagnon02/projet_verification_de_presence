@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\ApiDocumentationController;
 use App\Http\Controllers\Api\LandingPageController;
 use App\Http\Controllers\Api\PresenceController;
 use App\Http\Controllers\Api\QrCodeController;
+use App\Http\Controllers\Api\StudentAuthController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -58,6 +59,13 @@ Route::get('/health', function () {
         ],
     ]);
 });
+
+// ============================================================
+// Authentification étudiant (app mobile)
+// ============================================================
+Route::post('/auth/student/login', [StudentAuthController::class, 'login']);
+Route::get('/auth/student/me', [StudentAuthController::class, 'me']);
+Route::post('/auth/student/logout', [StudentAuthController::class, 'logout']);
 
 // Route de login nommée — nécessaire pour les redirections de Sanctum
 // Rate limiting : 5 tentatives/min/IP (CDC 9.1)
