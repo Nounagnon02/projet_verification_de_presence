@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiMapPin, FiWifi, FiAlertTriangle, FiCheck, FiX, FiSearch } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiMapPin, FiWifi, FiAlertTriangle, FiCheck, FiX, FiSearch, FiLoader } from 'react-icons/fi';
 import api from '../../api/axios';
 import { useToastCtx } from '../../context/ToastContext';
 
@@ -19,6 +19,7 @@ export default function SallesPage() {
   const [editing, setEditing] = useState(null); // null = create, object = edit
   const [form, setForm] = useState(EMPTY_SALLE);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
   const [showDelete, setShowDelete] = useState(null);
   const [userEntity, setUserEntity] = useState(null);
@@ -105,6 +106,7 @@ export default function SallesPage() {
 
   const handleDelete = async () => {
     if (!showDelete) return;
+    setDeleting(true);
     try {
       await api.delete(`/admin/salles/${showDelete.id}`);
       addToast?.('Salle supprimée.', 'success');
@@ -112,6 +114,8 @@ export default function SallesPage() {
       fetchSalles();
     } catch (err) {
       addToast?.(err.response?.data?.message || 'Erreur lors de la suppression.', 'error');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -300,8 +304,8 @@ export default function SallesPage() {
                 <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 bg-surface-container-high text-on-surface rounded-xl text-sm font-semibold hover:bg-surface-container transition-colors">
                   Annuler
                 </button>
-                <button type="submit" disabled={saving} className="px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50">
-                  {saving ? 'Enregistrement...' : (editing ? 'Mettre à jour' : 'Créer')}
+                <button type="submit" disabled={saving} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50">
+                  {saving && <FiLoader className="animate-spin" />}{saving ? 'Enregistrement...' : (editing ? 'Mettre à jour' : 'Créer')}
                 </button>
               </div>
             </form>
@@ -323,7 +327,8 @@ export default function SallesPage() {
             <p className="text-sm text-on-surface-variant mb-6">Cette action est irréversible. Les événements utilisant cette salle ne seront pas supprimés.</p>
             <div className="flex gap-3">
               <button onClick={() => setShowDelete(null)} className="flex-1 px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl text-sm font-semibold hover:bg-surface-container transition-colors">Annuler</button>
-              <button onClick={handleDelete} className="flex-1 px-4 py-2.5 bg-error text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all">Supprimer</button>
+              <button onClick={handleDelete} disabled={deleting} className="flex items-center justify-center gap-2 flex-1 px-4 py-2.5 bg-error text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50">
+                {deleting && <FiLoader className="animate-spin" />}Supprimer</button>
             </div>
           </div>
         </div>

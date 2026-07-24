@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiChevronRight, FiCheck, FiAlertCircle, FiFilter, FiPlus, FiSave, FiArrowRight } from 'react-icons/fi';
+import { FiChevronRight, FiCheck, FiAlertCircle, FiFilter, FiPlus, FiSave, FiArrowRight, FiLoader } from 'react-icons/fi';
 import { MdCloudDone, MdAutoAwesome } from 'react-icons/md';
 import api from '../../api/axios';
 
@@ -372,7 +372,7 @@ export default function CourseValidationPage() {
             <button onClick={handleSave} disabled={saving || readyCount === 0}
               className="w-full py-4 rounded-xl bg-gradient-to-br from-primary to-primary-container text-white font-bold text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2">
               <MdCloudDone className="text-[20px]" />
-              {saving ? 'Enregistrement...' : 'Valider et enregistrer'}
+              {saving ? <><FiLoader className="animate-spin" /> Enregistrement...</> : 'Valider et enregistrer'}
             </button>
             <button onClick={() => navigate('/import')}
               className="w-full py-4 rounded-xl bg-surface-container-highest text-on-surface font-bold text-sm hover:bg-surface-container-high transition-colors">

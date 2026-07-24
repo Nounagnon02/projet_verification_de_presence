@@ -24,6 +24,8 @@ class PresenceSeeder extends Seeder
         $total = 0;
         $stats = ['valide' => 0, 'rejete' => 0, 'suspect' => 0];
         $statuses = ['valide', 'valide', 'valide', 'valide', 'valide', 'valide', 'valide', 'suspect', 'suspect', 'rejete'];
+        $chunks = [];
+        $now = now();
 
         foreach ($evenements as $evenement) {
             // Récupérer les étudiants inscrits aux ECs de cet événement
@@ -34,8 +36,9 @@ class PresenceSeeder extends Seeder
 
             if ($etudiantIds->isEmpty()) continue;
 
-            // Environ 80% des étudiants ont scanné (présence enregistrée)
-            $presentCount = (int) ceil($etudiantIds->count() * 0.8);
+            // Environ 30% des étudiants ont scanné (présence enregistrée)
+            // Réduit de 80% à 30% pour alléger la DB
+            $presentCount = (int) ceil($etudiantIds->count() * 0.3);
             $presentIds = $etudiantIds->random($presentCount);
 
             foreach ($presentIds as $etudiantId) {
@@ -49,20 +52,33 @@ class PresenceSeeder extends Seeder
                 $diffMinutes = $heureScan->diffInMinutes($heureDebut);
                 $isRetard = $diffMinutes > 15;
 
-                Presence::firstOrCreate(
-                    ['etudiant_id' => $etudiantId, 'evenement_id' => $evenement->id],
-                    [
-                    'heure_scan'         => $heureScan,
-                    'device_fingerprint' => 'seeder-device-' . mt_rand(1, 1000),
-                    'ip_address'         => '192.168.' . mt_rand(0, 255) . '.' . mt_rand(1, 254),
-                    'statut'             => $statut,
-                    'latitude'           => 6.4 + mt_rand(-10, 10) / 1000,
-                    'longitude'          => 2.3 + mt_rand(-10, 10) / 1000,
-                ]);
+                $chunks[] = [
+                    'etudiant_id'       => $etudiantId,
+                    'evenement_id'      => $evenement->id,
+                    'heure_scan'        => $heureScan,
+                    'device_fingerprint'=> 'seeder-device-' . mt_rand(1, 1000),
+                    'ip_address'        => '192.168.' . mt_rand(0, 255) . '.' . mt_rand(1, 254),
+                    'statut'            => $statut,
+                    'latitude'          => 6.4 + mt_rand(-10, 10) / 1000,
+                    'longitude'         => 2.3 + mt_rand(-10, 10) / 1000,
+                    'created_at'        => $now,
+                    'updated_at'        => $now,
+                ];
                 $total++;
 
                 $stats[$statut]++;
+
+                // Insérer par lots de 50
+                if (count($chunks) >= 50) {
+                    Presence::insert($chunks);
+                    $chunks = [];
+                }
             }
+        }
+
+        // Dernier lot
+        if (!empty($chunks)) {
+            Presence::insert($chunks);
         }
 
         $this->command->info("Présences créées : {$total}");
