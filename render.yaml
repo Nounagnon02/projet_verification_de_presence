@@ -60,6 +60,24 @@ services:
       - key: LOG_LEVEL
         value: error
 
+      # Mail (copié du service web — nécessaire pour l'envoi depuis le worker)
+      - key: MAIL_MAILER
+        value: smtp
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: 587
+      - key: MAIL_USERNAME
+        value: princekangbode@gmail.com
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_ENCRYPTION
+        value: tls
+      - key: MAIL_FROM_ADDRESS
+        value: princekangbode@gmail.com
+      - key: MAIL_FROM_NAME
+        value: "Présence UAC - Validation de présence"
+
   - type: web
     name: presence-uac-backend
     runtime: docker
@@ -120,9 +138,23 @@ services:
       - key: FRONTEND_URL
         value: https://presence-uac.vercel.app
 
-      # Mail
+      # Mail — Gmail SMTP (valeurs du .env backend)
       - key: MAIL_MAILER
-        value: log
+        value: smtp
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: 587
+      - key: MAIL_USERNAME
+        value: princekangbode@gmail.com
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_ENCRYPTION
+        value: tls
+      - key: MAIL_FROM_ADDRESS
+        value: princekangbode@gmail.com
+      - key: MAIL_FROM_NAME
+        value: "Présence UAC - Validation de présence"
 
       # Gemini IA — clé à définir manuellement dans le dashboard Render
       - key: GEMINI_API_KEY
