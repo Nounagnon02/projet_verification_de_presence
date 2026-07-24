@@ -74,7 +74,7 @@ services:
       - key: APP_DEBUG
         value: false
       - key: APP_KEY
-        generateValue: true
+        value: "SECRET_PURGE"
       - key: APP_URL
         value: https://presence-uac-api.onrender.com
 
