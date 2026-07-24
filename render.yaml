@@ -74,7 +74,7 @@ services:
       - key: APP_DEBUG
         value: false
       - key: APP_KEY
-        generateValue: true
+        value: "base64:gYw8A3ZEdzp3dEfK4Md/0lyaMTwahld+QdAhefzeYLk="
       - key: APP_URL
         value: https://presence-uac-api.onrender.com
 
