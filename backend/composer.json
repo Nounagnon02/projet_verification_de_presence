@@ -17,6 +17,7 @@
         "pragmarx/google2fa": "^8.0",
         "simplesoftwareio/simple-qrcode": "^4.2",
         "spatie/laravel-google-calendar": "^3.8",
+        "symfony/resend-mailer": "^7.4",
         "tursodatabase/turso-driver-laravel": "^1.3",
         "yasser-elgammal/lara-sms": "^1.0"
     },
