@@ -76,8 +76,10 @@ class StudentController extends Controller
      * Détail d'un étudiant.
      * GET /api/admin/students/{student}
      */
-    public function show(Etudiant $student): EtudiantResource
+    public function show(Request $request, Etudiant $student): EtudiantResource
     {
+        $this->authorizeEtablissement($student, $request, 'filiere');
+
         $student->load(['filiere', 'anneeAcademique', 'presences.evenement.ec']);
 
         return new EtudiantResource($student);
@@ -129,7 +131,10 @@ class StudentController extends Controller
                 $message->to($etudiant->email)
                     ->subject('Votre identifiant unique - Système de présence UAC');
             });
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            // \Throwable et non \Exception : une erreur de configuration du mailer
+            // (classe de transport absente, driver inconnu) lève une \Error qui
+            // ferait échouer l'inscription entière avec un 500.
             \Illuminate\Support\Facades\Log::error("Erreur envoi email étudiant {$etudiant->matricule}: " . $e->getMessage());
         }
 
@@ -145,6 +150,8 @@ class StudentController extends Controller
      */
     public function update(UpdateStudentRequest $request, Etudiant $student): JsonResponse
     {
+        $this->authorizeEtablissement($student, $request, 'filiere');
+
         $data = $request->validated();
 
         if ($request->filled('nom') || $request->filled('prenom')) {
@@ -186,8 +193,10 @@ class StudentController extends Controller
      * Suppression d'un étudiant.
      * DELETE /api/admin/students/{student}
      */
-    public function destroy(Etudiant $student): JsonResponse
+    public function destroy(Request $request, Etudiant $student): JsonResponse
     {
+        $this->authorizeEtablissement($student, $request, 'filiere');
+
         $student->delete();
 
         return $this->successResponse(null, 'Étudiant supprimé avec succès.');

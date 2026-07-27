@@ -63,9 +63,12 @@ Route::get('/health', function () {
 // ============================================================
 // Authentification étudiant (app mobile)
 // ============================================================
-Route::post('/auth/student/login', [StudentAuthController::class, 'login']);
-Route::get('/auth/student/me', [StudentAuthController::class, 'me']);
-Route::post('/auth/student/logout', [StudentAuthController::class, 'logout']);
+Route::post('/auth/student/login', [StudentAuthController::class, 'login'])
+    ->middleware('throttle:student-login');
+Route::get('/auth/student/me', [StudentAuthController::class, 'me'])
+    ->middleware(['auth:sanctum', 'throttle:api']);
+Route::post('/auth/student/logout', [StudentAuthController::class, 'logout'])
+    ->middleware(['auth:sanctum', 'throttle:api']);
 
 // Route de login nommée — nécessaire pour les redirections de Sanctum
 // Rate limiting : 5 tentatives/min/IP (CDC 9.1)

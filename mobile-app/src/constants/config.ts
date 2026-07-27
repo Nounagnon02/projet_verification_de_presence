@@ -31,11 +31,21 @@ export const CONFIG = {
   /** Clé AsyncStorage pour le cache utilisateur */
   USER_KEY: 'auth_user',
 
-  /** Timeout axios pour les requêtes de scan (ms) */
-  SCAN_TIMEOUT: 15_000,
+  /**
+   * Timeout axios pour les requêtes de scan (ms).
+   * Le scan est l'action la plus sensible : mieux vaut attendre que rejeter
+   * une présence valide parce que le backend a mis du temps à répondre.
+   */
+  SCAN_TIMEOUT: 30_000,
 
-  /** Timeout axios standard (ms) */
-  DEFAULT_TIMEOUT: 10_000,
+  /**
+   * Timeout axios standard (ms).
+   * Le backend tourne sur le plan gratuit Render : il s'endort après 15 min
+   * d'inactivité et met plusieurs dizaines de secondes à redémarrer. Un
+   * timeout de 10 s faisait échouer toutes les requêtes au premier
+   * lancement de la journée.
+   */
+  DEFAULT_TIMEOUT: 30_000,
 
   /** Précision GPS : HIGH pour une géolocalisation à ~10 mètres */
   GPS_HIGH_ACCURACY: true,

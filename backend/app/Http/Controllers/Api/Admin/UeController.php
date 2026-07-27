@@ -51,14 +51,18 @@ class UeController extends Controller
         return $this->createdResponse(new UeResource($ue), 'UE créée avec succès.');
     }
 
-    public function show(Ue $ue): UeResource
+    public function show(Request $request, Ue $ue): UeResource
     {
+        $this->authorizeEtablissement($ue, $request, 'filiere');
+
         $ue->load(['filiere', 'ecs.evenements']);
         return new UeResource($ue);
     }
 
     public function update(Request $request, Ue $ue): JsonResponse
     {
+        $this->authorizeEtablissement($ue, $request, 'filiere');
+
         $validated = $request->validate([
             'code'          => 'sometimes|string|max:20|unique:ues,code,' . $ue->id,
             'intitule'      => 'sometimes|string|max:255',
@@ -73,8 +77,10 @@ class UeController extends Controller
         return $this->successResponse(new UeResource($ue), 'UE mise à jour.');
     }
 
-    public function destroy(Ue $ue): JsonResponse
+    public function destroy(Request $request, Ue $ue): JsonResponse
     {
+        $this->authorizeEtablissement($ue, $request, 'filiere');
+
         $ue->delete();
         return $this->successResponse(null, 'UE supprimée.');
     }

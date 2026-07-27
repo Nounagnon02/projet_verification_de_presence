@@ -1,11 +1,59 @@
 # ============================================================
-# KEEP-ALIVE : Cron job qui ping le backend toutes les 10 min
-# pour éviter le sleep du plan free Render
+# PERFORMANCE — région de déploiement
+#
+# Supabase est en eu-west-1 (Irlande). Sans clé `region`, Render
+# déploie en Oregon (US-West) : chaque requête SQL fait un
+# aller-retour transatlantique (~600 ms mesuré).
+# Passer en `region: frankfurt` ramène ça à ~30 ms.
+#
+# ⚠️ La région d'un service existant ne peut pas être modifiée :
+# il faut recréer les services. À faire manuellement, puis
+# décommenter les lignes `region:` ci-dessous.
+# ============================================================
+
+# ============================================================
+# SCHEDULER Laravel + keep-alive du plan free
+#
+# `schedule:run` doit tourner chaque minute : il génère les QR
+# codes 15 min avant la fin des cours (schedule:generate-qrcodes).
+# Le curl réveille le service web, qui s'endort après 15 min
+# d'inactivité sur le plan free (~50 s de démarrage à froid).
 # ============================================================
 cronJobs:
   - name: laravel-scheduler
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    # region: frankfurt
     schedule: "* * * * *"
-    command: php /var/www/html/artisan schedule:run >> /dev/null 2>&1
+    command: >-
+      curl -sf -m 30 https://presence-uac-api.onrender.com/api/health > /dev/null;
+      php /var/www/html/artisan schedule:run >> /dev/null 2>&1
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_KEY
+        fromService:
+          name: presence-uac-backend
+          type: web
+          envVarKey: APP_KEY
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        value: aws-0-eu-west-1.pooler.supabase.com
+      - key: DB_PORT
+        value: 6543
+      - key: DB_DATABASE
+        value: postgres
+      - key: DB_USERNAME
+        value: postgres.kvgzlngijxrjjdvashph
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_SSLMODE
+        value: require
+      - key: LOG_CHANNEL
+        value: stderr
 
 services:
   - type: worker
@@ -36,7 +84,7 @@ services:
       - key: DB_USERNAME
         value: postgres.kvgzlngijxrjjdvashph
       - key: DB_PASSWORD
-        value: SECRET_PURGE
+        sync: false
       - key: DB_SSLMODE
         value: require
       - key: QUEUE_CONNECTION
@@ -48,9 +96,9 @@ services:
       - key: SUPABASE_URL
         value: https://kvgzlngijxrjjdvashph.supabase.co
       - key: SUPABASE_KEY
-        value: SECRET_PURGE
+        sync: false
       - key: SUPABASE_SECRET
-        value: SECRET_PURGE
+        sync: false
       - key: SUPABASE_BUCKET
         value: presence-uac
       - key: GEMINI_API_KEY
@@ -62,19 +110,11 @@ services:
 
       # Mail (copié du service web — nécessaire pour l'envoi depuis le worker)
       - key: MAIL_MAILER
-        value: smtp
-      - key: MAIL_HOST
-        value: smtp.gmail.com
-      - key: MAIL_PORT
-        value: 587
-      - key: MAIL_USERNAME
-        value: princekangbode@gmail.com
-      - key: MAIL_PASSWORD
+        value: resend
+      - key: RESEND_KEY
         sync: false
-      - key: MAIL_ENCRYPTION
-        value: tls
       - key: MAIL_FROM_ADDRESS
-        value: princekangbode@gmail.com
+        value: onboarding@resend.dev
       - key: MAIL_FROM_NAME
         value: "Présence UAC - Validation de présence"
 
@@ -91,8 +131,10 @@ services:
         value: production
       - key: APP_DEBUG
         value: false
+      # Clé compromise (exposée en clair dans l'historique Git public) —
+      # à régénérer et à définir dans le dashboard Render.
       - key: APP_KEY
-        value: "SECRET_PURGE"
+        sync: false
       - key: APP_URL
         value: https://presence-uac-api.onrender.com
 
@@ -108,15 +150,17 @@ services:
       - key: DB_USERNAME
         value: postgres.kvgzlngijxrjjdvashph
       - key: DB_PASSWORD
-        value: SECRET_PURGE
+        sync: false
       - key: DB_SSLMODE
         value: require
 
-      # Session / Cache / Queue — database (pas de Redis sur free tier)
+      # Session / Cache / Queue — pas de Redis sur le free tier.
+      # CACHE_STORE=file et non database : le rate limiter lit/écrit le cache
+      # à chaque requête, et la base est à ~600 ms d'aller-retour.
       - key: SESSION_DRIVER
         value: database
       - key: CACHE_STORE
-        value: database
+        value: file
       - key: QUEUE_CONNECTION
         value: database
 
@@ -124,9 +168,9 @@ services:
       - key: SUPABASE_URL
         value: https://kvgzlngijxrjjdvashph.supabase.co
       - key: SUPABASE_KEY
-        value: SECRET_PURGE
+        sync: false
       - key: SUPABASE_SECRET
-        value: SECRET_PURGE
+        sync: false
       - key: SUPABASE_BUCKET
         value: presence-uac
       - key: FILESYSTEM_DISK
@@ -138,21 +182,16 @@ services:
       - key: FRONTEND_URL
         value: https://presence-uac.vercel.app
 
-      # Mail — Gmail SMTP (valeurs du .env backend)
+      # Mail — Resend API HTTP (le SMTP sortant est bloqué sur Render free)
       - key: MAIL_MAILER
-        value: smtp
-      - key: MAIL_HOST
-        value: smtp.gmail.com
-      - key: MAIL_PORT
-        value: 587
-      - key: MAIL_USERNAME
-        value: princekangbode@gmail.com
-      - key: MAIL_PASSWORD
+        value: resend
+      # Clé API à définir manuellement dans le dashboard Render
+      - key: RESEND_KEY
         sync: false
-      - key: MAIL_ENCRYPTION
-        value: tls
+      # Doit appartenir à un domaine vérifié dans Resend.
+      # onboarding@resend.dev ne permet d'écrire qu'au propriétaire du compte.
       - key: MAIL_FROM_ADDRESS
-        value: princekangbode@gmail.com
+        value: onboarding@resend.dev
       - key: MAIL_FROM_NAME
         value: "Présence UAC - Validation de présence"
 

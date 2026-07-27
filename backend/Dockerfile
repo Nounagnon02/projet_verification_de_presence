@@ -48,10 +48,30 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     netcat-openbsd \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_pgsql pgsql pdo_sqlite gd zip \
+    && docker-php-ext-install pdo pdo_pgsql pgsql pdo_sqlite gd zip opcache \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# OPcache : sans lui, PHP recompile tout le code Laravel à chaque requête.
+# validate_timestamps=0 est sûr ici : le code est figé dans l'image Docker.
+COPY <<'EOF' /usr/local/etc/php/conf.d/opcache.ini
+opcache.enable=1
+opcache.enable_cli=0
+opcache.memory_consumption=192
+opcache.interned_strings_buffer=16
+opcache.max_accelerated_files=20000
+opcache.validate_timestamps=0
+opcache.save_comments=1
+opcache.jit=tracing
+opcache.jit_buffer_size=64M
+EOF
 
+# Limites PHP alignées sur les imports CSV/Excel de l'application
+COPY <<'EOF' /usr/local/etc/php/conf.d/app.ini
+memory_limit=256M
+upload_max_filesize=20M
+post_max_size=24M
+max_execution_time=120
+EOF
 
 # Installer Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer

@@ -80,7 +80,7 @@ class BulkRegistrationController extends Controller
 
                 try {
                     Mail::to($admin->email)->send(new \App\Mail\WelcomeFaculteAdmin($admin, $password, $etablissement));
-                } catch (\Exception $e) {
+                } catch (\Throwable $e) {
                     // Silencieux
                 }
 

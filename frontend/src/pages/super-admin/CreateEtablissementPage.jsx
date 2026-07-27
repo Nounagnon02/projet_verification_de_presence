@@ -45,10 +45,10 @@ export default function CreateEtablissementPage() {
         setTimeout(() => navigate('/super-admin/etablissements'), 3000);
       }
     } catch (err) {
-      const msg = err.response?.data?.message
-        || err.response?.data?.errors
-          ? Object.values(err.response.data.errors).flat().join(', ')
-          : 'Erreur lors de la création.';
+      const data = err.response?.data;
+      const msg = (data?.errors ? Object.values(data.errors).flat().join(', ') : null)
+        || data?.message
+        || 'Erreur lors de la création.';
       setError(msg);
     } finally {
       setLoading(false);

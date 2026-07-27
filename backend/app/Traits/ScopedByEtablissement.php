@@ -43,6 +43,39 @@ trait ScopedByEtablissement
     }
 
     /**
+     * Vérifie qu'un modèle récupéré par route model binding appartient bien
+     * à l'établissement de l'utilisateur, et coupe court sinon.
+     *
+     * Sans ce garde, le scoping ne s'applique qu'aux listes : un admin de
+     * faculté peut lire/modifier/supprimer une ressource d'une autre faculté
+     * en visant son ID directement.
+     *
+     * On renvoie 404 et non 403 pour ne pas confirmer l'existence de l'ID.
+     *
+     * @param  \Illuminate\Database\Eloquent\Model  $model
+     * @param  string  $path  Chemin vers l'établissement ('' si la colonne
+     *                        etablissement_id est portée par le modèle,
+     *                        sinon 'filiere' ou 'ue.filiere' par exemple)
+     */
+    protected function authorizeEtablissement($model, Request $request, string $path = ''): void
+    {
+        $etablissementId = $this->getEtablissementId($request);
+
+        if (!$etablissementId) {
+            return; // super admin : pas de cloisonnement
+        }
+
+        $target = $model;
+        foreach (array_filter(explode('.', $path)) as $relation) {
+            $target = $target?->{$relation};
+        }
+
+        if (!$target || (int) $target->etablissement_id !== (int) $etablissementId) {
+            abort(404, 'Ressource non trouvée.');
+        }
+    }
+
+    /**
      * Applique un filtre via une relation (ex: filiere.etablissement_id).
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query

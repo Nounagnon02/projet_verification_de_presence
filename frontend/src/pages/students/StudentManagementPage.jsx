@@ -155,10 +155,9 @@ const StudentManagementPage = () => {
       setShowModal(false);
       fetchStudents();
     } catch (err) {
-      const msg = err.response?.data?.message
-        || err.response?.data?.errors
-          ? Object.values(err.response.data.errors).flat().join(', ')
-          : null
+      const data = err.response?.data;
+      const msg = (data?.errors ? Object.values(data.errors).flat().join(', ') : null)
+        || data?.message
         || "Erreur lors de l'enregistrement";
       setFormError(msg);
     } finally {

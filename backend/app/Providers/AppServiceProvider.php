@@ -72,6 +72,25 @@ class AppServiceProvider extends ServiceProvider
                 });
         });
 
+        // Rate Limiting pour le login étudiant (app mobile).
+        // L'identifiant unique est déterministe (NOM_PRENOM_MATRICULE_FILIERE_ANNEE)
+        // donc devinable : sans limite, le couple email/identifiant est
+        // énumérable par force brute. Double clé : par email ET par IP.
+        RateLimiter::for('student-login', function (Request $request) {
+            return [
+                Limit::perMinute(5)->by('student-login:email:' . (string) $request->input('email'))
+                    ->response(fn(Request $r, array $h) => response()->json([
+                        'success' => false,
+                        'message' => 'Trop de tentatives de connexion. Réessayez dans 1 minute.',
+                    ], 429, $h)),
+                Limit::perMinute(20)->by('student-login:ip:' . $request->ip())
+                    ->response(fn(Request $r, array $h) => response()->json([
+                        'success' => false,
+                        'message' => 'Trop de tentatives depuis cette adresse. Réessayez plus tard.',
+                    ], 429, $h)),
+            ];
+        });
+
         // Personnalisation de l'URL de réinitialisation du mot de passe
         // Le lien dans l'email pointe vers le frontend (SPA React)
         ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
