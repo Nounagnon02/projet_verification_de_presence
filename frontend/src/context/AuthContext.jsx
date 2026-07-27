@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api, { TOKEN_KEY } from '../api/axios';
+import { invalidateApiCache } from '../api/cache';
 
 const AuthContext = createContext(null);
 
@@ -75,6 +76,9 @@ export function AuthProvider({ children }) {
     setUser(null);
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(TOKEN_KEY);
+    // Sans ce vidage, l'utilisateur suivant sur le même navigateur verrait
+    // les données mises en cache par le précédent.
+    invalidateApiCache();
   };
 
   return (

@@ -42,13 +42,17 @@ class AnneeAcademiqueController extends Controller
         return $this->createdResponse($annee, 'Année académique créée avec succès.');
     }
 
-    public function show(AnneeAcademique $anneeAcademique): JsonResponse
+    public function show(Request $request, AnneeAcademique $anneeAcademique): JsonResponse
     {
+        $this->authorizeEtablissement($anneeAcademique, $request);
+
         return $this->successResponse($anneeAcademique);
     }
 
     public function update(Request $request, AnneeAcademique $anneeAcademique): JsonResponse
     {
+        $this->authorizeEtablissement($anneeAcademique, $request);
+
         $validated = $request->validate([
             'libelle'    => 'sometimes|string|max:20|unique:annees_academiques,libelle,' . $anneeAcademique->id,
             'date_debut' => 'sometimes|date',
@@ -81,8 +85,10 @@ class AnneeAcademiqueController extends Controller
         return $this->successResponse($anneeAcademique, 'Année académique activée.');
     }
 
-    public function destroy(AnneeAcademique $anneeAcademique): JsonResponse
+    public function destroy(Request $request, AnneeAcademique $anneeAcademique): JsonResponse
     {
+        $this->authorizeEtablissement($anneeAcademique, $request);
+
         $anneeAcademique->delete();
         return $this->successResponse(null, 'Année académique supprimée.');
     }

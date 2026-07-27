@@ -39,6 +39,8 @@ class EcController extends Controller
 
     public function update(Request $request, Ec $ec): JsonResponse
     {
+        $this->authorizeEtablissement($ec, $request, 'ue.filiere');
+
         $validated = $request->validate([
             'ue_id'          => 'sometimes|exists:ues,id',
             'code'           => 'sometimes|string|max:20|unique:ecs,code,' . $ec->id,
@@ -51,8 +53,10 @@ class EcController extends Controller
         return $this->successResponse($ec, 'EC mis à jour.');
     }
 
-    public function destroy(Ec $ec): JsonResponse
+    public function destroy(Request $request, Ec $ec): JsonResponse
     {
+        $this->authorizeEtablissement($ec, $request, 'ue.filiere');
+
         $ec->delete();
         return $this->successResponse(null, 'EC supprimé.');
     }

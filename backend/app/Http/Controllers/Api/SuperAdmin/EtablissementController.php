@@ -55,7 +55,7 @@ class EtablissementController extends Controller
         // Envoyer l'email de bienvenue (si mail configuré)
         try {
             Mail::to($admin->email)->send(new \App\Mail\WelcomeFaculteAdmin($admin, $password, $etablissement));
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // Silencieux en dev — le mail sera loggé
         }
 
@@ -166,7 +166,7 @@ class EtablissementController extends Controller
 
         try {
             Mail::to($admin->email)->send(new \App\Mail\WelcomeFaculteAdmin($admin, $password, $etablissement));
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // Silencieux
         }
 

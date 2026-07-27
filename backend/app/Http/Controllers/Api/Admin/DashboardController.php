@@ -60,9 +60,11 @@ class DashboardController extends Controller
         $etablissementId = $this->getEtablissementId($request);
 
         $totalEtudiants = $this->scopeEtudiant(Etudiant::query(), $etablissementId)->count();
-        $coursDuJour    = $this->scopeEvenement(Evenement::whereDate('date', today()), $etablissementId)->count();
+        // where() et non whereDate() : `date` est une colonne DATE, et
+        // whereDate() la passerait dans DATE(...) en désactivant l'index.
+        $coursDuJour    = $this->scopeEvenement(Evenement::where('date', today()), $etablissementId)->count();
 
-        $presencesDuJour = $this->scopePresence(Presence::whereDate('heure_scan', today()), $etablissementId)
+        $presencesDuJour = $this->scopePresence(Presence::whereBetween('heure_scan', [today()->startOfDay(), today()->endOfDay()]), $etablissementId)
             ->selectRaw('COUNT(*) as total')
             ->selectRaw("SUM(CASE WHEN statut = 'valide' THEN 1 ELSE 0 END) as valides")
             ->selectRaw("SUM(CASE WHEN statut = 'suspect' THEN 1 ELSE 0 END) as suspectes")
@@ -84,7 +86,7 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        $heatmapAujourdhui = $this->scopePresence(Presence::whereDate('heure_scan', today()), $etablissementId)
+        $heatmapAujourdhui = $this->scopePresence(Presence::whereBetween('heure_scan', [today()->startOfDay(), today()->endOfDay()]), $etablissementId)
             ->select(DB::raw("EXTRACT(HOUR FROM heure_scan) as heure"), DB::raw('COUNT(*) as total'))
             ->groupBy('heure')
             ->orderBy('heure')
@@ -157,8 +159,13 @@ class DashboardController extends Controller
      */
     public function todayEvents(Request $request): JsonResponse
     {
-        $events = $this->scopeEvenement(Evenement::with(['ec', 'filiere', 'presences'])
-            ->whereDate('date', today())
+        // withCount plutôt que with('presences') : on ne charge pas toutes les
+        // lignes de présence pour n'en compter que le nombre.
+        // where('date', ...) et non whereDate() : whereDate() enveloppe la
+        // colonne dans DATE(), ce qui empêche Postgres d'utiliser l'index.
+        $events = $this->scopeEvenement(Evenement::with(['ec', 'filiere'])
+            ->withCount('presences')
+            ->where('date', today())
             ->orderBy('heure_debut'), $this->getEtablissementId($request))
             ->get()
             ->map(fn($e) => [
@@ -169,7 +176,7 @@ class DashboardController extends Controller
                 'heure_fin'       => $e->heure_fin,
                 'salle'           => $e->salle,
                 'statut'          => $e->statut,
-                'presences_count' => $e->presences->count(),
+                'presences_count' => $e->presences_count,
             ]);
 
         return $this->successResponse($events);

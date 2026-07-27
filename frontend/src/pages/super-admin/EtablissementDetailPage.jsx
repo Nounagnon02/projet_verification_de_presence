@@ -57,10 +57,10 @@ export default function EtablissementDetailPage() {
         setMessage({ type: 'success', text: 'Faculté mise à jour avec succès.' });
       }
     } catch (err) {
-      const msg = err.response?.data?.message
-        || err.response?.data?.errors
-          ? Object.values(err.response.data.errors).flat().join(', ')
-          : 'Erreur lors de la mise à jour.';
+      const data = err.response?.data;
+      const msg = (data?.errors ? Object.values(data.errors).flat().join(', ') : null)
+        || data?.message
+        || 'Erreur lors de la mise à jour.';
       setMessage({ type: 'error', text: msg });
     } finally {
       setSaving(false);

@@ -74,36 +74,17 @@ class StudentAuthController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
-        $token = $request->bearerToken();
+        // L'authentification est faite par le middleware auth:sanctum, qui
+        // vérifie le hash du token. Ne jamais résoudre un token par son seul
+        // ID : l'ID est public et la partie secrète ne serait pas contrôlée.
+        $etudiant = $request->user();
 
-        if (!$token) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Non authentifié.',
-            ], 401);
-        }
-
-        // Extraire l'ID du token (format Sanctum: "1|plaintext")
-        $parts = explode('|', $token);
-        $tokenId = $parts[0] ?? null;
-
-        if (!$tokenId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token invalide.',
-            ], 401);
-        }
-
-        $personalAccessToken = \Laravel\Sanctum\PersonalAccessToken::find($tokenId);
-
-        if (!$personalAccessToken || !$personalAccessToken->tokenable instanceof Etudiant) {
+        if (!$etudiant instanceof Etudiant) {
             return response()->json([
                 'success' => false,
                 'message' => 'Token invalide ou expiré.',
             ], 401);
         }
-
-        $etudiant = $personalAccessToken->tokenable;
 
         return response()->json([
             'success' => true,
@@ -129,19 +110,8 @@ class StudentAuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        $token = $request->bearerToken();
-
-        if ($token) {
-            $parts = explode('|', $token);
-            $tokenId = $parts[0] ?? null;
-
-            if ($tokenId) {
-                $personalAccessToken = \Laravel\Sanctum\PersonalAccessToken::find($tokenId);
-                if ($personalAccessToken) {
-                    $personalAccessToken->delete();
-                }
-            }
-        }
+        // Ne révoque que le token présenté, après vérification par Sanctum.
+        $request->user()?->currentAccessToken()?->delete();
 
         return response()->json([
             'success' => true,

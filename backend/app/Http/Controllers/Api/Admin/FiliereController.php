@@ -48,8 +48,10 @@ class FiliereController extends Controller
         return $this->createdResponse($filiere, 'Filière créée avec succès.');
     }
 
-    public function show(Filiere $filiere): JsonResponse
+    public function show(Request $request, Filiere $filiere): JsonResponse
     {
+        $this->authorizeEtablissement($filiere, $request);
+
         $filiere->loadCount(['etudiants', 'ues']);
         $filiere->load('ues.ecs');
         return $this->successResponse($filiere);
@@ -57,6 +59,8 @@ class FiliereController extends Controller
 
     public function update(Request $request, Filiere $filiere): JsonResponse
     {
+        $this->authorizeEtablissement($filiere, $request);
+
         $validated = $request->validate([
             'code'     => 'sometimes|string|max:10|unique:filieres,code,' . $filiere->id,
             'intitule' => 'sometimes|string|max:255',
@@ -73,8 +77,10 @@ class FiliereController extends Controller
         return $this->successResponse($filiere, 'Filière mise à jour.');
     }
 
-    public function destroy(Filiere $filiere): JsonResponse
+    public function destroy(Request $request, Filiere $filiere): JsonResponse
     {
+        $this->authorizeEtablissement($filiere, $request);
+
         $filiere->delete();
         return $this->successResponse(null, 'Filière supprimée.');
     }
