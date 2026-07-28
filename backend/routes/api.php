@@ -106,6 +106,9 @@ Route::middleware(['auth:sanctum', 'scoped.etablissement', 'throttle:api'])->pre
     Route::get('/dashboard/today-events', [DashboardController::class, 'todayEvents']);
 
     // Étudiants
+    // Déclarée avant apiResource pour que /students/promote ne soit pas
+    // interprété comme /students/{student}.
+    Route::post('/students/promote', [StudentController::class, 'promote']);
     Route::apiResource('students', StudentController::class);
 
     // Inscriptions étudiant-cours (CDC 7.2.3)

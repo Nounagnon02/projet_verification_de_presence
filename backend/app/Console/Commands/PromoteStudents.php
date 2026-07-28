@@ -93,31 +93,11 @@ class PromoteStudents extends Command
             return Command::SUCCESS;
         }
 
-        // Exécuter la promotion
-        $bar = $this->output->createProgressBar($count);
-        $bar->start();
-
-        $promoted = 0;
-        $query->chunkById(50, function ($students) use ($toFiliere, $toAnneeId, $bar, &$promoted) {
-            foreach ($students as $student) {
-                $student->filiere_id = $toFiliere->id;
-
-                if ($toAnneeId) {
-                    $student->annee_id = $toAnneeId;
-                }
-
-                $student->save();
-
-                // Recalculer les inscriptions aux ECs
-                $student->recalculateEnrollments();
-
-                $promoted++;
-                $bar->advance();
-            }
-        });
-
-        $bar->finish();
-        $this->newLine(2);
+        // Exécuter la promotion via le service partagé avec l'API, pour que
+        // les deux points d'entrée appliquent exactement la même logique.
+        $toAnneeModel = $toAnneeId ? \App\Models\AnneeAcademique::find($toAnneeId) : null;
+        $promoted = app(\App\Services\StudentPromotionService::class)
+            ->promote($fromFiliere, $toFiliere, $toAnneeModel);
 
         $this->info("✅ {$promoted} étudiant(s) promu(s) avec succès de « {$fromCode} » vers « {$toCode} ».");
 
