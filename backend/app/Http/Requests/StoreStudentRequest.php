@@ -26,9 +26,17 @@ class StoreStudentRequest extends FormRequest
         return [
             'nom'        => ['required', 'string', 'max:100'],
             'prenom'     => ['required', 'string', 'max:100'],
-            'matricule'  => ['nullable', 'string', Rule::unique('etudiants', 'matricule')],
+            // Le matricule est l'identité officielle de l'étudiant et sert à
+            // construire son identifiant de connexion : il est obligatoire.
+            // Sans lui, un identifiant provisoire (TEMP-xxxx) était généré puis
+            // changeait quand le vrai matricule était saisi, invalidant les
+            // identifiants déjà communiqués.
+            'matricule'  => ['required', 'string', 'max:50', Rule::unique('etudiants', 'matricule')],
             'filiere_id' => ['required', 'integer', 'exists:filieres,id'],
-            'annee_id'   => ['required', 'integer', 'exists:annees_academiques,id'],
+            // annee_id n'est plus attendu : le serveur impose l'année active
+            // (voir StudentController::store). Toléré mais ignoré s'il est
+            // envoyé, pour ne pas casser les clients existants.
+            'annee_id'   => ['nullable', 'integer', 'exists:annees_academiques,id'],
             'email'      => ['required', 'email', Rule::unique('etudiants', 'email')],
         ];
     }
@@ -47,7 +55,6 @@ class StoreStudentRequest extends FormRequest
             'matricule.unique'    => 'Ce matricule existe déjà.',
             'filiere_id.required' => 'La filière est obligatoire.',
             'filiere_id.exists'   => 'La filière sélectionnée n\'existe pas.',
-            'annee_id.required'   => 'L\'année académique est obligatoire.',
             'annee_id.exists'     => 'L\'année académique sélectionnée n\'existe pas.',
             'email.required'      => 'L\'email est obligatoire.',
             'email.unique'        => 'Cet email est déjà utilisé.',

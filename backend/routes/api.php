@@ -137,7 +137,13 @@ Route::middleware(['auth:sanctum', 'scoped.etablissement', 'throttle:api'])->pre
     Route::apiResource('salles', SalleController::class);
 
     // Années académiques
-    Route::apiResource('annees-academiques', AnneeAcademiqueController::class);
+    // Le paramètre est nommé explicitement « anneeAcademique » : sans cela,
+    // apiResource génère « annees_academique », qui ne correspond pas au
+    // paramètre $anneeAcademique des méthodes du contrôleur — le model
+    // binding échouait alors et injectait un modèle vide (show/update/destroy
+    // opéraient dans le vide).
+    Route::apiResource('annees-academiques', AnneeAcademiqueController::class)
+        ->parameters(['annees-academiques' => 'anneeAcademique']);
     Route::patch('/annees-academiques/{anneeAcademique}/activate', [AnneeAcademiqueController::class, 'activate']);
 
     // QR Code

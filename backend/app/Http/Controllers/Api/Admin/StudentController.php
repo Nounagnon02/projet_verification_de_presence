@@ -92,17 +92,30 @@ class StudentController extends Controller
      */
     public function store(StoreStudentRequest $request): JsonResponse
     {
-        $matricule = $request->matricule ?? ('TEMP-' . Str::random(8));
+        $matricule = $request->matricule;
 
         $filiere = Filiere::findOrFail($request->filiere_id);
-        $annee   = AnneeAcademique::findOrFail($request->annee_id);
+
+        // L'inscription se fait toujours dans l'année active : on l'impose ici
+        // plutôt que de laisser l'administrateur la choisir. L'année est celle
+        // de l'établissement de la filière (une seule active à la fois).
+        $annee = AnneeAcademique::where('active', true)
+            ->when($filiere->etablissement_id, fn ($q) => $q->where('etablissement_id', $filiere->etablissement_id))
+            ->first();
+
+        if (!$annee) {
+            return $this->errorResponse(
+                "Aucune année académique active n'est définie. Activez une année avant d'inscrire des étudiants.",
+                422
+            );
+        }
 
         $identifiantUnique = IdentifiantService::generate(
             $request->nom,
             $request->prenom,
             $matricule,
-            $request->filiere_id,
-            $request->annee_id
+            $filiere->id,
+            $annee->id
         );
 
         $etudiant = Etudiant::create([
@@ -110,8 +123,8 @@ class StudentController extends Controller
             'nom'               => IdentifiantService::normalize($request->nom),
             'prenom'            => IdentifiantService::normalize($request->prenom),
             'matricule'         => $matricule,
-            'filiere_id'        => $request->filiere_id,
-            'annee_id'          => $request->annee_id,
+            'filiere_id'        => $filiere->id,
+            'annee_id'          => $annee->id,
             'email'             => $request->email,
             'identifiant_unique' => $identifiantUnique,
         ]);
