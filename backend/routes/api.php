@@ -97,7 +97,7 @@ Route::prefix('presence')->group(function () {
 });
 
 // Routes protégées pour l'administration (faculté scope via scoped.etablissement)
-Route::middleware(['auth:sanctum', 'scoped.etablissement', 'throttle:api'])->prefix('admin')->group(function () {
+Route::middleware(['auth:sanctum', 'scoped.etablissement', 'password.changed', 'throttle:api'])->prefix('admin')->group(function () {
 
     // Dashboard & Stats
     Route::get('/dashboard', [DashboardController::class, 'index']);

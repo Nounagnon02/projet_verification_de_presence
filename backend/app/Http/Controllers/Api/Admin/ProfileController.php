@@ -48,7 +48,8 @@ class ProfileController extends Controller
         ]);
 
         $request->user()->forceFill([
-            'password' => $validated['password'],
+            'password'             => $validated['password'],
+            'must_change_password' => false, // le mot de passe temporaire est régularisé
         ])->save();
 
         return $this->successResponse(null, 'Mot de passe mis à jour.');

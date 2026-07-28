@@ -25,4 +25,13 @@ class Notification extends Model
     {
         $this->update(['read_at' => now()]);
     }
+
+    /**
+     * Indique si la notification a été lue. Utilisé par l'API ; son absence
+     * faisait planter (500) l'endpoint de liste des notifications.
+     */
+    public function isRead(): bool
+    {
+        return $this->read_at !== null;
+    }
 }
