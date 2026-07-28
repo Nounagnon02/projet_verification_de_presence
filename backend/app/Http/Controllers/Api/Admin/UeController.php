@@ -80,6 +80,7 @@ class UeController extends Controller
     public function destroy(Request $request, Ue $ue): JsonResponse
     {
         $this->authorizeEtablissement($ue, $request, 'filiere');
+        $this->preventDeleteWithDependencies($ue, ['ecs' => 'EC']);
 
         $ue->delete();
         return $this->successResponse(null, 'UE supprimée.');

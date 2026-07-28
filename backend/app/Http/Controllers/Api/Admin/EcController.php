@@ -56,6 +56,10 @@ class EcController extends Controller
     public function destroy(Request $request, Ec $ec): JsonResponse
     {
         $this->authorizeEtablissement($ec, $request, 'ue.filiere');
+        $this->preventDeleteWithDependencies($ec, [
+            'evenements' => 'événement(s)',
+            'etudiants'  => 'étudiant(s) inscrit(s)',
+        ]);
 
         $ec->delete();
         return $this->successResponse(null, 'EC supprimé.');
