@@ -55,6 +55,36 @@ cronJobs:
       - key: LOG_CHANNEL
         value: stderr
 
+      # Le cron draine la queue (voir routes/console.php) : il lui faut les
+      # mêmes dépendances que les jobs traités — IA Gemini, stockage Supabase,
+      # envoi d'e-mails.
+      - key: APP_URL
+        value: https://presence-uac-api.onrender.com
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: CACHE_STORE
+        value: file
+      - key: FILESYSTEM_DISK
+        value: supabase
+      - key: SUPABASE_URL
+        value: https://kvgzlngijxrjjdvashph.supabase.co
+      - key: SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_SECRET
+        sync: false
+      - key: SUPABASE_BUCKET
+        value: presence-uac
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: MAIL_MAILER
+        value: resend
+      - key: RESEND_KEY
+        sync: false
+      - key: MAIL_FROM_ADDRESS
+        value: onboarding@resend.dev
+      - key: MAIL_FROM_NAME
+        value: "Présence UAC - Validation de présence"
+
 services:
   - type: worker
     name: presence-uac-queue-worker
