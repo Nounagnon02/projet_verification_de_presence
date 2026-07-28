@@ -18,8 +18,10 @@ class EnrollmentController extends Controller
      * Liste des ECs auxquels un étudiant est inscrit.
      * GET /api/admin/students/{student}/ecs
      */
-    public function index(Etudiant $student): JsonResponse
+    public function index(Request $request, Etudiant $student): JsonResponse
     {
+        $this->authorizeEtablissement($student, $request, 'filiere');
+
         $ecs = $student->ecs()->with(['ue'])->get();
 
         return $this->successResponse($ecs, 'Liste des ECs de l\'étudiant.');
@@ -29,8 +31,10 @@ class EnrollmentController extends Controller
      * Liste des ECs disponibles pour la filière/année de l'étudiant.
      * GET /api/admin/students/{student}/ecs-available
      */
-    public function available(Etudiant $student): JsonResponse
+    public function available(Request $request, Etudiant $student): JsonResponse
     {
+        $this->authorizeEtablissement($student, $request, 'filiere');
+
         $allEcs = Ec::forFiliereAndYear($student->filiere_id, $student->annee_id);
         $enrolledIds = $student->ecs()->pluck('ecs.id')->toArray();
 
@@ -45,6 +49,8 @@ class EnrollmentController extends Controller
      */
     public function store(Request $request, Etudiant $student): JsonResponse
     {
+        $this->authorizeEtablissement($student, $request, 'filiere');
+
         $validator = Validator::make($request->all(), [
             'ec_ids'   => 'required|array|min:1',
             'ec_ids.*' => 'required|integer|exists:ecs,id',
@@ -81,8 +87,10 @@ class EnrollmentController extends Controller
      * Désinscrire un étudiant d'un EC.
      * DELETE /api/admin/students/{student}/ecs/{ec}
      */
-    public function destroy(Etudiant $student, Ec $ec): JsonResponse
+    public function destroy(Request $request, Etudiant $student, Ec $ec): JsonResponse
     {
+        $this->authorizeEtablissement($student, $request, 'filiere');
+
         $student->ecs()->detach($ec->id);
 
         return $this->successResponse(null, 'Étudiant désinscrit de cet EC.');
@@ -92,8 +100,10 @@ class EnrollmentController extends Controller
      * Ré-inscrire un étudiant à tous les ECs de sa filière/année (reset).
      * POST /api/admin/students/{student}/ecs/reset
      */
-    public function reset(Etudiant $student): JsonResponse
+    public function reset(Request $request, Etudiant $student): JsonResponse
     {
+        $this->authorizeEtablissement($student, $request, 'filiere');
+
         // Supprimer les inscriptions existantes
         $student->ecs()->detach();
 
