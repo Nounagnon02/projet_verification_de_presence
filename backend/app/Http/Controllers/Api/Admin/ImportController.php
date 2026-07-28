@@ -87,7 +87,7 @@ class ImportController extends Controller
         }
         $header = $mapped;
 
-        $results = ['success' => 0, 'errors' => [], 'total' => 0];
+        $results = ['success' => 0, 'errors' => [], 'total' => 0, 'emails_echoues' => 0];
 
         while (($row = fgetcsv($handle, 1000, ',')) !== false) {
             $results['total']++;
@@ -130,18 +130,24 @@ class ImportController extends Controller
             // Auto-inscription aux ECs de la filière et année (CDC 7.2.3)
             $etudiant->autoEnroll();
 
-            // Envoi de l'identifiant par email via queue (job asynchrone) — CDC 7.1.2
-            \App\Jobs\SendIdentifiantEmailJob::dispatch($etudiant);
+            // Envoi synchrone : il n'y a pas de worker de queue en production,
+            // un dispatch() n'aurait jamais été traité. Un échec d'e-mail ne
+            // doit pas interrompre l'import — l'étudiant reste créé.
+            if (!$this->envoyerIdentifiant($etudiant)) {
+                $results['emails_echoues']++;
+            }
 
             $results['success']++;
         }
 
         fclose($handle);
 
-        return $this->successResponse(
-            $results,
-            "Importation terminée : {$results['success']}/{$results['total']} étudiant(s) importé(s)."
-        );
+        $message = "Importation terminée : {$results['success']}/{$results['total']} étudiant(s) importé(s).";
+        if ($results['emails_echoues'] > 0) {
+            $message .= " {$results['emails_echoues']} e-mail(s) d'identifiant n'ont pas pu être envoyés.";
+        }
+
+        return $this->successResponse($results, $message);
     }
 
     /**
@@ -386,5 +392,36 @@ class ImportController extends Controller
             'created_at'         => $analyse->created_at,
             'updated_at'         => $analyse->updated_at,
         ]);
+    }
+
+    /**
+     * Envoie l'identifiant unique à l'étudiant de façon synchrone.
+     *
+     * Même logique que StudentController::store : pas de worker de queue en
+     * production. Renvoie false si l'envoi échoue, sans lever d'exception
+     * pour ne pas interrompre l'import.
+     */
+    private function envoyerIdentifiant(Etudiant $etudiant): bool
+    {
+        try {
+            \Illuminate\Support\Facades\Mail::send('emails.identifiant', [
+                'nom'         => $etudiant->nom,
+                'prenom'      => $etudiant->prenom,
+                'identifiant' => $etudiant->identifiant_unique,
+                'filiere'     => $etudiant->filiere->intitule,
+                'annee'       => $etudiant->anneeAcademique->libelle,
+            ], function ($message) use ($etudiant) {
+                $message->to($etudiant->email)
+                    ->subject('Votre identifiant unique - Système de présence UAC');
+            });
+
+            return true;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error(
+                "Erreur envoi email import étudiant {$etudiant->matricule}: " . $e->getMessage()
+            );
+
+            return false;
+        }
     }
 }

@@ -80,6 +80,11 @@ class FiliereController extends Controller
     public function destroy(Request $request, Filiere $filiere): JsonResponse
     {
         $this->authorizeEtablissement($filiere, $request);
+        $this->preventDeleteWithDependencies($filiere, [
+            'etudiants'   => 'étudiant(s)',
+            'ues'         => 'UE',
+            'evenements'  => 'événement(s)',
+        ]);
 
         $filiere->delete();
         return $this->successResponse(null, 'Filière supprimée.');

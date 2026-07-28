@@ -76,6 +76,35 @@ trait ScopedByEtablissement
     }
 
     /**
+     * Refuse la suppression d'un modèle structurel tant qu'il possède des
+     * enregistrements dépendants.
+     *
+     * Les clés étrangères sont en ON DELETE CASCADE : supprimer une filière
+     * effacerait en base ses UE, EC, événements, étudiants et présences —
+     * de façon définitive et sans que le soft delete Eloquent n'intervienne
+     * (une cascade SQL supprime les lignes réellement). Ce garde bloque donc
+     * l'opération et renvoie un 409 explicite.
+     *
+     * @param  \Illuminate\Database\Eloquent\Model  $model
+     * @param  array<string, string>  $relations  [nom_relation => libellé] à vérifier
+     */
+    protected function preventDeleteWithDependencies($model, array $relations): void
+    {
+        $blocages = [];
+
+        foreach ($relations as $relation => $libelle) {
+            $nombre = $model->{$relation}()->count();
+            if ($nombre > 0) {
+                $blocages[] = "{$nombre} {$libelle}";
+            }
+        }
+
+        if ($blocages) {
+            abort(409, 'Suppression impossible : cet élément est encore rattaché à ' . implode(', ', $blocages) . '.');
+        }
+    }
+
+    /**
      * Applique un filtre via une relation (ex: filiere.etablissement_id).
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query

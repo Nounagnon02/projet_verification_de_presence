@@ -30,3 +30,4 @@ Thumbs.db
 # Configuration de la base de test locale (le .example doit rester suivi)
 .env.testing
 !.env.testing.example
+.env.sendgrid
