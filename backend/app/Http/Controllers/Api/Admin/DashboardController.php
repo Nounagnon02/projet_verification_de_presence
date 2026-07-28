@@ -55,7 +55,7 @@ class DashboardController extends Controller
      *
      * GET /api/admin/dashboard
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, \App\Services\AttendanceRateService $attendance): JsonResponse
     {
         $etablissementId = $this->getEtablissementId($request);
 
@@ -73,10 +73,17 @@ class DashboardController extends Controller
         $evenementsPasses = $this->scopeEvenement(Evenement::where('date', '<', now())
             ->where('statut', 'termine'), $etablissementId)->count();
 
-        $presencesTotales = $this->scopePresence(Presence::query(), $etablissementId)->count();
-        $tauxPresenceGlobal = ($evenementsPasses > 0 && $totalEtudiants > 0)
-            ? round(($presencesTotales / ($evenementsPasses * $totalEtudiants)) * 100, 1)
-            : 0;
+        // Taux calculé sur les présences réellement attendues (étudiants
+        // inscrits à l'EC de chaque événement passé), et non sur « tous les
+        // étudiants × tous les événements » qui écrasait le taux.
+        $filtreEvenementsPasses = function ($q) use ($etablissementId) {
+            $q->where('e.date', '<', now())->where('e.statut', 'termine');
+            if ($etablissementId) {
+                $q->join('filieres as f', 'f.id', '=', 'e.filiere_id')
+                  ->where('f.etablissement_id', $etablissementId);
+            }
+        };
+        $tauxPresenceGlobal = $attendance->rate($filtreEvenementsPasses);
 
         $fraudesSuspectees = Anomaly::where('resolved', false)->count();
 

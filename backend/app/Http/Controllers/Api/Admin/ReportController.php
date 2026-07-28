@@ -44,18 +44,18 @@ class ReportController extends Controller
      * Rapport de présence par département/filière.
      * GET /api/admin/reports/department/{filiere}
      */
-    public function departmentReport(Filiere $filiere): JsonResponse
+    public function departmentReport(Filiere $filiere, \App\Services\AttendanceRateService $attendance): JsonResponse
     {
         $totalEtudiants = Etudiant::where('filiere_id', $filiere->id)->count();
         $totalEvenements = Evenement::where('filiere_id', $filiere->id)->where('date', '<', now())->count();
 
-        $presences = Presence::whereHas('etudiant', fn($q) => $q->where('filiere_id', $filiere->id))
-            ->whereHas('evenement', fn($q) => $q->where('filiere_id', $filiere->id))
-            ->count();
+        // Périmètre : événements passés de cette filière. Le taux est calculé
+        // sur les étudiants réellement inscrits aux ECs concernés, pas sur
+        // « tous les étudiants de la filière × tous les événements ».
+        $filtre = fn ($q) => $q->where('e.filiere_id', $filiere->id)->where('e.date', '<', now());
 
-        $taux = $totalEvenements > 0 && $totalEtudiants > 0
-            ? round(($presences / ($totalEvenements * $totalEtudiants)) * 100, 1)
-            : 0;
+        $presences = $attendance->recorded($filtre);
+        $taux      = $attendance->rate($filtre);
 
         $presencesParCours = Evenement::where('filiere_id', $filiere->id)
             ->with('ec')
@@ -87,9 +87,29 @@ class ReportController extends Controller
      *   - filiere_id : filtrer par filière
      *   - semestre   : filtrer par numéro de semestre (1-10)
      */
-    public function semesterReport(Request $request, AnneeAcademique $anneeAcademique): JsonResponse
+    public function semesterReport(Request $request, AnneeAcademique $anneeAcademique, \App\Services\AttendanceRateService $attendance): JsonResponse
     {
         $etablissementId = $this->getEtablissementId($request);
+
+        // Filtre de base sur les événements de l'année (+ établissement et
+        // filtres optionnels). Sert à recalculer les taux sur les présences
+        // réellement attendues plutôt que « événements × étudiants ».
+        $yearId = $anneeAcademique->id;
+        $baseFilter = function ($q) use ($yearId, $etablissementId, $request) {
+            $q->join('ecs as ec', 'ec.id', '=', 'e.ec_id')
+              ->join('ues as u', 'u.id', '=', 'ec.ue_id')
+              ->where('u.annee_id', $yearId);
+            if ($etablissementId) {
+                $q->join('filieres as f', 'f.id', '=', 'e.filiere_id')
+                  ->where('f.etablissement_id', $etablissementId);
+            }
+            if ($request->filled('filiere_id')) {
+                $q->where('e.filiere_id', $request->integer('filiere_id'));
+            }
+            if ($request->filled('semestre')) {
+                $q->where('u.semestre', $request->integer('semestre'));
+            }
+        };
 
         $query = Ue::selectRaw('
                 ues.semestre,
@@ -124,12 +144,18 @@ class ReportController extends Controller
             $query->where('ues.semestre', $request->integer('semestre'));
         }
 
-        $statsParSemestre = $query->get()->map(function ($row) {
-            $totalAttendus = ($row->total_evenements ?? 0) * ($row->total_etudiants ?? 1);
+        $statsParSemestre = $query->get()->map(function ($row) use ($attendance, $baseFilter) {
+            $semestre = (int) $row->semestre;
+            // Taux réel du semestre : présences attendues = étudiants inscrits
+            // à l'EC de chaque événement du semestre.
+            $filtreSemestre = function ($q) use ($baseFilter, $semestre) {
+                $baseFilter($q);
+                $q->where('u.semestre', $semestre);
+            };
             return [
-                'semestre'         => (int) $row->semestre,
+                'semestre'         => $semestre,
                 'label'            => 'S' . $row->semestre,
-                'taux'             => $totalAttendus > 0 ? round(($row->total_presences / $totalAttendus) * 100, 1) : 0,
+                'taux'             => $attendance->rate($filtreSemestre),
                 'total_presences'  => (int) $row->total_presences,
                 'total_evenements' => (int) $row->total_evenements,
                 'total_etudiants'  => (int) $row->total_etudiants,
@@ -157,14 +183,21 @@ class ReportController extends Controller
         }
 
         $filieres = $filieres->get()
-            ->map(function ($f) {
-                $totalAttendus = ($f->total_evenements ?? 0) * Etudiant::where('filiere_id', $f->id)->where('annee_id', request()->route('anneeAcademique') ?: 0)->count();
+            ->map(function ($f) use ($attendance, $yearId) {
+                // Taux réel par filière pour cette année (corrige aussi un bug :
+                // l'ancien code comparait annee_id au modèle de route, pas à son id).
+                $filtreFiliere = function ($q) use ($f, $yearId) {
+                    $q->join('ecs as ec', 'ec.id', '=', 'e.ec_id')
+                      ->join('ues as u', 'u.id', '=', 'ec.ue_id')
+                      ->where('u.annee_id', $yearId)
+                      ->where('e.filiere_id', $f->id);
+                };
                 return [
                     'id'               => $f->id,
                     'code'             => $f->code,
                     'intitule'         => $f->intitule,
                     'niveau'           => $f->niveau,
-                    'taux'             => $totalAttendus > 0 ? round(($f->total_presences / $totalAttendus) * 100, 1) : 0,
+                    'taux'             => $attendance->rate($filtreFiliere),
                     'total_presences'  => (int) $f->total_presences,
                 ];
             });
@@ -174,9 +207,7 @@ class ReportController extends Controller
             'total_etudiants'      => $totalEtudiants,
             'total_evenements'     => $totalEvenements,
             'total_presences'      => $totalPresences,
-            'taux_presence'        => $totalEvenements > 0 && $totalEtudiants > 0
-                ? round(($totalPresences / ($totalEvenements * max($totalEtudiants, 1))) * 100, 1)
-                : 0,
+            'taux_presence'        => $attendance->rate($baseFilter),
             'stats_par_semestre'   => $statsParSemestre,
             'stats_par_filiere'    => $filieres,
         ]);

@@ -105,8 +105,45 @@ class EvenementController extends Controller
         $validated['filiere_id'] = $ec->ue->filiere_id;
         $validated['annee_id']   = $ec->ue->annee_id;
 
+        if ($conflit = $this->salleConflit($validated['salle_id'] ?? null, $validated['date'], $validated['heure_debut'], $validated['heure_fin'])) {
+            return $this->errorResponse($conflit, 422);
+        }
+
         $evenement = Evenement::create($validated);
         return $this->createdResponse($evenement, 'Événement créé avec succès.');
+    }
+
+    /**
+     * Renvoie un message d'erreur si la salle est déjà occupée sur un créneau
+     * qui chevauche, sinon null.
+     *
+     * Deux créneaux se chevauchent si debut_A < fin_B ET fin_A > debut_B, le
+     * même jour et dans la même salle. Les événements annulés ne réservent
+     * pas la salle. Sur une modification, on exclut l'événement lui-même.
+     */
+    private function salleConflit(?int $salleId, string $date, string $heureDebut, string $heureFin, ?int $exclureId = null): ?string
+    {
+        if (!$salleId) {
+            return null; // pas de salle structurée → pas de contrôle possible
+        }
+
+        $conflit = Evenement::where('salle_id', $salleId)
+            ->where('date', $date)
+            ->where('statut', '!=', 'annule')
+            ->when($exclureId, fn ($q) => $q->where('id', '!=', $exclureId))
+            ->where('heure_debut', '<', $heureFin)
+            ->where('heure_fin', '>', $heureDebut)
+            ->with('ec')
+            ->first();
+
+        if (!$conflit) {
+            return null;
+        }
+
+        $cours = $conflit->ec?->intitule ?? 'un autre cours';
+
+        return "La salle est déjà occupée le {$date} de {$conflit->heure_debut} à {$conflit->heure_fin} "
+            . "({$cours}). Choisissez une autre salle ou un autre créneau.";
     }
 
     public function show(Request $request, Evenement $evenement): JsonResponse
@@ -154,6 +191,19 @@ class EvenementController extends Controller
             }
             $validated['filiere_id'] = $ec->ue->filiere_id;
             $validated['annee_id']   = $ec->ue->annee_id;
+        }
+
+        // Contrôle de conflit de salle sur les valeurs résultantes (nouvelles
+        // si fournies, sinon celles déjà enregistrées), en excluant l'événement
+        // lui-même.
+        $salleId    = array_key_exists('salle_id', $validated) ? $validated['salle_id'] : $evenement->salle_id;
+        $date       = $validated['date']        ?? $evenement->date->format('Y-m-d');
+        $heureDebut = $validated['heure_debut'] ?? $evenement->heure_debut;
+        $heureFin   = $validated['heure_fin']   ?? $evenement->heure_fin;
+
+        if (($validated['statut'] ?? $evenement->statut) !== 'annule'
+            && $conflit = $this->salleConflit($salleId, $date, $heureDebut, $heureFin, $evenement->id)) {
+            return $this->errorResponse($conflit, 422);
         }
 
         $evenement->update($validated);

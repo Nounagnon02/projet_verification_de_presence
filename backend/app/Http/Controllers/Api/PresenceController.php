@@ -298,6 +298,40 @@ class PresenceController extends Controller
         }
 
         //-------------------------------------------------------------
+        // 8 bis. Détection d'appareil partagé (buddy punching)
+        //-------------------------------------------------------------
+        // Fraude la plus courante : un seul téléphone qui scanne pour toute la
+        // classe (chaque étudiant se connecte à tour de rôle). On compte les
+        // autres étudiants ayant déjà utilisé CE device pour CET événement.
+        // La présence n'est pas bloquée mais marquée « suspect » : elle part
+        // en file de validation manuelle, l'administrateur tranche.
+        $statut = 'valide';
+
+        $autresEtudiantsMemeAppareil = Presence::where('evenement_id', $evenement->id)
+            ->where('device_fingerprint', $request->device_fingerprint)
+            ->where('etudiant_id', '!=', $etudiant->id)
+            ->distinct()
+            ->count('etudiant_id');
+
+        if ($autresEtudiantsMemeAppareil >= 1) {
+            $statut = 'suspect';
+
+            Anomaly::create([
+                'etudiant_id' => $etudiant->id,
+                'type'        => 'appareil_partage',
+                'description' => "Appareil partagé suspecté : le même appareil a déjà servi à "
+                    . "{$autresEtudiantsMemeAppareil} autre(s) étudiant(s) pour l'événement "
+                    . "#{$evenement->id}. Scan de {$etudiant->nom} {$etudiant->prenom} marqué à vérifier.",
+                'severity'    => 'high',
+                'metadata'    => [
+                    'device_fingerprint'          => $request->device_fingerprint,
+                    'evenement_id'                => $evenement->id,
+                    'autres_etudiants_meme_device' => $autresEtudiantsMemeAppareil,
+                ],
+            ]);
+        }
+
+        //-------------------------------------------------------------
         // 9. Enregistrement de la présence
         //-------------------------------------------------------------
         $presence = Presence::create([
@@ -306,7 +340,7 @@ class PresenceController extends Controller
             'heure_scan'        => $now,
             'device_fingerprint' => $request->device_fingerprint,
             'ip_address'        => $request->ip(),
-            'statut'            => 'valide',
+            'statut'            => $statut,
             'latitude'          => $request->latitude,
             'longitude'         => $request->longitude,
         ]);
