@@ -10,6 +10,7 @@ use App\Models\AnneeAcademique;
 use App\Models\Etudiant;
 use App\Models\Filiere;
 use App\Services\IdentifiantService;
+use App\Services\StudentPromotionService;
 use App\Traits\ScopedByEtablissement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -213,6 +214,63 @@ class StudentController extends Controller
         $student->delete();
 
         return $this->successResponse(null, 'Étudiant supprimé avec succès.');
+    }
+
+    /**
+     * Promeut en masse les étudiants d'une filière vers une autre (ex.
+     * IM-L1 → IM-L2), avec recalcul des inscriptions aux ECs. Le passage
+     * d'une année à la suivante se fait ici, et non dans l'édition d'un
+     * étudiant : c'est une opération de promotion, pas une correction.
+     *
+     * POST /api/admin/students/promote
+     * Body : from_filiere_id, to_filiere_id, [to_annee_id], [dry_run]
+     */
+    public function promote(Request $request, StudentPromotionService $service): JsonResponse
+    {
+        // to_filiere_id n'est requis que pour exécuter la promotion : en mode
+        // prévisualisation, on ne compte que les étudiants de la filière source.
+        $validated = $request->validate([
+            'from_filiere_id' => ['required', 'integer', 'exists:filieres,id'],
+            'to_filiere_id'   => ['required_unless:dry_run,true', 'integer', 'exists:filieres,id', 'different:from_filiere_id'],
+            'to_annee_id'     => ['nullable', 'integer', 'exists:annees_academiques,id'],
+            'dry_run'         => ['sometimes', 'boolean'],
+        ], [
+            'to_filiere_id.different' => 'La filière de départ et la filière de destination doivent être différentes.',
+        ]);
+
+        $from = Filiere::findOrFail($validated['from_filiere_id']);
+        $this->authorizeEtablissement($from, $request);
+
+        $concernes = $service->countEligible($from);
+
+        // Mode prévisualisation : renvoie le nombre d'étudiants concernés
+        // sans rien modifier, pour confirmation côté interface.
+        if ($request->boolean('dry_run')) {
+            return $this->successResponse(
+                ['etudiants_concernes' => $concernes],
+                "{$concernes} étudiant(s) dans la filière {$from->code}."
+            );
+        }
+
+        $to = Filiere::findOrFail($validated['to_filiere_id']);
+        $this->authorizeEtablissement($to, $request);
+
+        $toAnnee = null;
+        if (!empty($validated['to_annee_id'])) {
+            $toAnnee = AnneeAcademique::findOrFail($validated['to_annee_id']);
+            $this->authorizeEtablissement($toAnnee, $request);
+        }
+
+        if ($concernes === 0) {
+            return $this->errorResponse("Aucun étudiant à promouvoir dans la filière {$from->code}.", 422);
+        }
+
+        $promus = $service->promote($from, $to, $toAnnee);
+
+        return $this->successResponse(
+            ['etudiants_promus' => $promus],
+            "{$promus} étudiant(s) promu(s) de {$from->code} vers {$to->code}."
+        );
     }
 
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiAlertTriangle, FiLoader, FiRefreshCw, FiUpload, FiCheck, FiFileText } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiAlertTriangle, FiLoader, FiRefreshCw, FiUpload, FiCheck, FiFileText, FiTrendingUp } from 'react-icons/fi';
 import api from '../../api/axios';
 import SearchInput from '../../components/ui/SearchInput';
 import Pagination from '../../components/ui/Pagination';
@@ -29,6 +29,13 @@ const StudentManagementPage = () => {
   const [filtreFiliere, setFiltreFiliere] = useState('');
   const [filtreSemestre, setFiltreSemestre] = useState('');
   const [filtreNiveau, setFiltreNiveau] = useState('');
+
+  // Promotion (passage d'année / de niveau d'une promotion entière)
+  const [showPromote, setShowPromote] = useState(false);
+  const [promoteForm, setPromoteForm] = useState({ from_filiere_id: '', to_filiere_id: '', to_annee_id: '' });
+  const [promotePreview, setPromotePreview] = useState(null);
+  const [promoteError, setPromoteError] = useState('');
+  const [promoting, setPromoting] = useState(false);
 
   // Import CSV
   const [showImportModal, setShowImportModal] = useState(false);
@@ -200,6 +207,57 @@ const StudentManagementPage = () => {
     }
   };
 
+  // ─── Promotion ───────────────────────────────────────────
+
+  const openPromote = () => {
+    setPromoteForm({ from_filiere_id: '', to_filiere_id: '', to_annee_id: activeYear?.id?.toString() || '' });
+    setPromotePreview(null);
+    setPromoteError('');
+    setShowPromote(true);
+  };
+
+  // Récupère le nombre d'étudiants concernés sans rien modifier.
+  const previewPromotion = useCallback(async (fromId) => {
+    if (!fromId) { setPromotePreview(null); return; }
+    try {
+      const { data } = await api.post('/admin/students/promote', {
+        from_filiere_id: parseInt(fromId, 10),
+        dry_run: true,
+      });
+      setPromotePreview(data?.data?.etudiants_concernes ?? null);
+    } catch {
+      setPromotePreview(null);
+    }
+  }, []);
+
+  const handlePromote = async () => {
+    if (!promoteForm.from_filiere_id || !promoteForm.to_filiere_id) {
+      setPromoteError('Sélectionnez la filière de départ et la filière de destination.');
+      return;
+    }
+    if (promoteForm.from_filiere_id === promoteForm.to_filiere_id) {
+      setPromoteError('Les deux filières doivent être différentes.');
+      return;
+    }
+    setPromoting(true);
+    setPromoteError('');
+    try {
+      const { data } = await api.post('/admin/students/promote', {
+        from_filiere_id: parseInt(promoteForm.from_filiere_id, 10),
+        to_filiere_id: parseInt(promoteForm.to_filiere_id, 10),
+        to_annee_id: promoteForm.to_annee_id ? parseInt(promoteForm.to_annee_id, 10) : undefined,
+      });
+      addToast?.(data?.message || 'Promotion effectuée', 'success');
+      setShowPromote(false);
+      fetchStudents();
+    } catch (err) {
+      const d = err.response?.data;
+      setPromoteError((d?.errors ? Object.values(d.errors).flat().join(', ') : null) || d?.message || 'Erreur lors de la promotion.');
+    } finally {
+      setPromoting(false);
+    }
+  };
+
   // ─── Import CSV ──────────────────────────────────────────
 
   const handleImportDrop = (e) => {
@@ -275,6 +333,9 @@ const StudentManagementPage = () => {
           </button>
           <button onClick={() => { setShowImportModal(true); resetImport(); }} className="flex items-center gap-2 bg-secondary/10 text-secondary px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-secondary/20 transition-all shadow-sm">
             <FiUpload /> Import en masse
+          </button>
+          <button onClick={openPromote} className="flex items-center gap-2 bg-tertiary/10 text-tertiary px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-tertiary/20 transition-all shadow-sm" title="Passer une promotion à l'année/niveau suivant">
+            <FiTrendingUp /> Promouvoir
           </button>
         </div>
       </div>
@@ -473,6 +534,71 @@ const StudentManagementPage = () => {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* ─── Modal Promotion ───────────────────────────── */}
+      <Modal isOpen={showPromote} onClose={() => setShowPromote(false)} title="Promouvoir une promotion" size="lg">
+        <div className="space-y-4">
+          <p className="text-sm text-on-surface-variant">
+            Fait passer tous les étudiants d'une filière vers une autre (ex. L1 → L2), et
+            réinscrit chacun aux cours de sa nouvelle filière. L'identifiant de connexion des
+            étudiants reste inchangé.
+          </p>
+
+          {promoteError && (
+            <div className="flex items-start gap-2 p-3 bg-error/10 text-error rounded-lg text-sm">
+              <FiAlertTriangle className="mt-0.5 shrink-0" /> <span>{promoteError}</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-on-surface-variant">Filière de départ *</label>
+              <select className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                value={promoteForm.from_filiere_id}
+                onChange={(e) => { const v = e.target.value; setPromoteForm({ ...promoteForm, from_filiere_id: v }); previewPromotion(v); }}>
+                <option value="">Sélectionner...</option>
+                {filieres.map((f) => <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>)}
+              </select>
+              {promotePreview !== null && (
+                <p className="text-xs text-on-surface-variant">{promotePreview} étudiant(s) concerné(s)</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-on-surface-variant">Filière de destination *</label>
+              <select className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                value={promoteForm.to_filiere_id}
+                onChange={(e) => setPromoteForm({ ...promoteForm, to_filiere_id: e.target.value })}>
+                <option value="">Sélectionner...</option>
+                {filieres.filter((f) => f.id?.toString() !== promoteForm.from_filiere_id).map((f) => (
+                  <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-on-surface-variant">Année de destination</label>
+            <select className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              value={promoteForm.to_annee_id}
+              onChange={(e) => setPromoteForm({ ...promoteForm, to_annee_id: e.target.value })}>
+              <option value="">Conserver l'année actuelle</option>
+              {annees.map((a) => (
+                <option key={a.id} value={a.id}>{a.libelle || a.annee} {a.active || a.is_active ? '(active)' : ''}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button type="button" onClick={() => setShowPromote(false)} className="px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors">
+              Annuler
+            </button>
+            <button type="button" onClick={handlePromote} disabled={promoting}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50">
+              {promoting && <FiLoader className="animate-spin" />}{promoting ? 'Promotion...' : 'Promouvoir'}
+            </button>
+          </div>
+        </div>
       </Modal>
 
       {/* ─── Modal Import CSV ───────────────────────────── */}
