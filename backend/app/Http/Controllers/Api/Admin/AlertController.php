@@ -5,22 +5,31 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Anomaly;
 use App\Models\Presence;
+use App\Traits\ScopedByEtablissement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AlertController extends Controller
 {
+    use ScopedByEtablissement;
+
     /**
      * Liste des alertes de fraude potentielle (CDC 11.1).
      * Retourne les anomalies de fraude (double scan, device mismatch, etc.)
      * GET /api/admin/alerts
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $alerts = Anomaly::with(['etudiant'])
-            ->where('resolved', false)
-            ->latest()
-            ->paginate(15);
+        $query = Anomaly::with(['etudiant'])->where('resolved', false);
+
+        // Cloisonnement : un admin de faculté ne voit que les anomalies de ses
+        // propres étudiants (via filiere.etablissement_id). Sans ce filtre, les
+        // noms/matricules des étudiants des autres facultés fuitaient.
+        if ($etablissementId = $this->getEtablissementId($request)) {
+            $query->whereHas('etudiant.filiere', fn ($q) => $q->where('etablissement_id', $etablissementId));
+        }
+
+        $alerts = $query->latest()->paginate(15);
 
         $data = $alerts->map(fn($a) => [
             'id'          => $a->id,
@@ -65,6 +74,17 @@ class AlertController extends Controller
         }
 
         $anomaly = Anomaly::findOrFail($id);
+
+        // Empêche un admin de faculté de résoudre — et de restaurer une présence —
+        // sur une anomalie d'une autre faculté.
+        if ($etablissementId = $this->getEtablissementId($request)) {
+            $appartient = $anomaly->etudiant
+                && (int) optional($anomaly->etudiant->filiere)->etablissement_id === (int) $etablissementId;
+            if (!$appartient) {
+                return $this->errorResponse('Anomalie non trouvée.', 404);
+            }
+        }
+
         $anomaly->update([
             'resolved'    => true,
             'resolved_at' => now(),

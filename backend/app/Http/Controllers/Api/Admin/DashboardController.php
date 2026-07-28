@@ -85,10 +85,17 @@ class DashboardController extends Controller
         };
         $tauxPresenceGlobal = $attendance->rate($filtreEvenementsPasses);
 
-        $fraudesSuspectees = Anomaly::where('resolved', false)->count();
+        // Anomalies cloisonnées par établissement (via l'étudiant → filière).
+        $scopeAnomalies = function ($query) use ($etablissementId) {
+            if ($etablissementId) {
+                $query->whereHas('etudiant.filiere', fn ($q) => $q->where('etablissement_id', $etablissementId));
+            }
+            return $query;
+        };
 
-        $dernieresAnomalies = Anomaly::with('member')
-            ->where('resolved', false)
+        $fraudesSuspectees = $scopeAnomalies(Anomaly::where('resolved', false))->count();
+
+        $dernieresAnomalies = $scopeAnomalies(Anomaly::with('member')->where('resolved', false))
             ->latest()
             ->take(5)
             ->get();
