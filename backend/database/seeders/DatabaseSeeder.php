@@ -33,6 +33,7 @@ class DatabaseSeeder extends Seeder
             EvenementSeeder::class,
             PresenceSeeder::class,
             QrCodeSeeder::class,
+            DemoPresenceSeeder::class, // Jeu de démo pour tester la présence
         ]);
 
         $this->command->info('═══════════════════════════════════════');
