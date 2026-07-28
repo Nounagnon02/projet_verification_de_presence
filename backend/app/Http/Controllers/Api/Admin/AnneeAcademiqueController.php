@@ -65,6 +65,16 @@ class AnneeAcademiqueController extends Controller
             unset($validated['etablissement_id']);
         }
 
+        // On n'autorise pas la désactivation directe : il doit toujours rester
+        // exactement une année active. Pour changer d'année active, on en
+        // active une autre (ce qui désactive celle-ci automatiquement).
+        if (array_key_exists('active', $validated) && $validated['active'] === false && $anneeAcademique->active) {
+            return $this->errorResponse(
+                "Impossible de désactiver l'année active. Activez une autre année à la place.",
+                409
+            );
+        }
+
         if ($request->boolean('active')) {
             $query = AnneeAcademique::query();
             $this->scopeQuery($query, $request);
@@ -88,6 +98,22 @@ class AnneeAcademiqueController extends Controller
     public function destroy(Request $request, AnneeAcademique $anneeAcademique): JsonResponse
     {
         $this->authorizeEtablissement($anneeAcademique, $request);
+
+        // Supprimer l'année active laisserait le système sans année de
+        // référence (et casserait l'inscription des étudiants).
+        if ($anneeAcademique->active) {
+            return $this->errorResponse(
+                "Impossible de supprimer l'année active. Activez une autre année d'abord.",
+                409
+            );
+        }
+
+        // Les FK annee_id sont en cascade : supprimer une année effacerait ses
+        // étudiants et événements. On bloque tant qu'elle a des dépendances.
+        $this->preventDeleteWithDependencies($anneeAcademique, [
+            'etudiants'  => 'étudiant(s)',
+            'evenements' => 'événement(s)',
+        ]);
 
         $anneeAcademique->delete();
         return $this->successResponse(null, 'Année académique supprimée.');

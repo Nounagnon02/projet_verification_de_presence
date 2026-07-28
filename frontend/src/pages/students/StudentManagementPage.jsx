@@ -98,9 +98,13 @@ const StudentManagementPage = () => {
     return () => abortFetchRef.current?.abort();
   }, [fetchStudents]);
 
+  // L'inscription se fait toujours dans l'année active : on ne la fait pas
+  // choisir, on l'impose (le serveur la ré-applique de toute façon).
+  const activeYear = annees.find((a) => a.active || a.is_active) || null;
+
   const openCreate = () => {
     setEditing(null);
-    setForm({ nom: '', prenom: '', email: '', matricule: '', filiere_id: '', annee_id: '' });
+    setForm({ nom: '', prenom: '', email: '', matricule: '', filiere_id: '', annee_id: activeYear?.id?.toString() || '' });
     setFormError('');
     setShowModal(true);
   };
@@ -125,11 +129,21 @@ const StudentManagementPage = () => {
       setFormError('Veuillez remplir les champs obligatoires (nom, prénom, email)');
       return;
     }
+    if (!form.matricule) {
+      setFormError('Le matricule est obligatoire.');
+      return;
+    }
     if (!form.filiere_id) {
       setFormError('Veuillez sélectionner une filière');
       return;
     }
-    if (!form.annee_id) {
+    // À la création, l'année est imposée (année active). On bloque seulement
+    // s'il n'existe aucune année active à laquelle rattacher l'étudiant.
+    if (!editing && !activeYear) {
+      setFormError("Aucune année académique active. Activez une année avant d'inscrire des étudiants.");
+      return;
+    }
+    if (editing && !form.annee_id) {
       setFormError("Veuillez sélectionner une année académique");
       return;
     }
@@ -140,10 +154,14 @@ const StudentManagementPage = () => {
         nom: form.nom,
         prenom: form.prenom,
         email: form.email,
-        matricule: form.matricule || undefined,
+        matricule: form.matricule,
         filiere_id: parseInt(form.filiere_id, 10),
-        annee_id: parseInt(form.annee_id, 10),
       };
+      // L'année n'est envoyée qu'en édition : à la création, le serveur impose
+      // l'année active.
+      if (editing && form.annee_id) {
+        payload.annee_id = parseInt(form.annee_id, 10);
+      }
 
       if (editing) {
         await api.put(`/admin/students/${editing.id}`, payload);
@@ -407,9 +425,9 @@ const StudentManagementPage = () => {
               value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-on-surface-variant">Matricule</label>
+            <label className="text-xs font-semibold text-on-surface-variant">Matricule *</label>
             <input className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono border-b-2 border-transparent focus:border-primary transition-colors"
-              value={form.matricule} onChange={(e) => setForm({ ...form, matricule: e.target.value })} placeholder="22-XXXX-XXXX" />
+              value={form.matricule} onChange={(e) => setForm({ ...form, matricule: e.target.value })} placeholder="22-XXXX-XXXX" required />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -425,16 +443,25 @@ const StudentManagementPage = () => {
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-on-surface-variant">Année académique *</label>
-              <select className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
-                value={form.annee_id} onChange={(e) => setForm({ ...form, annee_id: e.target.value })}>
-                <option value="">Sélectionner une année</option>
-                {annees.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.libelle || a.annee} {a.active || a.is_active ? '(Active)' : ''}
-                  </option>
-                ))}
-              </select>
+              <label className="text-xs font-semibold text-on-surface-variant">Année académique</label>
+              {editing ? (
+                // En édition, l'année reste modifiable (le changement d'année
+                // relève d'une promotion — voir évolution à venir).
+                <select className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
+                  value={form.annee_id} onChange={(e) => setForm({ ...form, annee_id: e.target.value })}>
+                  <option value="">Sélectionner une année</option>
+                  {annees.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.libelle || a.annee} {a.active || a.is_active ? '(Active)' : ''}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                // À la création, l'année active est imposée : affichage seul.
+                <div className="w-full px-3 py-2.5 bg-surface-container rounded-lg text-sm text-on-surface-variant border-b-2 border-transparent">
+                  {activeYear ? `${activeYear.libelle || activeYear.annee} (active)` : 'Aucune année active'}
+                </div>
+              )}
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-4">

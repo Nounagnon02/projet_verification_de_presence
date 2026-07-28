@@ -78,8 +78,6 @@ class EvenementController extends Controller
     {
         $validated = $request->validate([
             'ec_id'       => 'required|exists:ecs,id',
-            'filiere_id'  => 'required|exists:filieres,id',
-            'annee_id'    => 'required|exists:annees_academiques,id',
             'date'        => 'required|date|after_or_equal:today',
             'heure_debut' => 'required|date_format:H:i',
             'heure_fin'   => 'required|date_format:H:i|after:heure_debut',
@@ -88,14 +86,24 @@ class EvenementController extends Controller
             'statut'      => 'sometimes|string|in:planifie,en_cours,termine,annule',
         ]);
 
-        // Vérifier que l'EC n'est pas terminé
-        $ec = \App\Models\Ec::find($validated['ec_id']);
-        if ($ec && $ec->statut === 'termine') {
+        // La filière et l'année ne sont pas choisies : elles sont déduites de
+        // l'EC (via son UE), pour qu'il soit impossible de créer un événement
+        // rattaché à une filière incohérente avec le cours.
+        $ec = \App\Models\Ec::with('ue')->findOrFail($validated['ec_id']);
+
+        if ($ec->statut === 'termine') {
             return $this->errorResponse(
                 "L'EC {$ec->code} ({$ec->intitule}) a déjà atteint son volume horaire ({$ec->volume_horaire}h). Il n'est plus possible d'ajouter des événements.",
                 422
             );
         }
+
+        if (!$ec->ue) {
+            return $this->errorResponse("L'EC sélectionné n'est rattaché à aucune UE.", 422);
+        }
+
+        $validated['filiere_id'] = $ec->ue->filiere_id;
+        $validated['annee_id']   = $ec->ue->annee_id;
 
         $evenement = Evenement::create($validated);
         return $this->createdResponse($evenement, 'Événement créé avec succès.');
@@ -123,8 +131,6 @@ class EvenementController extends Controller
 
         $validated = $request->validate([
             'ec_id'       => 'sometimes|exists:ecs,id',
-            'filiere_id'  => 'sometimes|exists:filieres,id',
-            'annee_id'    => 'sometimes|exists:annees_academiques,id',
             'date'        => 'sometimes|date|after_or_equal:today',
             'heure_debut' => 'sometimes|date_format:H:i',
             'heure_fin'   => 'sometimes|date_format:H:i|after:heure_debut',
@@ -133,15 +139,21 @@ class EvenementController extends Controller
             'statut'      => 'sometimes|string|in:planifie,en_cours,termine,annule',
         ]);
 
-        // Vérifier que le nouvel EC (si changé) n'est pas terminé
+        // Si l'EC change, filière et année sont re-déduites de l'EC — jamais
+        // fournies par le client, pour éviter toute incohérence.
         if (!empty($validated['ec_id']) && $validated['ec_id'] != $evenement->ec_id) {
-            $ec = \App\Models\Ec::find($validated['ec_id']);
-            if ($ec && $ec->statut === 'termine') {
+            $ec = \App\Models\Ec::with('ue')->findOrFail($validated['ec_id']);
+            if ($ec->statut === 'termine') {
                 return $this->errorResponse(
                     "L'EC {$ec->code} ({$ec->intitule}) a déjà atteint son volume horaire ({$ec->volume_horaire}h).",
                     422
                 );
             }
+            if (!$ec->ue) {
+                return $this->errorResponse("L'EC sélectionné n'est rattaché à aucune UE.", 422);
+            }
+            $validated['filiere_id'] = $ec->ue->filiere_id;
+            $validated['annee_id']   = $ec->ue->annee_id;
         }
 
         $evenement->update($validated);

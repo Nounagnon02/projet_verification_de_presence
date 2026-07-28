@@ -446,32 +446,30 @@ export default function EvenementManagementPage() {
               </button>
             </div>
             <form onSubmit={handleSave} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-on-surface mb-1">Filière *</label>
-                  <select value={modal.data.filiere_id} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, filiere_id: e.target.value, ec_id: '' } }))}
-                    required className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                    <option value="">Sélectionner...</option>
-                    {filieres.map(f => <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-on-surface mb-1">Année *</label>
-                  <select value={modal.data.annee_id} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, annee_id: e.target.value } }))}
-                    required className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                    <option value="">Sélectionner...</option>
-                    {annees.map(a => <option key={a.id} value={a.id}>{a.libelle}</option>)}
-                  </select>
-                </div>
+              {/* La filière ne sert qu'à réduire la liste des cours : elle
+                  n'est pas envoyée. Le serveur déduit filière ET année de
+                  l'EC choisi, ce qui rend toute incohérence impossible. */}
+              <div>
+                <label className="block text-xs font-semibold text-on-surface mb-1">Filière <span className="font-normal text-on-surface-variant">(pour filtrer les cours)</span></label>
+                <select value={modal.data.filiere_id} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, filiere_id: e.target.value, ec_id: '' } }))}
+                  className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                  <option value="">Toutes les filières</option>
+                  {filieres.map(f => <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>)}
+                </select>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-on-surface mb-1">EC (Cours) *</label>
                 <select value={modal.data.ec_id} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, ec_id: e.target.value } }))}
                   required className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                   <option value="">Sélectionner...</option>
-                  {getEcsForFiliere().map(ec => (
-                    <option key={ec.id} value={ec.id}>{ec.code} — {ec.intitule}</option>
-                  ))}
+                  {getEcsForFiliere().map(ec => {
+                    const filiereCode = ec.ue?.filiere?.code || ec.ue?.filiere_code;
+                    return (
+                      <option key={ec.id} value={ec.id}>
+                        {ec.code} — {ec.intitule}{filiereCode ? ` (${filiereCode})` : ''}
+                      </option>
+                    );
+                  })}
                   {ecs.filter(ec => ec.statut === 'termine').length > 0 && (
                     <option disabled className="text-gray-400">─ ECs terminés (indisponibles) ─</option>
                   )}
