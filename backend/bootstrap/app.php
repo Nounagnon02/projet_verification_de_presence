@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role'               => \App\Http\Middleware\CheckRole::class,
             'scoped.etablissement' => \App\Http\Middleware\ScopeByEtablissement::class,
             'security.headers'   => \App\Http\Middleware\SecurityHeaders::class,
+            'password.changed'   => \App\Http\Middleware\EnsurePasswordChanged::class,
         ]);
 
         // SPA stateful auth (cookies httpOnly Sanctum) + Security headers

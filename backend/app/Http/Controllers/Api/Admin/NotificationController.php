@@ -11,7 +11,9 @@ class NotificationController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Notification::latest();
+        // Chaque utilisateur ne voit QUE ses propres notifications (colonne
+        // user_id). Sans ce filtre, tout admin voyait celles de tout le monde.
+        $query = Notification::where('user_id', $request->user()->id)->latest();
 
         if ($request->boolean('unread_only')) {
             $query->unread();
@@ -33,28 +35,44 @@ class NotificationController extends Controller
         );
     }
 
-    public function unreadCount(): JsonResponse
+    public function unreadCount(Request $request): JsonResponse
     {
         return $this->successResponse([
-            'count' => Notification::unread()->count(),
+            'count' => Notification::where('user_id', $request->user()->id)->unread()->count(),
         ]);
     }
 
-    public function markRead(Notification $notification): JsonResponse
+    public function markRead(Request $request, Notification $notification): JsonResponse
     {
+        $this->ensureOwner($request, $notification);
+
         $notification->markAsRead();
         return $this->successResponse(null, 'Notification marquée comme lue.');
     }
 
-    public function markAllRead(): JsonResponse
+    public function markAllRead(Request $request): JsonResponse
     {
-        $count = Notification::unread()->update(['read_at' => now()]);
+        // Ne marque que les notifications de l'utilisateur : auparavant un seul
+        // « tout marquer lu » vidait le non-lu de TOUS les utilisateurs.
+        $count = Notification::where('user_id', $request->user()->id)->unread()->update(['read_at' => now()]);
         return $this->successResponse(['marked_read' => $count], 'Toutes les notifications sont marquées comme lues.');
     }
 
-    public function destroy(Notification $notification): JsonResponse
+    public function destroy(Request $request, Notification $notification): JsonResponse
     {
+        $this->ensureOwner($request, $notification);
+
         $notification->delete();
         return $this->successResponse(null, 'Notification supprimée.');
+    }
+
+    /**
+     * Coupe court (404) si la notification n'appartient pas à l'utilisateur.
+     */
+    private function ensureOwner(Request $request, Notification $notification): void
+    {
+        if ((int) $notification->user_id !== (int) $request->user()->id) {
+            abort(404, 'Notification non trouvée.');
+        }
     }
 }
