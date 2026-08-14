@@ -29,27 +29,44 @@ export default function AnomaliesListPage() {
   const [pagination, setPagination] = useState({ currentPage: 1, lastPage: 1 });
   const [resolving, setResolving] = useState(null);
 
-  const fetchAlerts = useCallback(async (page = 1) => {
-    try {
+  // La page demandée et un compteur de rafraîchissement pilotent le chargement.
+  // Le chargement lui-même n'existe qu'à un seul endroit — dans l'effet — au
+  // lieu d'une fonction appelée depuis quatre endroits différents.
+  const [page, setPage] = useState(1);
+  const [rechargement, setRechargement] = useState(0);
+  const rafraichir = useCallback(() => setRechargement((n) => n + 1), []);
+
+  useEffect(() => {
+    let annule = false;
+
+    // Annulation : en enchaînant les pages, la réponse de la précédente pouvait
+    // arriver après celle de la suivante et réafficher l'ancienne liste.
+    (async () => {
       setLoading(true);
       setError('');
-      const { data } = await api.get('/admin/alerts', { params: { page } });
-      if (data.success && data.data) {
-        setAlerts(data.data);
-        setPagination({
-          currentPage: data.meta?.current_page || page,
-          lastPage: data.meta?.last_page || 1,
-        });
-      }
-    } catch (err) {
-      setError('Erreur lors du chargement des alertes.');
-      console.error('[Anomalies]', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
-  useEffect(() => { fetchAlerts(); }, [fetchAlerts]);
+      try {
+        const { data } = await api.get('/admin/alerts', { params: { page } });
+
+        if (!annule && data.success && data.data) {
+          setAlerts(data.data);
+          setPagination({
+            currentPage: data.meta?.current_page || page,
+            lastPage: data.meta?.last_page || 1,
+          });
+        }
+      } catch (err) {
+        if (!annule) {
+          setError('Erreur lors du chargement des alertes.');
+          console.error('[Anomalies]', err);
+        }
+      } finally {
+        if (!annule) setLoading(false);
+      }
+    })();
+
+    return () => { annule = true; };
+  }, [page, rechargement]);
 
   const handleResolve = async (id, status) => {
     setResolving(id);
@@ -79,7 +96,7 @@ export default function AnomaliesListPage() {
           <h1 className="text-2xl font-bold text-primary font-headline">Alertes de fraude</h1>
           <p className="text-sm text-on-surface-variant">Détection des comportements suspects (CDC 11.1)</p>
         </div>
-        <button onClick={() => fetchAlerts()}
+        <button onClick={rafraichir}
           className="flex items-center gap-1.5 px-4 py-2 bg-surface-container-high rounded-xl text-xs font-semibold text-on-surface-variant hover:bg-surface-container-high/80 transition-all">
           <FiRefreshCw size={14} /> Actualiser
         </button>
@@ -193,13 +210,13 @@ export default function AnomaliesListPage() {
       {pagination.lastPage > 1 && (
         <div className="flex items-center justify-center gap-2 mt-6">
           <button disabled={pagination.currentPage <= 1}
-            onClick={() => fetchAlerts(pagination.currentPage - 1)}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
             className="px-4 py-2 bg-surface-container-lowest border border-outline-variant/10 rounded-xl text-xs font-semibold text-on-surface disabled:opacity-40 hover:bg-surface-container-high transition-all">
             Précédent
           </button>
           <span className="text-xs text-on-surface-variant">Page {pagination.currentPage} / {pagination.lastPage}</span>
           <button disabled={pagination.currentPage >= pagination.lastPage}
-            onClick={() => fetchAlerts(pagination.currentPage + 1)}
+            onClick={() => setPage((p) => p + 1)}
             className="px-4 py-2 bg-surface-container-lowest border border-outline-variant/10 rounded-xl text-xs font-semibold text-on-surface disabled:opacity-40 hover:bg-surface-container-high transition-all">
             Suivant
           </button>

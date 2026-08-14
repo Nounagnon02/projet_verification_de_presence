@@ -16,25 +16,31 @@ export default function ProfilePage() {
   // Déclarée avant l'effet qui l'appelle : l'ordre inverse fonctionnait, la
   // fonction étant définie au moment où l'effet s'exécute, mais il masquait
   // la dépendance et l'analyse statique le signalait à juste titre.
-  const fetchProfile = async () => {
-    try {
-      setLoading(true);
-      const { data } = await api.get('/admin/profile');
-      if (data.success && data.data) {
-        setProfile(data.data);
-        setName(data.data.name || '');
-        setEmail(data.data.email || '');
-      }
-    } catch (err) {
-      setError('Erreur lors du chargement du profil.');
-      console.error('[Profile]', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
+
+  // Chargement intégré à l'effet, son unique appelant, et annulable.
   useEffect(() => {
-    fetchProfile();
+    let annule = false;
+
+    (async () => {
+      try {
+        setLoading(true);
+        const { data } = await api.get('/admin/profile');
+        if (data.success && data.data) {
+          if (!annule) setProfile(data.data);
+          if (!annule) setName(data.data.name || '');
+          if (!annule) setEmail(data.data.email || '');
+        }
+      } catch (err) {
+        if (!annule) setError('Erreur lors du chargement du profil.');
+        console.error('[Profile]', err);
+      } finally {
+        if (!annule) setLoading(false);
+      }
+  
+    })();
+
+    return () => { annule = true; };
   }, []);
 
 

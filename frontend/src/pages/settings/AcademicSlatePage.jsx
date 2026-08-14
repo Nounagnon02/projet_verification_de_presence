@@ -9,34 +9,41 @@ export default function AcademicSlatePage() {
   // Déclarée avant l'effet qui l'appelle : l'ordre inverse fonctionnait, la
   // fonction étant définie au moment où l'effet s'exécute, mais il masquait
   // la dépendance et l'analyse statique le signalait à juste titre.
-  const loadStats = async () => {
-    try {
-      setLoading(true);
-      const [anneesRes, filieresRes, uesRes, etudiantsRes] = await Promise.all([
-        api.get('/admin/annees-academiques'),
-        api.get('/admin/filieres'),
-        api.get('/admin/ues'),
-        api.get('/admin/students', { params: { per_page: 1 } }),
-      ]);
-      const annees = anneesRes.data?.data ?? anneesRes.data ?? [];
-      const filieres = filieresRes.data?.data ?? filieresRes.data ?? [];
-      const ues = uesRes.data?.data ?? uesRes.data ?? [];
-      setStats({
-        anneeActive: annees.find(a => a.active) || annees[0] || null,
-        totalAnnees: annees.length,
-        totalFilieres: filieres.length,
-        totalUes: ues.length,
-        totalEtudiants: etudiantsRes.data?.pagination?.total || etudiantsRes.data?.meta?.total || '...',
-      });
-    } catch (err) {
-      console.error('[Slate]', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
+
+  // Chargement intégré à l'effet, son unique appelant, et annulable : les quatre
+  // requêtes peuvent aboutir après un départ de la page.
   useEffect(() => {
-    loadStats();
+    let annule = false;
+
+    (async () => {
+      try {
+        setLoading(true);
+        const [anneesRes, filieresRes, uesRes, etudiantsRes] = await Promise.all([
+          api.get('/admin/annees-academiques'),
+          api.get('/admin/filieres'),
+          api.get('/admin/ues'),
+          api.get('/admin/students', { params: { per_page: 1 } }),
+        ]);
+        const annees = anneesRes.data?.data ?? anneesRes.data ?? [];
+        const filieres = filieresRes.data?.data ?? filieresRes.data ?? [];
+        const ues = uesRes.data?.data ?? uesRes.data ?? [];
+        if (!annule) setStats({
+          anneeActive: annees.find(a => a.active) || annees[0] || null,
+          totalAnnees: annees.length,
+          totalFilieres: filieres.length,
+          totalUes: ues.length,
+          totalEtudiants: etudiantsRes.data?.pagination?.total || etudiantsRes.data?.meta?.total || '...',
+        });
+      } catch (err) {
+        console.error('[Slate]', err);
+      } finally {
+        if (!annule) setLoading(false);
+      }
+  
+    })();
+
+    return () => { annule = true; };
   }, []);
 
 
