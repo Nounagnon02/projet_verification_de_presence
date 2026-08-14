@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { FiBell, FiCheck, FiTrash2, FiRefreshCw, FiAlertTriangle, FiCheckCircle, FiInfo, FiAlertCircle } from 'react-icons/fi';
 import api from '../../api/axios';
 
@@ -10,42 +10,55 @@ export default function NotificationsPage() {
   const [filter, setFilter] = useState('all'); // 'all' | 'unread'
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const fetchNotifications = useCallback(async (page = 1) => {
-    try {
+
+
+  // La page affichée pilote le chargement, ce qui remplace l'appel direct des
+  // boutons de pagination : il n'y a plus qu'un endroit qui émet la requête.
+  const [page, setPage] = useState(1);
+
+  // Annulable : en enchaînant les pages, la réponse de la précédente pouvait
+  // arriver après celle de la suivante et réafficher l'ancienne liste.
+  useEffect(() => {
+    let annule = false;
+
+    (async () => {
       setLoading(true);
       setError('');
-      const params = { page, per_page: 20 };
-      if (filter === 'unread') params.unread_only = true;
 
-      const { data } = await api.get('/admin/notifications', { params });
-      if (data.success && data.data) {
-        setNotifications(data.data);
-        setPagination({
-          currentPage: data.pagination?.current_page || page,
-          lastPage: data.pagination?.last_page || 1,
-        });
+      try {
+        const params = { page, per_page: 20 };
+        if (filter === 'unread') params.unread_only = true;
+
+        const [liste, compteur] = await Promise.all([
+          api.get('/admin/notifications', { params }),
+          api.get('/admin/notifications/unread-count').catch(() => null),
+        ]);
+
+        if (annule) return;
+
+        if (liste.data.success && liste.data.data) {
+          setNotifications(liste.data.data);
+          setPagination({
+            currentPage: liste.data.pagination?.current_page || page,
+            lastPage: liste.data.pagination?.last_page || 1,
+          });
+        }
+
+        if (compteur?.data?.success && compteur.data.data) {
+          setUnreadCount(compteur.data.data.count ?? 0);
+        }
+      } catch (err) {
+        if (!annule) {
+          setError('Erreur lors du chargement des notifications.');
+          console.error('[Notifications]', err);
+        }
+      } finally {
+        if (!annule) setLoading(false);
       }
-    } catch (err) {
-      setError('Erreur lors du chargement des notifications.');
-      console.error('[Notifications]', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [filter]);
+    })();
 
-  const fetchUnreadCount = async () => {
-    try {
-      const { data } = await api.get('/admin/notifications/unread-count');
-      if (data.success && data.data) {
-        setUnreadCount(data.data.count ?? 0);
-      }
-    } catch { /* silencieux */ }
-  };
-
-  useEffect(() => {
-    fetchNotifications();
-    fetchUnreadCount();
-  }, [fetchNotifications]);
+    return () => { annule = true; };
+  }, [page, filter]);
 
   const handleMarkRead = async (id) => {
     try {
@@ -241,7 +254,7 @@ export default function NotificationsPage() {
         <div className="flex items-center justify-center gap-2 mt-6">
           <button
             disabled={pagination.currentPage <= 1}
-            onClick={() => fetchNotifications(pagination.currentPage - 1)}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
             className="px-4 py-2 bg-surface-container-lowest border border-outline-variant/10 rounded-xl text-xs font-semibold text-on-surface disabled:opacity-40 hover:bg-surface-container-high transition-all"
           >
             Précédent
@@ -251,7 +264,7 @@ export default function NotificationsPage() {
           </span>
           <button
             disabled={pagination.currentPage >= pagination.lastPage}
-            onClick={() => fetchNotifications(pagination.currentPage + 1)}
+            onClick={() => setPage((p) => p + 1)}
             className="px-4 py-2 bg-surface-container-lowest border border-outline-variant/10 rounded-xl text-xs font-semibold text-on-surface disabled:opacity-40 hover:bg-surface-container-high transition-all"
           >
             Suivant

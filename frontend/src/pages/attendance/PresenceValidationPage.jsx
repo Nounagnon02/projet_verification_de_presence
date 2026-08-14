@@ -23,15 +23,24 @@ const PresenceValidationPage = () => {
 
   const qrToken = tokenFromUrl;
 
-  // Charger les infos du cours depuis le token QR
+  // Charger les infos du cours depuis le token QR. Annulable : le QR étant
+  // renouvelé régulièrement, un étudiant peut rescanner avant la fin de la
+  // requête précédente, et c'est la réponse du dernier code scanné qui doit
+  // faire foi.
   useEffect(() => {
-    if (!qrToken) {
-      setCoursLoading(false);
-      return;
-    }
-    const fetchCourse = async () => {
+    let annule = false;
+
+    (async () => {
+      if (!qrToken) {
+        if (!annule) setCoursLoading(false);
+        return;
+      }
+
       try {
         const { data } = await api.get(`/presence/course-by-token/${qrToken}`);
+
+        if (annule) return;
+
         if (data.success && data.data) {
           setCours(data.data);
           setStep('scan');
@@ -40,13 +49,16 @@ const PresenceValidationPage = () => {
           setStep('error');
         }
       } catch {
-        setError('QR Code invalide ou expiré. Veuillez scanner un nouveau code.');
-        setStep('error');
+        if (!annule) {
+          setError('QR Code invalide ou expiré. Veuillez scanner un nouveau code.');
+          setStep('error');
+        }
       } finally {
-        setCoursLoading(false);
+        if (!annule) setCoursLoading(false);
       }
-    };
-    fetchCourse();
+    })();
+
+    return () => { annule = true; };
   }, [qrToken]);
 
   // Focus automatique sur le champ matricule

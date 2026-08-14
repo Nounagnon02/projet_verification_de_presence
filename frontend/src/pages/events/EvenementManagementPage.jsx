@@ -38,37 +38,50 @@ export default function EvenementManagementPage() {
   // Créneaux de l'emploi du temps proposés pour le cours et la date choisis.
   const [creneaux, setCreneaux] = useState({ loading: false, options: [] });
 
-  const load = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const params = {};
-      if (filters.date_debut) params.date_debut = filters.date_debut;
-      if (params.date_debut && !filters.date_fin) params.date_fin = filters.date_debut;
-      if (filters.filiere_id) params.filiere_id = filters.filiere_id;
-      if (filters.statut) params.statut = filters.statut;
 
-      const [eventsRes, ecsRes, filieresRes, anneesRes, sallesRes] = await Promise.all([
-        api.get('/admin/evenements', { params }),
-        api.get('/admin/ecs'),
-        api.get('/admin/filieres'),
-        api.get('/admin/annees-academiques'),
-        api.get('/admin/salles/disponibles'),
-      ]);
-      setEvents(eventsRes.data?.data ?? eventsRes.data ?? []);
-      setEcs(ecsRes.data?.data ?? ecsRes.data ?? []);
-      setFilieres(filieresRes.data?.data ?? filieresRes.data ?? []);
-      setAnnees(anneesRes.data?.data ?? anneesRes.data ?? []);
-      setSalles(sallesRes.data?.data ?? sallesRes.data ?? []);
-    } catch (err) {
-      setError('Erreur lors du chargement des événements.');
-      console.error('[Evenements]', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [filters]);
+  // Compteur de rechargement : les actions qui modifient les données
+  // l'incrémentent au lieu d'appeler une seconde fonction de chargement. La
+  // requête n'est émise qu'à un seul endroit, et l'annulation y est
+  // systématique — une réponse tardive ne peut plus écraser un état plus récent.
+  const [rechargement, setRechargement] = useState(0);
+  const rafraichir = useCallback(() => setRechargement((n) => n + 1), []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let annule = false;
+
+    (async () => {
+      try {
+        setLoading(true);
+        if (!annule) setError('');
+        const params = {};
+        if (filters.date_debut) params.date_debut = filters.date_debut;
+        if (params.date_debut && !filters.date_fin) params.date_fin = filters.date_debut;
+        if (filters.filiere_id) params.filiere_id = filters.filiere_id;
+        if (filters.statut) params.statut = filters.statut;
+
+        const [eventsRes, ecsRes, filieresRes, anneesRes, sallesRes] = await Promise.all([
+          api.get('/admin/evenements', { params }),
+          api.get('/admin/ecs'),
+          api.get('/admin/filieres'),
+          api.get('/admin/annees-academiques'),
+          api.get('/admin/salles/disponibles'),
+        ]);
+        if (!annule) setEvents(eventsRes.data?.data ?? eventsRes.data ?? []);
+        if (!annule) setEcs(ecsRes.data?.data ?? ecsRes.data ?? []);
+        if (!annule) setFilieres(filieresRes.data?.data ?? filieresRes.data ?? []);
+        if (!annule) setAnnees(anneesRes.data?.data ?? anneesRes.data ?? []);
+        if (!annule) setSalles(sallesRes.data?.data ?? sallesRes.data ?? []);
+      } catch (err) {
+        if (!annule) setError('Erreur lors du chargement des événements.');
+        console.error('[Evenements]', err);
+      } finally {
+        if (!annule) setLoading(false);
+      }
+  
+    })();
+
+    return () => { annule = true; };
+  }, [filters, rechargement]);
 
   const getStatutBadge = (statut) => {
     const s = STATUTS.find(s => s.value === statut);
@@ -97,7 +110,7 @@ export default function EvenementManagementPage() {
         svg: d.svg || '',
       });
       setSuccess('QR Code généré avec succès !');
-      load();
+      rafraichir();
     } catch {
       setError('Erreur lors de la génération du QR Code.');
     } finally {
@@ -212,7 +225,7 @@ export default function EvenementManagementPage() {
         setSuccess('Événement créé.');
       }
       setModal({ open: false, editing: false, data: INITIAL_EVENT, saving: false });
-      load();
+      rafraichir();
     } catch (err) {
       const msg = err.response?.data?.message
         || (err.response?.data?.errors ? Object.values(err.response.data.errors).flat().join(', ') : null)
@@ -227,7 +240,7 @@ export default function EvenementManagementPage() {
     try {
       await api.delete(`/admin/evenements/${ev.id}`);
       setSuccess('Événement supprimé.');
-      load();
+      rafraichir();
     } catch { setError('Erreur lors de la suppression.'); }
   };
 
@@ -302,7 +315,7 @@ export default function EvenementManagementPage() {
               </select>
             </div>
             <div className="min-w-[120px]">
-              <button onClick={load}
+              <button onClick={rafraichir}
                 className="w-full flex items-center justify-center gap-1.5 px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:opacity-90 transition-all">
                 <FiRefreshCw size={14} /> Appliquer
               </button>

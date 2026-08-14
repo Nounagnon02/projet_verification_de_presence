@@ -76,31 +76,44 @@ export default function UEManagementPage() {
     setImportUploading(false);
   };
 
-  const load = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const params = {};
-      if (filtreAnnee) params.annee_id = filtreAnnee;
-      if (filtreFiliere) params.filiere_id = filtreFiliere;
-      if (filtreNiveau) params.niveau = filtreNiveau;
-      const [uesRes, filieresRes, anneesRes] = await Promise.all([
-        api.get('/admin/ues', { params }),
-        api.get('/admin/filieres'),
-        api.get('/admin/annees-academiques'),
-      ]);
-      setUes(uesRes.data?.data ?? uesRes.data ?? []);
-      setFilieres(filieresRes.data?.data ?? filieresRes.data ?? []);
-      setAnnees(anneesRes.data?.data ?? anneesRes.data ?? []);
-    } catch (err) {
-      setError('Erreur lors du chargement des données.');
-      console.error('[UE]', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [filtreAnnee, filtreFiliere, filtreNiveau]);
 
-  useEffect(() => { load(); }, [load]);
+  // Compteur de rechargement : les actions qui modifient les données
+  // l'incrémentent au lieu d'appeler une seconde fonction de chargement. La
+  // requête n'est émise qu'à un seul endroit, et l'annulation y est
+  // systématique — une réponse tardive ne peut plus écraser un état plus récent.
+  const [rechargement, setRechargement] = useState(0);
+  const rafraichir = useCallback(() => setRechargement((n) => n + 1), []);
+
+  useEffect(() => {
+    let annule = false;
+
+    (async () => {
+      try {
+        setLoading(true);
+        if (!annule) setError('');
+        const params = {};
+        if (filtreAnnee) params.annee_id = filtreAnnee;
+        if (filtreFiliere) params.filiere_id = filtreFiliere;
+        if (filtreNiveau) params.niveau = filtreNiveau;
+        const [uesRes, filieresRes, anneesRes] = await Promise.all([
+          api.get('/admin/ues', { params }),
+          api.get('/admin/filieres'),
+          api.get('/admin/annees-academiques'),
+        ]);
+        if (!annule) setUes(uesRes.data?.data ?? uesRes.data ?? []);
+        if (!annule) setFilieres(filieresRes.data?.data ?? filieresRes.data ?? []);
+        if (!annule) setAnnees(anneesRes.data?.data ?? anneesRes.data ?? []);
+      } catch (err) {
+        if (!annule) setError('Erreur lors du chargement des données.');
+        console.error('[UE]', err);
+      } finally {
+        if (!annule) setLoading(false);
+      }
+  
+    })();
+
+    return () => { annule = true; };
+  }, [filtreAnnee, filtreFiliere, filtreNiveau, rechargement]);
 
   const filteredUes = ues.filter(ue =>
     !search || ue.code?.toLowerCase().includes(search.toLowerCase()) ||
@@ -130,7 +143,7 @@ export default function UEManagementPage() {
         setSuccess('UE créée avec succès.');
       }
       setUeModal({ open: false, editing: false, data: INITIAL_UE, saving: false });
-      load();
+      rafraichir();
     } catch (err) {
       const msg = err.response?.data?.message || (err.response?.data?.errors ? Object.values(err.response.data.errors).flat().join(', ') : null) || 'Erreur lors de la sauvegarde.';
       setError(msg);
@@ -143,7 +156,7 @@ export default function UEManagementPage() {
     try {
       await api.delete(`/admin/ues/${ue.id}`);
       setSuccess('UE supprimée.');
-      load();
+      rafraichir();
     } catch {
       setError('Erreur lors de la suppression.');
     }
@@ -171,7 +184,7 @@ export default function UEManagementPage() {
         setSuccess('EC créé avec succès.');
       }
       setEcModal({ open: false, editing: false, ueId: null, data: INITIAL_EC, saving: false });
-      load();
+      rafraichir();
     } catch (err) {
       const msg = err.response?.data?.message || (err.response?.data?.errors ? Object.values(err.response.data.errors).flat().join(', ') : null) || 'Erreur lors de la sauvegarde.';
       setError(msg);
@@ -184,7 +197,7 @@ export default function UEManagementPage() {
     try {
       await api.delete(`/admin/ecs/${ec.id}`);
       setSuccess('EC supprimé.');
-      load();
+      rafraichir();
     } catch {
       setError('Erreur lors de la suppression.');
     }
