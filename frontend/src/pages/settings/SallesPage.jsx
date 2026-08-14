@@ -24,28 +24,51 @@ export default function SallesPage() {
   const [showDelete, setShowDelete] = useState(null);
   const [userEntity, setUserEntity] = useState(null);
 
-  const fetchSalles = useCallback(async () => {
-    try {
-      const { data } = await api.get('/admin/salles', { params: { search: search || undefined } });
-      setSalles(data.data || data || []);
-    } catch { /* ignore */ }
-    finally { setLoading(false); }
-  }, [search]);
-
-  useEffect(() => { fetchSalles(); }, [fetchSalles]);
+  // Chargement en un seul endroit : dans l'effet. Les actions qui doivent
+  // rafraîchir la liste incrémentent `rechargement` plutôt que d'appeler une
+  // fonction de fetch, ce qui évite d'avoir deux chemins de chargement à garder
+  // synchronisés — et rend l'annulation systématique.
+  //
+  // Cette annulation n'est pas cosmétique : sans elle, deux recherches
+  // rapprochées se résolvaient dans un ordre non garanti et la réponse la plus
+  // ancienne pouvait écraser la plus récente.
+  const [rechargement, setRechargement] = useState(0);
+  const rafraichir = useCallback(() => setRechargement((n) => n + 1), []);
 
   useEffect(() => {
+    let annule = false;
+
+    (async () => {
+      try {
+        const { data } = await api.get('/admin/salles', { params: { search: search || undefined } });
+        if (!annule) setSalles(data.data || data || []);
+      } catch { /* liste laissée en l'état */ }
+      finally { if (!annule) setLoading(false); }
+    })();
+
+    return () => { annule = true; };
+  }, [search, rechargement]);
+
+  // Rattachement de l'utilisateur à son entité, pour préremplir le formulaire.
+  useEffect(() => {
+    let annule = false;
+
     Promise.all([
       api.get('/admin/etablissements'),
       api.get('/user'),
     ]).then(([etabRes, userRes]) => {
+      if (annule) return;
+
       const entities = etabRes.data?.data ?? etabRes.data ?? [];
       const user = userRes.data;
+
       if (user?.etablissement_id) {
         const entity = entities.find(e => e.id === user.etablissement_id);
         if (entity) setUserEntity(entity);
       }
     }).catch(() => {});
+
+    return () => { annule = true; };
   }, []);
 
   const openCreate = () => {
@@ -95,7 +118,7 @@ export default function SallesPage() {
         addToast?.('Salle créée avec succès.', 'success');
       }
       setShowModal(false);
-      fetchSalles();
+      rafraichir();
     } catch (err) {
       const msg = err.response?.data?.message || 'Erreur lors de la sauvegarde.';
       setError(msg);
@@ -111,7 +134,7 @@ export default function SallesPage() {
       await api.delete(`/admin/salles/${showDelete.id}`);
       addToast?.('Salle supprimée.', 'success');
       setShowDelete(null);
-      fetchSalles();
+      rafraichir();
     } catch (err) {
       addToast?.(err.response?.data?.message || 'Erreur lors de la suppression.', 'error');
     } finally {

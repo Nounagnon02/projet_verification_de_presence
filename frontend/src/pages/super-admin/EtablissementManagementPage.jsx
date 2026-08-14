@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MdAdd, MdSchool, MdSearch, MdChevronRight, MdRefresh } from 'react-icons/md';
 import api from '../../api/axios';
@@ -9,21 +9,33 @@ export default function EtablissementManagementPage() {
   const [search, setSearch] = useState('');
   const navigate = useNavigate();
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const { data } = await api.get('/super-admin/etablissements');
-      if (data.success) {
-        setEtablissements(data.data || []);
-      }
-    } catch (err) {
-      console.error('Erreur chargement facultés:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Un seul chemin de chargement : l'effet. Le bouton « rafraîchir »
+  // l'invalide en incrémentant ce compteur, plutôt qu'en appelant une seconde
+  // fonction de chargement qu'il faudrait garder synchronisée avec la première.
+  const [rechargement, setRechargement] = useState(0);
+  const rafraichir = useCallback(() => setRechargement((n) => n + 1), []);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    let annule = false;
+
+    // Annulation : une réponse qui arrive après le démontage ne doit pas écrire
+    // dans un composant disparu, et un rafraîchissement rapproché ne doit pas
+    // être écrasé par la réponse de la requête précédente.
+    (async () => {
+      setLoading(true);
+
+      try {
+        const { data } = await api.get('/super-admin/etablissements');
+        if (!annule && data.success) setEtablissements(data.data || []);
+      } catch (err) {
+        if (!annule) console.error('Erreur chargement facultés:', err);
+      } finally {
+        if (!annule) setLoading(false);
+      }
+    })();
+
+    return () => { annule = true; };
+  }, [rechargement]);
 
   const filtered = etablissements.filter(
     (e) =>
@@ -42,7 +54,7 @@ export default function EtablissementManagementPage() {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={fetchData}
+            onClick={rafraichir}
             className="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
             title="Rafraîchir"
           >

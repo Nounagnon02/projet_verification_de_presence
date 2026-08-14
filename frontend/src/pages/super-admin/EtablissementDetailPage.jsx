@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   MdArrowBack, MdBusiness, MdEmail, MdPhone, MdLocationOn,
@@ -17,34 +17,52 @@ export default function EtablissementDetailPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [etabRes, statsRes] = await Promise.all([
-        api.get(`/super-admin/etablissements/${id}`),
-        api.get(`/super-admin/etablissements/${id}/stats`),
-      ]);
-      if (etabRes.data.success) {
-        setEtablissement(etabRes.data.data);
-        setForm({
-          code: etabRes.data.data.code || '',
-          nom: etabRes.data.data.nom || '',
-          email: etabRes.data.data.email || '',
-          telephone: etabRes.data.data.telephone || '',
-          adresse: etabRes.data.data.adresse || '',
-        });
-      }
-      if (statsRes.data.success) {
-        setStats(statsRes.data.data);
-      }
-    } catch (err) {
-      console.error('Erreur chargement:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Un seul chemin de chargement : l'effet. Le bouton « rafraîchir » l'invalide
+  // en incrémentant ce compteur, ce qui évite d'entretenir deux fonctions de
+  // chargement en parallèle.
+  const [rechargement, setRechargement] = useState(0);
+  const rafraichir = useCallback(() => setRechargement((n) => n + 1), []);
 
-  useEffect(() => { fetchData(); }, [id]);
+  useEffect(() => {
+    let annule = false;
+
+    // Annulation indispensable ici : en changeant de faculté, la réponse de la
+    // précédente peut arriver après celle de la nouvelle et afficher les
+    // données de la mauvaise entité.
+    (async () => {
+      setLoading(true);
+
+      try {
+        const [etabRes, statsRes] = await Promise.all([
+          api.get(`/super-admin/etablissements/${id}`),
+          api.get(`/super-admin/etablissements/${id}/stats`),
+        ]);
+
+        if (annule) return;
+
+        if (etabRes.data.success) {
+          setEtablissement(etabRes.data.data);
+          setForm({
+            code: etabRes.data.data.code || '',
+            nom: etabRes.data.data.nom || '',
+            email: etabRes.data.data.email || '',
+            telephone: etabRes.data.data.telephone || '',
+            adresse: etabRes.data.data.adresse || '',
+          });
+        }
+
+        if (statsRes.data.success) {
+          setStats(statsRes.data.data);
+        }
+      } catch (err) {
+        if (!annule) console.error('Erreur chargement:', err);
+      } finally {
+        if (!annule) setLoading(false);
+      }
+    })();
+
+    return () => { annule = true; };
+  }, [id, rechargement]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -128,7 +146,7 @@ export default function EtablissementDetailPage() {
           <h1 className="text-2xl font-bold text-[#011549] font-headline">{etablissement.nom}</h1>
           <p className="text-sm text-slate-500 mt-1">Code: {etablissement.code}</p>
         </div>
-        <button onClick={fetchData} className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors" title="Rafraîchir">
+        <button onClick={rafraichir} className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors" title="Rafraîchir">
           <MdRefresh size={18} />
         </button>
         <button onClick={handleDelete} className="p-2 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 transition-colors" title="Supprimer">
