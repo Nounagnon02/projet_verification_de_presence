@@ -1,7 +1,14 @@
 import { Tabs } from 'expo-router';
-import { QrCode, LayoutDashboard, Clock, User } from 'lucide-react-native';
+import { QrCode, LayoutDashboard, Clock, User, MonitorSmartphone } from 'lucide-react-native';
+import { useAuth } from '../../src/auth/AuthContext';
 
 export default function TabLayout() {
+  const { user } = useAuth();
+
+  // L'onglet du délégué est masqué pour les autres étudiants, plutôt que
+  // présent et affichant un refus.
+  const estResponsable = Boolean(user?.est_responsable);
+
   return (
     <Tabs
       screenOptions={{
@@ -34,6 +41,15 @@ export default function TabLayout() {
           title: 'Accueil',
           headerTitle: 'Tableau de bord',
           tabBarIcon: ({ color, size }) => <LayoutDashboard color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="qrcode"
+        options={{
+          title: 'QR du cours',
+          headerTitle: 'QR Code du cours',
+          href: estResponsable ? undefined : null,
+          tabBarIcon: ({ color, size }) => <MonitorSmartphone color={color} size={size} />,
         }}
       />
       <Tabs.Screen

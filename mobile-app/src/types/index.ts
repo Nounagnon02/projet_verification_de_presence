@@ -8,6 +8,8 @@ export interface ApiUser {
   identifiant_unique?: string;
   matricule?: string;
   role: 'etudiant' | 'admin' | 'super_admin';
+  /** Délégué de sa promotion : donne accès à l'onglet « QR du cours ». */
+  est_responsable?: boolean;
   etablissement_id?: number | string;
   filiere_id?: string;
   annee_id?: string;

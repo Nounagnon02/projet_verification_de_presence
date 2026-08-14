@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\AnneeAcademiqueController;
-use App\Http\Controllers\Api\Admin\ChatController;
 use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\EcController;
 use App\Http\Controllers\Api\Admin\EnrollmentController;
@@ -22,6 +21,7 @@ use App\Http\Controllers\Api\LandingPageController;
 use App\Http\Controllers\Api\PresenceController;
 use App\Http\Controllers\Api\QrCodeController;
 use App\Http\Controllers\Api\StudentAuthController;
+use App\Http\Controllers\Api\StudentQrCodeController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -66,9 +66,13 @@ Route::get('/health', function () {
 Route::post('/auth/student/login', [StudentAuthController::class, 'login'])
     ->middleware('throttle:student-login');
 Route::get('/auth/student/me', [StudentAuthController::class, 'me'])
-    ->middleware(['auth:sanctum', 'throttle:api']);
+    ->middleware(['auth:sanctum', 'ability:etudiant', 'throttle:api']);
 Route::post('/auth/student/logout', [StudentAuthController::class, 'logout'])
-    ->middleware(['auth:sanctum', 'throttle:api']);
+    ->middleware(['auth:sanctum', 'ability:etudiant', 'throttle:api']);
+
+// Consultation du QR Code par l'étudiant responsable (lecture seule).
+Route::get('/student/qrcode/current', [StudentQrCodeController::class, 'current'])
+    ->middleware(['auth:sanctum', 'ability:etudiant', 'throttle:api']);
 
 // Route de login nommée — nécessaire pour les redirections de Sanctum
 // Rate limiting : 5 tentatives/min/IP (CDC 9.1)
@@ -97,7 +101,11 @@ Route::prefix('presence')->group(function () {
 });
 
 // Routes protégées pour l'administration (faculté scope via scoped.etablissement)
-Route::middleware(['auth:sanctum', 'scoped.etablissement', 'password.changed', 'throttle:api'])->prefix('admin')->group(function () {
+//
+// « ability:admin » écarte les jetons d'étudiant, qui portent la capacité
+// « etudiant ». Les jetons d'administrateur sont créés sans capacité, donc avec
+// « * », qui satisfait ce contrôle : les sessions en cours restent valides.
+Route::middleware(['auth:sanctum', 'ability:admin', 'scoped.etablissement', 'password.changed', 'throttle:api'])->prefix('admin')->group(function () {
 
     // Dashboard & Stats
     Route::get('/dashboard', [DashboardController::class, 'index']);
@@ -129,6 +137,9 @@ Route::middleware(['auth:sanctum', 'scoped.etablissement', 'password.changed', '
     Route::apiResource('ecs', EcController::class)->except(['show']);
 
     // Événements
+    // Déclarée avant apiResource pour ne pas être interprétée comme
+    // /evenements/{evenement}.
+    Route::get('/evenements/creneaux-emploi-du-temps', [EvenementController::class, 'creneauxEmploiDuTemps']);
     Route::apiResource('evenements', EvenementController::class);
 
     // Filières
@@ -194,12 +205,6 @@ Route::middleware(['auth:sanctum', 'scoped.etablissement', 'password.changed', '
     Route::post('/tickets/{ticket}/reply', [TicketController::class, 'reply']);
     Route::patch('/tickets/{ticket}/status', [TicketController::class, 'updateStatus']);
     Route::delete('/tickets/{ticket}', [TicketController::class, 'destroy']);
-
-    // Chat / Messagerie
-    Route::get('/chat/conversations', [ChatController::class, 'conversations']);
-    Route::get('/chat/conversations/{conversation}/messages', [ChatController::class, 'messages']);
-    Route::post('/chat/conversations/{conversation}/messages', [ChatController::class, 'sendMessage']);
-    Route::post('/chat/conversations/{conversation}/close', [ChatController::class, 'closeConversation']);
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index']);

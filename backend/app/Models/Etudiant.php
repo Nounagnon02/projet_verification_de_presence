@@ -23,6 +23,11 @@ class Etudiant extends Model
         'annee_id',
         'email',
         'identifiant_unique',
+        'est_responsable',
+    ];
+
+    protected $casts = [
+        'est_responsable' => 'boolean',
     ];
 
     public function filiere(): BelongsTo
@@ -51,12 +56,33 @@ class Etudiant extends Model
      */
     public function autoEnroll(): void
     {
-        $ecs = Ec::forFiliereAndYear($this->filiere_id, $this->annee_id);
+        $ecIds = Ec::forFiliereAndYear($this->filiere_id, $this->annee_id)->modelKeys();
 
-        foreach ($ecs as $ec) {
-            $this->ecs()->syncWithoutDetaching([
-                $ec->id => ['annee_id' => $this->annee_id],
-            ]);
+        if ($ecIds === []) {
+            return;
+        }
+
+        // Un aller-retour pour lire l'état du pivot, puis un seul INSERT pour
+        // toutes les inscriptions manquantes. La boucle précédente appelait
+        // syncWithoutDetaching par EC, soit 2 requêtes chacun : ~25 allers-retours
+        // pour une filière de 12 ECs, ce qui représentait l'essentiel des ~7 s
+        // d'une inscription en production (base Supabase en Irlande,
+        // application à Render/Oregon).
+        $actuels = $this->ecs()->get(['ecs.id'])->keyBy('id');
+
+        $manquants = array_values(array_filter($ecIds, fn ($id) => !$actuels->has($id)));
+
+        if ($manquants !== []) {
+            $this->ecs()->attach(array_fill_keys($manquants, ['annee_id' => $this->annee_id]));
+        }
+
+        // Une inscription déjà présente mais rattachée à une autre année est
+        // recalée sur l'année courante — c'est ce que faisait syncWithoutDetaching.
+        // En pratique la boucle ne déclenche aucune requête.
+        foreach ($actuels as $ec) {
+            if ((int) $ec->pivot->annee_id !== (int) $this->annee_id) {
+                $this->ecs()->updateExistingPivot($ec->id, ['annee_id' => $this->annee_id]);
+            }
         }
     }
 

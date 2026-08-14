@@ -44,8 +44,10 @@ class StudentAuthController extends Controller
         // Révoquer les anciens tokens de cet étudiant
         $etudiant->tokens()->delete();
 
-        // Créer un token Sanctum
-        $token = $etudiant->createToken('mobile-app')->plainTextToken;
+        // Capacité explicite « etudiant ». Sans elle, le token porterait « * » et
+        // franchirait les contrôles des routes d'administration : auth:sanctum
+        // authentifie indifféremment un utilisateur et un étudiant.
+        $token = $etudiant->createToken('mobile-app', ['etudiant'])->plainTextToken;
 
         return response()->json([
             'success' => true,
@@ -59,6 +61,7 @@ class StudentAuthController extends Controller
                     'matricule'          => $etudiant->matricule,
                     'identifiant_unique' => $etudiant->identifiant_unique,
                     'role'               => 'etudiant',
+                    'est_responsable'    => (bool) $etudiant->est_responsable,
                     'filiere_id'         => $etudiant->filiere_id,
                     'annee_id'           => $etudiant->annee_id,
                 ],
@@ -97,6 +100,7 @@ class StudentAuthController extends Controller
                 'matricule'          => $etudiant->matricule,
                 'identifiant_unique' => $etudiant->identifiant_unique,
                 'role'               => 'etudiant',
+                'est_responsable'    => (bool) $etudiant->est_responsable,
                 'filiere_id'         => $etudiant->filiere_id,
                 'annee_id'           => $etudiant->annee_id,
             ],

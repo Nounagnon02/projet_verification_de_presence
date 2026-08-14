@@ -31,6 +31,9 @@ class UpdateStudentRequest extends FormRequest
             'filiere_id' => ['sometimes', 'integer', 'exists:filieres,id'],
             'annee_id'   => ['sometimes', 'integer', 'exists:annees_academiques,id'],
             'email'      => ['sometimes', 'email', Rule::unique('etudiants', 'email')->ignore($etudiantId)],
+            // Désignation du délégué de la promotion. Pas de contrainte
+            // d'unicité : une promotion a souvent un délégué et un adjoint.
+            'est_responsable' => ['sometimes', 'boolean'],
         ];
     }
 

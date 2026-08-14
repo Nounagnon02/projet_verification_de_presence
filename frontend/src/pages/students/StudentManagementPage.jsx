@@ -15,7 +15,7 @@ const StudentManagementPage = () => {
   const [pagination, setPagination] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ nom: '', prenom: '', email: '', matricule: '', filiere_id: '', annee_id: '' });
+  const [form, setForm] = useState({ nom: '', prenom: '', email: '', matricule: '', filiere_id: '', annee_id: '', est_responsable: false });
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
@@ -54,13 +54,25 @@ const StudentManagementPage = () => {
       if (data.success) setFilieres(data.data || []);
       else if (Array.isArray(data)) setFilieres(data);
       else if (data.data) setFilieres(data.data);
-    }).catch((err) => { if (err.name !== 'CanceledError' && err.name !== 'AbortError') {} });
+    }).catch((err) => {
+      // Une annulation au démontage est normale ; toute autre erreur doit être
+      // visible, sinon les listes restent vides sans explication.
+      if (err.name !== 'CanceledError' && err.name !== 'AbortError') {
+        setError('Erreur lors du chargement des listes de référence.');
+      }
+    });
 
     api.get('/admin/annees-academiques', { signal }).then(({ data }) => {
       if (data.success) setAnnees(data.data || []);
       else if (Array.isArray(data)) setAnnees(data);
       else if (data.data) setAnnees(data.data);
-    }).catch((err) => { if (err.name !== 'CanceledError' && err.name !== 'AbortError') {} });
+    }).catch((err) => {
+      // Une annulation au démontage est normale ; toute autre erreur doit être
+      // visible, sinon les listes restent vides sans explication.
+      if (err.name !== 'CanceledError' && err.name !== 'AbortError') {
+        setError('Erreur lors du chargement des listes de référence.');
+      }
+    });
 
     return () => controller.abort();
   }, []);
@@ -111,7 +123,7 @@ const StudentManagementPage = () => {
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ nom: '', prenom: '', email: '', matricule: '', filiere_id: '', annee_id: activeYear?.id?.toString() || '' });
+    setForm({ nom: '', prenom: '', email: '', matricule: '', filiere_id: '', annee_id: activeYear?.id?.toString() || '', est_responsable: false });
     setFormError('');
     setShowModal(true);
   };
@@ -123,6 +135,7 @@ const StudentManagementPage = () => {
       prenom: s.prenom || '',
       email: s.email || '',
       matricule: s.matricule || '',
+      est_responsable: Boolean(s.est_responsable),
       filiere_id: s.filiere?.id?.toString() || s.filiere_id?.toString() || '',
       annee_id: s.annee?.id?.toString() || s.annee_id?.toString() || '',
     });
@@ -168,6 +181,9 @@ const StudentManagementPage = () => {
       // l'année active.
       if (editing && form.annee_id) {
         payload.annee_id = parseInt(form.annee_id, 10);
+      }
+      if (editing) {
+        payload.est_responsable = Boolean(form.est_responsable);
       }
 
       if (editing) {
@@ -525,6 +541,21 @@ const StudentManagementPage = () => {
               )}
             </div>
           </div>
+          {editing && (
+            <label className="flex items-start gap-3 rounded-xl bg-surface-container-high px-3 py-3 cursor-pointer">
+              <input type="checkbox" checked={form.est_responsable}
+                onChange={(e) => setForm({ ...form, est_responsable: e.target.checked })}
+                className="mt-0.5 h-4 w-4 accent-primary" />
+              <span>
+                <span className="block text-sm font-semibold text-on-surface">Délégué de la promotion</span>
+                <span className="block text-xs text-on-surface-variant">
+                  Donne accès, dans l'application mobile, à l'onglet affichant le QR Code du cours en
+                  séance. Le délégué peut le présenter et le partager, jamais le générer. Une promotion
+                  peut avoir plusieurs délégués.
+                </span>
+              </span>
+            </label>
+          )}
           <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors">
               Annuler

@@ -19,6 +19,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'scoped.etablissement' => \App\Http\Middleware\ScopeByEtablissement::class,
             'security.headers'   => \App\Http\Middleware\SecurityHeaders::class,
             'password.changed'   => \App\Http\Middleware\EnsurePasswordChanged::class,
+            // Cloisonnement des jetons : auth:sanctum authentifie aussi bien un
+            // administrateur qu'un étudiant. Les capacités permettent de refuser
+            // un jeton d'étudiant sur une route d'administration, et l'inverse.
+            'ability'            => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
+            'abilities'          => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
         ]);
 
         // SPA stateful auth (cookies httpOnly Sanctum) + Security headers
