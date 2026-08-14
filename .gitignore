@@ -105,3 +105,9 @@ copilot-instructions.md
 *.instructions
 *.agent.md
 .vercel
+
+# Mémoire — versionné séparément sur Overleaf, qui a son propre historique.
+# Le dépôt de code n'a pas à porter les 3 Mo de sources LaTeX, d'images
+# régénérables et le PDF annoté de la relecture.
+Memoire_de_Prince.pdf
+Mémoire_de_prince-*/
