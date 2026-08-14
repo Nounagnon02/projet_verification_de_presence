@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { FiLock, FiArrowLeft, FiCheckCircle, FiAlertTriangle, FiLoader } from 'react-icons/fi';
+import { FiLock, FiMail, FiArrowLeft, FiCheckCircle, FiAlertTriangle, FiLoader } from 'react-icons/fi';
 import { MdAccountBalance } from 'react-icons/md';
 import api from '../../api/axios';
 import { assets } from '../../utils/assets';
