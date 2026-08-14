@@ -14,6 +14,8 @@ use App\Services\StudentPromotionService;
 use App\Traits\ScopedByEtablissement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -119,21 +121,50 @@ class StudentController extends Controller
             $annee->id
         );
 
-        $etudiant = Etudiant::create([
-            'id'                => (string) Str::uuid(),
-            'nom'               => IdentifiantService::normalize($request->nom),
-            'prenom'            => IdentifiantService::normalize($request->prenom),
-            'matricule'         => $matricule,
-            'filiere_id'        => $filiere->id,
-            'annee_id'          => $annee->id,
-            'email'             => $request->email,
-            'identifiant_unique' => $identifiantUnique,
-        ]);
+        // L'insertion et l'auto-inscription aux ECs (CDC 7.2.3) forment un tout :
+        // sans transaction, une erreur pendant l'auto-inscription laissait un
+        // étudiant créé mais sans cours, avec un 500 côté client — l'inscription
+        // paraissait à la fois faite et échouée.
+        $etudiant = DB::transaction(function () use ($request, $matricule, $filiere, $annee, $identifiantUnique) {
+            $etudiant = Etudiant::create([
+                'id'                => (string) Str::uuid(),
+                'nom'               => IdentifiantService::normalize($request->nom),
+                'prenom'            => IdentifiantService::normalize($request->prenom),
+                'matricule'         => $matricule,
+                'filiere_id'        => $filiere->id,
+                'annee_id'          => $annee->id,
+                'email'             => $request->email,
+                'identifiant_unique' => $identifiantUnique,
+            ]);
 
-        // Auto-inscription aux ECs de la filière et année (CDC 7.2.3)
-        $etudiant->autoEnroll();
+            $etudiant->autoEnroll();
 
-        // Envoi de l'identifiant par email (synchrone — pas de worker en prod)
+            return $etudiant;
+        });
+
+        // La filière et l'année sont déjà chargées : les rattacher évite les deux
+        // requêtes du load() final. Au-delà des ~400 ms gagnés en production,
+        // cela supprime la dernière opération capable d'échouer alors que
+        // l'inscription est déjà validée en base.
+        $etudiant->setRelation('filiere', $filiere);
+        $etudiant->setRelation('anneeAcademique', $annee);
+
+        $this->envoyerIdentifiantParEmail($etudiant);
+
+        return $this->createdResponse(
+            new EtudiantResource($etudiant),
+            'Étudiant inscrit avec succès.'
+        );
+    }
+
+    /**
+     * Envoi de l'identifiant unique par email (synchrone).
+     *
+     * L'inscription est déjà validée en base quand cette méthode est appelée :
+     * aucune défaillance d'envoi ne doit la transformer en erreur côté client.
+     */
+    private function envoyerIdentifiantParEmail(Etudiant $etudiant): void
+    {
         try {
             Mail::send('emails.identifiant', [
                 'nom' => $etudiant->nom,
@@ -149,13 +180,14 @@ class StudentController extends Controller
             // \Throwable et non \Exception : une erreur de configuration du mailer
             // (classe de transport absente, driver inconnu) lève une \Error qui
             // ferait échouer l'inscription entière avec un 500.
-            \Illuminate\Support\Facades\Log::error("Erreur envoi email étudiant {$etudiant->matricule}: " . $e->getMessage());
+            try {
+                Log::error("Erreur envoi email étudiant {$etudiant->matricule}: " . $e->getMessage());
+            } catch (\Throwable) {
+                // Le journal lui-même peut être indisponible (canal stderr non
+                // ouvrable sous Apache) : sans ce second filet, c'est le
+                // traitement de l'erreur d'e-mail qui provoquait le 500.
+            }
         }
-
-        return $this->createdResponse(
-            new EtudiantResource($etudiant->load(['filiere', 'anneeAcademique'])),
-            'Étudiant inscrit avec succès.'
-        );
     }
 
     /**
