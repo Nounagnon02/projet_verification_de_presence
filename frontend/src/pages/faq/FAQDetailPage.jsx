@@ -46,7 +46,6 @@ const faqCategories = {
       { q: 'Comment créer un ticket de support ?', r: 'Dans la section Support, cliquez sur "Nouveau ticket", remplissez le formulaire avec votre sujet et message.' },
       { q: 'Quel est le délai de réponse moyen ?', r: 'Notre équipe répond généralement sous 24 à 48 heures ouvrées pour les tickets standards.' },
       { q: 'Puis-je suivre l\'état de mon ticket ?', r: 'Oui, dans la liste des tickets, vous pouvez voir le statut (ouvert, en cours, résolu, fermé) de chaque demande.' },
-      { q: 'Le chat en direct est-il disponible ?', r: 'Oui, le chat en direct est disponible du lundi au vendredi de 8h à 18h dans la section Support > Chat en direct.' },
     ],
   },
 };

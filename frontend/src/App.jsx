@@ -68,7 +68,6 @@ const KnowledgeBaseArticle = lazy(() => import('./pages/help/KnowledgeBaseArticl
 const ContactFormPage = lazy(() => import('./pages/support/ContactFormPage'));
 const TicketsListPage = lazy(() => import('./pages/support/TicketsListPage'));
 const TicketDetailPage = lazy(() => import('./pages/support/TicketDetailPage'));
-const LiveChatDashboard = lazy(() => import('./pages/support/LiveChatDashboard'));
 const CreateFilierePage = lazy(() => import('./pages/settings/CreateFilierePage'));
 
 // Phase 9 - Profile & Notifications
@@ -183,7 +182,6 @@ function App() {
               <Route path="support/contact" element={<ContactFormPage />} />
               <Route path="support/tickets" element={<TicketsListPage />} />
               <Route path="support/tickets/:id" element={<TicketDetailPage />} />
-              <Route path="support/live-chat" element={<LiveChatDashboard />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="notifications" element={<NotificationsPage />} />
               <Route path="*" element={<NotFoundPage />} />

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FiSend, FiPaperclip, FiAlertCircle, FiCheck, FiMail, FiMessageSquare } from 'react-icons/fi';
+import { FiSend, FiAlertCircle, FiCheck, FiMail } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 
@@ -111,15 +111,6 @@ export default function ContactFormPage() {
               <div>
                 <h3 className="text-sm font-bold text-primary">Email</h3>
                 <p className="text-xs text-on-surface-variant">support@uac-presence.bj</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                <FiMessageSquare className="text-primary" size={16} />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-primary">Chat en direct</h3>
-                <p className="text-xs text-on-surface-variant">Lun-Ven 8h-18h</p>
               </div>
             </div>
           </div>
