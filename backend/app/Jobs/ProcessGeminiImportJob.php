@@ -55,7 +55,7 @@ class ProcessGeminiImportJob implements ShouldQueue
 
         // Télécharger le fichier depuis Supabase Storage vers un fichier temporaire
         $tmpPath = tempnam(sys_get_temp_dir(), 'gemini_') . '.pdf';
-        file_put_contents($tmpPath, Storage::disk('supabase')->get($filePath));
+        file_put_contents($tmpPath, Storage::get($filePath));
         $fullPath = $tmpPath;
 
         if (!file_exists($fullPath)) {

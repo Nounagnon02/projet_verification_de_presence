@@ -177,7 +177,10 @@ class ImportController extends Controller
             return $this->errorResponse('Le fichier fourni n\'est pas un PDF valide.', 422);
         }
 
-        $path    = $file->store('imports/courses', 'supabase');
+        // Disque par défaut (FILESYSTEM_DISK), et non « supabase » codé en dur :
+        // la production le déclare déjà comme disque par défaut, et les tests
+        // peuvent ainsi écrire en local au lieu d'exiger un stockage distant.
+        $path    = $file->store('imports/courses');
 
         // Création de l'analyse en base (statut: pending)
         // On stocke le chemin RELATIF — le job utilise Storage::path() pour le résoudre
@@ -225,7 +228,10 @@ class ImportController extends Controller
             return $this->errorResponse('Le fichier fourni n\'est pas un PDF valide.', 422);
         }
 
-        $path    = $file->store('imports/schedule', 'supabase');
+        // Disque par défaut (FILESYSTEM_DISK), et non « supabase » codé en dur :
+        // la production le déclare déjà comme disque par défaut, et les tests
+        // peuvent ainsi écrire en local au lieu d'exiger un stockage distant.
+        $path    = $file->store('imports/schedule');
 
         // Création de l'analyse en base (statut: pending)
         // On stocke le chemin RELATIF — le job utilise Storage::path() pour le résoudre
@@ -366,7 +372,7 @@ class ImportController extends Controller
      *
      * GET /api/admin/import/analysis-status/{id}
      */
-    public function analysisStatus(mixed $id): JsonResponse
+    public function analysisStatus(Request $request, mixed $id): JsonResponse
     {
         $id = is_numeric($id) ? (int) $id : 0;
 
@@ -374,7 +380,11 @@ class ImportController extends Controller
             return $this->errorResponse('Identifiant d\'analyse invalide.', 400);
         }
 
-        $analyse = Analyse::find($id);
+        // Un administrateur ne peut suivre que les analyses qu'il a lui-même
+        // lancées (l'analyse porte l'user_id de son initiateur).
+        $analyse = Analyse::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->first();
 
         if (! $analyse) {
             return $this->errorResponse('Analyse introuvable.', 404);
