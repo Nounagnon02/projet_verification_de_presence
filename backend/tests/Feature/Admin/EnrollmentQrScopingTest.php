@@ -29,7 +29,7 @@ class EnrollmentQrScopingTest extends TestCase
     {
         parent::setUp();
         $sfx = Str::random(5);
-        $annee = AnneeAcademique::query()->firstOrFail();
+        $annee = $this->anneeActive();
 
         $etabA = DB::table('etablissements')->insertGetId(['code' => 'EA' . $sfx, 'nom' => 'A', 'email' => "ea$sfx@x.test", 'actif' => true, 'created_at' => now(), 'updated_at' => now()]);
         $etabB = DB::table('etablissements')->insertGetId(['code' => 'EB' . $sfx, 'nom' => 'B', 'email' => "eb$sfx@x.test", 'actif' => true, 'created_at' => now(), 'updated_at' => now()]);

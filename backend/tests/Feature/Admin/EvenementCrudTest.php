@@ -195,7 +195,10 @@ class EvenementCrudTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonPath('success', true);
 
-        $this->assertDatabaseMissing('evenements', ['id' => $evenement->id]);
+        // Suppression douce : les événements portent SoftDeletes, la ligne
+        // subsiste avec sa date de suppression. C'est voulu — un événement
+        // supprimé reste une pièce justificative des présences déjà enregistrées.
+        $this->assertSoftDeleted('evenements', ['id' => $evenement->id]);
     }
 
     public function test_creation_evenement_rejetee_si_ec_termine(): void

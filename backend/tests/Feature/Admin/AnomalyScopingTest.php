@@ -35,7 +35,7 @@ class AnomalyScopingTest extends TestCase
         $filiereB = Filiere::create(['code' => 'FB' . $sfx, 'intitule' => 'B', 'niveau' => 'L1', 'etablissement_id' => $etabB]);
         $etudiantB = Etudiant::create([
             'nom' => 'B', 'prenom' => 'B', 'matricule' => "B-$sfx",
-            'filiere_id' => $filiereB->id, 'annee_id' => AnneeAcademique::query()->firstOrFail()->id,
+            'filiere_id' => $filiereB->id, 'annee_id' => $this->anneeActive()->id,
             'email' => "etu-b-$sfx@x.test", 'identifiant_unique' => "B_$sfx",
         ]);
         $this->anomalieB = Anomaly::create([

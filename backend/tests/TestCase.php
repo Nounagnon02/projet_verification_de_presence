@@ -9,6 +9,88 @@ abstract class TestCase extends BaseTestCase
 {
     use \Illuminate\Foundation\Testing\DatabaseTransactions;
 
+    /*
+    |--------------------------------------------------------------------------
+    | Données de référence
+    |--------------------------------------------------------------------------
+    |
+    | Plusieurs tests ont besoin d'une année académique ou d'une filière sans que
+    | ce soit l'objet de leur vérification. Ils les récupéraient auparavant avec
+    | un firstOrFail() en supposant la base semée, ce qui les rendait dépendants
+    | d'un état extérieur : sur une base fraîche, ils échouaient tous.
+    |
+    | Ces accesseurs récupèrent l'enregistrement s'il existe et le créent sinon.
+    | Les tests fonctionnent donc sur une base vide comme sur une base semée, et
+    | sans jamais provoquer de conflit d'unicité — ce que ferait un semis
+    | systématique, les tests créant par ailleurs leurs propres libellés.
+    |
+    */
+
+    protected function anneeActive(): \App\Models\AnneeAcademique
+    {
+        return \App\Models\AnneeAcademique::where('active', true)->first()
+            ?? \App\Models\AnneeAcademique::create([
+                'libelle'    => '2025-2026',
+                'date_debut' => '2025-10-01',
+                'date_fin'   => '2026-09-30',
+                'active'     => true,
+            ]);
+    }
+
+    protected function anneeNonActive(): \App\Models\AnneeAcademique
+    {
+        return \App\Models\AnneeAcademique::where('active', false)->first()
+            ?? \App\Models\AnneeAcademique::create([
+                'libelle'    => '2024-2025',
+                'date_debut' => '2024-10-01',
+                'date_fin'   => '2025-09-30',
+                'active'     => false,
+            ]);
+    }
+
+    protected function uneFiliere(): \App\Models\Filiere
+    {
+        return \App\Models\Filiere::first()
+            ?? \App\Models\Filiere::create([
+                'code'     => 'REF-' . \Illuminate\Support\Str::random(5),
+                'intitule' => 'Filière de référence',
+                'niveau'   => 'L1',
+            ]);
+    }
+
+    protected function uneEntite(): \App\Models\Etablissement
+    {
+        $sfx = \Illuminate\Support\Str::random(6);
+
+        return \App\Models\Etablissement::first()
+            ?? \App\Models\Etablissement::create([
+                'code'  => 'REF-' . $sfx,
+                'nom'   => 'Entité de référence',
+                // L'email est obligatoire et unique sur cette table.
+                'email' => strtolower("ref.{$sfx}@test.local"),
+            ]);
+    }
+
+    protected function uneUe(): \App\Models\Ue
+    {
+        $existante = \App\Models\Ue::whereNotNull('filiere_id')->whereNotNull('annee_id')->first();
+
+        if ($existante) {
+            return $existante;
+        }
+
+        $sfx = \Illuminate\Support\Str::random(5);
+
+        return \App\Models\Ue::create([
+            'code'           => 'UE-REF-' . $sfx,
+            'intitule'       => 'UE de référence',
+            'filiere_id'     => $this->uneFiliere()->id,
+            'annee_id'       => $this->anneeActive()->id,
+            'semestre'       => 1,
+            'volume_horaire' => 30,
+        ]);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();

@@ -50,6 +50,11 @@ class TripleFactorScanTest extends TestCase
         // Désactiver le rate limiter pour les tests (3 req/min bloque les tests rapides)
         $this->withoutMiddleware(ThrottleRequests::class);
 
+        // Horloge figée : la fenêtre de présence est ancrée sur l'heure de fin
+        // du cours (config/presence.php), donc les fixtures doivent placer
+        // « maintenant » dans cette fenêtre de façon déterministe.
+        Carbon::setTestNow(today()->setTime(10, 0));
+
         // 0. Établissement
         $this->etablissement = Etablissement::create([
             'code'  => 'IFRI',
@@ -114,7 +119,8 @@ class TripleFactorScanTest extends TestCase
             'annee_id'    => $this->annee->id,
             'date'        => today()->format('Y-m-d'),
             'heure_debut' => Carbon::now()->subHour()->format('H:i:s'),
-            'heure_fin'   => Carbon::now()->addHour()->format('H:i:s'),
+            // Fin proche : « maintenant » tombe dans la fenêtre de scan.
+            'heure_fin'   => Carbon::now()->addMinutes(5)->format('H:i:s'),
             'salle'       => 'Salle TP 101',
             'salle_id'    => $this->salle->id,
             'statut'      => 'en_cours',
@@ -284,7 +290,8 @@ class TripleFactorScanTest extends TestCase
             'annee_id'    => $this->annee->id,
             'date'        => today()->format('Y-m-d'),
             'heure_debut' => Carbon::now()->subHour()->format('H:i:s'),
-            'heure_fin'   => Carbon::now()->addHour()->format('H:i:s'),
+            // Fin proche : « maintenant » tombe dans la fenêtre de scan.
+            'heure_fin'   => Carbon::now()->addMinutes(5)->format('H:i:s'),
             'salle'       => 'Amphi 200',
             'salle_id'    => $salleDegrade->id,
             'statut'      => 'en_cours',
@@ -395,6 +402,7 @@ class TripleFactorScanTest extends TestCase
     {
         // Réactiver la salle pour les tests suivants si modifiée
         Salle::where('id', $this->salle->id)->update(['actif' => true]);
+        Carbon::setTestNow();
         parent::tearDown();
     }
 }

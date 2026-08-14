@@ -35,11 +35,11 @@ class RoomConflictTest extends TestCase
             'email' => 'room-' . $sfx . '@example.test', 'role' => 'super_admin',
         ])->createToken('t')->plainTextToken;
 
-        $annee = AnneeAcademique::where('active', true)->firstOrFail();
+        $annee = $this->anneeActive();
         $filiere = Filiere::create(['code' => 'RC' . $sfx, 'intitule' => 'T', 'niveau' => 'L1']);
         $ue = Ue::create(['code' => 'UE' . $sfx, 'intitule' => 'UE', 'filiere_id' => $filiere->id, 'annee_id' => $annee->id, 'semestre' => 1, 'volume_horaire' => 40]);
         $this->ecId = Ec::create(['ue_id' => $ue->id, 'code' => 'EC' . $sfx, 'intitule' => 'EC', 'volume_horaire' => 40])->id;
-        $etab = Etablissement::query()->firstOrFail()->id;
+        $etab = $this->uneEntite()->id;
         $this->salleId = Salle::create(['nom' => 'Salle ' . $sfx, 'code' => 'S' . $sfx, 'actif' => true, 'etablissement_id' => $etab])->id;
         $this->etabId = $etab;
         $this->demain = today()->addDay()->format('Y-m-d');

@@ -244,6 +244,9 @@ class StudentCrudTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonPath('success', true);
 
-        $this->assertDatabaseMissing('etudiants', ['id' => $etudiant->id]);
+        // Suppression douce : le modèle Etudiant porte SoftDeletes, la ligne
+        // subsiste avec sa date de suppression, ce qui préserve l'historique de
+        // présences rattaché à cet étudiant.
+        $this->assertSoftDeleted('etudiants', ['id' => $etudiant->id]);
     }
 }

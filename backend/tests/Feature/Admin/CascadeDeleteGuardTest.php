@@ -35,7 +35,7 @@ class CascadeDeleteGuardTest extends TestCase
         ]);
         $etudiant = Etudiant::create([
             'nom' => 'CASCADE', 'prenom' => 'CASCADE', 'matricule' => 'CAS-' . Str::random(6),
-            'filiere_id' => $filiere->id, 'annee_id' => AnneeAcademique::query()->firstOrFail()->id,
+            'filiere_id' => $filiere->id, 'annee_id' => $this->anneeActive()->id,
             'email' => 'cas-' . Str::random(6) . '@example.test', 'identifiant_unique' => 'CAS_' . Str::random(8),
         ]);
 
@@ -64,8 +64,8 @@ class CascadeDeleteGuardTest extends TestCase
     {
         $etudiant = Etudiant::create([
             'nom' => 'SOFT', 'prenom' => 'SOFT', 'matricule' => 'SOF-' . Str::random(6),
-            'filiere_id' => Filiere::query()->firstOrFail()->id,
-            'annee_id' => AnneeAcademique::query()->firstOrFail()->id,
+            'filiere_id' => $this->uneFiliere()->id,
+            'annee_id' => $this->anneeActive()->id,
             'email' => 'soft-' . Str::random(6) . '@example.test', 'identifiant_unique' => 'SOF_' . Str::random(8),
         ]);
 

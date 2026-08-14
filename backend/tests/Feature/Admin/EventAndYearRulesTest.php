@@ -23,7 +23,7 @@ class EventAndYearRulesTest extends TestCase
     public function test_evenement_deduit_filiere_et_annee_de_lec(): void
     {
         // Un EC rattaché à une UE (donc à une filière + année précises).
-        $ue = Ue::query()->whereNotNull('filiere_id')->whereNotNull('annee_id')->firstOrFail();
+        $ue = $this->uneUe();
         $ec = Ec::where('ue_id', $ue->id)->where('statut', '!=', 'termine')->first()
             ?? Ec::create(['ue_id' => $ue->id, 'code' => 'EVT' . Str::random(4), 'intitule' => 'Test', 'volume_horaire' => 20, 'statut' => 'planifie']);
 
@@ -47,7 +47,7 @@ class EventAndYearRulesTest extends TestCase
 
     public function test_impossible_de_desactiver_lannee_active(): void
     {
-        $active = AnneeAcademique::where('active', true)->firstOrFail();
+        $active = $this->anneeActive();
 
         $this->withHeader('Authorization', 'Bearer ' . $this->token())
             ->putJson('/api/admin/annees-academiques/' . $active->id, ['active' => false])
@@ -58,7 +58,7 @@ class EventAndYearRulesTest extends TestCase
 
     public function test_impossible_de_supprimer_lannee_active(): void
     {
-        $active = AnneeAcademique::where('active', true)->firstOrFail();
+        $active = $this->anneeActive();
 
         $this->withHeader('Authorization', 'Bearer ' . $this->token())
             ->deleteJson('/api/admin/annees-academiques/' . $active->id)

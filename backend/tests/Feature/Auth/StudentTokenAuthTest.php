@@ -22,8 +22,8 @@ class StudentTokenAuthTest extends TestCase
             'nom'                => 'AUTHTEST',
             'prenom'             => 'AUTHTEST',
             'matricule'          => 'AUTH-' . Str::random(8),
-            'filiere_id'         => Filiere::query()->firstOrFail()->id,
-            'annee_id'           => AnneeAcademique::query()->firstOrFail()->id,
+            'filiere_id'         => $this->uneFiliere()->id,
+            'annee_id'           => $this->anneeActive()->id,
             'email'              => 'auth-' . Str::random(8) . '@example.test',
             'identifiant_unique' => 'AUTH_' . Str::random(10),
         ]);

@@ -53,7 +53,7 @@ class EtablissementIsolationTest extends TestCase
             'nom' => 'ISOTEST', 'prenom' => 'ISOTEST',
             'matricule' => 'ISO-' . $suffixe,
             'filiere_id' => $this->filiereAutreFaculte->id,
-            'annee_id'   => AnneeAcademique::query()->firstOrFail()->id,
+            'annee_id'   => $this->anneeActive()->id,
             'email' => 'iso-' . $suffixe . '@example.test',
             'identifiant_unique' => 'ISO_' . $suffixe,
         ]);

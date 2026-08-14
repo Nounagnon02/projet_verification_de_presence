@@ -51,6 +51,12 @@ class PresenceScanTest extends TestCase
         // Désactiver le rate limiter pour les tests
         $this->withoutMiddleware(ThrottleRequests::class);
 
+        // Horloge figée : la fenêtre de présence est ancrée sur l'heure de fin
+        // du cours (config/presence.php), donc les fixtures doivent placer
+        // « maintenant » dans cette fenêtre de façon déterministe — sinon la
+        // suite échoue selon l'heure à laquelle on la lance.
+        Carbon::setTestNow(today()->setTime(10, 0));
+
         // Création des dépendances de base
         $this->filiere = Filiere::create([
             'code'     => 'TEST',
@@ -87,7 +93,10 @@ class PresenceScanTest extends TestCase
             'annee_id'    => $this->annee->id,
             'date'        => today()->format('Y-m-d'),
             'heure_debut' => Carbon::now()->subHour()->format('H:i:s'),
-            'heure_fin'   => Carbon::now()->addHour()->format('H:i:s'),
+            // Fin proche : « maintenant » tombe dans la fenêtre [fin − 15 min,
+            // fin + 10 min]. Une fin dans une heure placerait le scan avant
+            // l'ouverture de la fenêtre.
+            'heure_fin'   => Carbon::now()->addMinutes(5)->format('H:i:s'),
             'salle'       => 'Salle Test',
             'statut'      => 'en_cours',
         ]);
@@ -116,6 +125,13 @@ class PresenceScanTest extends TestCase
         $this->etudiant->ecs()->syncWithoutDetaching([
             $this->ec->id => ['annee_id' => $this->annee->id],
         ]);
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
     }
 
     /**

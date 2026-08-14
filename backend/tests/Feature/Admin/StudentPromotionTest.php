@@ -34,7 +34,7 @@ class StudentPromotionTest extends TestCase
         $suffixe = Str::random(4);
         $l1 = Filiere::create(['code' => 'L1' . $suffixe, 'intitule' => 'Niv 1', 'niveau' => 'L1']);
         $l2 = Filiere::create(['code' => 'L2' . $suffixe, 'intitule' => 'Niv 2', 'niveau' => 'L2']);
-        $annee = AnneeAcademique::query()->firstOrFail();
+        $annee = $this->anneeActive();
 
         $etudiant = $this->etudiant($l1, $annee);
         $identifiantAvant = $etudiant->identifiant_unique;
@@ -59,7 +59,7 @@ class StudentPromotionTest extends TestCase
         $suffixe = Str::random(4);
         $l1 = Filiere::create(['code' => 'DRA' . $suffixe, 'intitule' => 'A', 'niveau' => 'L1']);
         $l2 = Filiere::create(['code' => 'DRB' . $suffixe, 'intitule' => 'B', 'niveau' => 'L2']);
-        $etudiant = $this->etudiant($l1, AnneeAcademique::query()->firstOrFail());
+        $etudiant = $this->etudiant($l1, $this->anneeActive());
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $this->token())
             ->postJson('/api/admin/students/promote', [

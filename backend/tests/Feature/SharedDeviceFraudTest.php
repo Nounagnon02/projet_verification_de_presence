@@ -37,8 +37,13 @@ class SharedDeviceFraudTest extends TestCase
         parent::setUp();
         $this->withoutMiddleware(ThrottleRequests::class);
 
+        // Horloge figée : la fenêtre de présence est ancrée sur l'heure de fin
+        // du cours (config/presence.php), donc les fixtures doivent placer
+        // « maintenant » dans cette fenêtre de façon déterministe.
+        Carbon::setTestNow(today()->setTime(10, 0));
+
         $sfx = Str::random(5);
-        $this->annee = AnneeAcademique::where('active', true)->firstOrFail();
+        $this->annee = $this->anneeActive();
 
         $filiere = Filiere::create(['code' => 'SD' . $sfx, 'intitule' => 'Test', 'niveau' => 'L3']);
         $ue = Ue::create(['code' => 'UE' . $sfx, 'intitule' => 'UE', 'filiere_id' => $filiere->id, 'annee_id' => $this->annee->id, 'semestre' => 1, 'volume_horaire' => 30]);
@@ -48,7 +53,8 @@ class SharedDeviceFraudTest extends TestCase
             'ec_id' => $this->ec->id, 'filiere_id' => $filiere->id, 'annee_id' => $this->annee->id,
             'date' => today()->format('Y-m-d'),
             'heure_debut' => Carbon::now()->subHour()->format('H:i:s'),
-            'heure_fin'   => Carbon::now()->addHour()->format('H:i:s'),
+            // Fin proche : « maintenant » tombe dans la fenêtre de scan.
+            'heure_fin'   => Carbon::now()->addMinutes(5)->format('H:i:s'),
             'salle' => 'Test', 'statut' => 'en_cours',
         ]);
 
@@ -108,5 +114,12 @@ class SharedDeviceFraudTest extends TestCase
         $this->scan($b, 'device-b-' . Str::random(4))->assertStatus(201);
 
         $this->assertDatabaseHas('presences', ['etudiant_id' => $b->id, 'statut' => 'valide']);
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
     }
 }

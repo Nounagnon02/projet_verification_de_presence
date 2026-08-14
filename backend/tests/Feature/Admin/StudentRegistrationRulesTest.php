@@ -31,7 +31,7 @@ class StudentRegistrationRulesTest extends TestCase
             'nom'        => 'REGLE',
             'prenom'     => 'Test',
             'matricule'  => 'MAT-' . Str::random(6),
-            'filiere_id' => Filiere::query()->firstOrFail()->id,
+            'filiere_id' => $this->uneFiliere()->id,
             'email'      => 'reg-' . Str::random(6) . '@example.test',
         ], $override);
     }
@@ -46,8 +46,8 @@ class StudentRegistrationRulesTest extends TestCase
 
     public function test_lannee_imposee_est_lannee_active_meme_si_le_client_en_envoie_une_autre(): void
     {
-        $active = AnneeAcademique::where('active', true)->firstOrFail();
-        $autre  = AnneeAcademique::where('active', false)->first();
+        $active = $this->anneeActive();
+        $autre  = $this->anneeNonActive();
         $this->assertNotNull($autre, 'Le test suppose au moins une année inactive.');
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $this->token())

@@ -24,7 +24,7 @@ class AttendanceRateTest extends TestCase
     public function test_denominateur_base_sur_les_inscrits_reels(): void
     {
         $sfx = Str::random(5);
-        $annee = AnneeAcademique::where('active', true)->firstOrFail();
+        $annee = $this->anneeActive();
         $filiere = Filiere::create(['code' => 'AR' . $sfx, 'intitule' => 'Test', 'niveau' => 'L1']);
         $ue = Ue::create(['code' => 'UE' . $sfx, 'intitule' => 'UE', 'filiere_id' => $filiere->id, 'annee_id' => $annee->id, 'semestre' => 1, 'volume_horaire' => 20]);
         $ec = Ec::create(['ue_id' => $ue->id, 'code' => 'EC' . $sfx, 'intitule' => 'EC', 'volume_horaire' => 20]);
