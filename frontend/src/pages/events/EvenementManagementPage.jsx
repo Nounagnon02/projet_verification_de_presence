@@ -1,9 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import {
-  FiPlus, FiEdit2, FiTrash2, FiSave, FiX, FiRefreshCw,
-  FiCalendar, FiClock, FiMapPin, FiAlertTriangle,
-  FiSearch, FiFilter, FiCheckCircle, FiXCircle, FiGrid, FiCopy, FiExternalLink, FiSmartphone
-} from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiSave, FiX, FiRefreshCw, FiCalendar, FiClock, FiMapPin, FiAlertTriangle, FiCheckCircle, FiGrid, FiCopy, FiSmartphone } from 'react-icons/fi';
 import api from '../../api/axios';
 
 const INITIAL_EVENT = {
@@ -37,7 +33,10 @@ export default function EvenementManagementPage() {
   const [modal, setModal] = useState({ open: false, editing: false, data: INITIAL_EVENT, saving: false });
 
   // Modal QR Code
-  const [qrModal, setQrModal] = useState({ open: false, event: null, qrUrl: '', token: '', expireAt: '' });
+  const [qrModal, setQrModal] = useState({ open: false, event: null, qrUrl: '', token: '', expireAt: '', svg: '' });
+
+  // Créneaux de l'emploi du temps proposés pour le cours et la date choisis.
+  const [creneaux, setCreneaux] = useState({ loading: false, options: [] });
 
   const load = useCallback(async () => {
     try {
@@ -87,35 +86,30 @@ export default function EvenementManagementPage() {
     try {
       const { data: res } = await api.get(`/admin/qrcode/${eventId}/generate`);
       const d = res.data || res;
-      const baseUrl = window.location.origin;
-      const validationUrl = `${baseUrl}/attendance/validate?token=${d.token}`;
       setQrModal({
         open: true,
         event: events.find(e => e.id === eventId),
-        qrUrl: validationUrl,
+        // L'URL encodée dans le QR est celle calculée par le serveur, pour que
+        // l'image affichée et le lien copié désignent exactement la même cible.
+        qrUrl: d.url || `${window.location.origin}/attendance/validate?token=${d.token}`,
         token: d.token,
         expireAt: d.expire_at,
+        svg: d.svg || '',
       });
       setSuccess('QR Code généré avec succès !');
       load();
-    } catch (err) {
+    } catch {
       setError('Erreur lors de la génération du QR Code.');
     } finally {
       setQrGenerating(null);
     }
   };
 
+  // La liste ne transporte pas l'image : on régénère pour obtenir un token
+  // frais et son SVG, ce qui évite aussi d'afficher un code déjà périmé.
   const viewQrCode = (ev) => {
     if (!ev.qr_code?.token) return;
-    const baseUrl = window.location.origin;
-    const validationUrl = `${baseUrl}/attendance/validate?token=${ev.qr_code.token}`;
-    setQrModal({
-      open: true,
-      event: ev,
-      qrUrl: validationUrl,
-      token: ev.qr_code.token,
-      expireAt: ev.qr_code.expire_at,
-    });
+    generateQrCode(ev.id);
   };
 
   const copyToClipboard = (text) => {
@@ -126,22 +120,83 @@ export default function EvenementManagementPage() {
 
   // ─── CRUD ──────────────────────────────────────────────
 
-  const openCreate = () => setModal({
-    open: true, editing: false,
-    data: { ...INITIAL_EVENT, filiere_id: filieres[0]?.id || '', annee_id: annees.find(a => a.active)?.id || annees[0]?.id || '' },
-    saving: false,
-  });
+  const openCreate = () => {
+    setCreneaux({ loading: false, options: [] });
+    setModal({
+      open: true, editing: false,
+      data: { ...INITIAL_EVENT, filiere_id: filieres[0]?.id || '', annee_id: annees.find(a => a.active)?.id || annees[0]?.id || '' },
+      saving: false,
+    });
+  };
 
-  const openEdit = (ev) => setModal({
-    open: true, editing: true,
+  // ─── Préremplissage depuis l'emploi du temps ───────────
+  //
+  // Dès qu'un cours et une date sont choisis, l'emploi du temps connaît déjà la
+  // salle et les horaires de la séance : les ressaisir est une source d'erreurs
+  // et de conflits de salle. Uniquement en création — en modification, les
+  // valeurs enregistrées font foi.
+
+  const appliquerCreneau = (creneau) => setModal(prev => ({
+    ...prev,
     data: {
-      id: ev.id,
-      ec_id: ev.ec?.id || '', filiere_id: ev.filiere?.id || '', annee_id: ev.annee_id || '',
-      date: ev.date, heure_debut: ev.heure_debut, heure_fin: ev.heure_fin,
-      salle: ev.salle || '', salle_id: ev.salle_id || '', statut: ev.statut,
+      ...prev.data,
+      heure_debut: creneau.heure_debut,
+      heure_fin: creneau.heure_fin,
+      salle_id: creneau.salle_id ?? '',
+      salle: creneau.salle_id ? prev.data.salle : (creneau.salle || prev.data.salle),
     },
-    saving: false,
-  });
+  }));
+
+  const reinitialiserHoraires = () => {
+    setModal(prev => ({
+      ...prev,
+      data: { ...prev.data, heure_debut: '', heure_fin: '', salle_id: '', salle: '' },
+    }));
+  };
+
+  // Appelé depuis les champs « cours » et « date », et non depuis un effet : la
+  // recherche est la conséquence d'un choix de l'utilisateur, pas une
+  // synchronisation d'état.
+  const chargerCreneaux = async (ecId, date) => {
+    if (!ecId || !date) {
+      setCreneaux({ loading: false, options: [] });
+      return;
+    }
+
+    setCreneaux({ loading: true, options: [] });
+
+    try {
+      const { data } = await api.get('/admin/evenements/creneaux-emploi-du-temps', {
+        params: { ec_id: ecId, date },
+      });
+      const options = data?.data || [];
+      setCreneaux({ loading: false, options });
+
+      // Un seul créneau : on remplit directement. Plusieurs : on laisse
+      // choisir, sans rien imposer.
+      if (options.length === 1) {
+        appliquerCreneau(options[0]);
+      }
+    } catch {
+      // Le préremplissage est un confort : son échec ne doit pas empêcher la
+      // saisie manuelle.
+      setCreneaux({ loading: false, options: [] });
+    }
+  };
+
+  const openEdit = (ev) => {
+    setCreneaux({ loading: false, options: [] });
+    setModal({
+      open: true, editing: true,
+      data: {
+        id: ev.id,
+        ec_id: ev.ec?.id || '', filiere_id: ev.filiere?.id || '', annee_id: ev.annee_id || '',
+        date: ev.date, heure_debut: ev.heure_debut, heure_fin: ev.heure_fin,
+        salle: ev.salle || '', salle_id: ev.salle_id || '', statut: ev.statut,
+      },
+      saving: false,
+    });
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -181,15 +236,6 @@ export default function EvenementManagementPage() {
     let filtered = filiereId ? ecs.filter(ec => ec.ue?.filiere_id == filiereId || ec.ue?.filiere?.id == filiereId) : ecs;
     // Filtrer les ECs terminés (volume horaire atteint) — ils ne peuvent plus être sélectionnés
     return filtered.filter(ec => ec.statut !== 'termine');
-  };
-
-  const getStatutClass = (statut) => {
-    const variants = {
-      termine: 'text-green-600 dark:text-green-400',
-      en_cours: 'text-amber-600 dark:text-amber-400',
-      non_demarre: 'text-gray-400 dark:text-gray-500',
-    };
-    return variants[statut] || '';
   };
 
   return (
@@ -394,13 +440,22 @@ export default function EvenementManagementPage() {
               </div>
             )}
 
-            {/* QR Code Image */}
+            {/* QR Code — image SVG fournie par l'API. Elle était auparavant
+                demandée à un service tiers, ce qui faisait sortir le token du
+                système pour un simple encodage graphique. */}
             <div className="flex justify-center mb-4">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrModal.qrUrl)}`}
-                alt="QR Code"
-                className="w-56 h-56 rounded-xl bg-white p-2 shadow-sm"
-              />
+              {qrModal.svg ? (
+                <div
+                  className="w-56 h-56 rounded-xl bg-white p-2 shadow-sm [&>svg]:w-full [&>svg]:h-full"
+                  role="img"
+                  aria-label="QR Code de présence"
+                  dangerouslySetInnerHTML={{ __html: qrModal.svg }}
+                />
+              ) : (
+                <div className="w-56 h-56 rounded-xl bg-surface-container-high flex items-center justify-center text-xs text-on-surface-variant text-center px-4">
+                  Image indisponible. Régénérez le QR Code.
+                </div>
+              )}
             </div>
 
             {/* Lien de validation */}
@@ -459,7 +514,11 @@ export default function EvenementManagementPage() {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-on-surface mb-1">EC (Cours) *</label>
-                <select value={modal.data.ec_id} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, ec_id: e.target.value } }))}
+                <select value={modal.data.ec_id} onChange={(e) => {
+                    const ecId = e.target.value;
+                    setModal(prev => ({ ...prev, data: { ...prev.data, ec_id: ecId } }));
+                    if (!modal.editing) chargerCreneaux(ecId, modal.data.date);
+                  }}
                   required className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                   <option value="">Sélectionner...</option>
                   {getEcsForFiliere().map(ec => {
@@ -477,9 +536,60 @@ export default function EvenementManagementPage() {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-on-surface mb-1">Date *</label>
-                <input type="date" value={modal.data.date} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, date: e.target.value } }))}
+                <input type="date" value={modal.data.date} onChange={(e) => {
+                  const date = e.target.value;
+                  setModal(prev => ({ ...prev, data: { ...prev.data, date } }));
+                  if (!modal.editing) chargerCreneaux(modal.data.ec_id, date);
+                }}
                   required className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
               </div>
+              {/* Suggestions issues de l'emploi du temps — création seulement */}
+              {!modal.editing && modal.data.ec_id && modal.data.date && (
+                <div className="rounded-xl border border-outline-variant/30 bg-surface-container-high/60 px-3 py-2.5 text-xs">
+                  {creneaux.loading ? (
+                    <span className="text-on-surface-variant">Recherche du créneau à l'emploi du temps…</span>
+                  ) : creneaux.options.length === 0 ? (
+                    <span className="text-on-surface-variant">
+                      Aucun créneau à l'emploi du temps ce jour-là pour ce cours. Saisissez les horaires ci-dessous.
+                    </span>
+                  ) : creneaux.options.length === 1 ? (
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-on-surface">
+                        <FiCheckCircle size={12} className="inline mb-0.5 mr-1 text-secondary" />
+                        Prérempli depuis l'emploi du temps
+                        {creneaux.options[0].type_cours ? ` (${creneaux.options[0].type_cours})` : ''}
+                      </span>
+                      <button type="button" onClick={reinitialiserHoraires}
+                        className="shrink-0 font-semibold text-primary hover:underline">
+                        Saisir à la main
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-on-surface">
+                        Ce cours a {creneaux.options.length} créneaux ce jour-là. Lequel programmez-vous&nbsp;?
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {creneaux.options.map(c => {
+                          const actif = modal.data.heure_debut === c.heure_debut && modal.data.heure_fin === c.heure_fin;
+                          return (
+                            <button key={c.id} type="button" onClick={() => appliquerCreneau(c)}
+                              className={`px-2.5 py-1 rounded-lg border text-xs font-semibold transition-colors ${
+                                actif
+                                  ? 'border-primary bg-primary/10 text-primary'
+                                  : 'border-outline-variant/40 text-on-surface hover:bg-surface-container-highest'
+                              }`}>
+                              {c.heure_debut}–{c.heure_fin}
+                              {c.type_cours ? ` · ${c.type_cours}` : ''}
+                              {c.salle ? ` · ${c.salle}` : ''}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-on-surface mb-1">Début *</label>

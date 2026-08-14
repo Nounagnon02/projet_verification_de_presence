@@ -3,14 +3,64 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Ec;
 use App\Models\Evenement;
+use App\Services\ScheduleSlotResolver;
 use App\Traits\ScopedByEtablissement;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class EvenementController extends Controller
 {
     use ScopedByEtablissement;
+
+    /**
+     * Créneaux de l'emploi du temps correspondant à un EC et une date, pour
+     * préremplir le formulaire de création d'événement.
+     *
+     * L'emploi du temps contient déjà la salle et les horaires de chaque séance
+     * hebdomadaire~: les ressaisir à la main est une source d'erreurs et de
+     * conflits de salle.
+     *
+     * GET /api/admin/evenements/creneaux-emploi-du-temps?ec_id=&date=
+     */
+    public function creneauxEmploiDuTemps(Request $request, ScheduleSlotResolver $resolver): JsonResponse
+    {
+        $validated = $request->validate([
+            'ec_id' => ['required', 'integer', 'exists:ecs,id'],
+            'date'  => ['required', 'date'],
+        ]);
+
+        // Cloisonnement : un admin d'entité ne doit pas explorer l'emploi du
+        // temps d'un cours d'une autre entité. L'EC porte son établissement via
+        // son UE puis sa filière.
+        $ec = Ec::with('ue.filiere')->findOrFail($validated['ec_id']);
+
+        if (!$ec->ue) {
+            return $this->errorResponse("L'EC sélectionné n'est rattaché à aucune UE.", 422);
+        }
+
+        $this->authorizeEtablissement($ec->ue, $request, 'filiere');
+
+        $date = Carbon::parse($validated['date']);
+
+        $creneaux = $resolver->pourEcEtDate($ec->id, $date)->map(fn ($creneau) => [
+            'id'          => $creneau->id,
+            'heure_debut' => substr((string) $creneau->heure_debut, 0, 5),
+            'heure_fin'   => substr((string) $creneau->heure_fin, 0, 5),
+            'salle_id'    => $creneau->salle_id,
+            'salle'       => $creneau->salle?->nom ?? $creneau->salle_libelle,
+            'type_cours'  => $creneau->type_cours,
+        ])->values();
+
+        return $this->successResponse(
+            $creneaux,
+            $creneaux->isEmpty()
+                ? "Aucun créneau à l'emploi du temps pour ce cours à cette date."
+                : 'Créneaux récupérés.'
+        );
+    }
 
     public function index(Request $request): JsonResponse
     {

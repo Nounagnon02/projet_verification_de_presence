@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\EmploiDuTemps;
 use App\Models\Evenement;
+use App\Services\ScheduleSlotResolver;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 
@@ -16,7 +17,7 @@ class GenerateEventsFromSchedule extends Command
 
     protected $description = 'Génère les événements (cours) depuis l\'emploi du temps pour les dates à venir';
 
-    public function handle(): int
+    public function handle(ScheduleSlotResolver $resolver): int
     {
         $dateStr = $this->option('date') ?? now()->format('Y-m-d');
         $days = (int) $this->option('days');
@@ -42,9 +43,7 @@ class GenerateEventsFromSchedule extends Command
         $skippedTermine = 0;
 
         for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
-            $jourSemaine = $date->dayOfWeekIso;
-
-            $creneauxDuJour = $creneaux->where('jour_semaine', $jourSemaine);
+            $creneauxDuJour = $resolver->filtrerPourDate($creneaux, $date);
 
             foreach ($creneauxDuJour as $creneau) {
                 // Ignorer les ECs dont le volume horaire est déjà atteint
@@ -63,17 +62,7 @@ class GenerateEventsFromSchedule extends Command
                     continue;
                 }
 
-                Evenement::create([
-                    'ec_id'       => $creneau->ec_id,
-                    'filiere_id'  => $creneau->filiere_id,
-                    'annee_id'    => $creneau->annee_id,
-                    'date'        => $date->format('Y-m-d'),
-                    'heure_debut' => $creneau->heure_debut,
-                    'heure_fin'   => $creneau->heure_fin,
-                    'salle'       => $creneau->salle_libelle,
-                    'salle_id'    => $creneau->salle_id,
-                    'statut'      => 'planifie',
-                ]);
+                Evenement::create($resolver->versAttributsEvenement($creneau, $date));
 
                 $total++;
             }
