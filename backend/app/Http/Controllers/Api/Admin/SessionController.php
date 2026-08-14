@@ -5,37 +5,43 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
+/**
+ * Gestion des « sessions » actives de l'utilisateur.
+ *
+ * L'authentification se faisant par tokens Sanctum (et non par sessions web),
+ * une « session » correspond ici à un token d'accès personnel — donc à un
+ * appareil/navigateur connecté. Révoquer une session = supprimer le token, ce
+ * qui déconnecte réellement l'appareil concerné (l'ancienne implémentation
+ * agissait sur la table `sessions`, sans lien avec l'auth par token).
+ */
 class SessionController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $sessions = DB::table('sessions')
-            ->where('user_id', $request->user()->id)
-            ->get()
-            ->map(fn($s) => [
-                'id'            => $s->id,
-                'ip_address'    => $s->ip_address,
-                'user_agent'    => $s->user_agent,
-                'is_current'    => $s->id === session()->getId(),
-                'last_active'   => $s->last_activity
-                    ? now()->createFromTimestamp($s->last_activity)->diffForHumans()
-                    : null,
-            ]);
+        $currentId = optional($request->user()->currentAccessToken())->id;
+
+        $sessions = $request->user()->tokens()->latest()->get()->map(fn ($t) => [
+            'id'          => $t->id,
+            'name'        => $t->name,
+            'is_current'  => $t->id === $currentId,
+            'last_active' => $t->last_used_at ? $t->last_used_at->diffForHumans() : 'jamais utilisé',
+            'created_at'  => $t->created_at?->format('Y-m-d H:i'),
+        ]);
 
         return $this->successResponse($sessions);
     }
 
     public function destroyOthers(Request $request): JsonResponse
     {
-        $currentSessionId = session()->getId();
+        $currentId = optional($request->user()->currentAccessToken())->id;
 
-        DB::table('sessions')
-            ->where('user_id', $request->user()->id)
-            ->where('id', '!=', $currentSessionId)
+        // Révoque tous les tokens SAUF celui de la requête courante : les autres
+        // appareils sont réellement déconnectés (leur token devient invalide).
+        $request->user()->tokens()
+            ->when($currentId, fn ($q) => $q->where('id', '!=', $currentId))
             ->delete();
 
-        return $this->successResponse(null, 'Autres sessions déconnectées.');
+        return $this->successResponse(null, 'Les autres appareils ont été déconnectés.');
     }
 }

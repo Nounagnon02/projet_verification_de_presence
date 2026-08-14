@@ -12,7 +12,11 @@ class TicketController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = SupportTicket::with('user')->latest();
+        // Chaque administrateur ne voit que ses propres tickets. Sans ce
+        // filtre, tout admin voyait les tickets de support de tous les autres.
+        $query = SupportTicket::with('user')
+            ->where('user_id', $request->user()->id)
+            ->latest();
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -72,8 +76,10 @@ class TicketController extends Controller
         ], 'Ticket créé avec succès.');
     }
 
-    public function show(SupportTicket $ticket): JsonResponse
+    public function show(Request $request, SupportTicket $ticket): JsonResponse
     {
+        $this->ensureOwner($request, $ticket);
+
         $ticket->load(['user', 'messages.user']);
         return $this->successResponse([
             'id'          => $ticket->id,
@@ -96,6 +102,8 @@ class TicketController extends Controller
 
     public function reply(Request $request, SupportTicket $ticket): JsonResponse
     {
+        $this->ensureOwner($request, $ticket);
+
         $validated = $request->validate([
             'message' => 'required|string',
         ]);
@@ -118,6 +126,8 @@ class TicketController extends Controller
 
     public function updateStatus(Request $request, SupportTicket $ticket): JsonResponse
     {
+        $this->ensureOwner($request, $ticket);
+
         $validated = $request->validate([
             'status' => 'required|string|in:ouvert,en_cours,resolu,ferme',
         ]);
@@ -130,10 +140,22 @@ class TicketController extends Controller
         ], 'Statut mis à jour.');
     }
 
-    public function destroy(SupportTicket $ticket): JsonResponse
+    public function destroy(Request $request, SupportTicket $ticket): JsonResponse
     {
+        $this->ensureOwner($request, $ticket);
+
         $ticket->messages()->delete();
         $ticket->delete();
         return $this->successResponse(null, 'Ticket supprimé.');
+    }
+
+    /**
+     * Coupe court (404) si le ticket n'appartient pas à l'utilisateur courant.
+     */
+    private function ensureOwner(Request $request, SupportTicket $ticket): void
+    {
+        if ((int) $ticket->user_id !== (int) $request->user()->id) {
+            abort(404, 'Ticket non trouvé.');
+        }
     }
 }
