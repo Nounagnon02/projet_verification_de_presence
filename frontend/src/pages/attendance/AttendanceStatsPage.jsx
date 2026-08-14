@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FiBarChart2, FiCalendar, FiDownload, FiUsers, FiCheckCircle, FiX, FiActivity, FiLoader } from 'react-icons/fi';
+import { FiCalendar, FiDownload, FiUsers, FiCheckCircle, FiX, FiActivity, FiLoader } from 'react-icons/fi';
 import useApi from '../../hooks/useApi';
 
 const AttendanceStatsPage = () => {

@@ -14,7 +14,8 @@ export default function ImportPage() {
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
-  const [step, setStep] = useState(STEP_UPLOAD);
+  // L'étape courante pilote la navigation par onglets, elle n'est pas lue ici.
+  const [, setStep] = useState(STEP_UPLOAD);
   const fileRef = useRef(null);
   const navigate = useNavigate();
 

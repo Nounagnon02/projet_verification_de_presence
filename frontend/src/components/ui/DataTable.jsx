@@ -1,4 +1,4 @@
-import { FiArrowUp, FiArrowDown, FiChevronUp, FiChevronDown } from 'react-icons/fi';
+import { FiArrowUp, FiArrowDown, FiChevronUp } from 'react-icons/fi';
 import LoadingSkeleton from './LoadingSkeleton';
 import EmptyState from './EmptyState';
 import Pagination from './Pagination';

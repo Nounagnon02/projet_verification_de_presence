@@ -17,7 +17,7 @@ const linkClass = ({ isActive }) =>
   }`;
 
 export default function SuperAdminSidebar() {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
 
   const handleLogout = async () => {
     await logout();

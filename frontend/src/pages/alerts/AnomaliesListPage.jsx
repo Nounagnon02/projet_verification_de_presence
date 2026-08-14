@@ -61,7 +61,7 @@ export default function AnomaliesListPage() {
         setSuccess(`Alerte marquée comme ${status === 'valide' ? 'valide (présence restaurée)' : 'invalide (ignorée)'}.`);
         setAlerts(prev => prev.filter(a => a.id !== id));
       }
-    } catch (err) {
+    } catch {
       setError('Erreur lors de la résolution de l\'alerte.');
     } finally {
       setResolving(null);

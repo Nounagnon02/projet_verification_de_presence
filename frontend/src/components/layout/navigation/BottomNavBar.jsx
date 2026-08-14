@@ -1,13 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import {
-  MdHome,
-  MdGroup,
-  MdDashboard,
-  MdCalendarMonth,
-  MdHowToReg,
-  MdSettings,
-  MdPerson
-} from 'react-icons/md';
+import { MdHome, MdGroup, MdCalendarMonth, MdHowToReg, MdSettings } from 'react-icons/md';
 
 const links = [
   { to: '/dashboard', icon: <MdHome />, label: 'Accueil' },

@@ -34,7 +34,6 @@ describe('Pagination', () => {
     const user = userEvent.setup()
     let page = 0
     render(<Pagination pagination={pagination} onPageChange={(p) => { page = p }} />)
-    const nextBtn = screen.getByText('4').parentElement // The "4" button is next to current
 
     // Actually, let's click the "Suivant" icon button
     const buttons = screen.getAllByRole('button')

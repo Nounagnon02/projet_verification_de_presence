@@ -1,6 +1,5 @@
 import { Outlet } from 'react-router-dom';
 import SideNavBar from './navigation/SideNavBar';
-import TopNavBar from './navigation/TopNavBar';
 import BottomNavBar from './navigation/BottomNavBar';
 const MainLayout = () => {
   return (

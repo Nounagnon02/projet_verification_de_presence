@@ -1,9 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, memo } from 'react';
-import {
-  FiFilter, FiLoader, FiRefreshCw, FiBarChart2, FiCalendar, FiUsers,
-  FiCheckCircle, FiAlertTriangle, FiDownload, FiFileText, FiChevronDown, FiChevronUp,
-  FiSearch, FiChevronRight, FiArrowUp, FiArrowDown
-} from 'react-icons/fi';
+import { FiFilter, FiLoader, FiRefreshCw, FiBarChart2, FiCalendar, FiUsers, FiCheckCircle, FiAlertTriangle, FiDownload, FiFileText, FiChevronDown, FiChevronUp, FiSearch, FiArrowUp, FiArrowDown } from 'react-icons/fi';
 import api from '../../api/axios';
 import BarChart from '../../components/charts/BarChart';
 import GaugeChart from '../../components/charts/GaugeChart';
@@ -16,8 +12,7 @@ const SortIcon = ({ col, ueSort }) => {
   return ueSort.dir === 'asc' ? <FiArrowUp className="inline ml-1" size={10} /> : <FiArrowDown className="inline ml-1" size={10} />;
 };
 
-const UeTable = memo(({ statsParUe, filieres, ueSemFilter, setUeSemFilter, ueFiliereFilter, setUeFiliereFilter,
-  ueSearch, setUeSearch, debouncedUeSearch, uePage, setUePage, ueSort, handleUeSort, exportUeCSV, persistFilter, UE_PER_PAGE }) => {
+const UeTable = memo(({ statsParUe, ueSemFilter, setUeSemFilter, ueFiliereFilter, setUeFiliereFilter, ueSearch, setUeSearch, debouncedUeSearch, uePage, setUePage, ueSort, handleUeSort, exportUeCSV, persistFilter, UE_PER_PAGE }) => {
 
   const semestresDispos = useMemo(() => [...new Set(statsParUe.map(u => u.semestre))].sort((a, b) => a - b), [statsParUe]);
   const filieresDispos = useMemo(() => [...new Map(statsParUe.filter(u => u.filiere_code).map(u => [u.filiere_code, { code: u.filiere_code, intitule: u.filiere_intitule || u.filiere_code }])).values()], [statsParUe]);
@@ -49,12 +44,6 @@ const UeTable = memo(({ statsParUe, filieres, ueSemFilter, setUeSemFilter, ueFil
   const totalPages = Math.ceil(filtered.length / UE_PER_PAGE);
   const paginated = filtered.slice((uePage - 1) * UE_PER_PAGE, uePage * UE_PER_PAGE);
 
-  const SortTh = ({ col, label, right }) => (
-    <th className={`p-3 font-semibold cursor-pointer select-none hover:text-primary transition-colors ${right ? 'text-right' : ''}`}
-      onClick={() => handleUeSort(col)}>
-      {label}<SortIcon col={col} ueSort={ueSort} />
-    </th>
-  );
 
   return (
     <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 overflow-hidden mb-6">
@@ -97,13 +86,13 @@ const UeTable = memo(({ statsParUe, filieres, ueSemFilter, setUeSemFilter, ueFil
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs text-on-surface-variant uppercase tracking-wider bg-surface-container-low/30">
-              <SortTh col="code" label="Code" />
-              <SortTh col="intitule" label="Intitulé" />
-              <SortTh col="semestre" label="Semestre" right />
-              <SortTh col="total_evenements" label="Séances" right />
-              <SortTh col="total_presences" label="Présences" right />
-              <SortTh col="total_etudiants" label="Étudiants" right />
-              <SortTh col="taux" label="Taux" right />
+              <SortTh col="code" label="Code" onSort={handleUeSort} ueSort={ueSort} />
+              <SortTh col="intitule" label="Intitulé" onSort={handleUeSort} ueSort={ueSort} />
+              <SortTh col="semestre" label="Semestre" right onSort={handleUeSort} ueSort={ueSort} />
+              <SortTh col="total_evenements" label="Séances" right onSort={handleUeSort} ueSort={ueSort} />
+              <SortTh col="total_presences" label="Présences" right onSort={handleUeSort} ueSort={ueSort} />
+              <SortTh col="total_etudiants" label="Étudiants" right onSort={handleUeSort} ueSort={ueSort} />
+              <SortTh col="taux" label="Taux" right onSort={handleUeSort} ueSort={ueSort} />
             </tr>
           </thead>
           <tbody>
@@ -264,6 +253,12 @@ const ReportsPage = () => {
     }
   }, [filiereId, anneeId, semestre, ueId, ecId, jours, dateDebut, dateFin]);
 
+  // Déclarée ici, et non avec les autres filtres du tableau UE plus bas : elle
+  // est utilisée par l'effet de rechargement qui suit, et la déclarer après lui
+  // laissait une lecture avant initialisation — sans conséquence à l'exécution,
+  // l'effet ne s'exécutant qu'après le rendu, mais fragile et signalée comme telle.
+  const [uePage, setUePage] = useState(1);
+
   const debouncedFiliereId = useDebounce(filiereId, 400);
   const debouncedAnneeId = useDebounce(anneeId, 400);
   const debouncedSemestre = useDebounce(semestre, 400);
@@ -406,7 +401,6 @@ const ReportsPage = () => {
   const [ueSemFilter, setUeSemFilter] = useState(() => sessionStorage.getItem('ue_sem') || '');
   const [ueFiliereFilter, setUeFiliereFilter] = useState(() => sessionStorage.getItem('ue_fil') || '');
   const [ueSearch, setUeSearch] = useState('');
-  const [uePage, setUePage] = useState(1);
   const [ueSort, setUeSort] = useState(() => JSON.parse(sessionStorage.getItem('ue_sort') || '{"col":"semestre","dir":"asc"}'));
   const UE_PER_PAGE = 10;
   const debouncedUeSearch = useDebounce(ueSearch, 300);
@@ -837,5 +831,19 @@ const ReportsPage = () => {
     </div>
   );
 };
+
+/**
+ * Cellule d'en-tête triable.
+ *
+ * Au niveau module : définie dans le composant de page, elle était recréée à
+ * chaque rendu. Le tri et son sens, qui appartiennent à l'état du parent,
+ * arrivent désormais par les props onSort et ueSort.
+ */
+const SortTh = ({ col, label, right, onSort, ueSort }) => (
+  <th className={`p-3 font-semibold cursor-pointer select-none hover:text-primary transition-colors ${right ? 'text-right' : ''}`}
+    onClick={() => onSort(col)}>
+    {label}<SortIcon col={col} ueSort={ueSort} />
+  </th>
+);
 
 export default ReportsPage;

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FiDownload, FiLoader } from 'react-icons/fi';
 import { useParams } from 'react-router-dom';
-import Badge from '../../components/ui/Badge';
 import ProgressBar from '../../components/charts/ProgressBar';
 import api from '../../api/axios';
 

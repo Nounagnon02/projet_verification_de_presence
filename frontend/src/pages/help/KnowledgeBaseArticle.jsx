@@ -80,7 +80,7 @@ export default function KnowledgeBaseArticle() {
             </div>
 
             <div className="space-y-8">
-              {article.sections.map((section, i) => (
+              {article.sections.map((section) => (
                 <div key={section.id} id={section.id}>
                   <h2 className="text-lg font-bold text-primary font-headline mb-3">{section.title}</h2>
                   <p className="text-sm text-on-surface leading-relaxed">{section.content}</p>

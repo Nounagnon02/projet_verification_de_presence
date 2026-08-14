@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiChevronRight, FiArrowRight, FiShield, FiSmartphone, FiBarChart2, FiDownload, FiLock, FiMenu, FiX, FiChevronDown, FiChevronUp } from 'react-icons/fi';
-import { MdAccountBalance, MdQrCodeScanner, MdAutoAwesome, MdSchool, MdGroups, MdCalendarMonth, MdCloudDone } from 'react-icons/md';
+import { MdAccountBalance, MdQrCodeScanner, MdAutoAwesome, MdGroups, MdCalendarMonth, MdCloudDone } from 'react-icons/md';
 import api from '../api/axios';
 import { assets } from '../utils/assets';
 
@@ -143,7 +143,9 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const [showAllFeatures, setShowAllFeatures] = useState(false);
   const [stats, setStats] = useState(null);
-  const [statsLoading, setStatsLoading] = useState(true);
+  // Seul le setter est utilisé : l'état de chargement des statistiques n'est
+  // pas rendu, la page affichant des valeurs par défaut en attendant.
+  const [, setStatsLoading] = useState(true);
   const displayedFeatures = showAllFeatures ? ALL_FEATURES : ALL_FEATURES.slice(0, 3);
 
   // Chargement dynamique des statistiques depuis l'API

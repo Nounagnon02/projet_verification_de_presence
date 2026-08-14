@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FiBook, FiPlus, FiClock, FiUsers, FiLoader } from 'react-icons/fi';
+import { FiBook, FiPlus, FiClock, FiLoader } from 'react-icons/fi';
 import Tabs from '../../components/ui/Tabs';
 import Badge from '../../components/ui/Badge';
 import SearchInput from '../../components/ui/SearchInput';

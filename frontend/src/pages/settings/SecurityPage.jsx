@@ -3,6 +3,32 @@ import { FiShield, FiLock, FiCheck, FiX, FiCopy, FiAlertTriangle, FiEye, FiEyeOf
 import api from '../../api/axios';
 import { useToastCtx } from '../../context/ToastContext';
 
+/**
+ * Champ mot de passe avec bascule d'affichage.
+ *
+ * Défini au niveau module et non dans le composant de page : redéfini à chaque
+ * rendu, React le traitait comme un composant différent, démontait le champ et
+ * faisait donc perdre le focus et la position du curseur pendant la saisie.
+ * Il ne capture rien de son parent, tout passe par les props.
+ */
+const PwInput = ({ value, onChange, placeholder, show, onToggle, autoComplete }) => (
+  <div className="relative">
+    <input
+      type={show ? 'text' : 'password'}
+      placeholder={placeholder}
+      autoComplete={autoComplete}
+      className="w-full px-3 py-2.5 pr-10 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all"
+      value={value}
+      onChange={onChange}
+      required
+      minLength={8}
+    />
+    <button type="button" onClick={onToggle} className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors">
+      {show ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+    </button>
+  </div>
+);
+
 export default function SecurityPage() {
   const [profile, setProfile] = useState(null);
   const { addToast } = useToastCtx();
@@ -140,23 +166,6 @@ export default function SecurityPage() {
 
   const togglePw = (field) => setShowPw(prev => ({ ...prev, [field]: !prev[field] }));
 
-  const PwInput = ({ value, onChange, placeholder, show, onToggle, autoComplete }) => (
-    <div className="relative">
-      <input
-        type={show ? 'text' : 'password'}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
-        className="w-full px-3 py-2.5 pr-10 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all"
-        value={value}
-        onChange={onChange}
-        required
-        minLength={8}
-      />
-      <button type="button" onClick={onToggle} className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors">
-        {show ? <FiEyeOff size={16} /> : <FiEye size={16} />}
-      </button>
-    </div>
-  );
 
   return (
     <div className="space-y-6">

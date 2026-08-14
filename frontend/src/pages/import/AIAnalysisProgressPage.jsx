@@ -70,7 +70,7 @@ export default function AIAnalysisProgressPage() {
     let stored;
     try {
       stored = JSON.parse(sessionStorage.getItem('import_analysis'));
-    } catch (e) {
+    } catch {
       // Ignorer
     }
 

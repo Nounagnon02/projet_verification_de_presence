@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiCheck, FiCalendar, FiArrowRight, FiStar, FiLoader, FiCopy } from 'react-icons/fi';
-import Badge from '../../components/ui/Badge';
+import { FiPlus, FiEdit2, FiTrash2, FiCalendar, FiArrowRight, FiStar, FiLoader, FiCopy } from 'react-icons/fi';
 import Modal from '../../components/ui/Modal';
 import useApi from '../../hooks/useApi';
 import api from '../../api/axios';

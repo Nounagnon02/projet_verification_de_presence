@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiChevronRight, FiCheck, FiAlertCircle, FiFilter, FiPlus, FiSave, FiArrowRight, FiLoader } from 'react-icons/fi';
-import { MdCloudDone, MdAutoAwesome } from 'react-icons/md';
+import { FiChevronRight, FiCheck, FiAlertCircle, FiPlus, FiArrowRight, FiLoader } from 'react-icons/fi';
+import { MdCloudDone } from 'react-icons/md';
 import api from '../../api/axios';
 
 export default function CourseValidationPage() {

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
 import api, { TOKEN_KEY } from '../api/axios';
 import { invalidateApiCache } from '../api/cache';
 
@@ -6,32 +6,48 @@ const AuthContext = createContext(null);
 
 const USER_KEY = 'presence_user';
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+/**
+ * Infos utilisateur minimales conservées localement, pour afficher le menu sans
+ * attendre le réseau. Une entrée illisible est purgée avec le token : mieux vaut
+ * une reconnexion qu'une session à moitié restaurée.
+ */
+function lireUtilisateurStocke() {
+  const stored = localStorage.getItem(USER_KEY);
 
-  useEffect(() => {
-    // Restaure les infos utilisateur minimales depuis localStorage
-    // pour un affichage immédiat du menu (pas de flash)
-    const stored = localStorage.getItem(USER_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (parsed && parsed.id) {
-          setUser({
-            id: parsed.id,
-            name: parsed.name,
-            email: parsed.email,
-            role: parsed.role,
-          });
-        }
-      } catch {
-        localStorage.removeItem(USER_KEY);
-        localStorage.removeItem(TOKEN_KEY);
-      }
+  if (!stored) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(stored);
+
+    if (parsed && parsed.id) {
+      return {
+        id: parsed.id,
+        name: parsed.name,
+        email: parsed.email,
+        role: parsed.role,
+      };
     }
-    setLoading(false);
-  }, []);
+  } catch {
+    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+  }
+
+  return null;
+}
+
+export function AuthProvider({ children }) {
+  // Initialisation paresseuse plutôt que restauration dans un effet : la lecture
+  // est synchrone et locale, la faire après le premier rendu n'apportait rien et
+  // provoquait un rendu supplémentaire — visible sous la forme d'un menu qui
+  // apparaissait après coup.
+  const [user, setUser] = useState(lireUtilisateurStocke);
+
+  // Conservé dans le contexte car App.jsx s'en sert pour retarder le rendu des
+  // routes. La restauration étant désormais synchrone, il n'y a plus rien à
+  // attendre : la valeur reste false, et l'écran d'attente ne clignote plus.
+  const loading = false;
 
   const login = async (email, password) => {
     const res = await api.post('/login', { email, password }, {

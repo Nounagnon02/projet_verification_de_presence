@@ -17,6 +17,25 @@ const TRIMESTRES = [
 
 const SEMESTRES = Array.from({ length: 10 }, (_, i) => ({ value: i + 1, label: `S${i + 1}` }));
 
+/**
+ * En-tête de section repliable.
+ *
+ * Au niveau module : défini dans le composant de page, il était recréé à chaque
+ * rendu et React remontait alors le bouton. Tout passe par les props.
+ */
+const SectionToggle = ({ open, setOpen, title, badge }) => (
+  <button
+    onClick={() => setOpen(!open)}
+    className="flex items-center justify-between w-full px-4 py-2.5 bg-surface-container-high rounded-xl hover:bg-surface-container-higher transition-all text-sm font-bold text-primary"
+  >
+    <span>{title}</span>
+    <span className="flex items-center gap-2 text-xs text-on-surface-variant font-normal">
+      {badge && <span>{badge}</span>}
+      {open ? <FiChevronUp /> : <FiChevronDown />}
+    </span>
+  </button>
+);
+
 export default function FilteredReportsPage() {
   //Filtres
   const [filieres, setFilieres] = useState([]);
@@ -278,18 +297,6 @@ export default function FilteredReportsPage() {
   };
 
   //Composant toggle pour une section
-  const SectionToggle = ({ open, setOpen, title, badge }) => (
-    <button
-      onClick={() => setOpen(!open)}
-      className="flex items-center justify-between w-full px-4 py-2.5 bg-surface-container-high rounded-xl hover:bg-surface-container-higher transition-all text-sm font-bold text-primary"
-    >
-      <span>{title}</span>
-      <span className="flex items-center gap-2 text-xs text-on-surface-variant font-normal">
-        {badge && <span>{badge}</span>}
-        {open ? <FiChevronUp /> : <FiChevronDown />}
-      </span>
-    </button>
-  );
 
   if (initialLoading) {
     return <div className="flex justify-center p-16"><FiLoader className="animate-spin text-primary w-8 h-8" /></div>;

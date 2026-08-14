@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { FiCalendar, FiCheckCircle, FiX, FiClock, FiLoader } from 'react-icons/fi';
+import { FiCheckCircle, FiX, FiClock, FiLoader } from 'react-icons/fi';
 import GaugeChart from '../../components/charts/GaugeChart';
 import ProgressBar from '../../components/charts/ProgressBar';
 import Badge from '../../components/ui/Badge';

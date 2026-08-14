@@ -72,7 +72,7 @@ export default function EtablissementDetailPage() {
     try {
       await api.delete(`/super-admin/etablissements/${id}`);
       navigate('/super-admin/etablissements');
-    } catch (err) {
+    } catch {
       setMessage({ type: 'error', text: 'Erreur lors de la suppression.' });
     }
   };
@@ -83,7 +83,7 @@ export default function EtablissementDetailPage() {
       if (data.success) {
         setMessage({ type: 'success', text: 'Identifiants renvoyés par email.' });
       }
-    } catch (err) {
+    } catch {
       setMessage({ type: 'error', text: "Erreur lors de l'envoi des identifiants." });
     }
   };

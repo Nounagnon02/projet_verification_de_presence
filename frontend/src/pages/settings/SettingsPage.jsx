@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { FiBell, FiShield, FiGlobe, FiSmartphone, FiSave, FiAlertTriangle, FiCheck } from 'react-icons/fi';
-import { MdAccountBalance } from 'react-icons/md';
+import { FiBell, FiShield, FiGlobe, FiSave, FiCheck } from 'react-icons/fi';
 
 const SettingsPage = () => {
   const [saved, setSaved] = useState(false);

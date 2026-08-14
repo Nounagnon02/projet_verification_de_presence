@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook } from '@testing-library/react'
 import useDebounce from '../hooks/useDebounce'
 
 describe('useDebounce', () => {

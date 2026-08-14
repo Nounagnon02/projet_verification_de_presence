@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiMail, FiLock, FiAlertTriangle, FiLoader, FiArrowLeft } from 'react-icons/fi';
-import { MdAccountBalance, MdQrCodeScanner, MdAutoAwesome, MdGroups, MdSchool } from 'react-icons/md';
+import { MdAccountBalance, MdQrCodeScanner, MdAutoAwesome, MdGroups } from 'react-icons/md';
 import { useAuth } from '../../context/AuthContext';
 import { assets } from '../../utils/assets';
 

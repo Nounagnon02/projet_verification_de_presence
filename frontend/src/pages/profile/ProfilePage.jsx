@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiUser, FiSave, FiMail, FiShield, FiRefreshCw, FiAlertTriangle } from 'react-icons/fi';
+import { FiUser, FiSave, FiMail, FiRefreshCw, FiAlertTriangle } from 'react-icons/fi';
 import api from '../../api/axios';
 
 export default function ProfilePage() {
@@ -13,10 +13,9 @@ export default function ProfilePage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
+  // Déclarée avant l'effet qui l'appelle : l'ordre inverse fonctionnait, la
+  // fonction étant définie au moment où l'effet s'exécute, mais il masquait
+  // la dépendance et l'analyse statique le signalait à juste titre.
   const fetchProfile = async () => {
     try {
       setLoading(true);
@@ -33,6 +32,12 @@ export default function ProfilePage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();

@@ -1,7 +1,12 @@
+import { useId } from 'react';
 import { FiSearch } from 'react-icons/fi';
 
 export default function SearchInput({ value, onChange, placeholder = 'Rechercher...', className = '', 'aria-label': ariaLabel, id }) {
-  const inputId = id || `search-${Math.random().toString(36).substr(2, 9)}`;
+  // useId au lieu de Math.random() : appelé pendant le rendu, ce dernier
+  // produisait un identifiant différent à chaque passage, ce qui cassait
+  // l'association entre le label et le champ d'une mise à jour à l'autre.
+  const idGenere = useId();
+  const inputId = id || `search-${idGenere}`;
   return (
     <div className={`relative ${className}`}>
       <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} aria-hidden="true" />

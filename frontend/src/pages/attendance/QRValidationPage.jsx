@@ -16,7 +16,7 @@ export default function QRValidationPage() {
   const qrToken = tokenFromUrl;
 
   // Device fingerprinting pour anti-fraude
-  const { visitorId, fingerprint, loading: fpLoading, createScanChallenge, isReady } = useFingerprint();
+  const { loading: fpLoading, createScanChallenge, isReady } = useFingerprint();
 
   useEffect(() => {
     const fetchCourseInfo = async () => {

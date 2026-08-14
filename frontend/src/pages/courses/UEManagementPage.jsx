@@ -1,10 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  FiPlus, FiEdit2, FiTrash2, FiSave, FiX, FiRefreshCw,
-  FiBook, FiBookOpen, FiChevronDown, FiChevronRight,
-  FiAlertTriangle, FiSearch, FiUpload, FiCheck, FiFileText, FiLoader
-} from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiSave, FiX, FiRefreshCw, FiBook, FiBookOpen, FiChevronDown, FiChevronRight, FiAlertTriangle, FiSearch, FiUpload, FiFileText, FiLoader } from 'react-icons/fi';
 import api from '../../api/axios';
 
 const INITIAL_UE = { code: '', intitule: '', filiere_id: '', annee_id: '', semestre: 1, volume_horaire: 30 };
@@ -127,7 +123,7 @@ export default function UEManagementPage() {
     setSuccess('');
     try {
       if (ueModal.editing) {
-        const { data } = await api.put(`/admin/ues/${ues.find(u => u.code === ueModal.data.code)?.id}`, ueModal.data);
+        await api.put(`/admin/ues/${ues.find(u => u.code === ueModal.data.code)?.id}`, ueModal.data);
         setSuccess('UE mise à jour avec succès.');
       } else {
         await api.post('/admin/ues', ueModal.data);
@@ -148,7 +144,7 @@ export default function UEManagementPage() {
       await api.delete(`/admin/ues/${ue.id}`);
       setSuccess('UE supprimée.');
       load();
-    } catch (err) {
+    } catch {
       setError('Erreur lors de la suppression.');
     }
   };
@@ -183,13 +179,13 @@ export default function UEManagementPage() {
     }
   };
 
-  const handleDeleteEc = async (ec, ueId) => {
+  const handleDeleteEc = async (ec) => {
     if (!window.confirm(`Supprimer l'EC "${ec.code} — ${ec.intitule}" ?`)) return;
     try {
       await api.delete(`/admin/ecs/${ec.id}`);
       setSuccess('EC supprimé.');
       load();
-    } catch (err) {
+    } catch {
       setError('Erreur lors de la suppression.');
     }
   };
@@ -199,7 +195,6 @@ export default function UEManagementPage() {
   // ─── Helpers ────────────────────────────────────────────
 
   const getFiliere = (id) => filieres.find(f => String(f.id) === String(id))?.intitule || filieres.find(f => String(f.id) === String(id))?.code || '—';
-  const getAnnee = (id) => annees.find(a => String(a.id) === String(id))?.libelle || '—';
 
   const StatutBadge = ({ statut, size = 'sm' }) => {
     const variants = {

@@ -6,10 +6,9 @@ export default function AcademicSlatePage() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadStats();
-  }, []);
-
+  // Déclarée avant l'effet qui l'appelle : l'ordre inverse fonctionnait, la
+  // fonction étant définie au moment où l'effet s'exécute, mais il masquait
+  // la dépendance et l'analyse statique le signalait à juste titre.
   const loadStats = async () => {
     try {
       setLoading(true);
@@ -35,6 +34,12 @@ export default function AcademicSlatePage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+
 
   if (loading) {
     return (

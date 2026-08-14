@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FiBell, FiCheck, FiTrash2, FiRefreshCw, FiAlertTriangle, FiCheckCircle, FiX, FiInfo, FiAlertCircle } from 'react-icons/fi';
+import { FiBell, FiCheck, FiTrash2, FiRefreshCw, FiAlertTriangle, FiCheckCircle, FiInfo, FiAlertCircle } from 'react-icons/fi';
 import api from '../../api/axios';
 
 export default function NotificationsPage() {
