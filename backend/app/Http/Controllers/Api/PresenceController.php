@@ -115,16 +115,26 @@ class PresenceController extends Controller
 
         //-------------------------------------------------------------
         // 3. Vérification de la fenêtre horaire (CDC 7.3.3)
+        //
+        // La fenêtre est ancrée sur la fin du cours (config/presence.php) et
+        // calculée par le modèle. Elle ne s'ouvre plus à l'heure de début :
+        // signer en début de séance puis repartir ne permet plus d'être compté
+        // présent.
         //-------------------------------------------------------------
-        $debut = Carbon::parse($evenement->date->format('Y-m-d') . ' ' . $evenement->heure_debut);
-        $fin   = Carbon::parse($evenement->date->format('Y-m-d') . ' ' . $evenement->heure_fin)->addMinutes(15);
+        $ouverture = $evenement->ouvertureScan();
+        $fermeture = $evenement->fermetureScan();
 
-        if ($fin->lte($debut)) {
-            $fin->addDay();
+        if ($now->lessThan($ouverture)) {
+            return $this->forbiddenResponse(
+                "La prise de présence n'est pas encore ouverte. Elle le sera à partir de "
+                . $ouverture->format('H:i') . '.'
+            );
         }
 
-        if ($now->lt($debut) || $now->gt($fin)) {
-            return $this->forbiddenResponse('Fenêtre de validation fermée (hors horaire).');
+        if ($now->greaterThan($fermeture)) {
+            return $this->forbiddenResponse(
+                'La prise de présence est terminée depuis ' . $fermeture->format('H:i') . '.'
+            );
         }
 
         //-------------------------------------------------------------

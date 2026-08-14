@@ -28,8 +28,10 @@ Artisan::command('schedule:generate-events', function () {
 })->purpose('Génère les événements pour les 14 prochains jours depuis l\'emploi du temps')
   ->dailyAt('00:05');
 
-// Génération automatique des QR codes 15 min avant la fin des cours (toutes les minutes)
+// Rotation des QR codes des cours dont la fenêtre de présence est ouverte.
+// Cette fréquence EST la cadence de rotation réelle des tokens : la durée de vie
+// configurée (presence.qr.ttl_secondes) ne peut pas descendre en dessous d'elle.
 Artisan::command('schedule:generate-qrcodes', function () {
     $this->call('qrcode:auto-generate');
-})->purpose('Génère les QR codes 15 min avant la fin des cours du jour')
+})->purpose('Fait tourner les QR codes des cours en fenêtre de présence')
   ->everyMinute();

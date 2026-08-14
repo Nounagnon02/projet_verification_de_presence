@@ -11,68 +11,70 @@ use Illuminate\Support\Str;
 class AutoGenerateQrCode extends Command
 {
     protected $signature = 'qrcode:auto-generate';
-    protected $description = 'Génère automatiquement les QR codes 15 min avant la fin des cours du jour — renouvelé toutes les 150s';
+    protected $description = 'Génère et fait tourner les QR codes des cours dont la fenêtre de présence est ouverte';
 
     public function handle(): int
     {
-        // Vérifier le délai minimum entre deux régénérations (150 secondes)
-        $lastRun = cache()->get('qrcode:auto-generate:last-run');
-        if ($lastRun && now()->diffInSeconds($lastRun) < 150) {
-            return Command::SUCCESS;
-        }
-        cache()->put('qrcode:auto-generate:last-run', now(), 600); // 10 min TTL
-
         $maintenant = now();
-        $today = $maintenant->format('Y-m-d');
 
-        // Trouver les événements aujourd'hui : 15 min avant heure_fin → maintenant
-        $evenements = Evenement::where('date', $today)
-            ->where('statut', 'planifie')
+        // Les événements de la veille restent candidats : une séance à cheval sur
+        // minuit garde sa fenêtre ouverte après le changement de date.
+        $evenements = Evenement::whereIn('statut', ['planifie', 'en_cours'])
+            ->whereBetween('date', [
+                $maintenant->copy()->subDay()->toDateString(),
+                $maintenant->toDateString(),
+            ])
+            ->with('ec')
             ->get()
-            ->filter(function ($event) use ($maintenant, $today) {
-                // L'événement doit être dans sa phase finale : 15 min avant la fin
-                $heureFin = Carbon::parse($today . ' ' . $event->heure_fin);
-                $fenetreDebut = $heureFin->copy()->subMinutes(15);
-
-                return $maintenant->between($fenetreDebut, $heureFin);
-            });
+            ->filter(fn (Evenement $evenement) => $maintenant->betweenIncluded(
+                $evenement->ouvertureScan(),
+                $evenement->fermetureScan()
+            ));
 
         if ($evenements->isEmpty()) {
-            $this->info("Aucun événement en phase de génération de QR code pour le moment.");
+            $this->info('Aucun cours dont la fenêtre de présence est ouverte.');
+
             return Command::SUCCESS;
         }
 
         $total = 0;
 
         foreach ($evenements as $evenement) {
-            // Désactiver les anciens QR codes
+            // Rotation à chaque passage, sans garde-fou de durée. Le planificateur
+            // tourne chaque minute : c'est lui qui fixe la cadence réelle, et un
+            // garde-fou exprimé en secondes ne faisait que la doubler dès qu'un
+            // passage tombait quelques secondes trop tôt.
             QrCode::where('evenement_id', $evenement->id)
                 ->where('actif', true)
                 ->update(['actif' => false]);
 
-            // Durée de validité : jusqu'à la fin du cours (+ 5 min de grâce)
-            $expireAt = Carbon::parse($today . ' ' . $evenement->heure_fin)->addMinutes(5);
-
-            $token = (string) Str::uuid();
+            $expireAt = $evenement->expirationTokenDepuis($maintenant);
 
             QrCode::create([
                 'evenement_id' => $evenement->id,
-                'token'        => $token,
+                'token'        => (string) Str::uuid(),
                 'expire_at'    => $expireAt,
                 'actif'        => true,
             ]);
 
-            // Marquer l'événement comme "en_cours" si pas déjà fait
+            // Le filtre de sélection inclut « en_cours » : sans cela, l'événement
+            // quittait la sélection dès ce passage à l'état suivant et son token
+            // n'était plus jamais renouvelé — le QR Code restait le même pendant
+            // toute la séance, ce qui annulait la protection anti-partage.
             if ($evenement->statut === 'planifie') {
                 $evenement->update(['statut' => 'en_cours']);
             }
 
-            $ecIntitule = $evenement->ec->intitule ?? 'N/A';
-            $this->line("  QR généré : Événement #{$evenement->id} ({$ecIntitule}) expire à {$expireAt->format('H:i')}");
+            $this->line(sprintf(
+                '  QR renouvelé : événement #%d (%s), valable jusqu\'à %s',
+                $evenement->id,
+                $evenement->ec->intitule ?? 'N/A',
+                $expireAt->format('H:i:s')
+            ));
             $total++;
         }
 
-        $this->info("QR codes générés : {$total}");
+        $this->info("QR codes renouvelés : {$total}");
 
         return Command::SUCCESS;
     }
