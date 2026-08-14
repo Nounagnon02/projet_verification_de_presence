@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect , useMemo} from 'react';
 import {
   FiFilter, FiLoader, FiRefreshCw, FiBarChart2, FiCalendar, FiUsers,
   FiCheckCircle, FiAlertTriangle, FiDownload, FiFileText, FiChevronDown, FiChevronUp,
@@ -41,7 +41,10 @@ export default function FilteredReportsPage() {
   const [filieres, setFilieres] = useState([]);
   const [annees, setAnnees] = useState([]);
   const [ues, setUes] = useState([]);
-  const [ecs, setEcs] = useState([]);
+
+  // Compteur de rechargement : le bouton « actualiser » l'incrémente, ce qui
+  // relance l'effet. La requête n'est émise qu'à un seul endroit.
+  const [rechargement, setRechargement] = useState(0);
 
   const [filiereId, setFiliereId] = useState('');
   const [anneeId, setAnneeId] = useState('');
@@ -104,83 +107,66 @@ export default function FilteredReportsPage() {
     init();
   }, []);
 
-  //ECs dynamiques
-  useEffect(() => {
-    if (!ueId) { setEcs([]); setEcId(''); return; }
-    const ue = ues.find(u => String(u.id) === ueId);
-    setEcs(ue?.ecs || []);
-    setEcId('');
+  // ECs de l'UE choisie : une valeur calculée, pas un état à synchroniser.
+  const ecs = useMemo(() => {
+    if (!ueId) return [];
+    return ues.find(u => String(u.id) === ueId)?.ecs || [];
   }, [ueId, ues]);
 
+  // L'EC sélectionné se remet à zéro quand l'UE change, sinon on garderait un EC
+  // qui n'appartient plus à l'UE affichée. Ajustement pendant le rendu — motif
+  // documenté par React — plutôt que dans un effet, qui produirait un rendu
+  // intermédiaire incohérent.
+  const [ueIdPrecedent, setUeIdPrecedent] = useState(ueId);
+
+  if (ueId !== ueIdPrecedent) {
+    setUeIdPrecedent(ueId);
+    setEcId('');
+  }
+
   //Chargement stats filtrées
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = {};
-      if (filiereId) params.filiere_id = filiereId;
-      if (anneeId) params.annee_id = anneeId;
-      if (semestre) params.semestre = semestre;
-      if (trimestre) params.trimestre = trimestre;
-      if (ueId) params.ue_id = ueId;
-      if (ecId) params.ec_id = ecId;
-      if (jours) params.jours = jours;
-      if (dateDebut) params.date_debut = dateDebut;
-      if (dateFin) params.date_fin = dateFin;
 
-      const { data: res } = await api.get('/admin/reports/filtered', { params });
-      setData(res.data || res);
-    } catch {
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [filiereId, anneeId, semestre, trimestre, ueId, ecId, jours, dateDebut, dateFin]);
-
-  //Chargement auto initial
+  // Chargement du rapport. Annulable : en enchaînant les filtres, la réponse
+  // d'une requête précédente pouvait arriver en dernier et réafficher un rapport
+  // que l'utilisateur venait de quitter.
   useEffect(() => {
-    if (!initialLoading) loadData();
+    if (initialLoading) return;
+
+    let annule = false;
+
+    (async () => {
+      setLoading(true);
+
+      try {
+        const params = {};
+        if (filiereId) params.filiere_id = filiereId;
+        if (anneeId) params.annee_id = anneeId;
+        if (semestre) params.semestre = semestre;
+        if (trimestre) params.trimestre = trimestre;
+        if (ueId) params.ue_id = ueId;
+        if (ecId) params.ec_id = ecId;
+        if (jours) params.jours = jours;
+        if (dateDebut) params.date_debut = dateDebut;
+        if (dateFin) params.date_fin = dateFin;
+
+        const { data: res } = await api.get('/admin/reports/filtered', { params });
+        if (!annule) setData(res.data || res);
+      } catch {
+        if (!annule) setData(null);
+      } finally {
+        if (!annule) setLoading(false);
+      }
+    })();
+
+    return () => { annule = true; };
+    // Le rechargement est déclenché explicitement par le bouton « actualiser »,
+    // les filtres n'étant appliqués que sur demande dans cette page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialLoading]);
+  }, [initialLoading, rechargement]);
 
   //Chargement comparaison semestres
-  const loadSemesterComp = useCallback(async () => {
-    if (!filiereId || !anneeId) return;
-    setLoadingSem(true);
-    try {
-      const { data: res } = await api.get('/admin/reports/semester-comparison', {
-        params: { filiere_id: filiereId, annee_id: anneeId },
-      });
-      setSemComp(res.data || res);
-    } catch {
-      setSemComp(null);
-    } finally {
-      setLoadingSem(false);
-    }
-  }, [filiereId, anneeId]);
 
   //Chargement comparaison filières
-  const loadFiliereComp = useCallback(async () => {
-    if (!anneeId) return;
-    setLoadingFiliere(true);
-    try {
-      const { data: res } = await api.get('/admin/reports/filiere-stats', {
-        params: { annee_id: anneeId },
-      });
-      const list = (res.data || res);
-      if (Array.isArray(list)) {
-        const sorted = list
-          .sort((a, b) => (b.taux || 0) - (a.taux || 0))
-          .map((f, i) => ({ ...f, rank: i + 1 }));
-        setFiliereStats(sorted);
-      } else {
-        setFiliereStats([]);
-      }
-    } catch {
-      setFiliereStats([]);
-    } finally {
-      setLoadingFiliere(false);
-    }
-  }, [anneeId]);
 
   //Chargement comparaison années (au montage)
   useEffect(() => {
@@ -223,15 +209,61 @@ export default function FilteredReportsPage() {
     fetch();
   }, []);
 
-  //Ouvrir section comparaison semestres
+  // Comparaison par semestre, chargée à l'ouverture de la section. Les gardes
+  // « pas déjà chargé, pas en cours » ont disparu : les dépendances étant les
+  // entrées réelles du chargement, l'effet ne se relance qu'à bon escient.
   useEffect(() => {
-    if (showSemComp && filiereId && anneeId && !semComp && !loadingSem) loadSemesterComp();
-  }, [showSemComp, filiereId, anneeId, semComp, loadingSem, loadSemesterComp]);
+    if (!showSemComp || !filiereId || !anneeId) return;
 
-  //Ouvrir section comparaison filières
+    let annule = false;
+
+    (async () => {
+      setLoadingSem(true);
+
+      try {
+        const { data: res } = await api.get('/admin/reports/semester-comparison', {
+          params: { filiere_id: filiereId, annee_id: anneeId },
+        });
+        if (!annule) setSemComp(res.data || res);
+      } catch {
+        if (!annule) setSemComp(null);
+      } finally {
+        if (!annule) setLoadingSem(false);
+      }
+    })();
+
+    return () => { annule = true; };
+  }, [showSemComp, filiereId, anneeId]);
+
+  // Comparaison par filière, même principe.
   useEffect(() => {
-    if (showFiliereComp && anneeId && !filiereStats && !loadingFiliere) loadFiliereComp();
-  }, [showFiliereComp, anneeId, filiereStats, loadingFiliere, loadFiliereComp]);
+    if (!showFiliereComp || !anneeId) return;
+
+    let annule = false;
+
+    (async () => {
+      setLoadingFiliere(true);
+
+      try {
+        const { data: res } = await api.get('/admin/reports/filiere-stats', {
+          params: { annee_id: anneeId },
+        });
+        const list = res.data || res;
+
+        if (!annule) {
+          setFiliereStats(Array.isArray(list)
+            ? list.sort((a, b) => (b.taux || 0) - (a.taux || 0)).map((f, i) => ({ ...f, rank: i + 1 }))
+            : []);
+        }
+      } catch {
+        if (!annule) setFiliereStats([]);
+      } finally {
+        if (!annule) setLoadingFiliere(false);
+      }
+    })();
+
+    return () => { annule = true; };
+  }, [showFiliereComp, anneeId]);
 
   //Exports
   const exportReport = async (type) => {
@@ -317,7 +349,7 @@ export default function FilteredReportsPage() {
             className="px-3 py-2 text-xs font-semibold text-on-surface-variant bg-surface-container-high rounded-xl hover:bg-surface-container-higher transition-all">
             Réinitialiser
           </button>
-          <button onClick={loadData} disabled={loading}
+          <button onClick={() => setRechargement((n) => n + 1)} disabled={loading}
             className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-xl text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-50">
             {loading ? <FiLoader className="animate-spin" /> : <FiRefreshCw />}
             Appliquer

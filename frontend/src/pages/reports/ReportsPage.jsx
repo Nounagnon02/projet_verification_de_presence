@@ -156,7 +156,7 @@ const ReportsPage = () => {
   const [filieres, setFilieres] = useState([]);
   const [annees, setAnnees] = useState([]);
   const [ues, setUes] = useState([]);
-  const [ecs, setEcs] = useState([]);
+
 
   const [filiereId, setFiliereId] = useState('');
   const [anneeId, setAnneeId] = useState('');
@@ -222,35 +222,47 @@ const ReportsPage = () => {
     init();
   }, []);
 
-  //ECs dynamiques
-  useEffect(() => {
-    if (!ueId) { setEcs([]); setEcId(''); return; }
-    const ue = ues.find(u => String(u.id) === ueId);
-    setEcs(ue?.ecs || []);
-    setEcId('');
+  // ECs de l'UE choisie : une valeur calculée, pas un état à synchroniser. La
+  // stocker dans un état et la recopier depuis un effet créait une source de
+  // vérité en double, et un rendu de plus à chaque changement d'UE.
+  const ecs = useMemo(() => {
+    if (!ueId) return [];
+    return ues.find(u => String(u.id) === ueId)?.ecs || [];
   }, [ueId, ues]);
 
-  //  CHARGEMENT STATS FILTREES 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = {};
-      if (filiereId) params.filiere_id = filiereId;
-      if (anneeId) params.annee_id = anneeId;
-      if (semestre) params.semestre = semestre;
-      if (ueId) params.ue_id = ueId;
-      if (ecId) params.ec_id = ecId;
-      if (jours) params.jours = jours;
-      if (dateDebut) params.date_debut = dateDebut;
-      if (dateFin) params.date_fin = dateFin;
+  // L'EC sélectionné, lui, est bien un état : il se remet à zéro quand l'UE
+  // change, sinon on conserverait un EC qui n'appartient plus à l'UE affichée.
+  // L'ajustement se fait pendant le rendu — motif documenté par React pour
+  // réagir à un changement de valeur — et non dans un effet, ce qui éviterait
+  // un rendu intermédiaire affichant une combinaison incohérente.
+  const [ueIdPrecedent, setUeIdPrecedent] = useState(ueId);
 
-      const { data: res } = await api.get('/admin/reports/filtered', { params });
-      setData(res.data || res);
-    } catch {
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
+  if (ueId !== ueIdPrecedent) {
+    setUeIdPrecedent(ueId);
+    setEcId('');
+  }
+
+  //  CHARGEMENT STATS FILTREES 
+  // Compteur de rafraîchissement : le bouton « actualiser » l'incrémente, ce qui
+  // relance l'effet de chargement. Il n'y a ainsi qu'un seul endroit où la
+  // requête est émise, au lieu d'une fonction partagée entre l'effet et le
+  // bouton.
+  const [rechargement, setRechargement] = useState(0);
+  const [rechargementSem, setRechargementSem] = useState(0);
+  const [rechargementFiliere, setRechargementFiliere] = useState(0);
+  const rafraichir = useCallback(() => setRechargement((n) => n + 1), []);
+
+  const construireParams = useCallback(() => {
+    const params = {};
+    if (filiereId) params.filiere_id = filiereId;
+    if (anneeId) params.annee_id = anneeId;
+    if (semestre) params.semestre = semestre;
+    if (ueId) params.ue_id = ueId;
+    if (ecId) params.ec_id = ecId;
+    if (jours) params.jours = jours;
+    if (dateDebut) params.date_debut = dateDebut;
+    if (dateFin) params.date_fin = dateFin;
+    return params;
   }, [filiereId, anneeId, semestre, ueId, ecId, jours, dateDebut, dateFin]);
 
   // Déclarée ici, et non avec les autres filtres du tableau UE plus bas : elle
@@ -265,51 +277,40 @@ const ReportsPage = () => {
   const debouncedUeId = useDebounce(ueId, 400);
   const debouncedEcId = useDebounce(ecId, 400);
 
-  //Chargement auto au demarrage et à chaque changement de filtre (debounced)
+  // Chargement au démarrage puis à chaque changement de filtre (débouncé).
+  //
+  // L'annulation corrige un défaut visible à l'usage : en enchaînant les
+  // filtres, deux requêtes partaient et se résolvaient dans un ordre non
+  // garanti. La réponse de l'ancien filtre pouvait arriver en dernier et
+  // réafficher un rapport que l'utilisateur venait de quitter.
   useEffect(() => {
-    if (!initialLoading) { setUePage(1); loadData(); }
+    if (initialLoading) return;
+
+    let annule = false;
+
+    (async () => {
+      setLoading(true);
+      setUePage(1);
+
+      try {
+        const { data: res } = await api.get('/admin/reports/filtered', { params: construireParams() });
+        if (!annule) setData(res.data || res);
+      } catch {
+        if (!annule) setData(null);
+      } finally {
+        if (!annule) setLoading(false);
+      }
+    })();
+
+    return () => { annule = true; };
+    // construireParams change à chaque frappe ; ce sont les valeurs débouncées
+    // qui doivent déclencher le rechargement, d'où cette liste explicite.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialLoading, debouncedFiliereId, debouncedAnneeId, debouncedSemestre, debouncedUeId, debouncedEcId]);
+  }, [initialLoading, rechargement, debouncedFiliereId, debouncedAnneeId, debouncedSemestre, debouncedUeId, debouncedEcId]);
 
   //  COMPARAISON SEMESTRES 
-  const loadSemesterComp = useCallback(async () => {
-    if (!semFiliereId || !semAnneeId) return;
-    setLoadingSem(true);
-    try {
-      const { data: res } = await api.get('/admin/reports/semester-comparison', {
-        params: { filiere_id: semFiliereId, annee_id: semAnneeId },
-      });
-      setSemComp(res.data || res);
-    } catch {
-      setSemComp(null);
-    } finally {
-      setLoadingSem(false);
-    }
-  }, [semFiliereId, semAnneeId]);
 
   //  COMPARAISON FILIERES 
-  const loadFiliereComp = useCallback(async () => {
-    if (!compFiliereAnneeId) return;
-    setLoadingFiliere(true);
-    try {
-      const { data: res } = await api.get('/admin/reports/filiere-stats', {
-        params: { annee_id: compFiliereAnneeId },
-      });
-      const list = (res.data || res);
-      if (Array.isArray(list)) {
-        const sorted = list
-          .sort((a, b) => (b.taux || 0) - (a.taux || 0))
-          .map((f, i) => ({ ...f, rank: i + 1 }));
-        setFiliereStats(sorted);
-      } else {
-        setFiliereStats([]);
-      }
-    } catch {
-      setFiliereStats([]);
-    } finally {
-      setLoadingFiliere(false);
-    }
-  }, [compFiliereAnneeId]);
 
   //  COMPARAISON ANNEES 
   useEffect(() => {
@@ -353,13 +354,62 @@ const ReportsPage = () => {
   }, []);
 
   //Chargement des comparaisons à l'ouverture
+  // Comparaison par semestre. Les gardes « pas déjà chargé, pas en cours » ont
+  // disparu : les dépendances étant exactement les entrées du chargement,
+  // l'effet ne se relance que lorsqu'un rechargement est effectivement voulu.
+  // Les boutons, eux, incrémentent le compteur.
   useEffect(() => {
-    if (showSemComp && semFiliereId && semAnneeId && !semComp && !loadingSem) loadSemesterComp();
-  }, [showSemComp, semFiliereId, semAnneeId, semComp, loadingSem, loadSemesterComp]);
+    if (!showSemComp || !semFiliereId || !semAnneeId) return;
 
+    let annule = false;
+
+    (async () => {
+      setLoadingSem(true);
+
+      try {
+        const { data: res } = await api.get('/admin/reports/semester-comparison', {
+          params: { filiere_id: semFiliereId, annee_id: semAnneeId },
+        });
+        if (!annule) setSemComp(res.data || res);
+      } catch {
+        if (!annule) setSemComp(null);
+      } finally {
+        if (!annule) setLoadingSem(false);
+      }
+    })();
+
+    return () => { annule = true; };
+  }, [showSemComp, semFiliereId, semAnneeId, rechargementSem]);
+
+  // Comparaison par filière, même principe.
   useEffect(() => {
-    if (showFiliereComp && compFiliereAnneeId && !filiereStats && !loadingFiliere) loadFiliereComp();
-  }, [showFiliereComp, compFiliereAnneeId, filiereStats, loadingFiliere, loadFiliereComp]);
+    if (!showFiliereComp || !compFiliereAnneeId) return;
+
+    let annule = false;
+
+    (async () => {
+      setLoadingFiliere(true);
+
+      try {
+        const { data: res } = await api.get('/admin/reports/filiere-stats', {
+          params: { annee_id: compFiliereAnneeId },
+        });
+        const list = res.data || res;
+
+        if (!annule) {
+          setFiliereStats(Array.isArray(list)
+            ? list.sort((a, b) => (b.taux || 0) - (a.taux || 0)).map((f, i) => ({ ...f, rank: i + 1 }))
+            : []);
+        }
+      } catch {
+        if (!annule) setFiliereStats(null);
+      } finally {
+        if (!annule) setLoadingFiliere(false);
+      }
+    })();
+
+    return () => { annule = true; };
+  }, [showFiliereComp, compFiliereAnneeId, rechargementFiliere]);
 
   //EXPORTS 
   const exportReport = async (type) => {
@@ -466,7 +516,7 @@ const ReportsPage = () => {
             className="px-3 py-2 text-xs font-semibold text-on-surface-variant bg-surface-container-high rounded-xl hover:bg-surface-container-higher transition-all">
             Réinitialiser
           </button>
-          <button onClick={loadData} disabled={loading}
+          <button onClick={rafraichir} disabled={loading}
             className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-xl text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-50">
             {loading ? <FiLoader className="animate-spin" /> : <FiRefreshCw />}
             Appliquer
@@ -683,7 +733,7 @@ const ReportsPage = () => {
                   </select>
                 </div>
                 <div className="self-end">
-                  <button onClick={loadSemesterComp} disabled={!semFiliereId || !semAnneeId || loadingSem}
+                  <button onClick={() => setRechargementSem((n) => n + 1)} disabled={!semFiliereId || !semAnneeId || loadingSem}
                     className="px-3 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-40 flex items-center gap-1.5">
                     {loadingSem ? <FiLoader className="animate-spin" /> : <FiRefreshCw />}
                     Charger
@@ -739,7 +789,7 @@ const ReportsPage = () => {
                   </select>
                 </div>
                 <div className="self-end">
-                  <button onClick={loadFiliereComp} disabled={!compFiliereAnneeId || loadingFiliere}
+                  <button onClick={() => setRechargementFiliere((n) => n + 1)} disabled={!compFiliereAnneeId || loadingFiliere}
                     className="px-3 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-40 flex items-center gap-1.5">
                     {loadingFiliere ? <FiLoader className="animate-spin" /> : <FiRefreshCw />}
                     Charger

@@ -42,30 +42,41 @@ export default function SemesterComparison() {
     init();
   }, []);
 
-  // Charger les données de comparaison
+  // Chargement de la comparaison, annulable : en changeant de filière ou d'année,
+  // la réponse de la sélection précédente pouvait arriver en dernier et afficher
+  // les données de la mauvaise promotion.
+  //
+  // La remise à zéro quand la sélection est incomplète se fait dans le corps
+  // asynchrone, et non avant : placée en tête de l'effet, c'était une écriture
+  // d'état synchrone provoquant un rendu de plus à chaque passage.
   useEffect(() => {
-    if (!selectedFiliere || !selectedAnnee) {
-      setData(null);
-      return;
-    }
+    let annule = false;
 
-    const fetchData = async () => {
+    (async () => {
+      if (!selectedFiliere || !selectedAnnee) {
+        if (!annule) setData(null);
+        return;
+      }
+
       setLoading(true);
       setError('');
+
       try {
         const { data: res } = await api.get('/admin/reports/semester-comparison', {
           params: { filiere_id: selectedFiliere, annee_id: selectedAnnee },
         });
-        const d = res.data || res;
-        setData(d);
+        if (!annule) setData(res.data || res);
       } catch {
-        setError('Impossible de charger les données de comparaison.');
-        setData(null);
+        if (!annule) {
+          setError('Impossible de charger les données de comparaison.');
+          setData(null);
+        }
       } finally {
-        setLoading(false);
+        if (!annule) setLoading(false);
       }
-    };
-    fetchData();
+    })();
+
+    return () => { annule = true; };
   }, [selectedFiliere, selectedAnnee]);
 
   if (loading && !data) {
