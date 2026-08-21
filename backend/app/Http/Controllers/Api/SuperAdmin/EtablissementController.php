@@ -7,6 +7,7 @@ use App\Models\Etablissement;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -39,18 +40,31 @@ class EtablissementController extends Controller
                 ->putFile('logos', $request->file('logo'), 'public');
         }
 
-        $etablissement = Etablissement::create($validated);
-
-        // Créer automatiquement un admin faculté
+        // La faculté et son administrateur forment un tout indissociable. Sans
+        // transaction, un échec sur la création de l'utilisateur laissait une
+        // faculté orpheline en base, dont le code et l'email — tous deux uniques —
+        // interdisaient ensuite toute nouvelle tentative avec les mêmes valeurs.
         $password = Str::random(12);
-        $admin = new User([
-            'name'                => $validated['nom'],
-            'email'               => $validated['email'],
-            'role'                => 'faculte_admin',
-            'etablissement_id'    => $etablissement->id,
-            'must_change_password' => true,
-        ]);
-        $admin->forceFill(['password' => $password])->save();
+
+        [$etablissement, $admin] = DB::transaction(function () use ($validated, $password) {
+            $etablissement = Etablissement::create($validated);
+
+            // Créer automatiquement un admin faculté
+            $admin = new User([
+                'name'                => $validated['nom'],
+                'email'               => $validated['email'],
+                // « group » est NOT NULL en base et n'a pas de valeur par défaut :
+                // l'omettre faisait échouer en 500 toute création de faculté.
+                // La valeur « admin » est celle du seeder et de la factory.
+                'group'               => 'admin',
+                'role'                => 'faculte_admin',
+                'etablissement_id'    => $etablissement->id,
+                'must_change_password' => true,
+            ]);
+            $admin->forceFill(['password' => $password])->save();
+
+            return [$etablissement, $admin];
+        });
 
         // Envoyer l'email de bienvenue (si mail configuré)
         try {
@@ -163,6 +177,12 @@ class EtablissementController extends Controller
             'password'            => $password,
             'must_change_password' => true,
         ])->save();
+
+        // Réinitialiser les identifiants sans révoquer les jetons déjà émis
+        // laissait ouverte toute session obtenue avec l'ancien mot de passe :
+        // le renvoi d'identifiants ne reprenait donc pas la main sur un compte
+        // compromis, ce qui est précisément son usage.
+        $admin->tokens()->delete();
 
         try {
             Mail::to($admin->email)->send(new \App\Mail\WelcomeFaculteAdmin($admin, $password, $etablissement));

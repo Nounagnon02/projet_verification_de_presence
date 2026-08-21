@@ -72,6 +72,9 @@ class BulkRegistrationController extends Controller
                 $admin = new User([
                     'name'                => $etablissement->nom,
                     'email'               => $etablissement->email,
+                    // NOT NULL sans valeur par défaut en base : voir
+                    // EtablissementController::store().
+                    'group'               => 'admin',
                     'role'                => 'faculte_admin',
                     'etablissement_id'    => $etablissement->id,
                     'must_change_password' => true,
