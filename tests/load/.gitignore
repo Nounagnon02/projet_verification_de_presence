@@ -1,0 +1,3 @@
+# Jeux de donnees de campagne : jetons a usage unique, regeneres avant chaque
+# execution. Les versionner n'a aucun sens — un jeu rejoue ne mesure que des 410.
+charge-*.json
