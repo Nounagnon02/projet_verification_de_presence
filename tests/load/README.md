@@ -22,17 +22,40 @@ D'ou deux elements indissociables :
 2. `scan.k6.js` mesure separement le parcours nominal et le chemin de rejet, et
    n'applique le seuil H3 qu'au premier.
 
+## Base de donnees : jamais celle de la suite PHPUnit
+
+Ce generateur ecrit des lignes **reelles et persistantes**, hors de toute
+transaction. La suite PHPUnit, elle, compte des lignes et cree ses propres
+fixtures — et `annees_academiques.libelle` est unique **globalement**, pas par
+etablissement.
+
+Consequence constatee : une seule campagne lancee sur `presence_uac_test` a fait
+echouer **149 tests d'un coup**, avec des messages qui ne renvoyaient jamais vers
+un test de charge. Le script refuse desormais toute base dont le nom contient
+`_test` (contournable par `--forcer`, en connaissance de cause).
+
+Utiliser une base dediee :
+
+```bash
+docker exec uac-test-pg createdb -U postgres presence_uac_charge
+```
+
 ## Execution
 
 ```bash
-# 1. Base et backend
-cd backend && make db-up && php artisan migrate --force
-php artisan serve --port=8000 &
+cd backend
 
-# 2. Jeu de donnees — A REGENERER AVANT CHAQUE EXECUTION
-php ../tests/load/preparer-charge.php --vus=500 > /tmp/charge.json
+# 1. Base dediee, migree
+DB_DATABASE=presence_uac_charge php artisan migrate --force
 
-# 3. Campagne
+# 2. Backend sur cette base
+DB_DATABASE=presence_uac_charge php artisan serve --port=8000 &
+
+# 3. Jeu de donnees — A REGENERER AVANT CHAQUE EXECUTION
+DB_DATABASE=presence_uac_charge php ../tests/load/preparer-charge.php \
+  --vus=500 > /tmp/charge.json
+
+# 4. Campagne
 k6 run -e JEU=/tmp/charge.json -e VUS=500 -e BASE_URL=http://localhost:8000 \
   ../tests/load/scan.k6.js
 ```
@@ -66,11 +89,19 @@ Mesurer le seul POST sous-estimerait la latence percue par l'etudiant.
 
 ## Nettoyage
 
-Le generateur supprime son propre jeu au demarrage (etablissements dont le code
-commence par `CHARGE-K6`). `--garder` conserve le precedent, mais ses jetons
-sont consommes : il n'est plus utilisable pour une mesure nominale.
+Le generateur supprime son propre jeu au demarrage : etablissements dont le code
+commence par `CHARGE-K6`, et tout ce qui en depend — **y compris l'annee
+academique**, dont l'oubli etait precisement la cause des 149 echecs.
 
-Le script refuse de tourner si `APP_ENV` vaut `production`.
+Les annees de charge utilisent la plage reservee `2090-2091`, pour ne jamais
+entrer en collision avec une annee realiste. Le format `AAAA-AAAA` est conserve :
+l'identifiant unique des etudiants le reprend tel quel (CDC 7.1.3).
+
+`--garder` conserve le jeu precedent, mais ses jetons sont consommes : il n'est
+plus utilisable pour une mesure nominale.
+
+Le script refuse de tourner si `APP_ENV` vaut `production`, ou si la base cible
+porte `_test` dans son nom.
 
 ## Etat
 

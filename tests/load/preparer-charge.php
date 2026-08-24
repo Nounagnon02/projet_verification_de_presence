@@ -46,7 +46,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-$options = getopt('', ['vus::', 'iterations::', 'garder']);
+$options = getopt('', ['vus::', 'iterations::', 'garder', 'forcer']);
 $vus = (int) ($options['vus'] ?? 500);
 $iterations = max(1, (int) ($options['iterations'] ?? 1));
 $total = $vus * $iterations;
@@ -57,6 +57,31 @@ $journal = fn (string $message) => fwrite(STDERR, $message . PHP_EOL);
 $environnement = app()->environment();
 if (in_array($environnement, ['production', 'prod'], true)) {
     $journal("REFUS : ce script cree des donnees de test. Environnement detecte : {$environnement}.");
+    exit(1);
+}
+
+// Refus de la base de la suite PHPUnit.
+//
+// Ce script ecrit des lignes REELLES, hors de toute transaction : elles
+// survivent a l'execution. Or la suite PHPUnit compte des lignes et cree ses
+// propres fixtures — « annees_academiques.libelle » est d'ailleurs unique
+// GLOBALEMENT et non par etablissement. Une seule campagne de charge lancee sur
+// la base de test fait donc echouer la suite entiere, avec des messages qui ne
+// renvoient jamais vers un test de charge.
+//
+// Constate a la dure : 149 tests en echec d'un coup, pour une annee academique
+// oubliee.
+$base = config('database.connections.' . config('database.default') . '.database');
+if (!isset($options['forcer']) && str_contains((string) $base, '_test')) {
+    $journal("REFUS : « {$base} » est la base de la suite PHPUnit.");
+    $journal('');
+    $journal('Ce script ecrit des lignes persistantes : elles casseraient la suite');
+    $journal('(comptages faux, collisions sur des contraintes uniques globales).');
+    $journal('');
+    $journal('Viser une base de developpement ou de recette, par exemple :');
+    $journal('  DB_DATABASE=presence_uac_charge php ../tests/load/preparer-charge.php --vus=500');
+    $journal('');
+    $journal('Passer --forcer pour outrepasser, en sachant ce que cela implique.');
     exit(1);
 }
 
@@ -76,16 +101,25 @@ if (!isset($options['garder'])) {
         $filiereIds   = Filiere::whereIn('etablissement_id', $etabIds)->pluck('id');
         $evenementIds = Evenement::whereIn('filiere_id', $filiereIds)->pluck('id');
 
+        $ueIds       = Ue::whereIn('filiere_id', $filiereIds)->pluck('id');
+        $etudiantIds = Etudiant::whereIn('filiere_id', $filiereIds)->pluck('id');
+
         DB::table('presences')->whereIn('evenement_id', $evenementIds)->delete();
         QrCode::whereIn('evenement_id', $evenementIds)->delete();
         Evenement::whereIn('id', $evenementIds)->delete();
-        DB::table('etudiant_ec')->whereIn('etudiant_id',
-            Etudiant::whereIn('filiere_id', $filiereIds)->pluck('id'))->delete();
-        Etudiant::whereIn('filiere_id', $filiereIds)->delete();
-        Ec::whereIn('ue_id', Ue::whereIn('filiere_id', $filiereIds)->pluck('id'))->delete();
-        Ue::whereIn('filiere_id', $filiereIds)->delete();
+        DB::table('etudiant_ec')->whereIn('etudiant_id', $etudiantIds)->delete();
+        Etudiant::whereIn('id', $etudiantIds)->delete();
+        Ec::whereIn('ue_id', $ueIds)->delete();
+        Ue::whereIn('id', $ueIds)->delete();
         Salle::whereIn('etablissement_id', $etabIds)->delete();
+        DB::table('filiere_annee')->whereIn('filiere_id', $filiereIds)->delete();
         Filiere::whereIn('id', $filiereIds)->delete();
+        // Indispensable : « annees_academiques.libelle » est unique GLOBALEMENT,
+        // pas par etablissement. Une annee de charge laissee derriere bloque
+        // ensuite toute la suite PHPUnit, qui cree « 2025-2026 » dans ses
+        // fixtures — l'erreur remonte alors comme 149 tests en echec, sans
+        // aucun rapport apparent avec un test de charge.
+        AnneeAcademique::whereIn('etablissement_id', $etabIds)->delete();
         Etablissement::whereIn('id', $etabIds)->delete();
     });
 }
@@ -100,10 +134,20 @@ $sfx = Str::upper(Str::random(4));
         'actif' => true,
     ]);
 
+    // Plage d'annees reservee a la charge (2090+), et non « 2025-2026 ».
+    //
+    // « annees_academiques.libelle » est unique GLOBALEMENT, pas par
+    // etablissement : un libelle realiste entre en collision avec les fixtures
+    // de la suite PHPUnit, qui creent « 2025-2026 ». Une annee de charge oubliee
+    // en base fait alors echouer 149 tests d'un coup, sans qu'aucun message ne
+    // renvoie vers un test de charge.
+    //
+    // Le format « AAAA-AAAA » est conserve : l'identifiant unique des etudiants
+    // le reprend telle quelle (CDC 7.1.3).
     $annee = AnneeAcademique::create([
-        'libelle'          => '2025-2026',
-        'date_debut'       => '2025-10-01',
-        'date_fin'         => '2026-09-30',
+        'libelle'          => '2090-2091',
+        'date_debut'       => '2090-10-01',
+        'date_fin'         => '2091-09-30',
         'active'           => false,
         'etablissement_id' => $etab->id,
     ]);
