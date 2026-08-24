@@ -53,19 +53,13 @@ export default function SallesPage() {
   useEffect(() => {
     let annule = false;
 
-    Promise.all([
-      api.get('/admin/etablissements'),
-      api.get('/user'),
-    ]).then(([etabRes, userRes]) => {
+    // L'etablissement de rattachement vient de /user, qui le charge desormais avec
+    // la relation. L'ancienne version interrogeait /admin/etablissements — une route
+    // qui n'existe pas (seule /super-admin/etablissements existe) : l'appel partait
+    // en 404 avale silencieusement et l'entite restait toujours nulle.
+    api.get('/user').then(({ data: user }) => {
       if (annule) return;
-
-      const entities = etabRes.data?.data ?? etabRes.data ?? [];
-      const user = userRes.data;
-
-      if (user?.etablissement_id) {
-        const entity = entities.find(e => e.id === user.etablissement_id);
-        if (entity) setUserEntity(entity);
-      }
+      if (user?.etablissement) setUserEntity(user.etablissement);
     }).catch(() => {});
 
     return () => { annule = true; };

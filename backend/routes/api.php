@@ -242,6 +242,12 @@ Route::middleware(['auth:sanctum', 'role:super_admin'])->prefix('super-admin')->
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         $user = $request->user();
+
+        // L'etablissement de rattachement est une donnee propre de l'utilisateur.
+        // Sans lui, les ecrans d'administration devaient aller le chercher dans la
+        // liste globale des etablissements — une route reservee au super admin, donc
+        // un 404 silencieux pour tout admin de faculte.
+        $user->loadMissing('etablissement');
         $data = $user->toArray();
 
         // Enrichir avec les données étudiant si disponibles
