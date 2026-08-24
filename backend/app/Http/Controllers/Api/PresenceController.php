@@ -38,7 +38,13 @@ class PresenceController extends Controller
             return $this->notFoundResponse('QR Code invalide ou expiré.');
         }
 
-        $qrCode = QrCode::where('token', $token)
+        // Chargement anticipe des relations lues plus bas. Sans lui, cet endpoint
+        // emet CINQ requetes la ou une suffit : le QR Code, puis l'evenement, la
+        // salle, l'EC et la filiere, chargees paresseusement une par une.
+        // C'est le premier des deux appels de tout scan : le cout est paye par
+        // chaque etudiant, a chaque prise de presence.
+        $qrCode = QrCode::with(['evenement.salleRef', 'evenement.ec', 'evenement.filiere'])
+            ->where('token', $token)
             ->where('actif', true)
             ->where('expire_at', '>', now())
             ->first();
@@ -117,7 +123,11 @@ class PresenceController extends Controller
         //-------------------------------------------------------------
         // 2. Vérification du QR Code (Facteur 1 — Visuel)
         //-------------------------------------------------------------
-        $qrCode = QrCode::where('token', $request->token)
+        // Meme raison que dans courseByToken : l'evenement, sa salle et son EC
+        // sont tous lus plus bas. Les charger paresseusement coutait trois
+        // allers-retours supplementaires a chaque scan.
+        $qrCode = QrCode::with(['evenement.salleRef', 'evenement.ec'])
+            ->where('token', $request->token)
             ->where('actif', true)
             ->first();
 
@@ -167,19 +177,24 @@ class PresenceController extends Controller
         //-------------------------------------------------------------
         // 5. Vérification inscription au cours
         //-------------------------------------------------------------
-        $hasEnrollments = $etudiant->ecs()->exists();
+        // L'inscription a CET EC est verifiee en premier : dans le cas nominal —
+        // l'etudiant est bien inscrit — une seule requete suffit. L'ordre
+        // inverse en emettait systematiquement deux, y compris quand la reponse
+        // etait evidente.
+        $inscritACetEc = $etudiant->ecs()
+            ->where('ec_id', $evenement->ec_id)
+            ->wherePivot('annee_id', $etudiant->annee_id)
+            ->exists();
 
-        if ($hasEnrollments) {
-            $isEnrolledInEc = $etudiant->ecs()
-                ->where('ec_id', $evenement->ec_id)
-                ->wherePivot('annee_id', $etudiant->annee_id)
-                ->exists();
+        if (!$inscritACetEc) {
+            // Deux situations a distinguer : l'etudiant a des inscriptions mais
+            // pas a ce cours (refus), ou il n'en a aucune et l'on retombe alors
+            // sur son rattachement de filiere.
+            $aDesInscriptions = $etudiant->ecs()->exists();
 
-            if (!$isEnrolledInEc) {
+            if ($aDesInscriptions || $etudiant->filiere_id !== $evenement->filiere_id) {
                 return $this->forbiddenResponse('Étudiant non inscrit à ce cours.');
             }
-        } elseif ($etudiant->filiere_id !== $evenement->filiere_id) {
-            return $this->forbiddenResponse('Étudiant non inscrit à ce cours.');
         }
 
         //-------------------------------------------------------------
@@ -336,13 +351,18 @@ class PresenceController extends Controller
         // en file de validation manuelle, l'administrateur tranche.
         $statut = 'valide';
 
-        $autresEtudiantsMemeAppareil = Presence::where('evenement_id', $evenement->id)
+        // « exists » plutot que « count(distinct) » : dans le cas nominal — aucun
+        // appareil partage — la question posee est binaire, et un COUNT DISTINCT
+        // parcourt toutes les presences de l'evenement pour rien. Le decompte
+        // exact n'est calcule que lorsqu'il sert reellement, c'est-a-dire pour
+        // rediger l'anomalie.
+        $memeAppareil = Presence::where('evenement_id', $evenement->id)
             ->where('device_fingerprint', $request->device_fingerprint)
-            ->where('etudiant_id', '!=', $etudiant->id)
-            ->distinct()
-            ->count('etudiant_id');
+            ->where('etudiant_id', '!=', $etudiant->id);
 
-        if ($autresEtudiantsMemeAppareil >= 1) {
+        if ($memeAppareil->exists()) {
+            $autresEtudiantsMemeAppareil = (clone $memeAppareil)->distinct()->count('etudiant_id');
+
             $statut = 'suspect';
 
             Anomaly::create([

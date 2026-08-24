@@ -127,7 +127,14 @@ class SecurityHeaders
         // dépend de l'hébergeur ; ce retrait applicatif ne dépend de personne.
         $response->headers->remove('X-Powered-By');
         $response->headers->remove('Server');
-        header_remove('X-Powered-By');
+
+        // header_remove() emet un avertissement si des en-tetes sont deja
+        // partis — cas d'un script CLI qui a ecrit avant d'appeler le noyau.
+        // La reponse partait alors en 500 alors que rien de metier n'avait
+        // echoue.
+        if (!headers_sent()) {
+            header_remove('X-Powered-By');
+        }
 
         // Cache-Control pour les réponses API (éviter mise en cache sensible)
         if ($request->is('api/*')) {
