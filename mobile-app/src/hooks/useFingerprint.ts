@@ -1,9 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  getDeviceFingerprint,
-  createScanChallenge,
-  verifyScanChallenge,
-} from '../services/fingerprint';
+import { getDeviceFingerprint } from '../services/fingerprint';
 
 export function useFingerprint() {
   const [fingerprint, setFingerprint] = useState<string | null>(null);
@@ -22,10 +18,5 @@ export function useFingerprint() {
     return () => { cancelled = true; };
   }, []);
 
-  return {
-    fingerprint,
-    loading,
-    generateChallenge: createScanChallenge,
-    verifyChallenge: verifyScanChallenge,
-  };
+  return { fingerprint, loading };
 }

@@ -2,10 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   initFingerprint,
   getVisitorId,
-  getFullFingerprint,
   getAntiFraudFingerprint,
-  generateScanChallenge,
-  verifyScanChallenge,
   FingerprintComponents,
 } from '../services/fingerprint';
 
@@ -57,28 +54,6 @@ export function useFingerprint() {
     };
   }, []);
 
-  // Générer un challenge pour le scan QR
-  const createScanChallenge = useCallback(async () => {
-    try {
-      return await generateScanChallenge();
-    } catch (err) {
-      console.error('Challenge generation error:', err);
-      throw err;
-    }
-  }, []);
-
-  // Vérifier un challenge
-  const checkScanChallenge = useCallback(
-    (challenge: string, expectedVisitorId?: string) => {
-      const vid = expectedVisitorId || visitorId;
-      if (!vid) {
-        return { valid: false, reason: 'No visitor ID available' };
-      }
-      return verifyScanChallenge(challenge, vid);
-    },
-    [visitorId]
-  );
-
   // Rafraîchir le fingerprint (ex: après changement de config navigateur)
   const refresh = useCallback(async () => {
     try {
@@ -102,8 +77,6 @@ export function useFingerprint() {
     fingerprint,
     loading,
     error,
-    createScanChallenge,
-    checkScanChallenge,
     refresh,
     // Helpers pour l'anti-fraude
     isReady: !loading && !!visitorId,

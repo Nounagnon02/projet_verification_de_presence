@@ -4,9 +4,10 @@ import {
   FiSmartphone, FiUser, FiArrowRight,
   FiClock, FiMapPin, FiBookOpen
 } from 'react-icons/fi';
-import { MdAccountBalance, MdVerified } from 'react-icons/md';
+import { MdVerified } from 'react-icons/md';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../api/axios';
+import { useFingerprint } from '../../hooks/useFingerprint';
 
 const PresenceValidationPage = () => {
   const [searchParams] = useSearchParams();
@@ -22,6 +23,11 @@ const PresenceValidationPage = () => {
   const inputRef = useRef(null);
 
   const qrToken = tokenFromUrl;
+
+  // L'empreinte d'appareil sert a la detection d'appareil partage cote serveur.
+  // Le defi anti-fraude, lui, est emis par le serveur dans la reponse de
+  // /presence/course-by-token et simplement renvoye tel quel.
+  const { visitorId } = useFingerprint();
 
   // Charger les infos du cours depuis le token QR. Annulable : le QR étant
   // renouvelé régulièrement, un étudiant peut rescanner avant la fin de la
@@ -75,6 +81,12 @@ const PresenceValidationPage = () => {
       return;
     }
 
+    if (!cours?.scan_challenge) {
+      setError('QR Code invalide ou expiré. Veuillez scanner un nouveau code.');
+      setStep('error');
+      return;
+    }
+
     setLoading(true);
     setError('');
     setResult(null);
@@ -82,8 +94,9 @@ const PresenceValidationPage = () => {
     try {
       const { data } = await api.post('/presence/scan', {
         identifiant_unique: matricule.trim(),
-        token: qrToken || '00000000-0000-0000-0000-000000000000',
-        device_fingerprint: navigator.userAgent || 'unknown',
+        token: qrToken,
+        device_fingerprint: visitorId || navigator.userAgent || 'unknown',
+        scan_challenge: cours.scan_challenge,
       });
 
       if (data.success) {
@@ -253,9 +266,8 @@ const PresenceValidationPage = () => {
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-outline-variant/10">
         <div className="max-w-md mx-auto px-5 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-primary to-primary-container rounded-xl flex items-center justify-center text-white shadow-sm">
-              <MdAccountBalance size={18} />
-            </div>
+            <img src="/images/logo-couleur-compact.png" alt="UAC Présences"
+              className="h-6 w-auto shrink-0" />
             <div>
               <span className="font-headline font-bold text-primary text-lg leading-none block">Enregistrement de présence</span>
               <span className="text-[10px] text-on-surface-variant font-medium">Saisissez votre identifiant pour confirmer votre présence</span>

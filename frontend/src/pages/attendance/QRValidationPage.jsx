@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { FiCamera, FiCheckCircle, FiAlertTriangle, FiLoader, FiSmartphone, FiUser } from 'react-icons/fi';
-import { MdAccountBalance } from 'react-icons/md';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../api/axios';
 import { useFingerprint } from '../../hooks/useFingerprint';
@@ -15,8 +14,9 @@ export default function QRValidationPage() {
   const [cours, setCours] = useState(null);
   const qrToken = tokenFromUrl;
 
-  // Device fingerprinting pour anti-fraude
-  const { loading: fpLoading, createScanChallenge, isReady } = useFingerprint();
+  // Le defi anti-fraude est emis par le serveur (course-by-token) ; l'empreinte
+  // d'appareil sert a la detection d'appareil partage.
+  const { visitorId } = useFingerprint();
 
   useEffect(() => {
     const fetchCourseInfo = async () => {
@@ -35,22 +35,19 @@ export default function QRValidationPage() {
     e.preventDefault();
     if (!matricule.trim()) return;
 
-    // Attendre que le fingerprint soit prêt
-    if (!isReady && fpLoading) {
-      // Attendre un peu que le fingerprint soit prêt
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    if (!cours?.scan_challenge) {
+      setResult({ success: false, message: 'QR Code invalide ou expiré. Veuillez scanner un nouveau code.' });
+      setMode('error');
+      return;
     }
 
     setLoading(true);
     try {
-      // Générer un challenge de scan avec fingerprint
-      const { challenge, visitorId: fpVisitorId } = await createScanChallenge();
-
       const { data } = await api.post('/presence/scan', {
         identifiant_unique: matricule.trim(),
-        token: qrToken || '00000000-0000-0000-0000-000000000000',
-        device_fingerprint: fpVisitorId || 'unknown',
-        scan_challenge: challenge,
+        token: qrToken,
+        device_fingerprint: visitorId || 'unknown',
+        scan_challenge: cours.scan_challenge,
       });
       setResult({ success: true, ...data.data });
       setMode('success');
@@ -111,12 +108,8 @@ export default function QRValidationPage() {
     <div className="min-h-screen bg-surface">
       <header className="flex items-center justify-between px-6 py-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white">
-            <MdAccountBalance />
-          </div>
-          <div>
-            <span className="font-headline font-bold text-primary text-xl leading-none">Présence</span>
-          </div>
+          <img src="/images/logo-couleur-compact.png" alt="UAC Présences"
+              className="h-7 w-auto" />
         </div>
         <div className="bg-secondary/10 px-3 py-1.5 rounded-full flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>

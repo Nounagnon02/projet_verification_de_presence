@@ -27,11 +27,6 @@ class SharedDeviceFraudTest extends TestCase
     private string $token;
     private AnneeAcademique $annee;
 
-    private function scanChallenge(string $device): string
-    {
-        return hash('sha256', $device . ':' . (Config::get('app.key') ?? 'uac-presence-secret'));
-    }
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -85,7 +80,7 @@ class SharedDeviceFraudTest extends TestCase
             'identifiant_unique' => $e->identifiant_unique,
             'token'              => $token,
             'device_fingerprint' => $device,
-            'scan_challenge'     => $this->scanChallenge($device),
+            'scan_challenge'     => $this->defiDeScan($token),
         ]);
     }
 

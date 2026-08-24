@@ -50,6 +50,12 @@ class PresenceController extends Controller
             'date'             => $evenement->date?->format('Y-m-d'),
             'filiere'          => $evenement->filiere?->code ?? '',
             'token'            => $token,
+            // Défi anti-fraude que le client doit renvoyer tel quel au scan.
+            // Il est signé avec la clé du serveur et lié au jeton du QR Code :
+            // il hérite donc de son usage unique et de son TTL de 60 s, et il
+            // ne peut pas être fabriqué par un client. Aucun secret serveur ne
+            // quitte le serveur — seule la signature circule.
+            'scan_challenge'   => $this->scanChallengeFor($token),
             // Informations de vérification requises côté client
             'verification'     => [
                 'gps_requis'    => $salle && $salle->actif && $salle->latitude !== null,
@@ -167,11 +173,12 @@ class PresenceController extends Controller
         //-------------------------------------------------------------
         // 6. VÉRIFICATION DEVICE FINGERPRINT + CHALLENGE (Anti-fraude)
         //-------------------------------------------------------------
-        // Vérifier le challenge cryptographique si fourni
+        // Le défi est lié au jeton du QR Code, pas à l'appareil : il atteste que
+        // le client a bien récupéré ce QR auprès du serveur avant de soumettre.
         if ($request->filled('scan_challenge')) {
             $challengeValid = $this->verifyScanChallenge(
                 $request->scan_challenge,
-                $request->device_fingerprint
+                $request->token
             );
 
             if (!$challengeValid) {
@@ -497,17 +504,31 @@ class PresenceController extends Controller
     }
 
     /**
-     * Vérifie le challenge cryptographique anti-fraude.
+     * Défi anti-fraude associé à un jeton de QR Code.
      *
-     * Le challenge est calculé côté client comme :
-     *   hash('sha256', device_fingerprint + ':' + config('app.key'))
+     * Signature HMAC-SHA256 du jeton avec la clé de l'application. La clé reste
+     * sur le serveur : le client reçoit la signature via
+     * GET /presence/course-by-token/{token} et la renvoie telle quelle au scan.
      *
-     * Cette vérification empêche la relecture (replay) des requêtes de scan.
+     * Ce que le défi prouve : le client a bien lu un QR Code valide auprès du
+     * serveur avant de soumettre, au lieu de fabriquer une requête de scan. Le
+     * jeton étant à usage unique et valable 60 s, la signature l'est aussi.
+     *
+     * Ce que le défi ne prouve pas, et ne prétend pas prouver : l'identité de
+     * l'appareil. Cette garantie-là repose sur le device_fingerprint (détection
+     * d'appareil partagé, § 8 bis) et non sur ce champ.
      */
-    private function verifyScanChallenge(string $challenge, string $deviceFingerprint): bool
+    private function scanChallengeFor(string $token): string
     {
-        $expected = hash('sha256', $deviceFingerprint . ':' . (config('app.key') ?? 'uac-presence-secret'));
-        return hash_equals($expected, $challenge);
+        return hash_hmac('sha256', $token, (string) config('app.key'));
+    }
+
+    /**
+     * Vérifie que le défi reçu est bien celui que le serveur a émis pour ce jeton.
+     */
+    private function verifyScanChallenge(string $challenge, string $token): bool
+    {
+        return hash_equals($this->scanChallengeFor($token), $challenge);
     }
 
     /**

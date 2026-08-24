@@ -53,9 +53,6 @@ export const CONFIG = {
   /** Délai minimum entre deux scans QR consécutifs (ms) */
   QR_SCAN_COOLDOWN: 2_000,
 
-  /** Âge maximum d'un scan_challenge (secondes) — doit matcher le backend */
-  CHALLENGE_MAX_AGE_SEC: 60,
-
   /** Version de l'app */
   APP_VERSION: '1.0.0',
 } as const;

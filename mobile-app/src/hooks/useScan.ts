@@ -10,7 +10,7 @@ import { CONFIG } from '../constants/config';
 
 export function useScan() {
   const { user } = useAuth();
-  const { fingerprint, generateChallenge } = useFingerprint();
+  const { fingerprint } = useFingerprint();
   const { getPosition } = useLocation();
   const { getWifiInfo } = useWifi();
 
@@ -28,16 +28,24 @@ export function useScan() {
 
       setScanning(true);
       try {
-        // 1. Générer le challenge anti-fraude
-        const challenge = await generateChallenge();
-
-        // 2. GPS + WiFi en parallèle (indépendants)
-        const [position, wifi] = await Promise.all([
+        // 1. Recuperer le defi anti-fraude aupres du serveur, en meme temps que
+        //    le GPS et le Wi-Fi. Le defi est signe par le serveur et lie a ce
+        //    jeton de QR Code : il ne peut pas etre calcule ici, et une cle
+        //    embarquee dans l'APK n'aurait rien authentifie.
+        const [infosCours, position, wifi] = await Promise.all([
+          apiClient.get<{ data?: { scan_challenge?: string } }>(
+            `/presence/course-by-token/${qrToken}`,
+          ),
           getPosition(),
           getWifiInfo(),
         ]);
 
-        // 3. Construire le payload
+        const challenge = infosCours.data?.data?.scan_challenge;
+        if (!challenge) {
+          throw new Error('QR Code invalide ou expire. Rescannez un nouveau code.');
+        }
+
+        // 2. Construire le payload
         const payload: ScanPayload = {
           identifiant_unique: user.identifiant_unique,
           token: qrToken,
@@ -49,7 +57,7 @@ export function useScan() {
           bssid: wifi?.bssid ?? undefined,
         };
 
-        // 4. Envoyer au backend
+        // 3. Envoyer au backend
         const { data } = await apiClient.post<ScanResponse>(
           '/presence/scan',
           payload,
@@ -59,7 +67,7 @@ export function useScan() {
         const result: ScanResponse = data;
         setLastResult(result);
 
-        // 5. Notifier l'utilisateur
+        // 4. Notifier l'utilisateur
         if (result.success) {
           showToast('success', 'Présence validée !', result.message);
         } else if (result.double_scan_detected) {
@@ -70,23 +78,40 @@ export function useScan() {
 
         return result;
       } catch (err: unknown) {
-        if (err instanceof Error && (err as any).response?.status === 403) {
+        // Le serveur formule des refus précis — fenêtre de scan non encore
+        // ouverte, GPS hors du rayon de la salle, présence déjà enregistrée.
+        // Sans cette lecture, axios les remplaçait par « Request failed with
+        // status code 422 » : le message utile n'atteignait jamais l'étudiant.
+        const reponse = (err as any)?.response;
+        const messageServeur: string | undefined = reponse?.data?.message;
+
+        if (reponse?.status === 409) {
+          // Déjà enregistré : l'objectif de l'étudiant est atteint. Le signaler
+          // en rouge comme un échec serait trompeur.
+          showToast(
+            'warning',
+            'Déjà enregistré',
+            messageServeur ?? 'Votre présence est déjà enregistrée pour ce cours.',
+          );
+        } else if (reponse?.status === 403) {
           showToast(
             'error',
             'Scan refusé',
-            'Votre appareil ne correspond pas. Contactez votre administrateur.',
+            messageServeur ?? 'Votre appareil ne correspond pas. Contactez votre administrateur.',
           );
         } else {
-          const message =
-            err instanceof Error ? err.message : 'Erreur réseau lors du scan.';
-          showToast('error', 'Erreur', message);
+          showToast(
+            'error',
+            'Erreur',
+            messageServeur ?? (err instanceof Error ? err.message : 'Erreur réseau lors du scan.'),
+          );
         }
         throw err;
       } finally {
         setScanning(false);
       }
     },
-    [user, fingerprint, generateChallenge, getPosition, getWifiInfo],
+    [user, fingerprint, getPosition, getWifiInfo],
   );
 
   return { submitScan, scanning, lastResult };

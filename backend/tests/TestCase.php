@@ -26,6 +26,20 @@ abstract class TestCase extends BaseTestCase
     |
     */
 
+    /**
+     * Défi de scan attendu par le serveur pour un jeton de QR Code donné.
+     *
+     * Reproduit volontairement PresenceController::scanChallengeFor(). Le fait
+     * que ce défi soit bien celui qu'un vrai client obtient par
+     * GET /presence/course-by-token/{token} est vérifié séparément par le test
+     * de contrat de PresenceScanTest — sans quoi cette méthode ne prouverait
+     * que l'accord du serveur avec lui-même.
+     */
+    protected function defiDeScan(string $token): string
+    {
+        return hash_hmac('sha256', $token, (string) config('app.key'));
+    }
+
     protected function anneeActive(): \App\Models\AnneeAcademique
     {
         return \App\Models\AnneeAcademique::where('active', true)->first()

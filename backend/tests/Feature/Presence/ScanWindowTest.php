@@ -129,7 +129,7 @@ class ScanWindowTest extends TestCase
             'identifiant_unique' => $this->etudiant->identifiant_unique,
             'token'              => $token,
             'device_fingerprint' => $device,
-            'scan_challenge'     => hash('sha256', $device . ':' . (Config::get('app.key') ?? 'uac-presence-secret')),
+            'scan_challenge'     => $this->defiDeScan($token),
         ]);
     }
 
@@ -192,7 +192,7 @@ class ScanWindowTest extends TestCase
             'identifiant_unique' => $this->etudiant->identifiant_unique,
             'token'              => $token,
             'device_fingerprint' => $device,
-            'scan_challenge'     => hash('sha256', $device . ':' . (Config::get('app.key') ?? 'uac-presence-secret')),
+            'scan_challenge'     => $this->defiDeScan($token),
         ])->assertStatus(201);
     }
 

@@ -99,66 +99,23 @@ export function isSameDevice(visitorId1: string, visitorId2: string, threshold: 
 }
 
 /**
- * Génère un token de défi pour le scan QR
- * Combine visitorId + timestamp + nonce pour créer un token à usage unique
- * Ce token est envoyé avec le scan QR pour vérifier que le scan vient bien
- * de l'appareil enregistré de l'étudiant
+ * Le scan_challenge n'est PLUS calculé ici.
+ *
+ * Il l'a été un temps, sous la forme sha256(visitorId + ':' + APP_KEY), ce qui
+ * supposait de publier la clé de l'application dans le bundle : un secret servi
+ * à tous les navigateurs n'authentifie rien, et la valeur obtenue ne
+ * correspondait de toute façon jamais à celle attendue par le serveur.
+ *
+ * Le défi est désormais émis par le serveur dans la réponse de
+ * GET /presence/course-by-token/{token} ; le client le renvoie tel quel.
+ * Ce module ne fournit plus que l'empreinte d'appareil, qui sert à la détection
+ * d'appareil partagé côté serveur.
  */
-export async function generateScanChallenge(): Promise<{
-  challenge: string;
-  visitorId: string;
-  timestamp: number;
-}> {
-  const visitorId = await getVisitorId();
-  const timestamp = Date.now();
-  const nonce = crypto.randomUUID().slice(0, 8);
-
-  // Challenge = hash(visitorId + timestamp + nonce)
-  // Côté backend, on vérifie que le visitorId correspond à l'étudiant
-  // et que le timestamp est récent (< 60s)
-  const challenge = btoa(`${visitorId}:${timestamp}:${nonce}`);
-
-  return { challenge, visitorId, timestamp };
-}
-
-/**
- * Vérifie un challenge de scan côté client (optionnel, vérification côté serveur recommandée)
- */
-export function verifyScanChallenge(
-  challenge: string,
-  expectedVisitorId: string,
-  maxAgeMs: number = 60000
-): { valid: boolean; reason?: string } {
-  try {
-    const decoded = atob(challenge);
-    const [visitorId, timestampStr, nonce] = decoded.split(':');
-    const timestamp = parseInt(timestampStr, 10);
-
-    if (isNaN(timestamp)) {
-      return { valid: false, reason: 'Invalid timestamp' };
-    }
-
-    const age = Date.now() - timestamp;
-    if (age > maxAgeMs) {
-      return { valid: false, reason: 'Challenge expired' };
-    }
-
-    if (visitorId !== expectedVisitorId) {
-      return { valid: false, reason: 'Device mismatch' };
-    }
-
-    return { valid: true };
-  } catch {
-    return { valid: false, reason: 'Invalid challenge format' };
-  }
-}
 
 export default {
   initFingerprint,
   getVisitorId,
   getFullFingerprint,
   getAntiFraudFingerprint,
-  generateScanChallenge,
-  verifyScanChallenge,
   isSameDevice,
 };

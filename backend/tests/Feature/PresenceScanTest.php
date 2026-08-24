@@ -36,14 +36,6 @@ class PresenceScanTest extends TestCase
     private Etudiant $etudiant;
     private string $token;
 
-    /**
-     * Calcule le scan_challenge attendu pour un device fingerprint donné.
-     */
-    private function scanChallenge(string $deviceFingerprint): string
-    {
-        return hash('sha256', $deviceFingerprint . ':' . (Config::get('app.key') ?? 'uac-presence-secret'));
-    }
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -143,7 +135,7 @@ class PresenceScanTest extends TestCase
             'identifiant_unique' => $this->etudiant->identifiant_unique,
             'token'              => $this->token,
             'device_fingerprint' => 'device-abc-123',
-            'scan_challenge'     => $this->scanChallenge('device-abc-123'),
+            'scan_challenge'     => $this->defiDeScan($this->token),
             'latitude'           => 6.3608,
             'longitude'          => 2.4354,
         ]);
@@ -184,7 +176,7 @@ class PresenceScanTest extends TestCase
             'identifiant_unique' => $this->etudiant->identifiant_unique,
             'token'              => $expiredToken,
             'device_fingerprint' => 'device-abc-123',
-            'scan_challenge'     => $this->scanChallenge('device-abc-123'),
+            'scan_challenge'     => $this->defiDeScan($this->token),
         ]);
 
         $response->assertStatus(410)
@@ -219,7 +211,7 @@ class PresenceScanTest extends TestCase
             'identifiant_unique' => $autreEtudiant->identifiant_unique,
             'token'              => $this->token,
             'device_fingerprint' => 'device-xyz-789',
-            'scan_challenge'     => $this->scanChallenge('device-xyz-789'),
+            'scan_challenge'     => $this->defiDeScan($this->token),
         ]);
 
         $response->assertStatus(403)
@@ -237,7 +229,7 @@ class PresenceScanTest extends TestCase
             'identifiant_unique' => $this->etudiant->identifiant_unique,
             'token'              => $this->token,
             'device_fingerprint' => 'device-premier-001',
-            'scan_challenge'     => $this->scanChallenge('device-premier-001'),
+            'scan_challenge'     => $this->defiDeScan($this->token),
         ])->assertStatus(201);
 
         // Créer un nouveau QR code pour un deuxième scan (le premier a été invalidé)
@@ -254,7 +246,7 @@ class PresenceScanTest extends TestCase
             'identifiant_unique' => $this->etudiant->identifiant_unique,
             'token'              => $secondToken,
             'device_fingerprint' => 'device-frauduleux-999',
-            'scan_challenge'     => $this->scanChallenge('device-frauduleux-999'),
+            'scan_challenge'     => $this->defiDeScan($secondToken),
         ]);
 
         $response->assertStatus(409)
@@ -275,5 +267,95 @@ class PresenceScanTest extends TestCase
             'device_fingerprint' => 'device-premier-001',
             'statut'            => 'valide',
         ]);
+    }
+
+    // =====================================================================
+    // Contrat client <-> serveur sur scan_challenge
+    //
+    // Ces deux tests sont les seuls de la suite a ne PAS recalculer la formule
+    // du serveur. Ils partent de ce qu'un vrai client obtient reellement, et
+    // c'est precisement ce qui manquait : la suite pouvait etre entierement
+    // verte alors qu'aucun client existant ne parvenait a faire valider un
+    // scan.
+    // =====================================================================
+
+    public function test_le_defi_emis_par_le_serveur_est_accepte_au_scan(): void
+    {
+        // Etape 1 — le client ouvre l'URL du QR Code et lit les infos du cours.
+        $infos = $this->getJson('/api/presence/course-by-token/' . $this->token)
+            ->assertOk()
+            ->json('data');
+
+        $this->assertArrayHasKey(
+            'scan_challenge',
+            $infos,
+            "Le client n'a aucun moyen d'obtenir un defi valide si l'endpoint ne le fournit pas."
+        );
+        $this->assertNotEmpty($infos['scan_challenge']);
+
+        // Etape 2 — il soumet le defi tel quel, sans rien recalculer.
+        $this->postJson('/api/presence/scan', [
+            'identifiant_unique' => $this->etudiant->identifiant_unique,
+            'token'              => $this->token,
+            'device_fingerprint' => 'device-contrat-001',
+            'scan_challenge'     => $infos['scan_challenge'],
+            'latitude'           => 6.3608,
+            'longitude'          => 2.4354,
+        ])->assertStatus(201)->assertJsonPath('success', true);
+
+        $this->assertDatabaseHas('presences', [
+            'etudiant_id'  => $this->etudiant->id,
+            'evenement_id' => $this->evenement->id,
+            'statut'       => 'valide',
+        ]);
+    }
+
+    public function test_un_defi_fabrique_par_le_client_est_refuse(): void
+    {
+        // Un defi derive d'un secret cote client — la conception precedente —
+        // doit etre rejete, et laisser une trace exploitable.
+        $defiForge = hash('sha256', 'device-contrat-002:uac-presence-secret');
+
+        $this->postJson('/api/presence/scan', [
+            'identifiant_unique' => $this->etudiant->identifiant_unique,
+            'token'              => $this->token,
+            'device_fingerprint' => 'device-contrat-002',
+            'scan_challenge'     => $defiForge,
+            'latitude'           => 6.3608,
+            'longitude'          => 2.4354,
+        ])->assertStatus(403)
+            ->assertJsonPath('success', false);
+
+        $this->assertDatabaseHas('anomalies', [
+            'etudiant_id' => $this->etudiant->id,
+            'type'        => 'invalid_scan_challenge',
+            'severity'    => 'high',
+        ]);
+
+        $this->assertDatabaseMissing('presences', [
+            'etudiant_id'  => $this->etudiant->id,
+            'evenement_id' => $this->evenement->id,
+        ]);
+    }
+
+    public function test_le_defi_d_un_autre_qr_code_est_refuse(): void
+    {
+        // Le defi est lie au jeton : celui d'une autre seance ne doit pas passer.
+        $autreToken = (string) \Illuminate\Support\Str::uuid();
+        \App\Models\QrCode::create([
+            'evenement_id' => $this->evenement->id,
+            'token'        => $autreToken,
+            'expire_at'    => Carbon::now()->addMinutes(5),
+            'actif'        => true,
+        ]);
+
+        $this->postJson('/api/presence/scan', [
+            'identifiant_unique' => $this->etudiant->identifiant_unique,
+            'token'              => $this->token,
+            'device_fingerprint' => 'device-contrat-003',
+            'scan_challenge'     => $this->defiDeScan($autreToken),
+            'latitude'           => 6.3608,
+            'longitude'          => 2.4354,
+        ])->assertStatus(403);
     }
 }
