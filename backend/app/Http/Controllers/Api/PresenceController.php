@@ -26,6 +26,18 @@ class PresenceController extends Controller
      */
     public function courseByToken(string $token): JsonResponse
     {
+        // La colonne « token » est de type uuid en base : interroger Postgres
+        // avec une valeur qui n'en est pas un leve une erreur de syntaxe SQL,
+        // et l'endpoint — public, non authentifie — repondait 500 en divulguant
+        // le type d'erreur applicative. Releve par la passe OWASP ZAP du
+        // 2026-08-24 (regles 100000 et 90022).
+        //
+        // Un jeton mal forme n'existe pas : la reponse est donc 404, comme pour
+        // un jeton inconnu, et sans rien apprendre a l'appelant.
+        if (!Str::isUuid($token)) {
+            return $this->notFoundResponse('QR Code invalide ou expiré.');
+        }
+
         $qrCode = QrCode::where('token', $token)
             ->where('actif', true)
             ->where('expire_at', '>', now())

@@ -358,4 +358,61 @@ class PresenceScanTest extends TestCase
             'longitude'          => 2.4354,
         ])->assertStatus(403);
     }
+
+    // =====================================================================
+    // Robustesse de l'endpoint public course-by-token
+    //
+    // Trouve par la passe OWASP ZAP du 2026-08-24 : la colonne « token » est de
+    // type uuid en base, et interroger Postgres avec une valeur qui n'en est pas
+    // un levait une erreur de syntaxe SQL. L'endpoint — public, non authentifie
+    // — repondait donc 500 en divulguant le type d'erreur applicative
+    // (regles ZAP 100000 et 90022).
+    // =====================================================================
+
+    public static function jetonsMalFormes(): array
+    {
+        return [
+            'chaine quelconque'  => ['pas-un-uuid'],
+            'entier'             => ['3564070028177549877'],
+            'mot'                => ['token'],
+            'injection SQL'      => ["' OR 1=1 --"],
+            'uuid tronque'       => ['11111111-2222-3333'],
+            'caracteres speciaux' => ['<script>alert(1)</script>'],
+        ];
+    }
+
+    /**
+     * @dataProvider jetonsMalFormes
+     */
+    public function test_un_jeton_mal_forme_donne_404_et_non_500(string $jeton): void
+    {
+        $reponse = $this->getJson('/api/presence/course-by-token/' . urlencode($jeton));
+
+        // La propriete qui compte : 404, jamais 500, et aucune trace d'exception.
+        $reponse->assertStatus(404)
+            ->assertJsonPath('success', false);
+
+        // Deux messages sont acceptables, et aucun n'apprend quoi que ce soit :
+        // « QR Code invalide ou expiré. » quand le controleur est atteint, et
+        // « Route non trouvée. » quand le routeur rejette la valeur en amont
+        // — cas des charges contenant une barre oblique.
+        $this->assertContains(
+            $reponse->json('message'),
+            ['QR Code invalide ou expiré.', 'Route non trouvée.'],
+            'Message inattendu : ' . $reponse->json('message'),
+        );
+
+        // Aucune fuite de la pile technique dans le corps de la reponse.
+        $corps = $reponse->getContent();
+        foreach (['SQLSTATE', 'PDOException', 'vendor/laravel', 'uuid:'] as $fuite) {
+            $this->assertStringNotContainsString($fuite, $corps);
+        }
+    }
+
+    public function test_un_jeton_inconnu_mais_bien_forme_donne_aussi_404(): void
+    {
+        $this->getJson('/api/presence/course-by-token/' . \Illuminate\Support\Str::uuid())
+            ->assertStatus(404)
+            ->assertJsonPath('message', 'QR Code invalide ou expiré.');
+    }
 }

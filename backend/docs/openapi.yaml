@@ -231,6 +231,78 @@ paths:
   # ========================================================================
   # PUBLIC PRESENCE (Scan QR Code - Étudiants)
   # ========================================================================
+  # ── Authentification étudiante (application mobile) ────────────────────────
+  # Ces routes existaient sans être documentées. Conséquence directe : un scan
+  # de sécurité piloté par cette spécification ne les testait pas — alors que
+  # ce sont précisément les points d'entrée non authentifiés du système.
+  /auth/student/login:
+    post:
+      tags: [Auth Étudiant]
+      summary: Connexion d'un étudiant (email + identifiant unique)
+      description: >
+        Délivre un jeton Sanctum de capacité « etudiant ». Ce jeton est refusé
+        sur toutes les routes /admin/*.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, identifiant_unique]
+              properties:
+                email:
+                  type: string
+                  format: email
+                identifiant_unique:
+                  type: string
+                  description: 'Format NOM_PRENOM_MATRICULE_FILIERE_ANNEE (CDC 7.1.3)'
+      responses:
+        '200':
+          description: Jeton délivré
+        '401':
+          description: Identifiants invalides
+        '429':
+          description: Trop de tentatives (limitation de débit)
+
+  /auth/student/me:
+    get:
+      tags: [Auth Étudiant]
+      summary: Profil de l'étudiant connecté
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Profil
+        '401':
+          description: Non authentifié
+
+  /auth/student/logout:
+    post:
+      tags: [Auth Étudiant]
+      summary: Révoque le jeton présenté
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Jeton révoqué
+
+  /student/qrcode/current:
+    get:
+      tags: [Auth Étudiant]
+      summary: QR Code du cours en cours, réservé au délégué
+      description: >
+        Accessible au seul étudiant marqué est_responsable, et uniquement dans
+        la fenêtre d'affichage définie par presence.qr.visible_delegue_avant_fin.
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: QR Code actif
+        '403':
+          description: L'étudiant n'est pas délégué
+        '404':
+          description: Aucun QR Code actif dans la fenêtre
+
   /presence/scan:
     post:
       tags: [Public Presence]
@@ -350,16 +422,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DashboardStatsResponse'
-
-  /admin/dashboard/heatmap:
-    get:
-      tags: [Admin Dashboard]
-      summary: Heatmap présence par salle/heure
-      security:
-        - sanctum: []
-      responses:
-        '200':
-          description: Données heatmap
 
   /admin/dashboard/attendance-trend:
     get:
@@ -508,20 +570,6 @@ paths:
       responses:
         '200':
           description: Liste ECs
-
-  /admin/students/{id}/ecs-available:
-    get:
-      tags: [Admin Students]
-      summary: ECs disponibles pour inscription (CDC 7.2.3)
-      security:
-        - sanctum: []
-      parameters:
-        - $ref: '#/components/parameters/StudentIdParam'
-      responses:
-        '200':
-          description: ECs disponibles
-
-  /admin/students/{id}/ecs:
     post:
       tags: [Admin Students]
       summary: Inscrire étudiant à un EC
@@ -538,6 +586,18 @@ paths:
       responses:
         '201':
           description: Inscription créée
+
+  /admin/students/{id}/ecs-available:
+    get:
+      tags: [Admin Students]
+      summary: ECs disponibles pour inscription (CDC 7.2.3)
+      security:
+        - sanctum: []
+      parameters:
+        - $ref: '#/components/parameters/StudentIdParam'
+      responses:
+        '200':
+          description: ECs disponibles
 
   /admin/students/{id}/ecs/{ecId}:
     delete:
@@ -1035,25 +1095,6 @@ paths:
         '404':
           description: Non trouvé
 
-  /admin/reports/presence/{evenementId}/csv:
-    get:
-      tags: [Admin Presence]
-      summary: Export CSV présence par événement (UTF-8 BOM)
-      security:
-        - sanctum: []
-      parameters:
-        - name: evenementId
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200':
-          description: Fichier CSV
-          content:
-            text/csv:
-              schema:
-                type: string
-
   /admin/reports/department/{filiere}:
     get:
       tags: [Admin Presence]
@@ -1288,6 +1329,17 @@ paths:
         '200':
           description: Détail ticket
 
+    delete:
+      tags: [Admin Tickets]
+      summary: Supprimer ticket
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Ticket supprimé
+  # ========================================================================
+  # ADMIN CHAT
+  # ========================================================================
   /admin/tickets/{id}/reply:
     post:
       tags: [Admin Tickets]
@@ -1308,62 +1360,6 @@ paths:
         '200':
           description: Statut mis à jour
 
-  /admin/tickets/{id}:
-    delete:
-      tags: [Admin Tickets]
-      summary: Supprimer ticket
-      security:
-        - sanctum: []
-      responses:
-        '200':
-          description: Ticket supprimé
-
-  # ========================================================================
-  # ADMIN CHAT
-  # ========================================================================
-  /admin/chat/conversations:
-    get:
-      tags: [Admin Chat]
-      summary: Conversations utilisateur
-      security:
-        - sanctum: []
-      responses:
-        '200':
-          description: Liste conversations
-
-  /admin/chat/conversations/{id}/messages:
-    get:
-      tags: [Admin Chat]
-      summary: Messages d'une conversation
-      security:
-        - sanctum: []
-      responses:
-        '200':
-          description: Messages
-
-  /admin/chat/conversations/{id}/messages:
-    post:
-      tags: [Admin Chat]
-      summary: Envoyer message
-      security:
-        - sanctum: []
-      responses:
-        '201':
-          description: Message envoyé
-
-  /admin/chat/conversations/{id}/close:
-    post:
-      tags: [Admin Chat]
-      summary: Fermer conversation
-      security:
-        - sanctum: []
-      responses:
-        '200':
-          description: Conversation fermée
-
-  # ========================================================================
-  # ADMIN NOTIFICATIONS
-  # ========================================================================
   /admin/notifications:
     get:
       tags: [Admin Notifications]
@@ -2140,7 +2136,7 @@ components:
         file:
           type: string
           format: binary
-          description: Fichier CSV (max 5MB, colonnes: nom,prenom,matricule,filiere,annee,email,telephone)
+          description: 'Fichier CSV (max 5MB, colonnes: nom,prenom,matricule,filiere,annee,email,telephone)'
 
     ImportStudentsResponse:
       type: object

@@ -86,6 +86,13 @@ maquette/
 .playwright/
 New_IFRI_template_latex_05_04_2020_Bachelor___Licence/
 docs/
+# Exception : backend/docs/openapi.yaml n'est pas de la documentation annexe,
+# c'est un fichier LU A L'EXECUTION. ApiDocumentationController le charge pour
+# servir /api/docs/json, et la passe OWASP ZAP s'en sert de cible. L'exclure
+# signifie qu'un clone neuf a cet endpoint casse et aucune campagne de securite
+# possible.
+!backend/docs/
+!backend/docs/openapi.yaml
 
 
 # Python cache (if any tooling uses it)
@@ -111,3 +118,7 @@ copilot-instructions.md
 # régénérables et le PDF annoté de la relecture.
 Memoire_de_Prince.pdf
 Mémoire_de_prince-*/
+
+# Dossier de travail des logos sources (sélections, variantes) — les fichiers
+# effectivement utilisés par l'application sont copiés dans ses assets.
+logoM/

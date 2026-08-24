@@ -1,0 +1,4367 @@
+{
+	"@programName": "ZAP",
+	"@version": "2.17.0",
+	"@generated": "Mon, 24 Aug 2026 16:02:36",
+	"created": "2026-08-24T16:02:36.946387541Z",
+	"insights":[
+		{
+			"level": "Low",
+			"reason": "Warning",
+			"site": "",
+			"key": "insight.log.error",
+			"description": "ZAP errors logged - see the zap.log file for details",
+			"statistic": "2"
+		},
+		{
+			"level": "Low",
+			"reason": "Warning",
+			"site": "",
+			"key": "insight.log.warn",
+			"description": "ZAP warnings logged - see the zap.log file for details",
+			"statistic": "3622"
+		},
+		{
+			"level": "Low",
+			"reason": "Exceeded Low",
+			"site": "",
+			"key": "insight.network.failure",
+			"description": "Percentage of network failures",
+			"statistic": "49"
+		},
+		{
+			"level": "Low",
+			"reason": "Exceeded High",
+			"site": "http://127.0.0.1:8100",
+			"key": "insight.code.4xx",
+			"description": "Percentage of responses with status code 4xx",
+			"statistic": "99"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://127.0.0.1:8100",
+			"key": "insight.code.2xx",
+			"description": "Percentage of responses with status code 2xx",
+			"statistic": "100"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://127.0.0.1:8100",
+			"key": "insight.endpoint.ctype.application/json",
+			"description": "Percentage of endpoints with content type application/json",
+			"statistic": "97"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://127.0.0.1:8100",
+			"key": "insight.endpoint.ctype.text/html",
+			"description": "Percentage of endpoints with content type text/html",
+			"statistic": "2"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://127.0.0.1:8100",
+			"key": "insight.endpoint.method.DELETE",
+			"description": "Percentage of endpoints with method DELETE",
+			"statistic": "2"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://127.0.0.1:8100",
+			"key": "insight.endpoint.method.GET",
+			"description": "Percentage of endpoints with method GET",
+			"statistic": "31"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://127.0.0.1:8100",
+			"key": "insight.endpoint.method.PATCH",
+			"description": "Percentage of endpoints with method PATCH",
+			"statistic": "1"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://127.0.0.1:8100",
+			"key": "insight.endpoint.method.POST",
+			"description": "Percentage of endpoints with method POST",
+			"statistic": "62"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://127.0.0.1:8100",
+			"key": "insight.endpoint.method.PUT",
+			"description": "Percentage of endpoints with method PUT",
+			"statistic": "2"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://127.0.0.1:8100",
+			"key": "insight.endpoint.total",
+			"description": "Count of total endpoints",
+			"statistic": "392"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://127.0.0.1:8100",
+			"key": "insight.response.slow",
+			"description": "Percentage of slow responses",
+			"statistic": "1"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://127.0.0.1:8100",
+			"key": "insight.endpoint.method.POST",
+			"description": "Percentage of endpoints with method POST",
+			"statistic": "100"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://127.0.0.1:8100",
+			"key": "insight.endpoint.total",
+			"description": "Count of total endpoints",
+			"statistic": "1"
+		}
+	],
+	"site":[ 
+		{
+			"@name": "https://127.0.0.1:8100",
+			"@host": "127.0.0.1",
+			"@port": "8100",
+			"@ssl": "true",
+			"alerts": [ 
+			]
+		},
+		{
+			"@name": "http://127.0.0.1:8100",
+			"@host": "127.0.0.1",
+			"@port": "8100",
+			"@ssl": "false",
+			"alerts": [ 
+				{
+					"pluginid": "10106",
+					"alertRef": "10106",
+					"alert": "HTTP Only Site",
+					"name": "HTTP Only Site",
+					"riskcode": "2",
+					"confidence": "2",
+					"riskdesc": "Medium (Medium)",
+					"desc": "<p>The site is only served under HTTP and not HTTPS.</p>",
+					"instances":[ 
+						{
+							"id": "12413",
+							"uri": "http://127.0.0.1:8100/api/admin/alerts/%7Bid%7D/resolve",
+							"nodeName": "https:\/\/127.0.0.1:8100\/api\/admin\/alerts\/{id}\/resolve",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "Failed to connect.\nZAP attempted to connect via: https://127.0.0.1:8100/api/admin/alerts/%7Bid%7D/resolve"
+						}
+					],
+					"count": "1",
+					"systemic": false,
+					"solution": "<p>Configure your web or application server to use SSL (https).</p>",
+					"otherinfo": "<p>Failed to connect.</p><p>ZAP attempted to connect via: https://127.0.0.1:8100/api/admin/alerts/%7Bid%7D/resolve</p>",
+					"reference": "<p>https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html</p><p>https://letsencrypt.org/</p>",
+					"cweid": "311",
+					"wascid": "4",
+					"sourceid": "12505"
+				},
+				{
+					"pluginid": "100000",
+					"alertRef": "100000-2",
+					"alert": "A Server Error response code was returned by the server",
+					"name": "A Server Error response code was returned by the server",
+					"riskcode": "1",
+					"confidence": "3",
+					"riskdesc": "Low (High)",
+					"desc": "<p>A response code of 500 was returned by the server.</p><p>This may indicate that the application is failing to handle unexpected input correctly.</p><p>Raised by the 'Alert on HTTP Response Code Error' script</p>",
+					"instances":[ 
+						{
+							"id": "158",
+							"uri": "http://127.0.0.1:8100/api/presence/course-by-token/3564070028177549877",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/presence\/course-by-token\/3564070028177549877",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "500",
+							"otherinfo": ""
+						},
+						{
+							"id": "11",
+							"uri": "http://127.0.0.1:8100/api/presence/course-by-token/token",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/presence\/course-by-token\/token",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "500",
+							"otherinfo": ""
+						}
+					],
+					"count": "2",
+					"systemic": false,
+					"solution": "",
+					"otherinfo": "",
+					"reference": "",
+					"cweid": "388",
+					"wascid": "20",
+					"sourceid": "222"
+				},
+				{
+					"pluginid": "90022",
+					"alertRef": "90022",
+					"alert": "Application Error Disclosure",
+					"name": "Application Error Disclosure",
+					"riskcode": "1",
+					"confidence": "2",
+					"riskdesc": "Low (Medium)",
+					"desc": "<p>This page contains an error/warning message that may disclose sensitive information like the location of the file that produced the unhandled exception. This information can be used to launch further attacks against the web application. The alert could be a false positive if the error message is found inside a documentation page.</p>",
+					"instances":[ 
+						{
+							"id": "96",
+							"uri": "http://127.0.0.1:8100/api/presence/course-by-token/token",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/presence\/course-by-token\/token",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "HTTP/1.1 500 Internal Server Error",
+							"otherinfo": ""
+						}
+					],
+					"count": "1",
+					"systemic": false,
+					"solution": "<p>Review the source code of this page. Implement custom error pages. Consider implementing a mechanism to provide a unique error reference/identifier to the client (browser) while logging the details on the server side and not exposing them to the user.</p>",
+					"otherinfo": "",
+					"reference": "",
+					"cweid": "550",
+					"wascid": "13",
+					"sourceid": "21"
+				},
+				{
+					"pluginid": "100001",
+					"alertRef": "100001",
+					"alert": "Unexpected Content-Type was returned",
+					"name": "Unexpected Content-Type was returned",
+					"riskcode": "1",
+					"confidence": "3",
+					"riskdesc": "Low (High)",
+					"desc": "<p>A Content-Type of text/html was returned by the server.</p><p>This is not one of the types expected to be returned by an API.</p><p>Raised by the 'Alert on Unexpected Content Types' script</p>",
+					"instances":[ 
+						{
+							"id": "3383",
+							"uri": "http://127.0.0.1:8100/WEB-INF/applicationContext.xml",
+							"nodeName": "http:\/\/127.0.0.1:8100\/WEB-INF\/applicationContext.xml",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "text/html",
+							"otherinfo": ""
+						},
+						{
+							"id": "3385",
+							"uri": "http://127.0.0.1:8100/WEB-INF/classes/1/5em.class",
+							"nodeName": "http:\/\/127.0.0.1:8100\/WEB-INF\/classes\/1\/5em.class",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "text/html",
+							"otherinfo": ""
+						},
+						{
+							"id": "3429",
+							"uri": "http://127.0.0.1:8100/WEB-INF/classes/applicationContext/xml.class",
+							"nodeName": "http:\/\/127.0.0.1:8100\/WEB-INF\/classes\/applicationContext\/xml.class",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "text/html",
+							"otherinfo": ""
+						},
+						{
+							"id": "3393",
+							"uri": "http://127.0.0.1:8100/WEB-INF/classes/code/url.class",
+							"nodeName": "http:\/\/127.0.0.1:8100\/WEB-INF\/classes\/code\/url.class",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "text/html",
+							"otherinfo": ""
+						},
+						{
+							"id": "3410",
+							"uri": "http://127.0.0.1:8100/WEB-INF/classes/web/xml.class",
+							"nodeName": "http:\/\/127.0.0.1:8100\/WEB-INF\/classes\/web\/xml.class",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "text/html",
+							"otherinfo": ""
+						},
+						{
+							"id": "3381",
+							"uri": "http://127.0.0.1:8100/WEB-INF/web.xml",
+							"nodeName": "http:\/\/127.0.0.1:8100\/WEB-INF\/web.xml",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "text/html",
+							"otherinfo": ""
+						},
+						{
+							"id": "628",
+							"uri": "http://127.0.0.1:8100/api/docs",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/docs",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "text/html",
+							"otherinfo": ""
+						},
+						{
+							"id": "3665",
+							"uri": "http://127.0.0.1:8100/api/docs?-s",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/docs (-s)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "text/html",
+							"otherinfo": ""
+						},
+						{
+							"id": "3766",
+							"uri": "http://127.0.0.1:8100/?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/ (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "text/html",
+							"otherinfo": ""
+						},
+						{
+							"id": "3792",
+							"uri": "http://127.0.0.1:8100/?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/ (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "text/html",
+							"otherinfo": ""
+						}
+					],
+					"count": "10",
+					"systemic": false,
+					"solution": "",
+					"otherinfo": "",
+					"reference": "",
+					"cweid": "-1",
+					"wascid": "-1",
+					"sourceid": "3454"
+				},
+				{
+					"pluginid": "100000",
+					"alertRef": "100000-1",
+					"alert": "A Client Error response code was returned by the server",
+					"name": "A Client Error response code was returned by the server",
+					"riskcode": "0",
+					"confidence": "3",
+					"riskdesc": "Informational (High)",
+					"desc": "<p>A response code of 401 was returned by the server.</p><p>This may indicate that the application is failing to handle unexpected input correctly.</p><p>Raised by the 'Alert on HTTP Response Code Error' script</p>",
+					"instances":[ 
+						{
+							"id": "35",
+							"uri": "http://127.0.0.1:8100/api/admin/ecs/%7Bid%7D",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/ecs\/{id}",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "40",
+							"uri": "http://127.0.0.1:8100/api/admin/evenements/%7Bid%7D",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/evenements\/{id}",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "83",
+							"uri": "http://127.0.0.1:8100/api/admin/notifications/%7Bid%7D",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/notifications\/{id}",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "47",
+							"uri": "http://127.0.0.1:8100/api/admin/salles/%7Bid%7D",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/salles\/{id}",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "92",
+							"uri": "http://127.0.0.1:8100/api/admin/sessions/others",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/sessions\/others",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "20",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "24",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id/ecs/ecId",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id\/ecs\/ecId",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "76",
+							"uri": "http://127.0.0.1:8100/api/admin/tickets/%7Bid%7D",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/tickets\/{id}",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "31",
+							"uri": "http://127.0.0.1:8100/api/admin/ues/%7Bid%7D",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/ues\/{id}",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "117",
+							"uri": "http://127.0.0.1:8100/api/super-admin/etablissements/%7Bid%7D",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/etablissements\/{id}",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "121",
+							"uri": "http://127.0.0.1:8100/6120539283712642295",
+							"nodeName": "http:\/\/127.0.0.1:8100\/6120539283712642295",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3382",
+							"uri": "http://127.0.0.1:8100/WEB-INF/applicationContext.xml",
+							"nodeName": "http:\/\/127.0.0.1:8100\/WEB-INF\/applicationContext.xml",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3384",
+							"uri": "http://127.0.0.1:8100/WEB-INF/classes/1/5em.class",
+							"nodeName": "http:\/\/127.0.0.1:8100\/WEB-INF\/classes\/1\/5em.class",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3428",
+							"uri": "http://127.0.0.1:8100/WEB-INF/classes/applicationContext/xml.class",
+							"nodeName": "http:\/\/127.0.0.1:8100\/WEB-INF\/classes\/applicationContext\/xml.class",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3392",
+							"uri": "http://127.0.0.1:8100/WEB-INF/classes/code/url.class",
+							"nodeName": "http:\/\/127.0.0.1:8100\/WEB-INF\/classes\/code\/url.class",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3409",
+							"uri": "http://127.0.0.1:8100/WEB-INF/classes/web/xml.class",
+							"nodeName": "http:\/\/127.0.0.1:8100\/WEB-INF\/classes\/web\/xml.class",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3380",
+							"uri": "http://127.0.0.1:8100/WEB-INF/web.xml",
+							"nodeName": "http:\/\/127.0.0.1:8100\/WEB-INF\/web.xml",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "198",
+							"uri": "http://127.0.0.1:8100/api",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "122",
+							"uri": "http://127.0.0.1:8100/api/4616932711898495941",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/4616932711898495941",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "226",
+							"uri": "http://127.0.0.1:8100/api/admin",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "123",
+							"uri": "http://127.0.0.1:8100/api/admin/4306734701696551255",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/4306734701696551255",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "71",
+							"uri": "http://127.0.0.1:8100/api/admin/alerts",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/alerts",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "124",
+							"uri": "http://127.0.0.1:8100/api/admin/alerts/6738981211939398904",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/alerts\/6738981211939398904",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "243",
+							"uri": "http://127.0.0.1:8100/api/admin/alerts/%7Bid%7D",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/alerts\/{id}",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "125",
+							"uri": "http://127.0.0.1:8100/api/admin/alerts/%7Bid%7D/278567515474938005",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/alerts\/{id}\/278567515474938005",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "49",
+							"uri": "http://127.0.0.1:8100/api/admin/annees-academiques",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/annees-academiques",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "126",
+							"uri": "http://127.0.0.1:8100/api/admin/annees-academiques/4029244316832784676",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/annees-academiques\/4029244316832784676",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "255",
+							"uri": "http://127.0.0.1:8100/api/admin/annees-academiques/%7Bid%7D",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/annees-academiques\/{id}",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "127",
+							"uri": "http://127.0.0.1:8100/api/admin/annees-academiques/%7Bid%7D/6281035025941262079",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/annees-academiques\/{id}\/6281035025941262079",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "12",
+							"uri": "http://127.0.0.1:8100/api/admin/dashboard",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/dashboard",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "128",
+							"uri": "http://127.0.0.1:8100/api/admin/dashboard/4026470609189491084",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/dashboard\/4026470609189491084",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "13",
+							"uri": "http://127.0.0.1:8100/api/admin/dashboard/attendance-trend",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/dashboard\/attendance-trend",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "15",
+							"uri": "http://127.0.0.1:8100/api/admin/dashboard/today-events",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/dashboard\/today-events",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "14",
+							"uri": "http://127.0.0.1:8100/api/admin/dashboard/top-absences",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/dashboard\/top-absences",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "32",
+							"uri": "http://127.0.0.1:8100/api/admin/ecs",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/ecs",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "129",
+							"uri": "http://127.0.0.1:8100/api/admin/ecs/3556064856103107456",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/ecs\/3556064856103107456",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "36",
+							"uri": "http://127.0.0.1:8100/api/admin/evenements",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/evenements",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "130",
+							"uri": "http://127.0.0.1:8100/api/admin/evenements/8068104563968017655",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/evenements\/8068104563968017655",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "38",
+							"uri": "http://127.0.0.1:8100/api/admin/evenements/%7Bid%7D",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/evenements\/{id}",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "41",
+							"uri": "http://127.0.0.1:8100/api/admin/filieres",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/filieres",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "273",
+							"uri": "http://127.0.0.1:8100/api/admin/import",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "131",
+							"uri": "http://127.0.0.1:8100/api/admin/import/3191281729592125146",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/3191281729592125146",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "299",
+							"uri": "http://127.0.0.1:8100/api/admin/import/analysis-status",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/analysis-status",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "70",
+							"uri": "http://127.0.0.1:8100/api/admin/import/analysis-status/10",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/analysis-status\/10",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "132",
+							"uri": "http://127.0.0.1:8100/api/admin/import/analysis-status/6049182638337321392",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/analysis-status\/6049182638337321392",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "79",
+							"uri": "http://127.0.0.1:8100/api/admin/notifications",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/notifications",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "133",
+							"uri": "http://127.0.0.1:8100/api/admin/notifications/8538758064016192388",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/notifications\/8538758064016192388",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "80",
+							"uri": "http://127.0.0.1:8100/api/admin/notifications/unread-count",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/notifications\/unread-count",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "323",
+							"uri": "http://127.0.0.1:8100/api/admin/notifications/%7Bid%7D",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/notifications\/{id}",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "134",
+							"uri": "http://127.0.0.1:8100/api/admin/notifications/%7Bid%7D/3655537221452719072",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/notifications\/{id}\/3655537221452719072",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "347",
+							"uri": "http://127.0.0.1:8100/api/admin/presence",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "355",
+							"uri": "http://127.0.0.1:8100/api/admin/presence/10",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence\/10",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "136",
+							"uri": "http://127.0.0.1:8100/api/admin/presence/10/878897200337886925",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence\/10\/878897200337886925",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "135",
+							"uri": "http://127.0.0.1:8100/api/admin/presence/4337115407702435539",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence\/4337115407702435539",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "52",
+							"uri": "http://127.0.0.1:8100/api/admin/presence/history?page=1&per_page=20&etudiant_id=etudiant_id&evenement_id=evenement_id&filiere_id=filiere_id&annee_id=annee_id&date_from=date_from&date_to=date_to&statut=valide",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence\/history (annee_id,date_from,date_to,etudiant_id,evenement_id,filiere_id,page,per_page,statut)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "55",
+							"uri": "http://127.0.0.1:8100/api/admin/presence/pending?page=1&per_page=20&filiere_id=filiere_id&evenement_id=evenement_id&date_from=date_from&date_to=date_to",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence\/pending (date_from,date_to,evenement_id,filiere_id,page,per_page)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "53",
+							"uri": "http://127.0.0.1:8100/api/admin/presence/stats",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence\/stats",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "84",
+							"uri": "http://127.0.0.1:8100/api/admin/profile",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "137",
+							"uri": "http://127.0.0.1:8100/api/admin/profile/2808819439485869398",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile\/2808819439485869398",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "382",
+							"uri": "http://127.0.0.1:8100/api/admin/profile/2fa",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile\/2fa",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "138",
+							"uri": "http://127.0.0.1:8100/api/admin/profile/2fa/9193600167117762925",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile\/2fa\/9193600167117762925",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "400",
+							"uri": "http://127.0.0.1:8100/api/admin/reports",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "139",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/3376097537893487280",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/3376097537893487280",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "414",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/department",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/department",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "140",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/department/1768262478762597490",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/department\/1768262478762597490",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "60",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/department/filiere",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/department\/filiere",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "438",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/excel",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/excel",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "141",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/excel/8087094816099449452",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/excel\/8087094816099449452",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "65",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/excel/export",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/excel\/export",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "63",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/filiere-stats",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/filiere-stats",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "64",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/filtered",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/filtered",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "469",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/presence",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/presence",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "142",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/presence/3792061265442649880",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/presence\/3792061265442649880",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "499",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/presence/evenementId",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/presence\/evenementId",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "143",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/presence/evenementId/8077830451705734142",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/presence\/evenementId\/8077830451705734142",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "59",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/presence/evenementId/csv",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/presence\/evenementId\/csv",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "58",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/presence/evenementId/pdf",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/presence\/evenementId\/pdf",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "512",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/semester",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/semester",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "62",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/semester-comparison",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/semester-comparison",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "144",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/semester/2809403580460775538",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/semester\/2809403580460775538",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "61",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/semester/%7BanneeAcademique%7D",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/semester\/{anneeAcademique}",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "43",
+							"uri": "http://127.0.0.1:8100/api/admin/salles",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/salles",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "145",
+							"uri": "http://127.0.0.1:8100/api/admin/salles/1142286092191576868",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/salles\/1142286092191576868",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "48",
+							"uri": "http://127.0.0.1:8100/api/admin/salles/disponibles?date=date&heure_debut=heure_debut&heure_fin=heure_fin",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/salles\/disponibles (date,heure_debut,heure_fin)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "45",
+							"uri": "http://127.0.0.1:8100/api/admin/salles/%7Bid%7D",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/salles\/{id}",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "91",
+							"uri": "http://127.0.0.1:8100/api/admin/sessions",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/sessions",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "146",
+							"uri": "http://127.0.0.1:8100/api/admin/sessions/7503561582915745719",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/sessions\/7503561582915745719",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "531",
+							"uri": "http://127.0.0.1:8100/api/admin/students",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "16",
+							"uri": "http://127.0.0.1:8100/api/admin/students?page=1&per_page=20&search=ZAP&filiere_id=filiere_id&annee_id=annee_id&statut=actif",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students (annee_id,filiere_id,page,per_page,search,statut)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "147",
+							"uri": "http://127.0.0.1:8100/api/admin/students/1395576644241380710",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/1395576644241380710",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "18",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "148",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id/5512632225930515022",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id\/5512632225930515022",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "21",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id/ecs",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id\/ecs",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "23",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id/ecs-available",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id\/ecs-available",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "149",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id/ecs/4181717227863549839",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id\/ecs\/4181717227863549839",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "54",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id/stats",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id\/stats",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "73",
+							"uri": "http://127.0.0.1:8100/api/admin/tickets",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/tickets",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "150",
+							"uri": "http://127.0.0.1:8100/api/admin/tickets/6105822125513106800",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/tickets\/6105822125513106800",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "75",
+							"uri": "http://127.0.0.1:8100/api/admin/tickets/%7Bid%7D",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/tickets\/{id}",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "151",
+							"uri": "http://127.0.0.1:8100/api/admin/tickets/%7Bid%7D/921033860521937478",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/tickets\/{id}\/921033860521937478",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "27",
+							"uri": "http://127.0.0.1:8100/api/admin/ues",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/ues",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "152",
+							"uri": "http://127.0.0.1:8100/api/admin/ues/8421501463056478007",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/ues\/8421501463056478007",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "29",
+							"uri": "http://127.0.0.1:8100/api/admin/ues/%7Bid%7D",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/ues\/{id}",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "556",
+							"uri": "http://127.0.0.1:8100/api/auth",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/auth",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "153",
+							"uri": "http://127.0.0.1:8100/api/auth/6932777796077100461",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/auth\/6932777796077100461",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "582",
+							"uri": "http://127.0.0.1:8100/api/auth/student",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/auth\/student",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "154",
+							"uri": "http://127.0.0.1:8100/api/auth/student/8158075575731560594",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/auth\/student\/8158075575731560594",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "7",
+							"uri": "http://127.0.0.1:8100/api/auth/student/me",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/auth\/student\/me",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "155",
+							"uri": "http://127.0.0.1:8100/api/docs/6436882613263202104",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/docs\/6436882613263202104",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "648",
+							"uri": "http://127.0.0.1:8100/api/landing",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/landing",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "156",
+							"uri": "http://127.0.0.1:8100/api/landing/1490608419759012641",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/landing\/1490608419759012641",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "664",
+							"uri": "http://127.0.0.1:8100/api/presence",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/presence",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "157",
+							"uri": "http://127.0.0.1:8100/api/presence/3981682104724355754",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/presence\/3981682104724355754",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "683",
+							"uri": "http://127.0.0.1:8100/api/presence/course-by-token",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/presence\/course-by-token",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "698",
+							"uri": "http://127.0.0.1:8100/api/student",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/student",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "159",
+							"uri": "http://127.0.0.1:8100/api/student/3914018677381239323",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/student\/3914018677381239323",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "722",
+							"uri": "http://127.0.0.1:8100/api/student/qrcode",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/student\/qrcode",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "160",
+							"uri": "http://127.0.0.1:8100/api/student/qrcode/875053015525377887",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/student\/qrcode\/875053015525377887",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "9",
+							"uri": "http://127.0.0.1:8100/api/student/qrcode/current",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/student\/qrcode\/current",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "736",
+							"uri": "http://127.0.0.1:8100/api/super-admin",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "161",
+							"uri": "http://127.0.0.1:8100/api/super-admin/75534377753020400",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/75534377753020400",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "93",
+							"uri": "http://127.0.0.1:8100/api/super-admin/dashboard",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/dashboard",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "97",
+							"uri": "http://127.0.0.1:8100/api/super-admin/etablissements",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/etablissements",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "162",
+							"uri": "http://127.0.0.1:8100/api/super-admin/etablissements/5260785926579276671",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/etablissements\/5260785926579276671",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "115",
+							"uri": "http://127.0.0.1:8100/api/super-admin/etablissements/%7Bid%7D",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/etablissements\/{id}",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "163",
+							"uri": "http://127.0.0.1:8100/api/super-admin/etablissements/%7Bid%7D/6017266726770874465",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/etablissements\/{id}\/6017266726770874465",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "119",
+							"uri": "http://127.0.0.1:8100/api/super-admin/etablissements/%7Bid%7D/stats",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/etablissements\/{id}\/stats",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "5",
+							"uri": "http://127.0.0.1:8100/api/user",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/user",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "51",
+							"uri": "http://127.0.0.1:8100/api/admin/annees-academiques/%7Bid%7D/activate",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/annees-academiques\/{id}\/activate",
+							"method": "PATCH",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "57",
+							"uri": "http://127.0.0.1:8100/api/admin/presence/10/reject",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence\/10\/reject ()({action,motif})",
+							"method": "PATCH",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "56",
+							"uri": "http://127.0.0.1:8100/api/admin/presence/10/validate",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence\/10\/validate ()({action,motif})",
+							"method": "PATCH",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "78",
+							"uri": "http://127.0.0.1:8100/api/admin/tickets/%7Bid%7D/status",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/tickets\/{id}\/status",
+							"method": "PATCH",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3764",
+							"uri": "http://127.0.0.1:8100/?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/ (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3790",
+							"uri": "http://127.0.0.1:8100/?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/ (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3785",
+							"uri": "http://127.0.0.1:8100/api?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3787",
+							"uri": "http://127.0.0.1:8100/api?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3788",
+							"uri": "http://127.0.0.1:8100/api/admin?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3795",
+							"uri": "http://127.0.0.1:8100/api/admin?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3789",
+							"uri": "http://127.0.0.1:8100/api/admin/alerts?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/alerts (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3800",
+							"uri": "http://127.0.0.1:8100/api/admin/alerts?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/alerts (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3791",
+							"uri": "http://127.0.0.1:8100/api/admin/alerts/%7Bid%7D?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/alerts\/{id} (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3796",
+							"uri": "http://127.0.0.1:8100/api/admin/alerts/%7Bid%7D?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/alerts\/{id} (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "72",
+							"uri": "http://127.0.0.1:8100/api/admin/alerts/%7Bid%7D/resolve",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/alerts\/{id}\/resolve",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3675",
+							"uri": "http://127.0.0.1:8100/api/admin/alerts/%7Bid%7D/resolve?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/alerts\/{id}\/resolve (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3688",
+							"uri": "http://127.0.0.1:8100/api/admin/alerts/%7Bid%7D/resolve?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/alerts\/{id}\/resolve (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "50",
+							"uri": "http://127.0.0.1:8100/api/admin/annees-academiques",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/annees-academiques",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3674",
+							"uri": "http://127.0.0.1:8100/api/admin/annees-academiques?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/annees-academiques (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3698",
+							"uri": "http://127.0.0.1:8100/api/admin/annees-academiques?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/annees-academiques (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3806",
+							"uri": "http://127.0.0.1:8100/api/admin/annees-academiques/%7Bid%7D?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/annees-academiques\/{id} (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3812",
+							"uri": "http://127.0.0.1:8100/api/admin/annees-academiques/%7Bid%7D?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/annees-academiques\/{id} (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3685",
+							"uri": "http://127.0.0.1:8100/api/admin/annees-academiques/%7Bid%7D/activate?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/annees-academiques\/{id}\/activate (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3707",
+							"uri": "http://127.0.0.1:8100/api/admin/annees-academiques/%7Bid%7D/activate?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/annees-academiques\/{id}\/activate (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3803",
+							"uri": "http://127.0.0.1:8100/api/admin/dashboard?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/dashboard (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3816",
+							"uri": "http://127.0.0.1:8100/api/admin/dashboard?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/dashboard (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3801",
+							"uri": "http://127.0.0.1:8100/api/admin/dashboard/attendance-trend?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/dashboard\/attendance-trend (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3818",
+							"uri": "http://127.0.0.1:8100/api/admin/dashboard/attendance-trend?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/dashboard\/attendance-trend (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3807",
+							"uri": "http://127.0.0.1:8100/api/admin/dashboard/today-events?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/dashboard\/today-events (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3820",
+							"uri": "http://127.0.0.1:8100/api/admin/dashboard/today-events?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/dashboard\/today-events (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3799",
+							"uri": "http://127.0.0.1:8100/api/admin/dashboard/top-absences?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/dashboard\/top-absences (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3809",
+							"uri": "http://127.0.0.1:8100/api/admin/dashboard/top-absences?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/dashboard\/top-absences (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "33",
+							"uri": "http://127.0.0.1:8100/api/admin/ecs",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/ecs",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3676",
+							"uri": "http://127.0.0.1:8100/api/admin/ecs?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/ecs (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3687",
+							"uri": "http://127.0.0.1:8100/api/admin/ecs?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/ecs (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3673",
+							"uri": "http://127.0.0.1:8100/api/admin/ecs/%7Bid%7D?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/ecs\/{id} (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3704",
+							"uri": "http://127.0.0.1:8100/api/admin/ecs/%7Bid%7D?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/ecs\/{id} (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "37",
+							"uri": "http://127.0.0.1:8100/api/admin/evenements",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/evenements ()({ec_id,filiere_id,annee_id,salle_id,date,heure_debut,heure_fin,type})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3672",
+							"uri": "http://127.0.0.1:8100/api/admin/evenements?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/evenements (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3696",
+							"uri": "http://127.0.0.1:8100/api/admin/evenements?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/evenements (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3677",
+							"uri": "http://127.0.0.1:8100/api/admin/evenements/%7Bid%7D?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/evenements\/{id} (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3705",
+							"uri": "http://127.0.0.1:8100/api/admin/evenements/%7Bid%7D?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/evenements\/{id} (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "42",
+							"uri": "http://127.0.0.1:8100/api/admin/filieres",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/filieres",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3671",
+							"uri": "http://127.0.0.1:8100/api/admin/filieres?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/filieres (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3703",
+							"uri": "http://127.0.0.1:8100/api/admin/filieres?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/filieres (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3824",
+							"uri": "http://127.0.0.1:8100/api/admin/import?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3831",
+							"uri": "http://127.0.0.1:8100/api/admin/import?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3822",
+							"uri": "http://127.0.0.1:8100/api/admin/import/analysis-status?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/analysis-status (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3830",
+							"uri": "http://127.0.0.1:8100/api/admin/import/analysis-status?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/analysis-status (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3819",
+							"uri": "http://127.0.0.1:8100/api/admin/import/analysis-status/10?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/analysis-status\/10 (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3827",
+							"uri": "http://127.0.0.1:8100/api/admin/import/analysis-status/10?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/analysis-status\/10 (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "67",
+							"uri": "http://127.0.0.1:8100/api/admin/import/courses",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/courses ()(multipart:file)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3684",
+							"uri": "http://127.0.0.1:8100/api/admin/import/courses?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/courses (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3697",
+							"uri": "http://127.0.0.1:8100/api/admin/import/courses?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/courses (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "66",
+							"uri": "http://127.0.0.1:8100/api/admin/import/schedule",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/schedule ()(multipart:file)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3686",
+							"uri": "http://127.0.0.1:8100/api/admin/import/schedule?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/schedule (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3691",
+							"uri": "http://127.0.0.1:8100/api/admin/import/schedule?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/schedule (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "26",
+							"uri": "http://127.0.0.1:8100/api/admin/import/students",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/students ()(multipart:file)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3681",
+							"uri": "http://127.0.0.1:8100/api/admin/import/students?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/students (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3718",
+							"uri": "http://127.0.0.1:8100/api/admin/import/students?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/students (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "69",
+							"uri": "http://127.0.0.1:8100/api/admin/import/validate-courses",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/validate-courses ()({ues:[{code,intitule,filiere_id,annee_id,semestre,volume_horaire,ecs:[{code,intitule,volume_horaire}]}]})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3692",
+							"uri": "http://127.0.0.1:8100/api/admin/import/validate-courses?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/validate-courses (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3706",
+							"uri": "http://127.0.0.1:8100/api/admin/import/validate-courses?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/validate-courses (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "68",
+							"uri": "http://127.0.0.1:8100/api/admin/import/validate-events",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/validate-events ()({events:[{ec_id,filiere_id,annee_id,date,heure_debut,heure_fin,salle}]})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3683",
+							"uri": "http://127.0.0.1:8100/api/admin/import/validate-events?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/validate-events (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3702",
+							"uri": "http://127.0.0.1:8100/api/admin/import/validate-events?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/import\/validate-events (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3821",
+							"uri": "http://127.0.0.1:8100/api/admin/notifications?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/notifications (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3825",
+							"uri": "http://127.0.0.1:8100/api/admin/notifications?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/notifications (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "82",
+							"uri": "http://127.0.0.1:8100/api/admin/notifications/read-all",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/notifications\/read-all",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3682",
+							"uri": "http://127.0.0.1:8100/api/admin/notifications/read-all?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/notifications\/read-all (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3694",
+							"uri": "http://127.0.0.1:8100/api/admin/notifications/read-all?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/notifications\/read-all (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3817",
+							"uri": "http://127.0.0.1:8100/api/admin/notifications/unread-count?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/notifications\/unread-count (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3829",
+							"uri": "http://127.0.0.1:8100/api/admin/notifications/unread-count?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/notifications\/unread-count (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3680",
+							"uri": "http://127.0.0.1:8100/api/admin/notifications/%7Bid%7D?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/notifications\/{id} (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3708",
+							"uri": "http://127.0.0.1:8100/api/admin/notifications/%7Bid%7D?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/notifications\/{id} (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "81",
+							"uri": "http://127.0.0.1:8100/api/admin/notifications/%7Bid%7D/read",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/notifications\/{id}\/read",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3689",
+							"uri": "http://127.0.0.1:8100/api/admin/notifications/%7Bid%7D/read?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/notifications\/{id}\/read (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3712",
+							"uri": "http://127.0.0.1:8100/api/admin/notifications/%7Bid%7D/read?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/notifications\/{id}\/read (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3834",
+							"uri": "http://127.0.0.1:8100/api/admin/presence?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3838",
+							"uri": "http://127.0.0.1:8100/api/admin/presence?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3837",
+							"uri": "http://127.0.0.1:8100/api/admin/presence/10?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence\/10 (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3845",
+							"uri": "http://127.0.0.1:8100/api/admin/presence/10?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence\/10 (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3715",
+							"uri": "http://127.0.0.1:8100/api/admin/presence/10/reject?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence\/10\/reject (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3726",
+							"uri": "http://127.0.0.1:8100/api/admin/presence/10/reject?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence\/10\/reject (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3693",
+							"uri": "http://127.0.0.1:8100/api/admin/presence/10/validate?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence\/10\/validate (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3724",
+							"uri": "http://127.0.0.1:8100/api/admin/presence/10/validate?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence\/10\/validate (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3840",
+							"uri": "http://127.0.0.1:8100/api/admin/presence/history?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence\/history (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3842",
+							"uri": "http://127.0.0.1:8100/api/admin/presence/history?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence\/history (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3841",
+							"uri": "http://127.0.0.1:8100/api/admin/presence/pending?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence\/pending (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3846",
+							"uri": "http://127.0.0.1:8100/api/admin/presence/pending?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence\/pending (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3839",
+							"uri": "http://127.0.0.1:8100/api/admin/presence/stats?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence\/stats (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3847",
+							"uri": "http://127.0.0.1:8100/api/admin/presence/stats?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/presence\/stats (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3699",
+							"uri": "http://127.0.0.1:8100/api/admin/profile?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3722",
+							"uri": "http://127.0.0.1:8100/api/admin/profile?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3844",
+							"uri": "http://127.0.0.1:8100/api/admin/profile/2fa?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile\/2fa (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3851",
+							"uri": "http://127.0.0.1:8100/api/admin/profile/2fa?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile\/2fa (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "88",
+							"uri": "http://127.0.0.1:8100/api/admin/profile/2fa/confirm",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile\/2fa\/confirm ()({code})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3713",
+							"uri": "http://127.0.0.1:8100/api/admin/profile/2fa/confirm?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile\/2fa\/confirm (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3723",
+							"uri": "http://127.0.0.1:8100/api/admin/profile/2fa/confirm?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile\/2fa\/confirm (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "89",
+							"uri": "http://127.0.0.1:8100/api/admin/profile/2fa/disable",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile\/2fa\/disable",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3714",
+							"uri": "http://127.0.0.1:8100/api/admin/profile/2fa/disable?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile\/2fa\/disable (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3719",
+							"uri": "http://127.0.0.1:8100/api/admin/profile/2fa/disable?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile\/2fa\/disable (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "87",
+							"uri": "http://127.0.0.1:8100/api/admin/profile/2fa/enable",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile\/2fa\/enable",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3700",
+							"uri": "http://127.0.0.1:8100/api/admin/profile/2fa/enable?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile\/2fa\/enable (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3716",
+							"uri": "http://127.0.0.1:8100/api/admin/profile/2fa/enable?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile\/2fa\/enable (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "90",
+							"uri": "http://127.0.0.1:8100/api/admin/profile/2fa/verify",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile\/2fa\/verify",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3711",
+							"uri": "http://127.0.0.1:8100/api/admin/profile/2fa/verify?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile\/2fa\/verify (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3725",
+							"uri": "http://127.0.0.1:8100/api/admin/profile/2fa/verify?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile\/2fa\/verify (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3701",
+							"uri": "http://127.0.0.1:8100/api/admin/profile/password?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile\/password (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3721",
+							"uri": "http://127.0.0.1:8100/api/admin/profile/password?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile\/password (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3850",
+							"uri": "http://127.0.0.1:8100/api/admin/reports?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3852",
+							"uri": "http://127.0.0.1:8100/api/admin/reports?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3854",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/department?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/department (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3859",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/department?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/department (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3855",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/department/filiere?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/department\/filiere (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3861",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/department/filiere?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/department\/filiere (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3863",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/excel?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/excel (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3870",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/excel?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/excel (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3860",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/excel/export?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/excel\/export (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3866",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/excel/export?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/excel\/export (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3857",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/filiere-stats?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/filiere-stats (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3865",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/filiere-stats?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/filiere-stats (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3856",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/filtered?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/filtered (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3864",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/filtered?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/filtered (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3867",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/presence?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/presence (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3873",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/presence?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/presence (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3871",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/presence/evenementId?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/presence\/evenementId (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3876",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/presence/evenementId?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/presence\/evenementId (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3868",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/presence/evenementId/csv?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/presence\/evenementId\/csv (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3874",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/presence/evenementId/csv?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/presence\/evenementId\/csv (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3869",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/presence/evenementId/pdf?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/presence\/evenementId\/pdf (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3877",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/presence/evenementId/pdf?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/presence\/evenementId\/pdf (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3875",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/semester?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/semester (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3890",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/semester?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/semester (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3884",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/semester-comparison?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/semester-comparison (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3896",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/semester-comparison?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/semester-comparison (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3880",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/semester/%7BanneeAcademique%7D?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/semester\/{anneeAcademique} (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3889",
+							"uri": "http://127.0.0.1:8100/api/admin/reports/semester/%7BanneeAcademique%7D?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/reports\/semester\/{anneeAcademique} (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "44",
+							"uri": "http://127.0.0.1:8100/api/admin/salles",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/salles ()({nom,capacite,etage,batiment,latitude,longitude,rayon_geofence_m,ssid_attendu,bssid_attendu,ip_range_debut,ip_range_fin,hors_reseau})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3727",
+							"uri": "http://127.0.0.1:8100/api/admin/salles?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/salles (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3740",
+							"uri": "http://127.0.0.1:8100/api/admin/salles?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/salles (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3883",
+							"uri": "http://127.0.0.1:8100/api/admin/salles/disponibles?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/salles\/disponibles (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3886",
+							"uri": "http://127.0.0.1:8100/api/admin/salles/disponibles?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/salles\/disponibles (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3690",
+							"uri": "http://127.0.0.1:8100/api/admin/salles/%7Bid%7D?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/salles\/{id} (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3717",
+							"uri": "http://127.0.0.1:8100/api/admin/salles/%7Bid%7D?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/salles\/{id} (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3879",
+							"uri": "http://127.0.0.1:8100/api/admin/sessions?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/sessions (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3898",
+							"uri": "http://127.0.0.1:8100/api/admin/sessions?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/sessions (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3732",
+							"uri": "http://127.0.0.1:8100/api/admin/sessions/others?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/sessions\/others (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3748",
+							"uri": "http://127.0.0.1:8100/api/admin/sessions/others?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/sessions\/others (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "17",
+							"uri": "http://127.0.0.1:8100/api/admin/students",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students ()({nom,prenom,matricule,filiere_id,annee_id,email,telephone})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3729",
+							"uri": "http://127.0.0.1:8100/api/admin/students?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3760",
+							"uri": "http://127.0.0.1:8100/api/admin/students?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3731",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3756",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "22",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id/ecs",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id\/ecs ()({ec_id})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3734",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id/ecs?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id\/ecs (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3751",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id/ecs?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id\/ecs (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3897",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id/ecs-available?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id\/ecs-available (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3907",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id/ecs-available?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id\/ecs-available (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3730",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id/ecs/ecId?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id\/ecs\/ecId (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3739",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id/ecs/ecId?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id\/ecs\/ecId (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "25",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id/ecs/reset",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id\/ecs\/reset",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3733",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id/ecs/reset?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id\/ecs\/reset (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3749",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id/ecs/reset?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id\/ecs\/reset (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3894",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id/stats?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id\/stats (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3906",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id/stats?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id\/stats (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "74",
+							"uri": "http://127.0.0.1:8100/api/admin/tickets",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/tickets",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3728",
+							"uri": "http://127.0.0.1:8100/api/admin/tickets?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/tickets (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3755",
+							"uri": "http://127.0.0.1:8100/api/admin/tickets?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/tickets (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3737",
+							"uri": "http://127.0.0.1:8100/api/admin/tickets/%7Bid%7D?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/tickets\/{id} (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3769",
+							"uri": "http://127.0.0.1:8100/api/admin/tickets/%7Bid%7D?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/tickets\/{id} (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "77",
+							"uri": "http://127.0.0.1:8100/api/admin/tickets/%7Bid%7D/reply",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/tickets\/{id}\/reply",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3736",
+							"uri": "http://127.0.0.1:8100/api/admin/tickets/%7Bid%7D/reply?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/tickets\/{id}\/reply (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3771",
+							"uri": "http://127.0.0.1:8100/api/admin/tickets/%7Bid%7D/reply?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/tickets\/{id}\/reply (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3735",
+							"uri": "http://127.0.0.1:8100/api/admin/tickets/%7Bid%7D/status?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/tickets\/{id}\/status (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3753",
+							"uri": "http://127.0.0.1:8100/api/admin/tickets/%7Bid%7D/status?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/tickets\/{id}\/status (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "28",
+							"uri": "http://127.0.0.1:8100/api/admin/ues",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/ues ()({code,intitule,filiere_id,annee_id,semestre,volume_horaire})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3770",
+							"uri": "http://127.0.0.1:8100/api/admin/ues?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/ues (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3782",
+							"uri": "http://127.0.0.1:8100/api/admin/ues?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/ues (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3741",
+							"uri": "http://127.0.0.1:8100/api/admin/ues/%7Bid%7D?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/ues\/{id} (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3775",
+							"uri": "http://127.0.0.1:8100/api/admin/ues/%7Bid%7D?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/ues\/{id} (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3911",
+							"uri": "http://127.0.0.1:8100/api/auth?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/auth (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3917",
+							"uri": "http://127.0.0.1:8100/api/auth?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/auth (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3915",
+							"uri": "http://127.0.0.1:8100/api/auth/student?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/auth\/student (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3920",
+							"uri": "http://127.0.0.1:8100/api/auth/student?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/auth\/student (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "6",
+							"uri": "http://127.0.0.1:8100/api/auth/student/login",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/auth\/student\/login ()({email,identifiant_unique})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "422",
+							"otherinfo": ""
+						},
+						{
+							"id": "3754",
+							"uri": "http://127.0.0.1:8100/api/auth/student/login?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/auth\/student\/login (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "422",
+							"otherinfo": ""
+						},
+						{
+							"id": "3778",
+							"uri": "http://127.0.0.1:8100/api/auth/student/login?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/auth\/student\/login (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "422",
+							"otherinfo": ""
+						},
+						{
+							"id": "8",
+							"uri": "http://127.0.0.1:8100/api/auth/student/logout",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/auth\/student\/logout",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3761",
+							"uri": "http://127.0.0.1:8100/api/auth/student/logout?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/auth\/student\/logout (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3774",
+							"uri": "http://127.0.0.1:8100/api/auth/student/logout?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/auth\/student\/logout (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3918",
+							"uri": "http://127.0.0.1:8100/api/auth/student/me?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/auth\/student\/me (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3924",
+							"uri": "http://127.0.0.1:8100/api/auth/student/me?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/auth\/student\/me (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3922",
+							"uri": "http://127.0.0.1:8100/api/docs?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/docs (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3925",
+							"uri": "http://127.0.0.1:8100/api/docs?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/docs (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3923",
+							"uri": "http://127.0.0.1:8100/api/docs/json?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/docs\/json (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3929",
+							"uri": "http://127.0.0.1:8100/api/docs/json?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/docs\/json (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3",
+							"uri": "http://127.0.0.1:8100/api/forgot-password",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/forgot-password ()({email})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "422",
+							"otherinfo": ""
+						},
+						{
+							"id": "3746",
+							"uri": "http://127.0.0.1:8100/api/forgot-password?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/forgot-password (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "422",
+							"otherinfo": ""
+						},
+						{
+							"id": "3763",
+							"uri": "http://127.0.0.1:8100/api/forgot-password?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/forgot-password (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "422",
+							"otherinfo": ""
+						},
+						{
+							"id": "3919",
+							"uri": "http://127.0.0.1:8100/api/health?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/health (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3926",
+							"uri": "http://127.0.0.1:8100/api/health?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/health (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3927",
+							"uri": "http://127.0.0.1:8100/api/landing?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/landing (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3932",
+							"uri": "http://127.0.0.1:8100/api/landing?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/landing (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3928",
+							"uri": "http://127.0.0.1:8100/api/landing/stats?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/landing\/stats (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3930",
+							"uri": "http://127.0.0.1:8100/api/landing/stats?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/landing\/stats (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "1",
+							"uri": "http://127.0.0.1:8100/api/login",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/login ()({email,password,remember,two_factor_code})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "422",
+							"otherinfo": ""
+						},
+						{
+							"id": "3743",
+							"uri": "http://127.0.0.1:8100/api/login?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/login (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "422",
+							"otherinfo": ""
+						},
+						{
+							"id": "3752",
+							"uri": "http://127.0.0.1:8100/api/login?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/login (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "422",
+							"otherinfo": ""
+						},
+						{
+							"id": "2",
+							"uri": "http://127.0.0.1:8100/api/logout",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/logout",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3742",
+							"uri": "http://127.0.0.1:8100/api/logout?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/logout (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3780",
+							"uri": "http://127.0.0.1:8100/api/logout?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/logout (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3934",
+							"uri": "http://127.0.0.1:8100/api/presence?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/presence (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3937",
+							"uri": "http://127.0.0.1:8100/api/presence?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/presence (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3936",
+							"uri": "http://127.0.0.1:8100/api/presence/course-by-token?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/presence\/course-by-token (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3939",
+							"uri": "http://127.0.0.1:8100/api/presence/course-by-token?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/presence\/course-by-token (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3941",
+							"uri": "http://127.0.0.1:8100/api/presence/course-by-token/token?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/presence\/course-by-token\/token (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3945",
+							"uri": "http://127.0.0.1:8100/api/presence/course-by-token/token?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/presence\/course-by-token\/token (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "10",
+							"uri": "http://127.0.0.1:8100/api/presence/scan",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/presence\/scan ()({identifiant_unique,token,device_fingerprint,scan_challenge,latitude,longitude,ssid,bssid})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "410",
+							"otherinfo": ""
+						},
+						{
+							"id": "706",
+							"uri": "http://127.0.0.1:8100/api/presence/scan",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/presence\/scan ()({identifiant_unique,token,device_fingerprint,scan_challenge,latitude,longitude,ssid,bssid})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "422",
+							"otherinfo": ""
+						},
+						{
+							"id": "3747",
+							"uri": "http://127.0.0.1:8100/api/presence/scan?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/presence\/scan (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "422",
+							"otherinfo": ""
+						},
+						{
+							"id": "3762",
+							"uri": "http://127.0.0.1:8100/api/presence/scan?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/presence\/scan (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "422",
+							"otherinfo": ""
+						},
+						{
+							"id": "4",
+							"uri": "http://127.0.0.1:8100/api/reset-password",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/reset-password ()({token,email,password,password_confirmation})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "422",
+							"otherinfo": ""
+						},
+						{
+							"id": "3758",
+							"uri": "http://127.0.0.1:8100/api/reset-password?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/reset-password (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "422",
+							"otherinfo": ""
+						},
+						{
+							"id": "3772",
+							"uri": "http://127.0.0.1:8100/api/reset-password?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/reset-password (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "422",
+							"otherinfo": ""
+						},
+						{
+							"id": "3938",
+							"uri": "http://127.0.0.1:8100/api/student?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/student (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3943",
+							"uri": "http://127.0.0.1:8100/api/student?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/student (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3946",
+							"uri": "http://127.0.0.1:8100/api/student/qrcode?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/student\/qrcode (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3956",
+							"uri": "http://127.0.0.1:8100/api/student/qrcode?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/student\/qrcode (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3942",
+							"uri": "http://127.0.0.1:8100/api/student/qrcode/current?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/student\/qrcode\/current (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3948",
+							"uri": "http://127.0.0.1:8100/api/student/qrcode/current?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/student\/qrcode\/current (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3953",
+							"uri": "http://127.0.0.1:8100/api/super-admin?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3959",
+							"uri": "http://127.0.0.1:8100/api/super-admin?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3947",
+							"uri": "http://127.0.0.1:8100/api/super-admin/dashboard?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/dashboard (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3954",
+							"uri": "http://127.0.0.1:8100/api/super-admin/dashboard?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/dashboard (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "110",
+							"uri": "http://127.0.0.1:8100/api/super-admin/etablissements",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/etablissements",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3768",
+							"uri": "http://127.0.0.1:8100/api/super-admin/etablissements?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/etablissements (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3777",
+							"uri": "http://127.0.0.1:8100/api/super-admin/etablissements?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/etablissements (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "118",
+							"uri": "http://127.0.0.1:8100/api/super-admin/etablissements/import",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/etablissements\/import",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3757",
+							"uri": "http://127.0.0.1:8100/api/super-admin/etablissements/import?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/etablissements\/import (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3773",
+							"uri": "http://127.0.0.1:8100/api/super-admin/etablissements/import?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/etablissements\/import (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3745",
+							"uri": "http://127.0.0.1:8100/api/super-admin/etablissements/%7Bid%7D?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/etablissements\/{id} (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3776",
+							"uri": "http://127.0.0.1:8100/api/super-admin/etablissements/%7Bid%7D?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/etablissements\/{id} (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "120",
+							"uri": "http://127.0.0.1:8100/api/super-admin/etablissements/%7Bid%7D/resend-credentials",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/etablissements\/{id}\/resend-credentials",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3750",
+							"uri": "http://127.0.0.1:8100/api/super-admin/etablissements/%7Bid%7D/resend-credentials?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/etablissements\/{id}\/resend-credentials (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3783",
+							"uri": "http://127.0.0.1:8100/api/super-admin/etablissements/%7Bid%7D/resend-credentials?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/etablissements\/{id}\/resend-credentials (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "3949",
+							"uri": "http://127.0.0.1:8100/api/super-admin/etablissements/%7Bid%7D/stats?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/etablissements\/{id}\/stats (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3955",
+							"uri": "http://127.0.0.1:8100/api/super-admin/etablissements/%7Bid%7D/stats?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/etablissements\/{id}\/stats (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3952",
+							"uri": "http://127.0.0.1:8100/api/user?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/user (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('cmd.exe \/C echo wpxhojrn98qf...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "3960",
+							"uri": "http://127.0.0.1:8100/api/user?-d+allow_url_include%3d1+-d+auto_prepend_file%3dphp://input",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/user (-d allow_url_include=1 -d auto_prepend_f...)(<?php exec('echo wpxhojrn98qf2tvrscce',$...)",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "405",
+							"otherinfo": ""
+						},
+						{
+							"id": "34",
+							"uri": "http://127.0.0.1:8100/api/admin/ecs/%7Bid%7D",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/ecs\/{id}",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "39",
+							"uri": "http://127.0.0.1:8100/api/admin/evenements/%7Bid%7D",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/evenements\/{id}",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "85",
+							"uri": "http://127.0.0.1:8100/api/admin/profile",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "86",
+							"uri": "http://127.0.0.1:8100/api/admin/profile/password",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/profile\/password",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "46",
+							"uri": "http://127.0.0.1:8100/api/admin/salles/%7Bid%7D",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/salles\/{id}",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "19",
+							"uri": "http://127.0.0.1:8100/api/admin/students/id",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/students\/id ()({nom,prenom,matricule,filiere_id,annee_id,email,telephone,statut})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "30",
+							"uri": "http://127.0.0.1:8100/api/admin/ues/%7Bid%7D",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/admin\/ues\/{id}",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "116",
+							"uri": "http://127.0.0.1:8100/api/super-admin/etablissements/%7Bid%7D",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/super-admin\/etablissements\/{id}",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						}
+					],
+					"count": "386",
+					"systemic": false,
+					"solution": "",
+					"otherinfo": "",
+					"reference": "",
+					"cweid": "388",
+					"wascid": "20",
+					"sourceid": "54"
+				},
+				{
+					"pluginid": "10111",
+					"alertRef": "10111",
+					"alert": "Authentication Request Identified",
+					"name": "Authentication Request Identified",
+					"riskcode": "0",
+					"confidence": "1",
+					"riskdesc": "Informational (Low)",
+					"desc": "<p>The given request has been identified as an authentication request. The 'Other Info' field contains a set of key=value lines which identify any relevant fields. If the request is in a context which has an Authentication Method set to \"Auto-Detect\" then this rule will change the authentication to match the request identified.</p>",
+					"instances":[ 
+						{
+							"id": "107",
+							"uri": "http://127.0.0.1:8100/api/reset-password",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/reset-password ()({token,email,password,password_confirmation})",
+							"method": "POST",
+							"param": "email",
+							"attack": "",
+							"evidence": "password",
+							"otherinfo": "userParam=email\nuserValue=zaproxy@example.com\npasswordParam=password"
+						},
+						{
+							"id": "104",
+							"uri": "http://127.0.0.1:8100/api/login",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/login ()({email,password,remember,two_factor_code})",
+							"method": "POST",
+							"param": "email",
+							"attack": "",
+							"evidence": "password",
+							"otherinfo": "userParam=email\nuserValue=zaproxy@example.com\npasswordParam=password"
+						}
+					],
+					"count": "2",
+					"systemic": false,
+					"solution": "<p>This is an informational alert rather than a vulnerability and so there is nothing to fix.</p>",
+					"otherinfo": "<p>userParam=email</p><p>userValue=zaproxy@example.com</p><p>passwordParam=password</p>",
+					"reference": "<p>https://www.zaproxy.org/docs/desktop/addons/authentication-helper/auth-req-id/</p>",
+					"cweid": "-1",
+					"wascid": "-1",
+					"sourceid": "9"
+				},
+				{
+					"pluginid": "10049",
+					"alertRef": "10049-1",
+					"alert": "Non-Storable Content",
+					"name": "Non-Storable Content",
+					"riskcode": "0",
+					"confidence": "2",
+					"riskdesc": "Informational (Medium)",
+					"desc": "<p>The response contents are not storable by caching components such as proxy servers. If the response does not contain sensitive, personal or user-specific information, it may benefit from being stored and cached, to improve performance.</p>",
+					"instances":[ 
+						{
+							"id": "94",
+							"uri": "http://127.0.0.1:8100/api/auth/student/me",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/auth\/student\/me",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "no-store",
+							"otherinfo": ""
+						},
+						{
+							"id": "0",
+							"uri": "http://127.0.0.1:8100/api/docs/json",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/docs\/json",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "no-store",
+							"otherinfo": ""
+						},
+						{
+							"id": "95",
+							"uri": "http://127.0.0.1:8100/api/student/qrcode/current",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/student\/qrcode\/current",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "no-store",
+							"otherinfo": ""
+						},
+						{
+							"id": "98",
+							"uri": "http://127.0.0.1:8100/api/forgot-password",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/forgot-password ()({email})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "no-store",
+							"otherinfo": ""
+						},
+						{
+							"id": "102",
+							"uri": "http://127.0.0.1:8100/api/presence/scan",
+							"nodeName": "http:\/\/127.0.0.1:8100\/api\/presence\/scan ()({identifiant_unique,token,device_fingerprint,scan_challenge,latitude,longitude,ssid,bssid})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "no-store",
+							"otherinfo": ""
+						}
+					],
+					"count": "5",
+					"systemic": true,
+					"solution": "<p>The content may be marked as storable by ensuring that the following conditions are satisfied:</p><p>The request method must be understood by the cache and defined as being cacheable (\"GET\", \"HEAD\", and \"POST\" are currently defined as cacheable)</p><p>The response status code must be understood by the cache (one of the 1XX, 2XX, 3XX, 4XX, or 5XX response classes are generally understood)</p><p>The \"no-store\" cache directive must not appear in the request or response header fields</p><p>For caching by \"shared\" caches such as \"proxy\" caches, the \"private\" response directive must not appear in the response</p><p>For caching by \"shared\" caches such as \"proxy\" caches, the \"Authorization\" header field must not appear in the request, unless the response explicitly allows it (using one of the \"must-revalidate\", \"public\", or \"s-maxage\" Cache-Control response directives)</p><p>In addition to the conditions above, at least one of the following conditions must also be satisfied by the response:</p><p>It must contain an \"Expires\" header field</p><p>It must contain a \"max-age\" response directive</p><p>For \"shared\" caches such as \"proxy\" caches, it must contain a \"s-maxage\" response directive</p><p>It must contain a \"Cache Control Extension\" that allows it to be cached</p><p>It must have a status code that is defined as cacheable by default (200, 203, 204, 206, 300, 301, 404, 405, 410, 414, 501).</p>",
+					"otherinfo": "",
+					"reference": "<p>https://datatracker.ietf.org/doc/html/rfc7234</p><p>https://datatracker.ietf.org/doc/html/rfc7231</p><p>https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html</p>",
+					"cweid": "524",
+					"wascid": "13",
+					"sourceid": "14"
+				}
+			]
+		}
+	],
+	"sequences":[
+	]
+
+}

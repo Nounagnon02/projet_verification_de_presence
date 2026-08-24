@@ -117,6 +117,18 @@ class SecurityHeaders
         // Cross-Origin-Resource-Policy (CORP) - Protéger les ressources
         $response->headers->set('Cross-Origin-Resource-Policy', 'same-origin');
 
+        // Retrait des en-têtes qui annoncent la pile technique.
+        //
+        // « X-Powered-By: PHP/8.3.x » livre la version exacte de l'interpréteur :
+        // de quoi cibler une CVE connue sans le moindre travail de découverte.
+        // Relevé par la passe OWASP ZAP du 2026-08-24 (WARN 10037).
+        //
+        // Le réglage PHP « expose_php = Off » est la solution de fond, mais il
+        // dépend de l'hébergeur ; ce retrait applicatif ne dépend de personne.
+        $response->headers->remove('X-Powered-By');
+        $response->headers->remove('Server');
+        header_remove('X-Powered-By');
+
         // Cache-Control pour les réponses API (éviter mise en cache sensible)
         if ($request->is('api/*')) {
             $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, private');

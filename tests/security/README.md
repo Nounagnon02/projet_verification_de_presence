@@ -18,15 +18,40 @@ php artisan serve --port=8000
 ## Execution
 
 ```bash
-docker run --rm --network host \
+docker run --rm --memory=2g --network host \
   -v "$(pwd)/tests/security:/zap/wrk/:rw" \
   ghcr.io/zaproxy/zaproxy:stable zap-api-scan.py \
-  -t http://localhost:8000/api/docs/json -f openapi \
+  -t http://127.0.0.1:8100/api/docs/json -f openapi \
+  -O http://127.0.0.1:8100 \
   -c zap-baseline.conf \
   -r rapport-zap.html -J rapport-zap.json
 ```
 
 Code de sortie non nul = au moins une regle marquee `FAIL` a declenche.
+
+## ⚠ `-O` est obligatoire, pas optionnel
+
+La specification declare trois serveurs, dont **la production**
+(`https://api.presence.uac.bj/api`). `zap-api-scan` envoie ses charges d'attaque
+a **tous** les serveurs declares.
+
+Constate a la premiere passe : ZAP a scanne deux cibles, la mienne et un serveur
+de developpement qui tournait par ailleurs sur le port 8000. La production n'a
+pas ete touchee uniquement parce que son nom de domaine ne resout pas depuis
+cette machine. Sur un poste ou il resoudrait, la passe l'aurait attaquee.
+
+`-O <cible>` force toutes les requetes vers l'hote indique et ignore les serveurs
+de la specification. Ne jamais lancer la passe sans lui.
+
+## Prealable : la specification doit etre analysable
+
+La cible de ZAP est `docs/openapi.yaml`, servi par `/api/docs/json`. Ce fichier
+a longtemps ete casse — trois erreurs de syntaxe, dont deux cles dupliquees — et
+l'endpoint repondait 500 : la passe n'avait alors aucune cible.
+
+`tests/Feature/ApiDocumentationTest.php` verifie desormais que la specification
+s'analyse, qu'elle ne decrit aucun chemin inexistant, et que les points d'entree
+non authentifies y figurent tous. Lancer cette classe avant toute campagne.
 
 ## Pourquoi la cible est /api/docs/json
 
