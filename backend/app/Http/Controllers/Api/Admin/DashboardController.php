@@ -95,7 +95,12 @@ class DashboardController extends Controller
 
         $fraudesSuspectees = $scopeAnomalies(Anomaly::where('resolved', false))->count();
 
-        $dernieresAnomalies = $scopeAnomalies(Anomaly::with('member')->where('resolved', false))
+        // Aucun eager load : le mapping ci-dessous ne lit que des colonnes de la
+        // table. Le precedent with('member') visait une relation vers une classe
+        // App\Models\Member inexistante — vestige d'un modele metier abandonne —
+        // et faisait donc repondre 500 au tableau de bord des la premiere anomalie
+        // enregistree.
+        $dernieresAnomalies = $scopeAnomalies(Anomaly::where('resolved', false))
             ->latest()
             ->take(5)
             ->get();
@@ -153,14 +158,34 @@ class DashboardController extends Controller
     {
         $etablissementId = $this->getEtablissementId($request);
 
-        $totalEvenements = $this->scopeEvenement(Evenement::where('date', '<', now()), $etablissementId)->count();
+        // Le decompte porte sur les seances passees de la filiere de l'etudiant,
+        // et les presences comptees sont celles rattachees a ces memes seances.
+        //
+        // La version precedente comparait deux perimetres differents : un total
+        // d'evenements passes de tout l'etablissement d'un cote, et le nombre
+        // total de presences de l'etudiant de l'autre, toutes seances confondues.
+        // Deux consequences : un etudiant de la filiere A etait compte absent aux
+        // seances de la filiere B, et « absences » pouvait devenir NEGATIF des
+        // qu'un etudiant avait plus de presences que le total retenu au
+        // denominateur. Ici les deux membres partagent le meme perimetre, donc
+        // les presences sont par construction un sous-ensemble des seances et la
+        // difference reste positive ou nulle.
+        $seancesPassees = "(SELECT COUNT(*) FROM evenements ev
+                              WHERE ev.filiere_id = etudiants.filiere_id
+                                AND ev.date < now())";
+
+        $presencesRetenues = "(SELECT COUNT(*) FROM presences p
+                                 JOIN evenements ev2 ON ev2.id = p.evenement_id
+                                WHERE p.etudiant_id = etudiants.id
+                                  AND ev2.filiere_id = etudiants.filiere_id
+                                  AND ev2.date < now())";
 
         $topAbsences = $this->scopeEtudiant(Etudiant::with('filiere')
             ->select('etudiants.id', 'etudiants.nom', 'etudiants.prenom', 'etudiants.matricule', 'filieres.code as filiere_code')
             ->join('filieres', 'etudiants.filiere_id', '=', 'filieres.id'), $etablissementId)
-            ->selectRaw("COALESCE((SELECT COUNT(*) FROM presences WHERE presences.etudiant_id = etudiants.id), 0) as total_presences")
-            ->selectRaw("? - COALESCE((SELECT COUNT(*) FROM presences WHERE presences.etudiant_id = etudiants.id), 0) as absences", [$totalEvenements])
-            ->orderBy('absences', 'desc')
+            ->selectRaw("COALESCE({$presencesRetenues}, 0) as total_presences")
+            ->selectRaw("COALESCE({$seancesPassees}, 0) - COALESCE({$presencesRetenues}, 0) as absences")
+            ->orderByRaw("COALESCE({$seancesPassees}, 0) - COALESCE({$presencesRetenues}, 0) DESC")
             ->take(10)
             ->get();
 

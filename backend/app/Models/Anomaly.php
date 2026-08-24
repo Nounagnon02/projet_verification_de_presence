@@ -24,10 +24,10 @@ class Anomaly extends Model
         'resolved_at' => 'datetime'
     ];
 
-    public function member(): BelongsTo
-    {
-        return $this->belongsTo(Member::class);
-    }
+    // Pas de relation vers « member » : la classe App\Models\Member n'existe pas.
+    // La colonne member_id subsiste en base (migration
+    // 2026_05_23_100003_create_anomalies_table) mais n'est plus alimentee ; toute
+    // relation declaree ici leve une Error des qu'elle est chargee.
 
     public function etudiant(): BelongsTo
     {
