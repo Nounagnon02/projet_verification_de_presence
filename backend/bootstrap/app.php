@@ -27,7 +27,14 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // SPA stateful auth (cookies httpOnly Sanctum) + Security headers
+        //
+        // ForceHttps etait ecrit mais n'etait enregistre NULLE PART : une requete
+        // en clair etait servie telle quelle. Le seul dispositif actif etait
+        // URL::forceScheme() dans AppServiceProvider, qui ne concerne que les URL
+        // GENEREES par l'application, jamais les requetes entrantes. Le cahier des
+        // charges annoncait pourtant une « redirection forcee par middleware ».
         $middleware->api(prepend: [
+            \App\Http\Middleware\ForceHttps::class,
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             \App\Http\Middleware\SecurityHeaders::class,
         ]);
