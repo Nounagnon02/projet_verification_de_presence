@@ -172,6 +172,7 @@ const ReportsPage = () => {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [exporting, setExporting] = useState(null);
+  const [exportError, setExportError] = useState('');
 
   //Comparaisons
   const [semComp, setSemComp] = useState(null);
@@ -411,28 +412,44 @@ const ReportsPage = () => {
     return () => { annule = true; };
   }, [showFiliereComp, compFiliereAnneeId, rechargementFiliere]);
 
-  //EXPORTS 
+  //EXPORTS
   const exportReport = async (type) => {
     setExporting(type);
+    setExportError('');
     try {
       let url = '';
+      let params = {};
       let filename = '';
+
       switch (type) {
         case 'presences-csv':
           url = '/admin/reports/excel/export';
+          // Seuls ces trois filtres sont honores par l'export cote serveur.
+          params = {
+            filiere_id: filiereId || undefined,
+            date_debut: dateDebut || undefined,
+            date_fin: dateFin || undefined,
+          };
           filename = `presences_${Date.now()}.csv`;
           break;
+
         case 'filiere-pdf':
-          url = filiereId ? `/admin/reports/department/${filiereId}` : '/admin/reports/department/1';
+          // Le repli sur la filiere 1 produisait le rapport d'une filiere
+          // arbitraire ; et sans ?format=pdf l'endpoint renvoie du JSON, qui
+          // etait telecharge sous un nom en .pdf.
+          if (!filiereId) {
+            setExportError('Sélectionnez une filière avant d\'exporter son rapport.');
+            return;
+          }
+          url = `/admin/reports/department/${filiereId}`;
+          params = { format: 'pdf' };
           filename = `rapport_filiere_${Date.now()}.pdf`;
           break;
+
         default:
           return;
       }
-      const params = {};
-      if (filiereId) params.filiere_id = filiereId;
-      if (dateDebut) params.date_debut = dateDebut;
-      if (dateFin) params.date_fin = dateFin;
+
       const { data: blobData } = await api.get(url, { params, responseType: 'blob' });
       const blob = new Blob([blobData]);
       const link = document.createElement('a');
@@ -441,7 +458,7 @@ const ReportsPage = () => {
       link.click();
       URL.revokeObjectURL(link.href);
     } catch {
-      // silencieux
+      setExportError('L\'export a échoué. Réessayez dans un instant.');
     } finally {
       setExporting(null);
     }
@@ -643,6 +660,9 @@ const ReportsPage = () => {
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-warning/10 text-warning rounded-lg text-xs font-semibold hover:bg-warning/20 transition-all disabled:opacity-50">
                 {exporting === 'filiere-pdf' ? <FiLoader className="animate-spin" size={12} /> : <FiFileText size={12} />} {exporting === 'filiere-pdf' ? 'Export...' : 'Rapport Filière PDF'}
               </button>
+              {exportError && (
+                <p className="w-full text-xs text-error font-medium mt-1">{exportError}</p>
+              )}
             </div>
           </div>
 
