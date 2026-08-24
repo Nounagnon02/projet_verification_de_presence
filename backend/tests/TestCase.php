@@ -116,8 +116,20 @@ abstract class TestCase extends BaseTestCase
             DB::statement('SET statement_timeout TO 0');
         }
 
-        // Exécuter les migrations une seule fois pour tous les tests
-        $lockFile = sys_get_temp_dir() . '/uac_migrations_run_lock';
+        // Migrations exécutées une seule fois pour toute la suite, mais le verrou
+        // est indexé sur l'empreinte du répertoire de migrations.
+        //
+        // Un verrou à nom fixe survivait à l'ajout d'une migration : la base de
+        // test restait sur un schéma périmé et les tests échouaient sur des
+        // colonnes absentes, sans que rien n'indique la cause. Il fallait penser
+        // à supprimer le fichier à la main. Ici, ajouter, renommer ou supprimer
+        // une migration change l'empreinte, donc le nom du verrou, donc relance
+        // la migration.
+        $migrations = glob(database_path('migrations/*.php')) ?: [];
+        sort($migrations);
+        $empreinte = substr(md5(implode('|', array_map('basename', $migrations))), 0, 12);
+
+        $lockFile = sys_get_temp_dir() . '/uac_migrations_' . $empreinte . '.lock';
         if (!file_exists($lockFile)) {
             $this->artisan('migrate', ['--force' => true]);
             file_put_contents($lockFile, date('Y-m-d H:i:s'));
