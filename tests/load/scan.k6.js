@@ -55,28 +55,31 @@ const latenceRejet = new Trend('latence_rejet', true);
 
 export const options = {
   scenarios: {
-    // Montee progressive jusqu'a 500 utilisateurs, puis palier.
+    // UNE seule iteration par utilisateur virtuel, et c'est essentiel.
+    //
+    // L'hypothese H3 porte sur « 500 utilisateurs simultanes » : 500 etudiants
+    // qui scannent une fois chacun. Un executeur a iterations repetees rejoue
+    // les memes couples — chaque jeton etant a usage unique, tout ce qui suit la
+    // premiere passe repart en 410, et la mesure ne decrit plus que des refus.
+    //
+    // Constate a la premiere campagne : 3 363 iterations pour 500 couples, soit
+    // 6,7 reutilisations par couple.
     nominal: {
-      executor: 'ramping-vus',
+      executor: 'per-vu-iterations',
       exec: 'scanNominal',
-      startVUs: 0,
-      stages: [
-        { duration: '30s', target: Math.floor(VUS / 4) },
-        { duration: '30s', target: Math.floor(VUS / 2) },
-        { duration: '60s', target: VUS },
-        { duration: '60s', target: VUS },
-        { duration: '15s', target: 0 },
-      ],
-      gracefulRampDown: '10s',
+      vus: VUS,
+      iterations: 1,
+      maxDuration: '5m',
       tags: { scenario: 'nominal' },
     },
-    // Reference basse, a charge constante et modeste : sert de comparaison,
-    // pas de mesure de capacite.
+    // Reference basse : le chemin de refus, mesurable en boucle puisqu'un jeton
+    // deja mort le reste.
     rejet: {
       executor: 'constant-vus',
       exec: 'scanRejete',
       vus: 20,
-      duration: '3m15s',
+      duration: '60s',
+      startTime: '10s',
       tags: { scenario: 'rejet' },
     },
   },
@@ -93,14 +96,15 @@ export const options = {
 };
 
 /**
- * Un couple distinct par utilisateur virtuel et par iteration.
+ * Le couple attribue a cet utilisateur virtuel.
  *
- * __VU commence a 1 ; l'index combine le numero d'utilisateur et celui de
- * l'iteration pour ne jamais rejouer un jeton deja consomme.
+ * __VU commence a 1. Avec une iteration par utilisateur, l'index est direct et
+ * aucun jeton n'est jamais rejoue. Le modulo ne sert qu'au cas ou l'on
+ * lancerait plus d'utilisateurs que le jeu n'en contient — le controle « jeton
+ * non deja consomme » le signalerait alors.
  */
 function prochainCouple() {
-  const index = ((__VU - 1) * 1000 + __ITER) % JEU.nominal.length;
-  return JEU.nominal[index];
+  return JEU.nominal[(__VU - 1) % JEU.nominal.length];
 }
 
 export function scanNominal() {
@@ -200,6 +204,6 @@ export function handleSummary(donnees) {
 
   return {
     stdout: rapport,
-    'tests/load/resultats-load-01.json': JSON.stringify(donnees, null, 2),
+    'resultats-load-01.json': JSON.stringify(donnees, null, 2),
   };
 }

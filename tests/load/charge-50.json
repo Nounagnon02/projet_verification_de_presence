@@ -1,0 +1,480 @@
+{
+    "genere_le": "2026-08-24T15:33:24+00:00",
+    "marqueur": "CHARGE-K6-D8YE",
+    "vus": 50,
+    "iterations": 1,
+    "nominal": [
+        {
+            "identifiant_unique": "CHARGE0_PRENOM0_MAT_CHG_D8YE_0_CHG_D8YE_2090_2091",
+            "token": "d667aae4-45a1-42ce-82c2-8b64a4759340",
+            "empreinte": "k6-D8YE-0",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE1_PRENOM1_MAT_CHG_D8YE_1_CHG_D8YE_2090_2091",
+            "token": "efc67fd5-8864-414d-8476-14f4ac0135c2",
+            "empreinte": "k6-D8YE-1",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE2_PRENOM2_MAT_CHG_D8YE_2_CHG_D8YE_2090_2091",
+            "token": "65e64af7-9650-49e0-9760-b93272372473",
+            "empreinte": "k6-D8YE-2",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE3_PRENOM3_MAT_CHG_D8YE_3_CHG_D8YE_2090_2091",
+            "token": "97dcbf93-51b7-4cfa-9e8f-931cc75d845b",
+            "empreinte": "k6-D8YE-3",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE4_PRENOM4_MAT_CHG_D8YE_4_CHG_D8YE_2090_2091",
+            "token": "47608d18-9331-4655-a6eb-95cff50889ac",
+            "empreinte": "k6-D8YE-4",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE5_PRENOM5_MAT_CHG_D8YE_5_CHG_D8YE_2090_2091",
+            "token": "1f155b05-2e3d-416b-bea7-039da4c22cc8",
+            "empreinte": "k6-D8YE-5",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE6_PRENOM6_MAT_CHG_D8YE_6_CHG_D8YE_2090_2091",
+            "token": "486e472a-7e8a-44ee-b096-0a09cabf1698",
+            "empreinte": "k6-D8YE-6",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE7_PRENOM7_MAT_CHG_D8YE_7_CHG_D8YE_2090_2091",
+            "token": "73b8553c-1edd-4524-b9d4-27aef264b45f",
+            "empreinte": "k6-D8YE-7",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE8_PRENOM8_MAT_CHG_D8YE_8_CHG_D8YE_2090_2091",
+            "token": "3062614f-0626-4bde-b8f2-35a20eb8ac98",
+            "empreinte": "k6-D8YE-8",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE9_PRENOM9_MAT_CHG_D8YE_9_CHG_D8YE_2090_2091",
+            "token": "b45c0655-9bb3-47e6-a0a1-0df6a665995b",
+            "empreinte": "k6-D8YE-9",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE10_PRENOM10_MAT_CHG_D8YE_10_CHG_D8YE_2090_2091",
+            "token": "9f618236-e29c-4e36-acb3-db3d8c77bdfd",
+            "empreinte": "k6-D8YE-10",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE11_PRENOM11_MAT_CHG_D8YE_11_CHG_D8YE_2090_2091",
+            "token": "326c2139-1146-479a-9265-58d80873a9ff",
+            "empreinte": "k6-D8YE-11",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE12_PRENOM12_MAT_CHG_D8YE_12_CHG_D8YE_2090_2091",
+            "token": "c35f7c1e-f2df-4f21-904d-5f38b3a86615",
+            "empreinte": "k6-D8YE-12",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE13_PRENOM13_MAT_CHG_D8YE_13_CHG_D8YE_2090_2091",
+            "token": "80b5bfef-6d80-4134-aa6c-ff1a40411e2a",
+            "empreinte": "k6-D8YE-13",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE14_PRENOM14_MAT_CHG_D8YE_14_CHG_D8YE_2090_2091",
+            "token": "a19be2e9-30a4-4cbf-9c7b-cd52b0336b8a",
+            "empreinte": "k6-D8YE-14",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE15_PRENOM15_MAT_CHG_D8YE_15_CHG_D8YE_2090_2091",
+            "token": "1ce500ac-19fd-4166-9978-b21b540b2da8",
+            "empreinte": "k6-D8YE-15",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE16_PRENOM16_MAT_CHG_D8YE_16_CHG_D8YE_2090_2091",
+            "token": "4f547d7b-232c-4014-ac9b-c55760b9a171",
+            "empreinte": "k6-D8YE-16",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE17_PRENOM17_MAT_CHG_D8YE_17_CHG_D8YE_2090_2091",
+            "token": "916a1f8c-4c88-4cb3-ac20-9547f66182e6",
+            "empreinte": "k6-D8YE-17",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE18_PRENOM18_MAT_CHG_D8YE_18_CHG_D8YE_2090_2091",
+            "token": "139e062b-51b4-47b4-a805-af0a67ac5174",
+            "empreinte": "k6-D8YE-18",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE19_PRENOM19_MAT_CHG_D8YE_19_CHG_D8YE_2090_2091",
+            "token": "52c58be6-1592-4e57-ba69-ecad90e45479",
+            "empreinte": "k6-D8YE-19",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE20_PRENOM20_MAT_CHG_D8YE_20_CHG_D8YE_2090_2091",
+            "token": "7ce871c0-8435-4507-83fa-1496bb719360",
+            "empreinte": "k6-D8YE-20",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE21_PRENOM21_MAT_CHG_D8YE_21_CHG_D8YE_2090_2091",
+            "token": "98a3b800-c364-4960-b6ec-accae849c5eb",
+            "empreinte": "k6-D8YE-21",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE22_PRENOM22_MAT_CHG_D8YE_22_CHG_D8YE_2090_2091",
+            "token": "81b68b42-4ee6-4f4c-a212-5b3c6a4a348f",
+            "empreinte": "k6-D8YE-22",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE23_PRENOM23_MAT_CHG_D8YE_23_CHG_D8YE_2090_2091",
+            "token": "e428e192-7b21-423e-8ed3-e424874115f1",
+            "empreinte": "k6-D8YE-23",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE24_PRENOM24_MAT_CHG_D8YE_24_CHG_D8YE_2090_2091",
+            "token": "72348f71-6240-484d-8f88-667cb596ee42",
+            "empreinte": "k6-D8YE-24",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE25_PRENOM25_MAT_CHG_D8YE_25_CHG_D8YE_2090_2091",
+            "token": "8a35e2e4-ac17-49dc-868e-f3f9019196b5",
+            "empreinte": "k6-D8YE-25",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE26_PRENOM26_MAT_CHG_D8YE_26_CHG_D8YE_2090_2091",
+            "token": "8bd97b5f-2f04-4174-8469-faa656830408",
+            "empreinte": "k6-D8YE-26",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE27_PRENOM27_MAT_CHG_D8YE_27_CHG_D8YE_2090_2091",
+            "token": "de1f505d-ae92-4347-b546-e57ee117403a",
+            "empreinte": "k6-D8YE-27",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE28_PRENOM28_MAT_CHG_D8YE_28_CHG_D8YE_2090_2091",
+            "token": "0c28f06b-83fe-4a5a-8523-2c0a97ed47e4",
+            "empreinte": "k6-D8YE-28",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE29_PRENOM29_MAT_CHG_D8YE_29_CHG_D8YE_2090_2091",
+            "token": "8b7618ce-4ad8-4e06-8bef-ac2c0bc643b9",
+            "empreinte": "k6-D8YE-29",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE30_PRENOM30_MAT_CHG_D8YE_30_CHG_D8YE_2090_2091",
+            "token": "072e3e94-cff0-42b2-8376-2f7ee1fb643b",
+            "empreinte": "k6-D8YE-30",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE31_PRENOM31_MAT_CHG_D8YE_31_CHG_D8YE_2090_2091",
+            "token": "9711184c-5eac-48d2-9bbe-79ca21e6129d",
+            "empreinte": "k6-D8YE-31",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE32_PRENOM32_MAT_CHG_D8YE_32_CHG_D8YE_2090_2091",
+            "token": "b34027de-95d4-44c1-aae5-f8f18893003f",
+            "empreinte": "k6-D8YE-32",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE33_PRENOM33_MAT_CHG_D8YE_33_CHG_D8YE_2090_2091",
+            "token": "44711000-cdea-40b8-bdcc-89ccf4f812cb",
+            "empreinte": "k6-D8YE-33",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE34_PRENOM34_MAT_CHG_D8YE_34_CHG_D8YE_2090_2091",
+            "token": "340406b6-615d-4db7-a60b-e735a07f1325",
+            "empreinte": "k6-D8YE-34",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE35_PRENOM35_MAT_CHG_D8YE_35_CHG_D8YE_2090_2091",
+            "token": "16c0e331-38f8-4d1e-b264-a10c579742a9",
+            "empreinte": "k6-D8YE-35",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE36_PRENOM36_MAT_CHG_D8YE_36_CHG_D8YE_2090_2091",
+            "token": "b5d0484a-84b5-4016-99a4-f6b42cb3fbf0",
+            "empreinte": "k6-D8YE-36",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE37_PRENOM37_MAT_CHG_D8YE_37_CHG_D8YE_2090_2091",
+            "token": "73555a75-bd4f-47bb-9532-a69024996cf4",
+            "empreinte": "k6-D8YE-37",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE38_PRENOM38_MAT_CHG_D8YE_38_CHG_D8YE_2090_2091",
+            "token": "2a943c65-dc5a-4304-b7be-1fa2195f15fe",
+            "empreinte": "k6-D8YE-38",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE39_PRENOM39_MAT_CHG_D8YE_39_CHG_D8YE_2090_2091",
+            "token": "d6153725-3619-4c9a-95f3-d060c6fde05b",
+            "empreinte": "k6-D8YE-39",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE40_PRENOM40_MAT_CHG_D8YE_40_CHG_D8YE_2090_2091",
+            "token": "f7279329-db81-4cbe-af38-e4c85643968c",
+            "empreinte": "k6-D8YE-40",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE41_PRENOM41_MAT_CHG_D8YE_41_CHG_D8YE_2090_2091",
+            "token": "0a4e5e6e-665b-4687-82dc-f3ce6db3f16c",
+            "empreinte": "k6-D8YE-41",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE42_PRENOM42_MAT_CHG_D8YE_42_CHG_D8YE_2090_2091",
+            "token": "8af9d6ab-7b94-43d1-9051-a0839886bf91",
+            "empreinte": "k6-D8YE-42",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE43_PRENOM43_MAT_CHG_D8YE_43_CHG_D8YE_2090_2091",
+            "token": "068bde57-b3f3-4f85-b163-c4647be17f24",
+            "empreinte": "k6-D8YE-43",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE44_PRENOM44_MAT_CHG_D8YE_44_CHG_D8YE_2090_2091",
+            "token": "449531bd-4a55-490b-8274-cdd76adb8a48",
+            "empreinte": "k6-D8YE-44",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE45_PRENOM45_MAT_CHG_D8YE_45_CHG_D8YE_2090_2091",
+            "token": "fef404a7-e906-46d5-8683-92db1c912f9c",
+            "empreinte": "k6-D8YE-45",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE46_PRENOM46_MAT_CHG_D8YE_46_CHG_D8YE_2090_2091",
+            "token": "e26df784-b150-4cc4-a020-d5dabdf0a696",
+            "empreinte": "k6-D8YE-46",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE47_PRENOM47_MAT_CHG_D8YE_47_CHG_D8YE_2090_2091",
+            "token": "a4fc8242-17a2-4d0c-a1a3-f1913c0d8dd5",
+            "empreinte": "k6-D8YE-47",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE48_PRENOM48_MAT_CHG_D8YE_48_CHG_D8YE_2090_2091",
+            "token": "2a8c3956-1a6e-4fb2-823e-ea438daf904f",
+            "empreinte": "k6-D8YE-48",
+            "latitude": null,
+            "longitude": null
+        },
+        {
+            "identifiant_unique": "CHARGE49_PRENOM49_MAT_CHG_D8YE_49_CHG_D8YE_2090_2091",
+            "token": "318fc289-78aa-4b02-afa3-7dc75fa03c97",
+            "empreinte": "k6-D8YE-49",
+            "latitude": null,
+            "longitude": null
+        }
+    ],
+    "rejet": [
+        {
+            "identifiant_unique": "CHARGE0_PRENOM0_MAT_CHG_D8YE_0_CHG_D8YE_2090_2091",
+            "token": "a684bfb6-8026-4b1b-a507-72eeb7b7f732",
+            "empreinte": "k6-D8YE-0-rejet",
+            "defi": "875c93c885737a6e12b88c600a1bba7d129e41a0e611ebc737704937d8722f2b"
+        },
+        {
+            "identifiant_unique": "CHARGE1_PRENOM1_MAT_CHG_D8YE_1_CHG_D8YE_2090_2091",
+            "token": "255c7bdb-dbdd-4cb4-9002-766f48cbb3d3",
+            "empreinte": "k6-D8YE-1-rejet",
+            "defi": "911bb4fab8e689757ae00ca3eb0fb996f7169271166f63ce6bef09ef3b6230ac"
+        },
+        {
+            "identifiant_unique": "CHARGE2_PRENOM2_MAT_CHG_D8YE_2_CHG_D8YE_2090_2091",
+            "token": "88e603fe-1728-4cc6-8be6-9c8fafa2debe",
+            "empreinte": "k6-D8YE-2-rejet",
+            "defi": "f0f9a6e48ac8da3fa9d64b2645417126a7759c0ecb05e197582c621de3c63857"
+        },
+        {
+            "identifiant_unique": "CHARGE3_PRENOM3_MAT_CHG_D8YE_3_CHG_D8YE_2090_2091",
+            "token": "1f6c187d-b413-4021-bb57-b60a8ff5153a",
+            "empreinte": "k6-D8YE-3-rejet",
+            "defi": "72aa58ae455dc57ee040cc0e94437fbcf6afeed8e378a96311dd1bd28aab52a7"
+        },
+        {
+            "identifiant_unique": "CHARGE4_PRENOM4_MAT_CHG_D8YE_4_CHG_D8YE_2090_2091",
+            "token": "bc1ee008-aeb1-44b5-9300-78b6876335e4",
+            "empreinte": "k6-D8YE-4-rejet",
+            "defi": "e15ada828cfca130b60d57fd15b617b64a8036cdec09016074d10e7831650971"
+        },
+        {
+            "identifiant_unique": "CHARGE5_PRENOM5_MAT_CHG_D8YE_5_CHG_D8YE_2090_2091",
+            "token": "c234448c-2a4a-464f-a837-d81bbf60f6b0",
+            "empreinte": "k6-D8YE-5-rejet",
+            "defi": "266627921a09deb4af83fd72ff04f1259405d062ea6c48a0435a5f5ed767c72e"
+        },
+        {
+            "identifiant_unique": "CHARGE6_PRENOM6_MAT_CHG_D8YE_6_CHG_D8YE_2090_2091",
+            "token": "436389f8-6e67-4e79-818f-dc87e769d274",
+            "empreinte": "k6-D8YE-6-rejet",
+            "defi": "0bad083074f32ec4b79fad568dc3e90605e91e97dcf38c21c175c3c7b7f0cf10"
+        },
+        {
+            "identifiant_unique": "CHARGE7_PRENOM7_MAT_CHG_D8YE_7_CHG_D8YE_2090_2091",
+            "token": "811f8893-4b2b-4b05-94b8-5763b3eefcc6",
+            "empreinte": "k6-D8YE-7-rejet",
+            "defi": "697d1e11b0447b5a9e357970880e2273bad7bf0d7bbd357e39994ffe907120e2"
+        },
+        {
+            "identifiant_unique": "CHARGE8_PRENOM8_MAT_CHG_D8YE_8_CHG_D8YE_2090_2091",
+            "token": "e1751591-546f-4e39-b086-6ba081c4f341",
+            "empreinte": "k6-D8YE-8-rejet",
+            "defi": "b08e574fbbff7aa95c50f999ebde7b109e8f05d3f5cb6588ee215f8be28df097"
+        },
+        {
+            "identifiant_unique": "CHARGE9_PRENOM9_MAT_CHG_D8YE_9_CHG_D8YE_2090_2091",
+            "token": "cd1a9f11-0caf-4e3d-a70d-ee3ebd1df7c1",
+            "empreinte": "k6-D8YE-9-rejet",
+            "defi": "a0f704d282fa668e5617b742c225dcd1665f3600604f41c62ba67b7d4f99aefc"
+        },
+        {
+            "identifiant_unique": "CHARGE10_PRENOM10_MAT_CHG_D8YE_10_CHG_D8YE_2090_2091",
+            "token": "05902ab8-1c54-4bce-a5ae-973c80dbfe31",
+            "empreinte": "k6-D8YE-10-rejet",
+            "defi": "28948e1c33d1034be517a8652ad6a0ec68a0d139e2b4f400c8b33daaf62373a6"
+        },
+        {
+            "identifiant_unique": "CHARGE11_PRENOM11_MAT_CHG_D8YE_11_CHG_D8YE_2090_2091",
+            "token": "72cf863e-c598-4d9f-8cf3-466ab6ab8b97",
+            "empreinte": "k6-D8YE-11-rejet",
+            "defi": "951412324a46b5e91c5a49b355fe61798dad5aa085c2d16c9b5aa5adb714dc51"
+        },
+        {
+            "identifiant_unique": "CHARGE12_PRENOM12_MAT_CHG_D8YE_12_CHG_D8YE_2090_2091",
+            "token": "b0dbd64f-537b-482a-beba-b4414c745bf9",
+            "empreinte": "k6-D8YE-12-rejet",
+            "defi": "3e85a33d0c930ec22c27961b6ea49a336c496849da3ec961ca1428e4af26507e"
+        },
+        {
+            "identifiant_unique": "CHARGE13_PRENOM13_MAT_CHG_D8YE_13_CHG_D8YE_2090_2091",
+            "token": "cb56d7e6-19c1-4e20-90a4-e6ac0260d024",
+            "empreinte": "k6-D8YE-13-rejet",
+            "defi": "015fcee64fe2c8b4faa00551bc763f6ceb8f3a1b4b5be53c0457ab077e65f5ec"
+        },
+        {
+            "identifiant_unique": "CHARGE14_PRENOM14_MAT_CHG_D8YE_14_CHG_D8YE_2090_2091",
+            "token": "1d36f57b-72a5-40ab-8d73-16908c7e53c9",
+            "empreinte": "k6-D8YE-14-rejet",
+            "defi": "f8b5982b2a973bbb316a3a07756913c5db0574a5d7a11768a6e7529feb0b8f70"
+        },
+        {
+            "identifiant_unique": "CHARGE15_PRENOM15_MAT_CHG_D8YE_15_CHG_D8YE_2090_2091",
+            "token": "f1878daa-3fa7-46fc-b0aa-61b1cfbcb840",
+            "empreinte": "k6-D8YE-15-rejet",
+            "defi": "4fc44e7a688eb286af19c0246595a68213d16c18fb3a8c56825781edd6115728"
+        },
+        {
+            "identifiant_unique": "CHARGE16_PRENOM16_MAT_CHG_D8YE_16_CHG_D8YE_2090_2091",
+            "token": "55cef10e-31f3-440d-bb1d-c2fdf0837502",
+            "empreinte": "k6-D8YE-16-rejet",
+            "defi": "209e6e81913291d9bb9fecc74bbb369e0d96c56eff8a916efc6b2c01c38a295e"
+        },
+        {
+            "identifiant_unique": "CHARGE17_PRENOM17_MAT_CHG_D8YE_17_CHG_D8YE_2090_2091",
+            "token": "4be89730-fed3-4f8b-8288-4c69e8567d8f",
+            "empreinte": "k6-D8YE-17-rejet",
+            "defi": "9991bbc00efbb6c480330b329c4376d6873fe517180f6c21a2a181e657b55ca7"
+        },
+        {
+            "identifiant_unique": "CHARGE18_PRENOM18_MAT_CHG_D8YE_18_CHG_D8YE_2090_2091",
+            "token": "708292a6-9db8-4e25-adb7-97188dbc842f",
+            "empreinte": "k6-D8YE-18-rejet",
+            "defi": "5e50bf98b6d501527eff6bc24831d138ba663fa3dd2ca56f2f9363978ee4ad85"
+        },
+        {
+            "identifiant_unique": "CHARGE19_PRENOM19_MAT_CHG_D8YE_19_CHG_D8YE_2090_2091",
+            "token": "61df1914-8895-4805-ab58-7fbcd93b45ee",
+            "empreinte": "k6-D8YE-19-rejet",
+            "defi": "7a40029912eb4aab03e9c104f6404e3fd238c40e2ec23d7e9a69701293bb4915"
+        }
+    ]
+}
