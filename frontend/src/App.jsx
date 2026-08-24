@@ -22,6 +22,7 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 // Phase 3 - New pages
 const QRValidationPage = lazy(() => import('./pages/attendance/QRValidationPage'));
 const PresenceQueuePage = lazy(() => import('./pages/attendance/PresenceQueuePage'));
+const ImportPage = lazy(() => import('./pages/import/ImportPage'));
 const StudentStatsPage = lazy(() => import('./pages/attendance/StudentStatsPage'));
 const WeeklySchedulePage = lazy(() => import('./pages/schedules/WeeklySchedulePage'));
 const AcademicSlatePage = lazy(() => import('./pages/settings/AcademicSlatePage'));
@@ -173,6 +174,9 @@ function App() {
                 <Route path="security" element={<SecurityPage />} />
               </Route>
               <Route path="admin/filieres/create" element={<CreateFilierePage />} />
+              {/* Seule interface des imports CSV « UE/EC » et « emploi du temps » :
+                  ces deux endpoints n'ont aucun autre appelant dans le frontend. */}
+              <Route path="import" element={<ImportPage />} />
               <Route path="import/ai-analysis" element={<AIAnalysisProgressPage />} />
               <Route path="import/validate-schedule" element={<ScheduleValidationPage />} />
               <Route path="import/validate-courses" element={<CourseValidationPage />} />

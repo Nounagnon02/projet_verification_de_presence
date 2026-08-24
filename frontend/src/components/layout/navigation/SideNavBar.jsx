@@ -5,6 +5,7 @@ import {
   MdBook,
   MdCalendarMonth,
   MdHowToReg,
+  MdUploadFile,
   MdAssessment,
   MdSettings,
   MdHelp,
@@ -22,6 +23,7 @@ const links = [
   { to: '/schedules/events', icon: <MdEvent />, label: 'Événements' },
   { to: '/attendance/validate', icon: <MdHowToReg />, label: 'Présences' },
   { to: '/attendance/queue', icon: <MdHowToReg />, label: "File d'attente" },
+  { to: '/import', icon: <MdUploadFile />, label: 'Imports' },
   { to: '/reports', icon: <MdAssessment />, label: 'Rapports' },
   { to: '/settings', icon: <MdSettings />, label: 'Paramètres' },
 ];

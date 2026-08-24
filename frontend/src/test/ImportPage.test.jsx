@@ -10,6 +10,7 @@ vi.mock('../api/axios', () => ({
   },
 }))
 
+import { ToastProvider } from '../context/ToastContext'
 import ImportPage from '../pages/import/ImportPage'
 
 describe('ImportPage', () => {
@@ -20,7 +21,9 @@ describe('ImportPage', () => {
   it('renders import page title', () => {
     render(
       <BrowserRouter>
-        <ImportPage />
+        <ToastProvider>
+          <ImportPage />
+        </ToastProvider>
       </BrowserRouter>
     )
     expect(screen.getByText('Importation')).toBeInTheDocument()
@@ -29,7 +32,9 @@ describe('ImportPage', () => {
   it('renders all tabs', () => {
     render(
       <BrowserRouter>
-        <ImportPage />
+        <ToastProvider>
+          <ImportPage />
+        </ToastProvider>
       </BrowserRouter>
     )
     expect(screen.getByText('Import Étudiants')).toBeInTheDocument()
@@ -42,7 +47,9 @@ describe('ImportPage', () => {
   it('renders file upload area on students tab', () => {
     render(
       <BrowserRouter>
-        <ImportPage />
+        <ToastProvider>
+          <ImportPage />
+        </ToastProvider>
       </BrowserRouter>
     )
     expect(screen.getByText(/Importez votre fichier étudiants/)).toBeInTheDocument()
@@ -51,7 +58,9 @@ describe('ImportPage', () => {
   it('shows student tab content by default', () => {
     render(
       <BrowserRouter>
-        <ImportPage />
+        <ToastProvider>
+          <ImportPage />
+        </ToastProvider>
       </BrowserRouter>
     )
     expect(screen.getByText(/Importez votre fichier étudiants/)).toBeInTheDocument()
@@ -61,7 +70,9 @@ describe('ImportPage', () => {
     const user = userEvent.setup()
     render(
       <BrowserRouter>
-        <ImportPage />
+        <ToastProvider>
+          <ImportPage />
+        </ToastProvider>
       </BrowserRouter>
     )
     await user.click(screen.getByText('Cours (CSV)'))

@@ -46,7 +46,14 @@ const nomDeFichier = (contentDisposition, type) => {
 const CsvTemplateDownload = ({ types, className = '' }) => {
   // Type en cours de téléchargement : pilote l'état de chargement du bouton.
   const [enCours, setEnCours] = useState(null);
-  const { addToast } = useToastCtx();
+
+  // Le contexte de toasts vaut null hors de son fournisseur. Un bouton de
+  // telechargement ne doit pas faire tomber la page qui l'affiche pour autant :
+  // on retombe sur un avertissement console, et l'echec reste visible.
+  const toasts = useToastCtx();
+  const addToast = toasts?.addToast ?? ((type, message) => {
+    console.warn(`[CsvTemplateDownload] ${type} : ${message}`);
+  });
 
   const modeles = types?.length
     ? MODELES.filter((modele) => types.includes(modele.type))

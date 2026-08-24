@@ -1,8 +1,9 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiUpload, FiCheck, FiAlertTriangle, FiTrash2, FiLoader, FiInfo, FiFileText, FiDownload } from 'react-icons/fi';
+import { FiUpload, FiCheck, FiAlertTriangle, FiTrash2, FiLoader, FiInfo, FiFileText } from 'react-icons/fi';
 import { MdPictureAsPdf, MdDescription, MdSchool } from 'react-icons/md';
 import api from '../../api/axios';
+import CsvTemplateDownload from '../../components/import/CsvTemplateDownload';
 
 const STEP_UPLOAD = 0;
 const STEP_RESULTAT = 2;
@@ -183,12 +184,6 @@ export default function ImportPage() {
     }
   };
 
-  const handleDownloadTemplate = (type) => {
-    const token = localStorage.getItem('auth_token');
-    const baseUrl = import.meta.env.VITE_API_URL || '/api';
-    window.open(`${baseUrl}/admin/import/csv/template/${type}?token=${token}`, '_blank');
-  };
-
   const resetAll = () => { setFile(null); setResult(null); setError(''); setStep(STEP_UPLOAD); if (fileRef.current) fileRef.current.value = ''; };
   const clearFile = () => { resetAll(); };
   const formatSize = (bytes) => {
@@ -305,14 +300,14 @@ export default function ImportPage() {
         )}
       </div>
 
-      {/* Template download for CSV tabs */}
+      {/* Modèle CSV vierge, pour les deux onglets CSV.
+          L'ancienne version ouvrait l'URL du modèle avec le jeton en paramètre
+          de requête : Sanctum ne lit que l'en-tête Authorization, le
+          téléchargement repartait donc en 401 — et le jeton se retrouvait dans
+          l'historique du navigateur et les journaux du serveur. */}
       {(tab === 'csv-courses' || tab === 'csv-schedule') && !file && (
         <div className="mt-4 flex justify-center">
-          <button onClick={() => handleDownloadTemplate(templateTypes[tab])}
-            className="flex items-center gap-2 px-4 py-2 bg-surface-container-lowest rounded-xl text-xs font-semibold text-primary hover:bg-surface-container-low transition-all shadow-sm">
-            <FiDownload size={14} />
-            Télécharger le modèle CSV
-          </button>
+          <CsvTemplateDownload types={[templateTypes[tab]]} />
         </div>
       )}
 
@@ -390,9 +385,8 @@ export default function ImportPage() {
           <div className="text-xs text-on-surface-variant space-y-1">
             <p>Colonnes requises : <span className="font-mono font-medium text-primary">code_ue, intitule_ue, filiere_code, niveau, annee_libelle, semestre, volume_horaire_ue, code_ec, intitule_ec, volume_horaire_ec</span></p>
             <p className="mt-2">Une UE avec plusieurs ECs = plusieurs lignes (une par EC).</p>
-            <div className="mt-3 flex items-center gap-2 text-primary">
-              <FiDownload size={14} />
-              <button onClick={() => handleDownloadTemplate('ue-ec')} className="font-semibold hover:underline">Télécharger le modèle</button>
+            <div className="mt-3">
+              <CsvTemplateDownload types={['ue-ec']} />
             </div>
           </div>
         )}
@@ -400,9 +394,8 @@ export default function ImportPage() {
           <div className="text-xs text-on-surface-variant space-y-1">
             <p>Colonnes requises : <span className="font-mono font-medium text-primary">filiere_code, niveau, annee_libelle, ue_code, ec_code, jour, heure_debut, heure_fin, salle_code, type_cours</span></p>
             <p className="mt-2">La détection de conflits (même salle/même créneau) est automatique.</p>
-            <div className="mt-3 flex items-center gap-2 text-primary">
-              <FiDownload size={14} />
-              <button onClick={() => handleDownloadTemplate('edt')} className="font-semibold hover:underline">Télécharger le modèle</button>
+            <div className="mt-3">
+              <CsvTemplateDownload types={['edt']} />
             </div>
           </div>
         )}
