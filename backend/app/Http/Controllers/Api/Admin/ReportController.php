@@ -44,7 +44,7 @@ class ReportController extends Controller
      * Rapport de présence par département/filière.
      * GET /api/admin/reports/department/{filiere}
      */
-    public function departmentReport(Filiere $filiere, \App\Services\AttendanceRateService $attendance): JsonResponse
+    public function departmentReport(Request $request, Filiere $filiere, \App\Services\AttendanceRateService $attendance): mixed
     {
         $totalEtudiants = Etudiant::where('filiere_id', $filiere->id)->count();
         $totalEvenements = Evenement::where('filiere_id', $filiere->id)->where('date', '<', now())->count();
@@ -69,14 +69,30 @@ class ReportController extends Controller
                 'presences_count' => $e->presences_count,
             ]);
 
-        return $this->successResponse([
+        $donnees = [
             'filiere'            => ['id' => $filiere->id, 'code' => $filiere->code, 'intitule' => $filiere->intitule],
             'total_etudiants'    => $totalEtudiants,
             'total_evenements'   => $totalEvenements,
             'total_presences'    => $presences,
             'taux_presence'      => $taux,
             'presences_par_cours' => $presencesParCours,
-        ]);
+        ];
+
+        // L'interface propose un « Rapport Filiere PDF ». Sans ce rendu, elle
+        // telechargeait la reponse JSON sous un nom de fichier .pdf : le fichier
+        // obtenu ne s'ouvrait dans aucun lecteur.
+        if ($request->query('format') === 'pdf') {
+            $pdf = Pdf::loadView('reports.department', $donnees + [
+                'date'  => now()->format('d/m/Y H:i'),
+                'title' => 'Rapport de presence par filiere',
+            ]);
+
+            return $pdf->download(
+                'rapport_filiere_' . $filiere->code . '_' . now()->format('Ymd_His') . '.pdf'
+            );
+        }
+
+        return $this->successResponse($donnees);
     }
 
     /**

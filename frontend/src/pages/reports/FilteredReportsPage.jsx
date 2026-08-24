@@ -61,6 +61,7 @@ export default function FilteredReportsPage() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [exporting, setExporting] = useState(null);
+  const [exportError, setExportError] = useState('');
 
   //Données comparaisons
   const [semComp, setSemComp] = useState(null);
@@ -266,28 +267,47 @@ export default function FilteredReportsPage() {
   }, [showFiliereComp, anneeId]);
 
   //Exports
+  //
+  // Chaque bouton porte desormais sur ce que l'utilisateur a reellement filtre.
+  // Avant : l'export « global » pointait sur /reports/presence/1/pdf — la feuille
+  // de presence de l'evenement d'identifiant 1, quel que soit le filtre — et
+  // l'export filiere telechargeait la reponse JSON de /reports/department sous un
+  // nom en .pdf, donc un fichier qu'aucun lecteur n'ouvrait.
   const exportReport = async (type) => {
     setExporting(type);
+    setExportError('');
     try {
       let url = '';
+      let params = {};
       let filename = '';
+
       switch (type) {
-        case 'global-pdf':
-          url = '/admin/reports/presence/1/pdf';
-          filename = `rapport_global_${Date.now()}.pdf`;
-          break;
         case 'presences-csv':
           url = '/admin/reports/excel/export';
+          // Le backend n'honore que ces trois filtres sur cet export.
+          params = {
+            filiere_id: filiereId || undefined,
+            date_debut: dateDebut || undefined,
+            date_fin: dateFin || undefined,
+          };
           filename = `presences_${Date.now()}.csv`;
           break;
+
         case 'filiere-pdf':
-          url = filiereId ? `/admin/reports/department/${filiereId}` : '/admin/reports/department/1';
+          if (!filiereId) {
+            setExportError('Sélectionnez une filière avant d\'exporter son rapport.');
+            return;
+          }
+          url = `/admin/reports/department/${filiereId}`;
+          params = { format: 'pdf' };
           filename = `rapport_filiere_${Date.now()}.pdf`;
           break;
+
         default:
           return;
       }
-      const { data: blobData } = await api.get(url, { responseType: 'blob' });
+
+      const { data: blobData } = await api.get(url, { params, responseType: 'blob' });
       const blob = new Blob([blobData]);
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
@@ -295,7 +315,7 @@ export default function FilteredReportsPage() {
       link.click();
       URL.revokeObjectURL(link.href);
     } catch {
-      // silencieux
+      setExportError('L\'export a échoué. Réessayez dans un instant.');
     } finally {
       setExporting(null);
     }
@@ -477,10 +497,6 @@ export default function FilteredReportsPage() {
               <span className="text-sm font-bold text-primary">Exports</span>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button onClick={() => exportReport('global-pdf')} disabled={exporting}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-xs font-semibold hover:bg-primary/20 transition-all disabled:opacity-50">
-                <FiFileText /> {exporting === 'global-pdf' ? '...' : 'Rapport Global PDF'}
-              </button>
               <button onClick={() => exportReport('presences-csv')} disabled={exporting}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-success/10 text-success rounded-lg text-xs font-semibold hover:bg-success/20 transition-all disabled:opacity-50">
                 <FiFileText /> {exporting === 'presences-csv' ? '...' : 'Liste Présences CSV'}
@@ -490,6 +506,14 @@ export default function FilteredReportsPage() {
                 <FiFileText /> {exporting === 'filiere-pdf' ? '...' : 'Rapport Filière PDF'}
               </button>
             </div>
+            {!filiereId && (
+              <p className="text-[10px] text-on-surface-variant mt-2">
+                Le rapport PDF porte sur une filière : sélectionnez-en une dans les filtres.
+              </p>
+            )}
+            {exportError && (
+              <p className="text-xs text-error font-medium mt-2">{exportError}</p>
+            )}
           </div>
 
           {/* ==Graphiques ==*/}
