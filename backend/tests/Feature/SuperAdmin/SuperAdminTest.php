@@ -330,12 +330,12 @@ class SuperAdminTest extends TestCase
             ->assertJsonPath('data.total_etudiants', 2)
             ->assertJsonPath('data.total_presences', 1);
 
-        // Identifiant inconnu : 404 au format d'erreur de l'API.
+        // Identifiant inconnu : la route existe, c'est la ressource qui manque.
         $this->withToken($this->jetonSuperAdmin)
             ->getJson('/api/super-admin/etablissements/99999999')
             ->assertStatus(404)
             ->assertJsonPath('success', false)
-            ->assertJsonPath('message', 'Route non trouvée.');
+            ->assertJsonPath('message', 'Ressource non trouvée.');
     }
 
     public function test_la_mise_a_jour_modifie_la_faculte_et_synchronise_lemail_de_ladmin(): void

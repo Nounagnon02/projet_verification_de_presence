@@ -116,6 +116,50 @@ class StudentCrudTest extends TestCase
             ->assertJsonCount(0, 'data');
     }
 
+    public function test_liste_filtre_par_statut_de_delegue(): void
+    {
+        $this->creerEtudiant('DELEGUE', 'STU-100', true);
+        $this->creerEtudiant('ORDINAIRE', 'STU-101', false);
+
+        $delegues = $this->withToken($this->bearerToken)
+            ->getJson('/api/admin/students?responsable=1');
+
+        $delegues->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.nom', 'DELEGUE');
+
+        // `responsable=0` doit filtrer sur les non-délégués et non être traité
+        // comme un filtre absent : c'est le piège d'un test de véracité sur la
+        // valeur du paramètre plutôt que sur sa présence.
+        $nonDelegues = $this->withToken($this->bearerToken)
+            ->getJson('/api/admin/students?responsable=0');
+
+        $nonDelegues->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.nom', 'ORDINAIRE');
+
+        // Sans le paramètre, aucun filtrage.
+        $this->withToken($this->bearerToken)
+            ->getJson('/api/admin/students')
+            ->assertStatus(200)
+            ->assertJsonCount(2, 'data');
+    }
+
+    private function creerEtudiant(string $nom, string $matricule, bool $estResponsable): Etudiant
+    {
+        return Etudiant::create([
+            'id'                 => (string) Str::uuid(),
+            'nom'                => $nom,
+            'prenom'             => 'TEST',
+            'matricule'          => $matricule,
+            'filiere_id'         => $this->filiere->id,
+            'annee_id'           => $this->annee->id,
+            'email'              => strtolower($nom) . '@test.com',
+            'identifiant_unique' => "{$nom}_TEST_{$matricule}_MIAGE_M1",
+            'est_responsable'    => $estResponsable,
+        ]);
+    }
+
     // ── CRÉATION ──────────────────────────────────────────────────
 
     public function test_admin_peut_creer_un_etudiant(): void

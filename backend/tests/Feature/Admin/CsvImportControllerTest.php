@@ -316,7 +316,11 @@ class CsvImportControllerTest extends TestCase
 
     public function test_import_ue_ec_refuse_un_fichier_qui_nest_pas_un_csv(): void
     {
-        $reponse = $this->importerUeEc('%PDF-1.4 contenu binaire', 'structure.pdf', 'application/pdf');
+        $reponse = $this->importerUeEc(
+            '%PDF-1.4 contenu binaire',
+            nom: 'structure.pdf',
+            mime: 'application/pdf',
+        );
 
         $reponse->assertStatus(422)
             ->assertJsonPath('success', false)

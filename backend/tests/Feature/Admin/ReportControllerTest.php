@@ -1016,7 +1016,9 @@ class ReportControllerTest extends TestCase
         $this->assertNotSame('', $contenu, 'Le CSV ne doit pas être vide.');
         // BOM UTF-8, indispensable à Excel.
         $this->assertStringStartsWith("\xEF\xBB\xBF", $contenu);
-        $this->assertStringContainsString('Étudiant,Matricule,Filière,Cours,Date,Heure Scan,Statut,IP', $contenu);
+        // fputcsv entoure de guillemets tout champ contenant un espace : l'entete
+        // « Heure Scan » sort donc quotee, une seule fois.
+        $this->assertStringContainsString('Étudiant,Matricule,Filière,Cours,Date,"Heure Scan",Statut,IP', $contenu);
 
         foreach ([0, 1, 2] as $rang) {
             $this->assertStringContainsString($this->etudiants[$rang]->matricule, $contenu);
