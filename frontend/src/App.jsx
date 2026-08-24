@@ -21,6 +21,7 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // Phase 3 - New pages
 const QRValidationPage = lazy(() => import('./pages/attendance/QRValidationPage'));
+const PresenceQueuePage = lazy(() => import('./pages/attendance/PresenceQueuePage'));
 const StudentStatsPage = lazy(() => import('./pages/attendance/StudentStatsPage'));
 const WeeklySchedulePage = lazy(() => import('./pages/schedules/WeeklySchedulePage'));
 const AcademicSlatePage = lazy(() => import('./pages/settings/AcademicSlatePage'));
@@ -143,6 +144,7 @@ function App() {
               <Route path="attendance" element={<AttendanceLayout />}>
                 <Route index element={<Navigate to="validate" replace />} />
                 <Route path="validate" element={<PresenceValidationPage />} />
+                <Route path="queue" element={<PresenceQueuePage />} />
                 <Route path="alerts" element={<AnomaliesListPage />} />
                 <Route path="history" element={<PresenceHistoryPage />} />
                 <Route path="scan" element={<QRValidationPage />} />

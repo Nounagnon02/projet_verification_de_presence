@@ -21,6 +21,7 @@ const links = [
   { to: '/schedules/weekly', icon: <MdCalendarMonth />, label: 'Emploi du temps' },
   { to: '/schedules/events', icon: <MdEvent />, label: 'Événements' },
   { to: '/attendance/validate', icon: <MdHowToReg />, label: 'Présences' },
+  { to: '/attendance/queue', icon: <MdHowToReg />, label: "File d'attente" },
   { to: '/reports', icon: <MdAssessment />, label: 'Rapports' },
   { to: '/settings', icon: <MdSettings />, label: 'Paramètres' },
 ];
@@ -42,9 +43,8 @@ export default function SideNavBar() {
   return (
     <aside className="hidden md:flex flex-col h-screen p-5 fixed left-0 top-0 bg-[#f7f9fd] w-64 z-50">
       <div className="mb-8 px-2">
-        <h1 className="text-lg font-bold text-[#011549] tracking-tight font-headline">
-          Présence
-        </h1>
+        <img src="/images/logo-couleur-compact.png" alt="UAC Présences"
+            className="h-7 w-auto mb-1" />
         <p className="text-[10px] text-slate-500 font-medium tracking-widest uppercase">
           Portail Académique
         </p>

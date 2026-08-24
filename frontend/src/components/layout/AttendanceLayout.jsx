@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 
 const tabs = [
   { to: '/attendance/validate', label: 'Valider' },
+  { to: '/attendance/queue', label: "File d'attente" },
   { to: '/attendance/alerts', label: 'Anomalies' },
   { to: '/attendance/history', label: 'Historique' },
 ];
