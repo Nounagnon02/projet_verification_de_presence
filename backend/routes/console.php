@@ -35,3 +35,20 @@ Artisan::command('schedule:generate-qrcodes', function () {
     $this->call('qrcode:auto-generate');
 })->purpose('Fait tourner les QR codes des cours en fenêtre de présence')
   ->everyMinute();
+
+// Les deux taches ci-dessous etaient declarees dans app/Console/Kernel.php.
+// Ce fichier n'est plus charge depuis Laravel 11 (le planificateur vit ici et
+// dans bootstrap/app.php) : elles ne tournaient donc pas du tout, en silence.
+// « schedule:list » ne les listait pas davantage.
+
+// Nettoyage des QR codes expires depuis plus de 30 jours.
+Schedule::command('qr:clean-expired --force')
+    ->dailyAt('02:00')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/qr-cleanup.log'));
+
+// Statut des ECs et UEs selon les heures effectuees face au volume horaire.
+Schedule::command('ecs:sync-statut')
+    ->dailyAt('01:00')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/ec-sync.log'));

@@ -40,7 +40,7 @@ class CleanExpiredQrCodes extends Command
         );
 
         if ($count > 20) {
-            $this->line("... et {$count - 20} autres QR codes");
+            $this->line('... et ' . ($count - 20) . ' autres QR codes');
         }
 
         if ($dryRun) {

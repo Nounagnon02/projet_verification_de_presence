@@ -16,10 +16,17 @@
         .statut-absent   { color: #721c24; }
         .statut-en_retard { color: #856404; }
         .footer { text-align: center; margin-top: 25px; font-size: 8px; color: #888; }
+        /* En-tête de marque : le logo est chargé depuis le disque via public_path(),
+           dompdf n'ayant pas accès au réseau. */
+        .marque { text-align: center; margin-bottom: 4px; }
+        .marque img { height: 34px; }
         .total { margin-top: 15px; font-size: 11px; font-weight: bold; text-align: right; }
     </style>
 </head>
 <body>
+    <div class="marque">
+        <img src="{{ public_path('images/logo-export.png') }}" alt="UAC Présences">
+    </div>
     <h1>{{ $title }}</h1>
     <p class="sous-titre">Généré le {{ $date }}</p>
 

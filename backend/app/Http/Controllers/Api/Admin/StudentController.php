@@ -59,6 +59,13 @@ class StudentController extends Controller
             $query->whereHas('ecs.ue', fn($q) => $q->where('semestre', $semestre));
         }
 
+        // Filtre délégué. Testé sur la présence du paramètre et non sur sa
+        // valeur : `responsable=0` doit pouvoir ne montrer que les non-délégués,
+        // ce qu'un `if ($x = request(...))` avalerait comme un filtre absent.
+        if ($request->filled('responsable')) {
+            $query->where('est_responsable', $request->boolean('responsable'));
+        }
+
         $perPage = min((int) request('per_page', 15), 100);
         $paginator = $query->orderBy('created_at', 'desc')->paginate($perPage);
 

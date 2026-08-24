@@ -22,28 +22,45 @@ class LandingPageController extends Controller
      */
     public function stats(): JsonResponse
     {
-        $totalEtudiants = Etudiant::count();
-
-        $evenementsPasses = Evenement::whereIn('statut', ['termine', 'en_cours'])->count();
+        $totalEtudiants   = Etudiant::count();
         $evenementsTotal  = Evenement::count();
 
         $presencesValides = Presence::where('statut', 'valide')->count();
         $presencesTotal   = Presence::count();
 
-        // Taux de présence global
-        $totalPresencesPrevues = 0;
+        // Taux de présence de l'année active.
+        //
+        // Le dénominateur est le nombre de présences *attendues*, c'est-à-dire
+        // le nombre de couples (séance passée, étudiant inscrit à l'EC de cette
+        // séance). Compter « tous les étudiants × toutes les séances »
+        // reviendrait à supposer chaque étudiant inscrit à chaque cours de
+        // l'année, ce qui gonfle le dénominateur et écrase artificiellement le
+        // taux. Numérateur et dénominateur portent tous deux sur l'année active.
         $anneeActive = AnneeAcademique::where('active', true)->first();
+        $tauxPresence = 0;
 
         if ($anneeActive) {
-            $totalPresencesPrevues = Etudiant::where('annee_id', $anneeActive->id)->count()
-                * Evenement::where('annee_id', $anneeActive->id)
-                    ->whereIn('statut', ['termine', 'en_cours'])
-                    ->count();
-        }
+            // Colonnes qualifiées : la requête est réutilisée avec une jointure
+            // sur etudiant_ec, qui porte les mêmes noms de colonnes.
+            $seancesPassees = Evenement::query()
+                ->where('evenements.annee_id', $anneeActive->id)
+                ->whereIn('evenements.statut', ['termine', 'en_cours']);
 
-        $tauxPresence = ($totalPresencesPrevues > 0)
-            ? round(($presencesValides / $totalPresencesPrevues) * 100, 1)
-            : 0;
+            $presencesPrevues = (clone $seancesPassees)
+                ->join('etudiant_ec', function ($jointure) {
+                    $jointure->on('etudiant_ec.ec_id', '=', 'evenements.ec_id')
+                        ->on('etudiant_ec.annee_id', '=', 'evenements.annee_id');
+                })
+                ->count();
+
+            $presencesValidesAnnee = Presence::where('statut', 'valide')
+                ->whereIn('evenement_id', (clone $seancesPassees)->select('evenements.id'))
+                ->count();
+
+            $tauxPresence = $presencesPrevues > 0
+                ? round(($presencesValidesAnnee / $presencesPrevues) * 100, 1)
+                : 0;
+        }
 
         return $this->successResponse([
             'total_etudiants'       => $totalEtudiants,

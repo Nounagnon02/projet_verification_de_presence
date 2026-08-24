@@ -13,10 +13,17 @@
         .statut-valide   { color: #155724; background: #d4edda; padding: 2px 6px; border-radius: 3px; }
         .statut-suspect  { color: #856404; background: #fff3cd; padding: 2px 6px; border-radius: 3px; }
         .statut-rejete   { color: #721c24; background: #f8d7da; padding: 2px 6px; border-radius: 3px; }
+        /* En-tête de marque : le logo est chargé depuis le disque via public_path(),
+           dompdf n'ayant pas accès au réseau. */
+        .marque { text-align: center; margin-bottom: 4px; }
+        .marque img { height: 34px; }
         .footer { text-align: center; margin-top: 30px; font-size: 10px; color: #888; }
     </style>
 </head>
 <body>
+    <div class="marque">
+        <img src="{{ public_path('images/logo-export.png') }}" alt="UAC Présences">
+    </div>
     <h1>{{ $title }}</h1>
     <p class="sous-titre">
         Date : {{ $date }} &mdash;
