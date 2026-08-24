@@ -467,7 +467,12 @@ class ReportController extends Controller
             ->get();
 
         //6. Stats par UE (pour graphique à barres)
-        $statsParUeQuery = Ue::select('ues.id', 'ues.code', 'ues.intitule', 'ues.semestre',
+        // « ues.filiere_id » doit figurer dans le SELECT : sans lui, la relation
+        // belongsTo n'a pas sa cle etrangere et with('filiere') resolvait
+        // toujours null. Les colonnes filiere_code / filiere_intitule sortaient
+        // donc vides, ce qui laissait le filtre par filiere du tableau « stats
+        // par UE » sans aucune option cote interface.
+        $statsParUeQuery = Ue::select('ues.id', 'ues.code', 'ues.intitule', 'ues.semestre', 'ues.filiere_id',
                 DB::raw('COUNT(DISTINCT presences.id) as total_presences'),
                 DB::raw('COUNT(DISTINCT evenements.id) as total_evenements'))
             ->with('filiere:id,code,intitule')
@@ -495,7 +500,7 @@ class ReportController extends Controller
         }
 
         $statsParUe = $statsParUeQuery
-            ->groupBy('ues.id', 'ues.code', 'ues.intitule', 'ues.semestre')
+            ->groupBy('ues.id', 'ues.code', 'ues.intitule', 'ues.semestre', 'ues.filiere_id')
             ->orderBy('ues.code')
             ->get()
             ->map(function ($ue) {

@@ -38,19 +38,21 @@ return Application::configure(basePath: dirname(__DIR__))
             return $request->is('api/*') || $request->expectsJson();
         });
 
-        // ModelNotFoundException → 404
-        $exceptions->render(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ressource non trouvée.',
-            ], 404);
-        });
-
-        // NotFoundHttpException → 404
+        // 404 — ressource absente ou URL inconnue.
+        //
+        // Laravel convertit ModelNotFoundException en NotFoundHttpException dans
+        // prepareException(), avant d'atteindre les callbacks : un handler dedie a
+        // ModelNotFoundException n'est donc jamais appele. Sans regarder
+        // l'exception d'origine, une ressource absente et une URL erronee
+        // renvoyaient le meme « Route non trouvée. », et un client ne pouvait pas
+        // distinguer une faute de frappe dans l'URL d'un identifiant inexistant.
         $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e) {
+            $ressourceAbsente = $e->getPrevious()
+                instanceof \Illuminate\Database\Eloquent\ModelNotFoundException;
+
             return response()->json([
                 'success' => false,
-                'message' => 'Route non trouvée.',
+                'message' => $ressourceAbsente ? 'Ressource non trouvée.' : 'Route non trouvée.',
             ], 404);
         });
 
