@@ -1,0 +1,50 @@
+{
+    "id": "maq-03-nombreux-ec",
+    "type": "courses",
+    "difficulte": "moyenne",
+    "note": "Une UE portant six EC : teste la complétude de l'extraction.",
+    "attendu": {
+        "filiere": "SEG",
+        "niveau": "L2",
+        "semestre": 3,
+        "ues": [
+            {
+                "code": "UE-SEG31",
+                "intitule": "Fondamentaux de gestion",
+                "volume_horaire": 120,
+                "ecs": [
+                    {
+                        "code": "SEG301",
+                        "intitule": "Comptabilité générale",
+                        "volume_horaire": 20
+                    },
+                    {
+                        "code": "SEG302",
+                        "intitule": "Droit des affaires",
+                        "volume_horaire": 20
+                    },
+                    {
+                        "code": "SEG303",
+                        "intitule": "Microéconomie",
+                        "volume_horaire": 20
+                    },
+                    {
+                        "code": "SEG304",
+                        "intitule": "Macroéconomie",
+                        "volume_horaire": 20
+                    },
+                    {
+                        "code": "SEG305",
+                        "intitule": "Mathématiques financières",
+                        "volume_horaire": 20
+                    },
+                    {
+                        "code": "SEG306",
+                        "intitule": "Anglais des affaires",
+                        "volume_horaire": 20
+                    }
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,45 @@
+{
+    "id": "edt-01-simple",
+    "type": "schedule",
+    "difficulte": "facile",
+    "note": "Tableau net, codes explicites, horaires réguliers.",
+    "attendu": {
+        "filiere": "GLT",
+        "niveau": "L3",
+        "semestre": 5,
+        "creneaux": [
+            {
+                "jour": "Lundi",
+                "heure_debut": "08:00",
+                "heure_fin": "10:00",
+                "ec_code": "GLT501",
+                "ec_intitule": "Algorithmique avancée",
+                "salle": "A-101"
+            },
+            {
+                "jour": "Lundi",
+                "heure_debut": "10:15",
+                "heure_fin": "12:15",
+                "ec_code": "GLT502",
+                "ec_intitule": "Bases de données",
+                "salle": "A-101"
+            },
+            {
+                "jour": "Mardi",
+                "heure_debut": "14:00",
+                "heure_fin": "16:00",
+                "ec_code": "GLT503",
+                "ec_intitule": "Réseaux informatiques",
+                "salle": "B-204"
+            },
+            {
+                "jour": "Mercredi",
+                "heure_debut": "08:00",
+                "heure_fin": "11:00",
+                "ec_code": "GLT504",
+                "ec_intitule": "Génie logiciel",
+                "salle": "Amphi C"
+            }
+        ]
+    }
+}

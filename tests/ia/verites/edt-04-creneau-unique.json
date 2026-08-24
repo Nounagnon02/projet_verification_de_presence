@@ -1,0 +1,21 @@
+{
+    "id": "edt-04-creneau-unique",
+    "type": "schedule",
+    "difficulte": "facile",
+    "note": "Un seul créneau : cas limite du document minimal.",
+    "attendu": {
+        "filiere": "STAPS",
+        "niveau": "L1",
+        "semestre": 1,
+        "creneaux": [
+            {
+                "jour": "Samedi",
+                "heure_debut": "08:00",
+                "heure_fin": "10:00",
+                "ec_code": "STA101",
+                "ec_intitule": "Anatomie fonctionnelle",
+                "salle": "Gymnase"
+            }
+        ]
+    }
+}

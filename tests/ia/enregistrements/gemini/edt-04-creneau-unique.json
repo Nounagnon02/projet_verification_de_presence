@@ -1,0 +1,11 @@
+{
+    "status": "completed",
+    "data": {
+        "events": [],
+        "courses": []
+    },
+    "confidence": 0,
+    "warning": "Le score de confiance est inférieur à 70%. Vérification manuelle requise.",
+    "error_message": null,
+    "duree_ms": 15060
+}

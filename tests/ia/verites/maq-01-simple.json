@@ -1,0 +1,47 @@
+{
+    "id": "maq-01-simple",
+    "type": "courses",
+    "difficulte": "facile",
+    "note": "Deux UE, quatre EC, volumes cohérents.",
+    "attendu": {
+        "filiere": "GLT",
+        "niveau": "L3",
+        "semestre": 5,
+        "ues": [
+            {
+                "code": "UE-GLT51",
+                "intitule": "Développement logiciel",
+                "volume_horaire": 60,
+                "ecs": [
+                    {
+                        "code": "GLT501",
+                        "intitule": "Algorithmique avancée",
+                        "volume_horaire": 30
+                    },
+                    {
+                        "code": "GLT502",
+                        "intitule": "Bases de données",
+                        "volume_horaire": 30
+                    }
+                ]
+            },
+            {
+                "code": "UE-GLT52",
+                "intitule": "Systèmes et réseaux",
+                "volume_horaire": 50,
+                "ecs": [
+                    {
+                        "code": "GLT503",
+                        "intitule": "Réseaux informatiques",
+                        "volume_horaire": 25
+                    },
+                    {
+                        "code": "GLT504",
+                        "intitule": "Génie logiciel",
+                        "volume_horaire": 25
+                    }
+                ]
+            }
+        ]
+    }
+}

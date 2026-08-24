@@ -1,0 +1,30 @@
+{
+    "id": "maq-02-volumes-incoherents",
+    "type": "courses",
+    "difficulte": "difficile",
+    "note": "Le volume de l'UE ne correspond pas à la somme de ses EC : l'extracteur doit rapporter ce qu'il lit, pas corriger.",
+    "attendu": {
+        "filiere": "IM",
+        "niveau": "M1",
+        "semestre": 1,
+        "ues": [
+            {
+                "code": "UE-IM11",
+                "intitule": "Méthodes quantitatives",
+                "volume_horaire": 100,
+                "ecs": [
+                    {
+                        "code": "IM101",
+                        "intitule": "Statistiques appliquées",
+                        "volume_horaire": 30
+                    },
+                    {
+                        "code": "IM102",
+                        "intitule": "Économétrie",
+                        "volume_horaire": 30
+                    }
+                ]
+            }
+        ]
+    }
+}

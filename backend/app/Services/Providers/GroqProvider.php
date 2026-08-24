@@ -10,11 +10,15 @@ use Illuminate\Support\Facades\Log;
 class GroqProvider implements AiProviderInterface
 {
     private string $apiKey;
+
+    /** Nom du modele, lu dans la configuration et non code en dur. */
+    private string $model;
     private string $baseUrl = 'https://api.groq.com/openai/v1';
 
     public function __construct(?string $apiKey)
     {
         $this->apiKey = $apiKey ?? '';
+        $this->model  = (string) config('ai.providers.groq.model', 'llama-3.3-70b-versatile');
     }
 
     public function getName(): string
@@ -43,7 +47,7 @@ class GroqProvider implements AiProviderInterface
             $response = Http::withToken($this->apiKey)
                 ->timeout(120)
                 ->post("{$this->baseUrl}/chat/completions", [
-                    'model' => 'mixtral-8x7b-32768',
+                    'model' => $this->model,
                     'messages' => [
                         ['role' => 'system', 'content' => 'Tu es un assistant administratif qui extrait des données structurées à partir de documents académiques. Réponds UNIQUEMENT avec du JSON valide.'],
                         ['role' => 'user', 'content' => $prompt],

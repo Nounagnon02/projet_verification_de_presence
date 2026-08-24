@@ -1,0 +1,47 @@
+{
+    "status": "completed",
+    "data": {
+        "ues": [
+            {
+                "code": "UE-GLT51",
+                "intitule": "Développement logiciel",
+                "semestre": 5,
+                "credits": null,
+                "ecs": [
+                    {
+                        "code": "GLT501",
+                        "intitule": "Algorithmique avancée",
+                        "volume_horaire": 30
+                    },
+                    {
+                        "code": "GLT502",
+                        "intitule": "Bases de données",
+                        "volume_horaire": 30
+                    }
+                ]
+            },
+            {
+                "code": "UE-GLT52",
+                "intitule": "Systèmes et réseaux",
+                "semestre": 5,
+                "credits": null,
+                "ecs": [
+                    {
+                        "code": "GLT503",
+                        "intitule": "Réseaux informatiques",
+                        "volume_horaire": 25
+                    },
+                    {
+                        "code": "GLT504",
+                        "intitule": "Génie logiciel",
+                        "volume_horaire": 25
+                    }
+                ]
+            }
+        ]
+    },
+    "confidence": 0.95,
+    "warning": null,
+    "error_message": null,
+    "duree_ms": 17203
+}

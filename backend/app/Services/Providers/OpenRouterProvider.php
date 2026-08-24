@@ -10,11 +10,15 @@ use Illuminate\Support\Facades\Log;
 class OpenRouterProvider implements AiProviderInterface
 {
     private string $apiKey;
+
+    /** Nom du modele, lu dans la configuration et non code en dur. */
+    private string $model;
     private string $baseUrl = 'https://openrouter.ai/api/v1';
 
     public function __construct(?string $apiKey)
     {
         $this->apiKey = $apiKey ?? '';
+        $this->model  = (string) config('ai.providers.openrouter.model', 'google/gemini-2.5-flash');
     }
 
     public function getName(): string
@@ -39,7 +43,7 @@ class OpenRouterProvider implements AiProviderInterface
             ])
             ->timeout(120)
             ->post("{$this->baseUrl}/chat/completions", [
-                'model' => 'google/gemini-2.5-flash-preview-04-17',
+                'model' => $this->model,
                 'messages' => [
                     [
                         'role' => 'user',

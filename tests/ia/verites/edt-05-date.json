@@ -1,0 +1,41 @@
+{
+    "id": "edt-05-date",
+    "type": "schedule",
+    "difficulte": "facile",
+    "note": "Planning avec dates calendaires explicites — la seule forme que le pipeline accepte.",
+    "attendu": {
+        "filiere": "GLT",
+        "niveau": "L3",
+        "semestre": 5,
+        "creneaux": [
+            {
+                "jour": "2026-03-09",
+                "heure_debut": "08:00",
+                "heure_fin": "10:00",
+                "ec_code": "GLT501",
+                "salle": "A-101"
+            },
+            {
+                "jour": "2026-03-09",
+                "heure_debut": "10:15",
+                "heure_fin": "12:15",
+                "ec_code": "GLT502",
+                "salle": "A-101"
+            },
+            {
+                "jour": "2026-03-10",
+                "heure_debut": "14:00",
+                "heure_fin": "16:00",
+                "ec_code": "GLT503",
+                "salle": "B-204"
+            },
+            {
+                "jour": "2026-03-11",
+                "heure_debut": "08:00",
+                "heure_fin": "11:00",
+                "ec_code": "GLT504",
+                "salle": "Amphi C"
+            }
+        ]
+    }
+}

@@ -1,0 +1,110 @@
+{
+    "provider": "gemini",
+    "mode": "reel",
+    "documents": 9,
+    "tec_moyen": 0.5333,
+    "tfp_moyen": 0,
+    "scm": 0.4278,
+    "echecs_analyse": 0,
+    "par_document": [
+        {
+            "id": "edt-01-simple",
+            "type": "schedule",
+            "difficulte": "facile",
+            "tec": 0,
+            "tfp": 0,
+            "confiance": 0,
+            "statut": "completed",
+            "detail": "0\/20 champs, 0 invention(s) sur 0 produit(s)",
+            "duree_ms": 30762
+        },
+        {
+            "id": "edt-02-abreviations",
+            "type": "schedule",
+            "difficulte": "moyenne",
+            "tec": 0,
+            "tfp": 0,
+            "confiance": 0,
+            "statut": "completed",
+            "detail": "0\/15 champs, 0 invention(s) sur 0 produit(s)",
+            "duree_ms": 17853
+        },
+        {
+            "id": "edt-03-seances-longues",
+            "type": "schedule",
+            "difficulte": "moyenne",
+            "tec": 0,
+            "tfp": 0,
+            "confiance": 0,
+            "statut": "completed",
+            "detail": "0\/10 champs, 0 invention(s) sur 0 produit(s)",
+            "duree_ms": 14962
+        },
+        {
+            "id": "edt-04-creneau-unique",
+            "type": "schedule",
+            "difficulte": "facile",
+            "tec": 0,
+            "tfp": 0,
+            "confiance": 0,
+            "statut": "completed",
+            "detail": "0\/5 champs, 0 invention(s) sur 0 produit(s)",
+            "duree_ms": 15060
+        },
+        {
+            "id": "maq-01-simple",
+            "type": "courses",
+            "difficulte": "facile",
+            "tec": 1,
+            "tfp": 0,
+            "confiance": 0.95,
+            "statut": "completed",
+            "detail": "12\/12 champs, 0 invention(s) sur 4 produit(s)",
+            "duree_ms": 17203
+        },
+        {
+            "id": "maq-02-volumes-incoherents",
+            "type": "courses",
+            "difficulte": "difficile",
+            "tec": 1,
+            "tfp": 0,
+            "confiance": 0.95,
+            "statut": "completed",
+            "detail": "6\/6 champs, 0 invention(s) sur 2 produit(s)",
+            "duree_ms": 9440
+        },
+        {
+            "id": "maq-03-nombreux-ec",
+            "type": "courses",
+            "difficulte": "moyenne",
+            "tec": 1,
+            "tfp": 0,
+            "confiance": 0.95,
+            "statut": "completed",
+            "detail": "18\/18 champs, 0 invention(s) sur 6 produit(s)",
+            "duree_ms": 21173
+        },
+        {
+            "id": "hors-01-note-de-service",
+            "type": "schedule",
+            "difficulte": "refus attendu",
+            "tec": 1,
+            "tfp": 0,
+            "confiance": 0,
+            "statut": "completed",
+            "detail": "refus correct",
+            "duree_ms": 73626
+        },
+        {
+            "id": "edt-05-date",
+            "type": "schedule",
+            "difficulte": "facile",
+            "tec": 0.8,
+            "tfp": 0,
+            "confiance": 1,
+            "statut": "completed",
+            "detail": "16\/20 champs, 0 invention(s) sur 4 produit(s)",
+            "duree_ms": 16895
+        }
+    ]
+}

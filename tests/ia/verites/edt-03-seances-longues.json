@@ -1,0 +1,29 @@
+{
+    "id": "edt-03-seances-longues",
+    "type": "schedule",
+    "difficulte": "moyenne",
+    "note": "Séances de 4 h à cheval sur la pause déjeuner.",
+    "attendu": {
+        "filiere": "SEG",
+        "niveau": "L2",
+        "semestre": 3,
+        "creneaux": [
+            {
+                "jour": "Lundi",
+                "heure_debut": "10:00",
+                "heure_fin": "14:00",
+                "ec_code": "SEG301",
+                "ec_intitule": "Comptabilité générale",
+                "salle": "D-01"
+            },
+            {
+                "jour": "Vendredi",
+                "heure_debut": "12:00",
+                "heure_fin": "16:00",
+                "ec_code": "SEG302",
+                "ec_intitule": "Droit des affaires",
+                "salle": "D-02"
+            }
+        ]
+    }
+}

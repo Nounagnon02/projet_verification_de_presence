@@ -1,0 +1,37 @@
+{
+    "id": "edt-02-abreviations",
+    "type": "schedule",
+    "difficulte": "moyenne",
+    "note": "Libellés abrégés, casse irrégulière, accents inégaux.",
+    "attendu": {
+        "filiere": "IM",
+        "niveau": "M1",
+        "semestre": 1,
+        "creneaux": [
+            {
+                "jour": "LUNDI",
+                "heure_debut": "07:30",
+                "heure_fin": "09:30",
+                "ec_code": "IM101",
+                "ec_intitule": "Stat. appliq.",
+                "salle": "S-12"
+            },
+            {
+                "jour": "mardi",
+                "heure_debut": "09:45",
+                "heure_fin": "11:45",
+                "ec_code": "IM102",
+                "ec_intitule": "Econometrie",
+                "salle": "S-12"
+            },
+            {
+                "jour": "Jeudi",
+                "heure_debut": "15:00",
+                "heure_fin": "18:00",
+                "ec_code": "IM103",
+                "ec_intitule": "Rech. Opérationnelle",
+                "salle": "S-14"
+            }
+        ]
+    }
+}

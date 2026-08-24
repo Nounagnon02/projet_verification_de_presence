@@ -10,11 +10,20 @@ use Illuminate\Support\Facades\Log;
 class GeminiProvider implements AiProviderInterface
 {
     private string $apiKey;
+
+    /**
+     * Nom du modèle, lu dans la configuration.
+     *
+     * Il était codé en dur : « gemini-2.0-flash » a été retiré par Google, qui
+     * répond alors 404, et toute analyse échouait.
+     */
+    private string $model;
     private string $baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
 
     public function __construct(?string $apiKey)
     {
         $this->apiKey = $apiKey ?? '';
+        $this->model  = (string) config('ai.providers.gemini.model', 'gemini-3.6-flash');
     }
 
     public function getName(): string
@@ -99,7 +108,7 @@ class GeminiProvider implements AiProviderInterface
         while ($attempt <= $maxRetries) {
             try {
                 $response = Http::timeout(60)
-                    ->post("{$this->baseUrl}/gemini-2.0-flash:generateContent?key={$this->apiKey}", $payload);
+                    ->post("{$this->baseUrl}/{$this->model}:generateContent?key={$this->apiKey}", $payload);
 
                 if ($response->successful()) {
                     return $response->json();

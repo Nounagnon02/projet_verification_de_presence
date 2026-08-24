@@ -1,0 +1,78 @@
+{
+    "genere_le": "2026-08-24T16:19:33+00:00",
+    "documents": 9,
+    "liste": [
+        {
+            "id": "edt-01-simple",
+            "type": "schedule",
+            "difficulte": "facile",
+            "pdf": "corpus/edt-01-simple.pdf",
+            "verite": "verites/edt-01-simple.json",
+            "octets": 878764
+        },
+        {
+            "id": "edt-02-abreviations",
+            "type": "schedule",
+            "difficulte": "moyenne",
+            "pdf": "corpus/edt-02-abreviations.pdf",
+            "verite": "verites/edt-02-abreviations.json",
+            "octets": 878614
+        },
+        {
+            "id": "edt-03-seances-longues",
+            "type": "schedule",
+            "difficulte": "moyenne",
+            "pdf": "corpus/edt-03-seances-longues.pdf",
+            "verite": "verites/edt-03-seances-longues.json",
+            "octets": 878464
+        },
+        {
+            "id": "edt-04-creneau-unique",
+            "type": "schedule",
+            "difficulte": "facile",
+            "pdf": "corpus/edt-04-creneau-unique.pdf",
+            "verite": "verites/edt-04-creneau-unique.json",
+            "octets": 878306
+        },
+        {
+            "id": "maq-01-simple",
+            "type": "courses",
+            "difficulte": "facile",
+            "pdf": "corpus/maq-01-simple.pdf",
+            "verite": "verites/maq-01-simple.json",
+            "octets": 878645
+        },
+        {
+            "id": "maq-02-volumes-incoherents",
+            "type": "courses",
+            "difficulte": "difficile",
+            "pdf": "corpus/maq-02-volumes-incoherents.pdf",
+            "verite": "verites/maq-02-volumes-incoherents.json",
+            "octets": 878340
+        },
+        {
+            "id": "maq-03-nombreux-ec",
+            "type": "courses",
+            "difficulte": "moyenne",
+            "pdf": "corpus/maq-03-nombreux-ec.pdf",
+            "verite": "verites/maq-03-nombreux-ec.json",
+            "octets": 878708
+        },
+        {
+            "id": "hors-01-note-de-service",
+            "type": "schedule",
+            "difficulte": "refus attendu",
+            "pdf": "corpus/hors-01-note-de-service.pdf",
+            "verite": "verites/hors-01-note-de-service.json",
+            "octets": 878030
+        },
+        {
+            "id": "edt-05-date",
+            "type": "schedule",
+            "difficulte": "facile",
+            "pdf": "corpus/edt-05-date.pdf",
+            "verite": "verites/edt-05-date.json",
+            "octets": 878767
+        }
+    ]
+}

@@ -1,0 +1,3 @@
+# Les PDF se regenerent en quelques secondes depuis generer-corpus.php, qui est
+# la source de verite. Les versionner ajouterait ~8 Mo pour aucun gain.
+corpus/*.pdf

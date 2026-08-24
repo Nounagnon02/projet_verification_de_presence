@@ -1,0 +1,9 @@
+{
+    "id": "hors-01-note-de-service",
+    "type": "schedule",
+    "difficulte": "refus attendu",
+    "note": "Note administrative sans aucun créneau. L'extracteur doit refuser ou renvoyer un ensemble vide, jamais inventer.",
+    "attendu": {
+        "refus_ou_vide": true
+    }
+}

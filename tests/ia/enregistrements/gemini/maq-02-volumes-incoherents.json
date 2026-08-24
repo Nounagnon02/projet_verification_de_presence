@@ -1,0 +1,29 @@
+{
+    "status": "completed",
+    "data": {
+        "ues": [
+            {
+                "code": "UE-IM11",
+                "intitule": "Méthodes quantitatives",
+                "semestre": 1,
+                "credits": null,
+                "ecs": [
+                    {
+                        "code": "IM101",
+                        "intitule": "Statistiques appliquées",
+                        "volume_horaire": 30
+                    },
+                    {
+                        "code": "IM102",
+                        "intitule": "Économétrie",
+                        "volume_horaire": 30
+                    }
+                ]
+            }
+        ]
+    },
+    "confidence": 0.95,
+    "warning": null,
+    "error_message": null,
+    "duree_ms": 9440
+}
