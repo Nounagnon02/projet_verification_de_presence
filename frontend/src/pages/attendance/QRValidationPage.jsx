@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiCamera, FiCheckCircle, FiAlertTriangle, FiLoader, FiSmartphone, FiUser } from 'react-icons/fi';
+import { FiCheckCircle, FiAlertTriangle, FiLoader, FiUser } from 'react-icons/fi';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../api/axios';
 import { useFingerprint } from '../../hooks/useFingerprint';
@@ -7,6 +7,7 @@ import { useFingerprint } from '../../hooks/useFingerprint';
 export default function QRValidationPage() {
   const [searchParams] = useSearchParams();
   const tokenFromUrl = searchParams.get('token') || '';
+  // 'scan' : formulaire de saisie ; 'success' / 'error' : ecran de resultat.
   const [mode, setMode] = useState('scan');
   const [matricule, setMatricule] = useState('');
   const [loading, setLoading] = useState(false);
@@ -105,22 +106,31 @@ export default function QRValidationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface">
-      <header className="flex items-center justify-between px-6 py-6">
-        <div className="flex items-center gap-3">
-          <img src="/images/logo-couleur-compact.png" alt="UAC Présences"
-              className="h-7 w-auto" />
+    // Cet ecran est imbrique dans la coquille d'administration : ni plein ecran,
+    // ni logo propre — la barre laterale et l'en-tete les fournissent deja.
+    <div>
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-xl font-bold font-headline text-primary">Saisie manuelle</h1>
+          <p className="text-sm text-on-surface-variant mt-0.5">
+            Enregistrer une présence pour un étudiant dont l'appareil ne peut pas
+            scanner : panne, batterie vide, absence de connexion.
+          </p>
         </div>
-        <div className="bg-secondary/10 px-3 py-1.5 rounded-full flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
-          <span className="text-[10px] font-bold uppercase tracking-widest text-secondary">Session Active</span>
-        </div>
-      </header>
+        {qrToken && (
+          <div className="bg-secondary/10 px-3 py-1.5 rounded-full flex items-center gap-2 shrink-0">
+            <span className="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-secondary">Session active</span>
+          </div>
+        )}
+      </div>
 
-      <div className="max-w-md mx-auto px-6 pb-24">
-        <div className="bg-surface-container-lowest rounded-xxl p-5 shadow-sm mb-8">
-          <p className="text-xs text-on-surface-variant uppercase tracking-wider mb-1">Cours en cours</p>
-          <p className="text-base font-bold text-primary">{cours?.cours || (qrToken ? 'Cours' : 'Scanner un QR code')}</p>
+      <div className="max-w-2xl">
+        <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm mb-6 border border-outline-variant/10">
+          <p className="text-xs text-on-surface-variant uppercase tracking-wider mb-1">Séance concernée</p>
+          <p className="text-base font-bold text-primary">
+            {cours?.cours ?? (qrToken ? 'Chargement…' : 'Aucune séance sélectionnée')}
+          </p>
           {cours && (
             <div className="flex items-center gap-4 mt-2 text-xs text-on-surface-variant">
               <span>{cours.salle ? `Salle ${cours.salle}` : ''}</span>
@@ -129,80 +139,51 @@ export default function QRValidationPage() {
           )}
         </div>
 
-        <div className="flex flex-col items-center mb-8">
-          <div className="relative w-64 h-64 mb-6">
-            <div className="absolute inset-0 border-2 border-primary/30 rounded-3xl animate-pulse"></div>
-            <div className="absolute inset-2 border-2 border-primary/20 rounded-2xl"></div>
-            <div className="absolute inset-4 border-2 border-primary/10 rounded-xl"></div>
-            <div className="absolute left-8 right-8 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent animate-[scan_2s_ease-in-out_infinite] top-1/2"></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="p-6 bg-surface-container-high rounded-full">
-                <FiCamera className="text-primary" size={48} />
-              </div>
+        {/* Le formulaire est directement sur la page. Il etait auparavant
+            derriere un faux viseur d'appareil photo — decoratif, il ne scannait
+            rien — et une modale : deux clics pour atteindre la seule action que
+            cet ecran propose. */}
+        <form onSubmit={handleManualSubmit} className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <FiUser className="text-primary" size={18} />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-primary">Identifiant de l'étudiant</h2>
+              <p className="text-xs text-on-surface-variant">
+                Format NOM_PRENOM_MATRICULE_FILIERE_ANNEE
+              </p>
             </div>
           </div>
-          <p className="text-sm text-on-surface-variant text-center mb-4">
-            Placez le QR code étudiant dans le cadre
-          </p>
+
+          <input
+            className="w-full px-4 py-3 bg-surface-container-high rounded-xl text-base font-mono focus:outline-none border-b-2 border-transparent focus:border-primary transition-all disabled:opacity-60"
+            placeholder="Ex : DOE_JOHN_22A1234_GLT_L3"
+            value={matricule}
+            onChange={(e) => setMatricule(e.target.value)}
+            disabled={loading}
+            autoComplete="off"
+          />
+
+          {!qrToken && (
+            <p className="text-xs text-warning flex items-start gap-1.5">
+              <FiAlertTriangle size={13} className="shrink-0 mt-0.5" />
+              Aucun QR Code actif : générez-en un depuis la fiche de l'événement,
+              puis revenez ici avec son lien.
+            </p>
+          )}
+
           <button
-            onClick={() => setMode('manual')}
-            className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
+            type="submit"
+            disabled={loading || !matricule.trim() || !qrToken}
+            className="w-full py-3 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            <FiSmartphone /> Saisir le matricule manuellement
+            {loading ? <FiLoader className="animate-spin" size={16} /> : <FiCheckCircle size={16} />}
+            {loading ? 'Enregistrement…' : 'Enregistrer la présence'}
           </button>
-        </div>
+        </form>
       </div>
 
-      {mode === 'manual' && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
-          <div className="bg-surface w-full max-w-md rounded-2xl p-6 animate-in slide-in-from-bottom-2 duration-200">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-primary/10 rounded-xl">
-                <FiUser className="text-primary" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold font-headline text-primary">Saisie manuelle</h2>
-                <p className="text-xs text-on-surface-variant">Entrez le matricule de l'étudiant</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleManualSubmit} className="space-y-4">
-              <input
-                className="w-full px-4 py-3 bg-surface-container-high rounded-xl text-lg font-mono focus:outline-none border-b-2 border-transparent focus:border-primary transition-all"
-                placeholder="22-XXXX-XXXX"
-                value={matricule}
-                onChange={(e) => setMatricule(e.target.value)}
-                disabled={loading}
-                autoFocus
-              />
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setMode('scan')}
-                  className="flex-1 py-3 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading || !matricule.trim()}
-                  className="flex-1 py-3 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {loading ? <FiLoader className="animate-spin" /> : null}
-                  Valider
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        @keyframes scan {
-          0%, 100% { top: 25%; }
-          50% { top: 75%; }
-        }
-      `}</style>
     </div>
   );
 }

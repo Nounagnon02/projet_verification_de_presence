@@ -21,8 +21,10 @@ const links = [
   { to: '/courses', icon: <MdBook />, label: 'Cours & UE/EC' },
   { to: '/schedules/weekly', icon: <MdCalendarMonth />, label: 'Emploi du temps' },
   { to: '/schedules/events', icon: <MdEvent />, label: 'Événements' },
-  { to: '/attendance/validate', icon: <MdHowToReg />, label: 'Présences' },
-  { to: '/attendance/queue', icon: <MdHowToReg />, label: "File d'attente" },
+  // Une seule entree pour la section : elle mene a la file d'attente, et les
+  // onglets de AttendanceLayout donnent acces au reste. « Présences » pointait
+  // auparavant vers /attendance/validate, la page publique de l'etudiant.
+  { to: '/attendance', icon: <MdHowToReg />, label: 'Présences' },
   { to: '/import', icon: <MdUploadFile />, label: 'Imports' },
   { to: '/reports', icon: <MdAssessment />, label: 'Rapports' },
   { to: '/settings', icon: <MdSettings />, label: 'Paramètres' },

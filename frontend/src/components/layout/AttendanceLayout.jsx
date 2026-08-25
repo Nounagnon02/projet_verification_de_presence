@@ -1,10 +1,16 @@
 import { NavLink, Outlet } from 'react-router-dom';
 
+// Onglets du travail de l'administrateur sur les presences.
+//
+// « Valider » pointait vers la page publique de l'etudiant, concue plein ecran
+// pour un smartphone : elle s'affichait mal ici et n'avait de toute facon rien
+// a faire derriere une authentification. Elle est remplacee par la saisie
+// manuelle, qui existait deja sur /attendance/scan sans etre atteignable.
 const tabs = [
-  { to: '/attendance/validate', label: 'Valider' },
   { to: '/attendance/queue', label: "File d'attente" },
   { to: '/attendance/alerts', label: 'Anomalies' },
   { to: '/attendance/history', label: 'Historique' },
+  { to: '/attendance/scan', label: 'Saisie manuelle' },
 ];
 
 const tabLinkClass = ({ isActive }) =>

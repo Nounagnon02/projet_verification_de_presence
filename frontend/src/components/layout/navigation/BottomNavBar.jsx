@@ -4,7 +4,9 @@ import { MdHome, MdGroup, MdCalendarMonth, MdHowToReg, MdSettings } from 'react-
 const links = [
   { to: '/dashboard', icon: <MdHome />, label: 'Accueil' },
   { to: '/students', icon: <MdGroup />, label: 'Étudiants' },
-  { to: '/attendance/validate', icon: <MdHowToReg />, label: 'Présence' },
+  // Meme correction que dans SideNavBar : cette entree menait a la page
+  // publique de l'etudiant, hors de la coquille d'administration.
+  { to: '/attendance', icon: <MdHowToReg />, label: 'Présences' },
   { to: '/schedules/weekly', icon: <MdCalendarMonth />, label: 'Emploi du temps' },
   { to: '/settings', icon: <MdSettings />, label: 'Paramètres' },
 ];

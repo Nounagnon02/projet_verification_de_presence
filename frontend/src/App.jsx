@@ -137,14 +137,29 @@ function App() {
               <Route path="settings" element={<div className="text-center py-16 text-slate-400">Paramètres globaux (à venir)</div>} />
             </Route>
 
+            {/* Page publique de validation, hors de toute coquille.
+                Elle est declaree ici AUSSI, et volontairement en dehors du
+                groupe MainLayout : un administrateur connecte qui ouvre le lien
+                du QR Code doit voir la meme page que l'etudiant, plein ecran,
+                et non un 404 dans le cadre d'administration. */}
+            <Route path="/attendance/validate" element={<PresenceValidationPage />} />
+
             {/* Faculté Admin routes */}
             <Route path="/" element={<ProtectedRoute role="faculte_admin"><MainLayout /></ProtectedRoute>}>
               <Route index element={<DashboardPage />} />
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="students" element={<StudentManagementPage />} />
+              {/* PresenceValidationPage n'est PAS montee ici : c'est la page
+                  publique de l'etudiant, concue plein ecran pour un smartphone.
+                  Imbriquee dans la coquille d'administration, elle affichait un
+                  second logo, un en-tete chevauchant le titre et une grande
+                  zone vide. Elle reste accessible a son seul endroit legitime :
+                  la route publique /attendance/validate, cible du QR Code.
+
+                  L'index mene desormais a la file d'attente, qui est le travail
+                  reel de l'administrateur dans cette section. */}
               <Route path="attendance" element={<AttendanceLayout />}>
-                <Route index element={<Navigate to="validate" replace />} />
-                <Route path="validate" element={<PresenceValidationPage />} />
+                <Route index element={<Navigate to="queue" replace />} />
                 <Route path="queue" element={<PresenceQueuePage />} />
                 <Route path="alerts" element={<AnomaliesListPage />} />
                 <Route path="history" element={<PresenceHistoryPage />} />
