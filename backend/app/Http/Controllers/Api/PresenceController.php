@@ -286,11 +286,26 @@ class PresenceController extends Controller
             if (!$gpsOk || !$wifiOk) {
                 $raisons = [];
                 if (!$gpsOk && $gpsRequis) {
-                    $distance = round($verificationLog['distance_metres'] ?? 0);
-                    $raisons[] = "GPS hors zone (distance: {$distance}m, max: {$salle->rayon_geofence_m}m)";
+                    // Distinguer « position absente » de « position hors zone ».
+                    // Sans cela, distanceMetres() renvoyant null s'interpolait en
+                    // « 0m » et l'étudiant lisait « distance : 0m, max : 50m » —
+                    // un refus qui se contredit lui-même, et qui ne lui dit pas
+                    // que c'est l'autorisation de géolocalisation qui manque.
+                    $distance = $verificationLog['distance_metres'] ?? null;
+
+                    $raisons[] = $distance === null
+                        ? "Position non transmise : autorisez la géolocalisation, puis réessayez."
+                        : 'Vous êtes à ' . round($distance) . ' m de la salle (rayon autorisé : '
+                          . $salle->rayon_geofence_m . ' m).';
                 }
                 if (!$wifiOk && $wifiRequis) {
-                    $raisons[] = "Réseau WiFi non conforme (attendu: {$salle->ssid_attendu})";
+                    // Un navigateur ne peut pas lire le nom du réseau : seule
+                    // l'application mobile transmet ce champ. Le message doit donc
+                    // orienter vers elle plutôt que de laisser l'étudiant chercher
+                    // ce qu'il a mal fait.
+                    $raisons[] = $request->filled('ssid') || $request->filled('bssid')
+                        ? "Réseau Wi-Fi non conforme : connectez-vous à « {$salle->ssid_attendu} »."
+                        : "Réseau Wi-Fi non transmis : cette salle exige une validation depuis l'application mobile.";
                 }
 
                 // Enregistrer l'anomalie
@@ -316,9 +331,39 @@ class PresenceController extends Controller
         //-------------------------------------------------------------
         // 8. Détection de double scan et fraude (CDC 9.2.2 & 9.2.3)
         //-------------------------------------------------------------
-        $existing = Presence::where('etudiant_id', $etudiant->id)
+        // « withTrashed » est indispensable : la contrainte d'unicité SQL porte sur
+        // (etudiant_id, evenement_id) SANS tenir compte de deleted_at, alors
+        // qu'Eloquent exclut par défaut les lignes supprimées logiquement. Une
+        // présence effacée par un administrateur restait donc invisible à ce
+        // contrôle tout en bloquant l'insertion : l'étudiant recevait l'exception
+        // SQL brute — noms de tables, hôte et base compris — et se trouvait
+        // définitivement empêché de scanner ce cours.
+        $existing = Presence::withTrashed()
+            ->where('etudiant_id', $etudiant->id)
             ->where('evenement_id', $evenement->id)
             ->first();
+
+        // Présence supprimée par un administrateur : le scan la rétablit avec les
+        // données du nouveau passage. Refuser reviendrait à priver l'étudiant de
+        // toute nouvelle tentative pour ce cours.
+        if ($existing && $existing->trashed()) {
+            $existing->restore();
+            $existing->update([
+                'heure_scan'        => $now,
+                'device_fingerprint' => $request->device_fingerprint,
+                'ip_address'        => $request->ip(),
+                'statut'            => 'valide',
+                'latitude'          => $request->latitude,
+                'longitude'         => $request->longitude,
+            ]);
+
+            return $this->successResponse([
+                'etudiant'  => "{$etudiant->nom} {$etudiant->prenom}",
+                'matricule' => $etudiant->matricule,
+                'heure'     => $now->format('H:i:s'),
+                'cours'     => $evenement->ec?->intitule ?? 'Cours',
+            ], 'Présence enregistrée avec succès.');
+        }
 
         if ($existing) {
             if ($existing->device_fingerprint !== $request->device_fingerprint) {
@@ -383,16 +428,25 @@ class PresenceController extends Controller
         //-------------------------------------------------------------
         // 9. Enregistrement de la présence
         //-------------------------------------------------------------
-        $presence = Presence::create([
-            'etudiant_id'       => $etudiant->id,
-            'evenement_id'      => $evenement->id,
-            'heure_scan'        => $now,
-            'device_fingerprint' => $request->device_fingerprint,
-            'ip_address'        => $request->ip(),
-            'statut'            => $statut,
-            'latitude'          => $request->latitude,
-            'longitude'         => $request->longitude,
-        ]);
+        // La contrainte d'unicité est le dernier rempart contre deux scans
+        // concurrents du même étudiant (CDC 9.2.3). Sans ce filet, sa violation
+        // remontait telle quelle au client : l'exception PDO expose le nom de la
+        // base, l'hôte, le port et les identifiants internes, sur un endpoint
+        // public et non authentifié.
+        try {
+            $presence = Presence::create([
+                'etudiant_id'       => $etudiant->id,
+                'evenement_id'      => $evenement->id,
+                'heure_scan'        => $now,
+                'device_fingerprint' => $request->device_fingerprint,
+                'ip_address'        => $request->ip(),
+                'statut'            => $statut,
+                'latitude'          => $request->latitude,
+                'longitude'         => $request->longitude,
+            ]);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+            return $this->conflictResponse('Présence déjà enregistrée.');
+        }
 
         //-------------------------------------------------------------
         // 10. Régénération immédiate du QR Code (CDC 9.2.1)

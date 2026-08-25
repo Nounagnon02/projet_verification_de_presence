@@ -188,7 +188,11 @@ class TripleFactorScanTest extends TestCase
         $response->assertStatus(403)
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', fn (string $msg) =>
-                str_contains($msg, 'GPS') && str_contains($msg, 'hors zone')
+                // Le message annonce la distance reelle et le rayon autorise,
+                // pas un simple « hors zone » : c'est ce qui permet a l'etudiant
+                // de savoir s'il doit se rapprocher de quelques metres ou s'il
+                // s'est trompe de salle.
+                str_contains($msg, 'de la salle') && str_contains($msg, 'rayon autorisé')
             );
     }
 
@@ -211,7 +215,9 @@ class TripleFactorScanTest extends TestCase
         $response->assertStatus(403)
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', fn (string $msg) =>
-                str_contains($msg, 'WiFi') && str_contains($msg, 'non conforme')
+                // Le reseau attendu est nomme, pour que l'etudiant sache auquel
+                // se connecter.
+                str_contains($msg, 'Wi-Fi non conforme') && str_contains($msg, 'ASIN-STAFF')
             );
     }
 
@@ -234,7 +240,9 @@ class TripleFactorScanTest extends TestCase
         $response->assertStatus(403)
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', fn (string $msg) =>
-                str_contains($msg, 'GPS') && str_contains($msg, 'WiFi')
+                // Les deux motifs doivent figurer : corriger l'un sans l'autre
+                // laisserait l'etudiant devant un second refus inexplique.
+                str_contains($msg, 'de la salle') && str_contains($msg, 'Wi-Fi')
             );
     }
 

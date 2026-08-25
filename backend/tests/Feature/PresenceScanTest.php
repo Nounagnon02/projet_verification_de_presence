@@ -415,4 +415,91 @@ class PresenceScanTest extends TestCase
             ->assertStatus(404)
             ->assertJsonPath('message', 'QR Code invalide ou expiré.');
     }
+
+    // =====================================================================
+    // Presence supprimee logiquement
+    //
+    // La contrainte d'unicite SQL porte sur (etudiant_id, evenement_id) sans
+    // tenir compte de deleted_at, alors qu'Eloquent exclut par defaut les lignes
+    // supprimees. Une presence effacee par un administrateur restait donc
+    // invisible au controle de doublon tout en bloquant l'insertion : l'etudiant
+    // recevait l'exception PDO brute — nom de la base, hote, port — sur un
+    // endpoint public, et ne pouvait plus jamais scanner ce cours.
+    //
+    // Constate en pilotant l'application dans un navigateur, jamais par la suite
+    // de tests : aucun test ne supprimait de presence avant de rescanner.
+    // =====================================================================
+
+    public function test_un_rescan_apres_suppression_administrative_est_accepte(): void
+    {
+        $presence = Presence::create([
+            'etudiant_id'        => $this->etudiant->id,
+            'evenement_id'       => $this->evenement->id,
+            'heure_scan'         => Carbon::now()->subHour(),
+            'device_fingerprint' => 'device-avant-suppression',
+            'ip_address'         => '10.0.0.1',
+            'statut'             => 'valide',
+        ]);
+        $presence->delete();
+
+        $this->assertSoftDeleted('presences', ['id' => $presence->id]);
+
+        $reponse = $this->postJson('/api/presence/scan', [
+            'identifiant_unique' => $this->etudiant->identifiant_unique,
+            'token'              => $this->token,
+            'device_fingerprint' => 'device-apres-suppression',
+            'scan_challenge'     => $this->defiDeScan($this->token),
+            'latitude'           => 6.3608,
+            'longitude'          => 2.4354,
+        ]);
+
+        $reponse->assertStatus(200)->assertJsonPath('success', true);
+
+        // La ligne est retablie, avec les donnees du NOUVEAU passage.
+        $this->assertDatabaseHas('presences', [
+            'id'                 => $presence->id,
+            'deleted_at'         => null,
+            'device_fingerprint' => 'device-apres-suppression',
+            'statut'             => 'valide',
+        ]);
+
+        // Et une seule ligne, pas deux : l'unicite est preservee.
+        $this->assertSame(
+            1,
+            Presence::withTrashed()
+                ->where('etudiant_id', $this->etudiant->id)
+                ->where('evenement_id', $this->evenement->id)
+                ->count(),
+        );
+    }
+
+    public function test_aucune_erreur_sql_ne_fuit_vers_le_client(): void
+    {
+        // Meme scenario, mais on verifie ici ce que LIT l'etudiant : jamais un
+        // fragment d'exception de base de donnees.
+        $presence = Presence::create([
+            'etudiant_id'        => $this->etudiant->id,
+            'evenement_id'       => $this->evenement->id,
+            'heure_scan'         => Carbon::now()->subHour(),
+            'device_fingerprint' => 'device-quelconque',
+            'ip_address'         => '10.0.0.1',
+            'statut'             => 'valide',
+        ]);
+        $presence->delete();
+
+        $corps = $this->postJson('/api/presence/scan', [
+            'identifiant_unique' => $this->etudiant->identifiant_unique,
+            'token'              => $this->token,
+            'device_fingerprint' => 'device-autre',
+            'scan_challenge'     => $this->defiDeScan($this->token),
+        ])->getContent();
+
+        foreach (['SQLSTATE', 'duplicate key', 'presences_etudiant', 'pgsql', 'Connection:'] as $fuite) {
+            $this->assertStringNotContainsString(
+                $fuite,
+                $corps,
+                "La reponse expose « {$fuite} » : une erreur de base de donnees ne doit jamais atteindre le client."
+            );
+        }
+    }
 }

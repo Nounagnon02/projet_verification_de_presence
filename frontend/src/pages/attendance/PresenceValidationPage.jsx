@@ -29,6 +29,12 @@ const PresenceValidationPage = () => {
   // /presence/course-by-token et simplement renvoye tel quel.
   const { visitorId } = useFingerprint();
 
+  // Position de l'appareil. Sans elle, toute salle geolocalisee refuse le scan :
+  // le serveur ne recevait aucune coordonnee et repondait « position non
+  // transmise ». La page ne demandait pourtant jamais l'autorisation.
+  const [position, setPosition] = useState(null);
+  const [positionRefusee, setPositionRefusee] = useState(false);
+
   // Charger les infos du cours depuis le token QR. Annulable : le QR étant
   // renouvelé régulièrement, un étudiant peut rescanner avant la fin de la
   // requête précédente, et c'est la réponse du dernier code scanné qui doit
@@ -67,6 +73,37 @@ const PresenceValidationPage = () => {
     return () => { annule = true; };
   }, [qrToken]);
 
+  // Demande de la position, uniquement si la salle du cours l'exige — inutile
+  // d'ouvrir une invite d'autorisation quand le serveur n'en fera rien.
+  useEffect(() => {
+    if (!cours?.verification?.gps_requis || position || positionRefusee) return;
+
+    let annule = false;
+
+    (async () => {
+      try {
+        if (!navigator.geolocation) throw new Error('geolocalisation indisponible');
+
+        const { coords } = await new Promise((resoudre, rejeter) =>
+          navigator.geolocation.getCurrentPosition(resoudre, rejeter, {
+            // Haute precision : le rayon de georeperage d'une salle est de
+            // l'ordre de 50 m, une position approchee au reseau ne suffit pas.
+            enableHighAccuracy: true,
+            timeout: 12000,
+            maximumAge: 30000,
+          }),
+        );
+        if (!annule) setPosition({ latitude: coords.latitude, longitude: coords.longitude });
+      } catch {
+        // Autorisation refusee, delai depasse, ou materiel indisponible : le
+        // serveur enoncera lui-meme le motif du refus.
+        if (!annule) setPositionRefusee(true);
+      }
+    })();
+
+    return () => { annule = true; };
+  }, [cours, position, positionRefusee]);
+
   // Focus automatique sur le champ matricule
   useEffect(() => {
     if (step === 'scan' && inputRef.current) {
@@ -97,6 +134,9 @@ const PresenceValidationPage = () => {
         token: qrToken,
         device_fingerprint: visitorId || navigator.userAgent || 'unknown',
         scan_challenge: cours.scan_challenge,
+        // Omises plutot qu'envoyees a null : le serveur distingue « position
+        // absente » de « position hors zone », et les messages diffèrent.
+        ...(position ? { latitude: position.latitude, longitude: position.longitude } : {}),
       });
 
       if (data.success) {
