@@ -291,6 +291,14 @@ export default function SallesPage() {
               {/* Réseau WiFi */}
               <div className="border-t border-outline-variant/20 pt-4">
                 <h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2"><FiWifi size={16} /> Réseau WiFi</h4>
+                {/* Conséquence non évidente, à dire ici : c'est l'administrateur
+                    qui la déclenche en remplissant ces champs. */}
+                <p className="text-xs text-on-surface-variant mb-3">
+                  Renseigner un réseau rend cette salle validable{' '}
+                  <span className="font-semibold">uniquement depuis l'application mobile</span> :
+                  un navigateur ne peut pas lire le nom du réseau. Laissez ces champs
+                  vides, ou cochez « hors réseau », pour autoriser aussi la page web.
+                </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <Field label="SSID attendu">
                     <input type="text" placeholder="Ex: IFRI-WiFi" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all" value={form.ssid_attendu} onChange={(e) => setForm({ ...form, ssid_attendu: e.target.value })} />

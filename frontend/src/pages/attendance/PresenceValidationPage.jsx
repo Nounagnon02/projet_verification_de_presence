@@ -379,6 +379,26 @@ const PresenceValidationPage = () => {
 
           {/* Formulaire */}
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Un navigateur ne peut pas lire le nom du réseau sans fil : aucune
+                page web ne satisfera jamais ce contrôle. Le dire AVANT la saisie,
+                plutôt que de laisser l'étudiant remplir le formulaire pour
+                récolter un refus qu'il ne pourra pas corriger.
+                Affaiblir la règle serait pire : tolérer l'absence du champ
+                offrirait à quiconque un contournement en une ligne. */}
+            {cours?.verification?.wifi_requis && (
+              <div className="bg-warning/10 rounded-xl p-3.5 flex items-start gap-2.5 border border-warning/20">
+                <FiSmartphone className="text-warning shrink-0 mt-0.5" size={16} />
+                <div className="text-sm text-on-surface">
+                  <p className="font-semibold">Validation par l'application mobile</p>
+                  <p className="text-on-surface-variant text-xs mt-0.5">
+                    Cette salle vérifie le réseau Wi-Fi, une information qu'un
+                    navigateur ne peut pas lire. Utilisez l'application UAC
+                    Présences pour valider votre présence.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {error && (
               <div className="bg-error/10 rounded-xl p-3.5 flex items-start gap-2.5 border border-error/10 animate-[shake_0.4s_ease-out]">
                 <FiAlertTriangle className="text-error shrink-0 mt-0.5" size={16} />

@@ -135,8 +135,26 @@ class PresenceController extends Controller
             return $this->goneResponse('QR Code expiré ou invalide. Veuillez rescanner.');
         }
 
-        // Invalidation immédiate du token (anti-rejeu, CDC 9.2.1)
-        $qrCode->update(['actif' => false]);
+        // Le jeton n'est PAS invalidé ici, et c'est un choix.
+        //
+        // Il l'a été, au nom de l'anti-rejeu. La conséquence, mesurée : un seul
+        // étudiant pouvait valider par jeton. Les suivants recevaient 410 « QR
+        // Code expiré » jusqu'à la rotation, qui a lieu chaque minute. Un
+        // amphithéâtre de 500 étudiants aurait demandé plus de huit heures. Le
+        // produit ne pouvait pas remplir sa fonction.
+        //
+        // Ce que l'usage unique apportait réellement, une fois retiré ce que les
+        // autres facteurs couvrent déjà : empêcher qu'un second étudiant utilise,
+        // DANS LA MEME FENETRE DE 60 SECONDES, un code photographié par un
+        // premier. Or ce second étudiant doit de toute façon présenter
+        // l'identifiant unique d'un inscrit réel, se trouver dans le rayon de la
+        // salle, être sur son réseau, et il ne peut pas valider deux fois grâce à
+        // la contrainte d'unicité (etudiant_id, evenement_id).
+        //
+        // Ce qui rend un code partagé inutile, c'est sa DUREE DE VIE de 60
+        // secondes — pas son usage unique. Le jeton reste donc valable pour tous
+        // les étudiants présents pendant sa fenêtre, et la rotation continue
+        // d'être assurée chaque minute par le planificateur.
 
         $evenement = $qrCode->evenement;
         $now = Carbon::now();
@@ -449,14 +467,15 @@ class PresenceController extends Controller
         }
 
         //-------------------------------------------------------------
-        // 10. Régénération immédiate du QR Code (CDC 9.2.1)
+        // 10. Rotation du QR Code
         //-------------------------------------------------------------
-        QrCode::create([
-            'evenement_id' => $evenement->id,
-            'token'        => (string) Str::uuid(),
-            'expire_at'    => Carbon::now()->addSeconds(60),
-            'actif'        => true,
-        ]);
+        // Aucune régénération ici. Elle créait un second jeton actif à chaque
+        // scan, alors que l'écran de la salle continuait d'afficher le premier :
+        // l'étudiant suivant scannait donc une image devenue inexploitable.
+        //
+        // La rotation est du ressort du planificateur (« qrcode:auto-generate »,
+        // chaque minute) : un seul jeton actif à la fois, et l'image projetée
+        // correspond toujours à ce que le serveur accepte.
 
         return $this->createdResponse([
             'etudiant'     => "{$etudiant->nom} {$etudiant->prenom}",

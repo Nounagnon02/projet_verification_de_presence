@@ -502,4 +502,90 @@ class PresenceScanTest extends TestCase
             );
         }
     }
+
+    // =====================================================================
+    // Un jeton sert a TOUTE la salle pendant sa fenetre
+    //
+    // Le jeton etait invalide des le premier scan. Un seul etudiant pouvait donc
+    // valider par jeton, les suivants recevant 410 jusqu'a la rotation, qui a
+    // lieu chaque minute : un amphitheatre de 500 etudiants aurait demande plus
+    // de huit heures.
+    //
+    // Aucun test ne couvrait ce comportement — le cas E2E-SCAN-02 du plan etait
+    // liste mais jamais ecrit. C'est ainsi que le defaut a survecu.
+    // =====================================================================
+
+    public function test_un_meme_jeton_sert_a_plusieurs_etudiants(): void
+    {
+        $camarades = collect(range(1, 4))->map(fn (int $n) => Etudiant::create([
+            'nom'                => 'CAMARADE' . $n,
+            'prenom'             => 'Prenom' . $n,
+            'matricule'          => 'AMPHI-' . $n,
+            'email'              => "camarade{$n}@uac.test",
+            'filiere_id'         => $this->filiere->id,
+            'annee_id'           => $this->annee->id,
+            'identifiant_unique' => 'AMPHI_ETUDIANT_' . $n,
+        ]));
+
+        foreach ($camarades as $rang => $camarade) {
+            $this->postJson('/api/presence/scan', [
+                'identifiant_unique' => $camarade->identifiant_unique,
+                'token'              => $this->token,
+                'device_fingerprint' => 'appareil-personnel-' . $rang,
+                'scan_challenge'     => $this->defiDeScan($this->token),
+                'latitude'           => 6.3608,
+                'longitude'          => 2.4354,
+            ])->assertStatus(201)->assertJsonPath('success', true);
+        }
+
+        // Les quatre presences existent, chacune sur son appareil.
+        $this->assertSame(
+            4,
+            Presence::whereIn('etudiant_id', $camarades->pluck('id'))
+                ->where('evenement_id', $this->evenement->id)
+                ->count(),
+        );
+
+        // Et le jeton est toujours exploitable : il vit sa fenetre, pas un scan.
+        $this->assertDatabaseHas('qrcodes', ['token' => $this->token, 'actif' => true]);
+    }
+
+    public function test_le_jeton_reste_unique_pour_l_evenement(): void
+    {
+        // La regeneration par scan creait un second jeton actif alors que l'ecran
+        // de la salle affichait encore le premier : l'etudiant suivant scannait
+        // une image devenue inexploitable. La rotation appartient desormais au
+        // seul planificateur.
+        $this->postJson('/api/presence/scan', [
+            'identifiant_unique' => $this->etudiant->identifiant_unique,
+            'token'              => $this->token,
+            'device_fingerprint' => 'device-rotation',
+            'scan_challenge'     => $this->defiDeScan($this->token),
+            'latitude'           => 6.3608,
+            'longitude'          => 2.4354,
+        ])->assertStatus(201);
+
+        $this->assertSame(
+            1,
+            \App\Models\QrCode::where('evenement_id', $this->evenement->id)
+                ->where('actif', true)
+                ->count(),
+            'Un scan ne doit pas creer un second jeton actif.'
+        );
+    }
+
+    public function test_un_jeton_expire_reste_refuse(): void
+    {
+        // La duree de vie demeure la vraie protection : un code photographie puis
+        // partage est perime avant d'atteindre son destinataire.
+        \App\Models\QrCode::where('token', $this->token)
+            ->update(['expire_at' => Carbon::now()->subSecond()]);
+
+        $this->postJson('/api/presence/scan', [
+            'identifiant_unique' => $this->etudiant->identifiant_unique,
+            'token'              => $this->token,
+            'device_fingerprint' => 'device-tardif',
+            'scan_challenge'     => $this->defiDeScan($this->token),
+        ])->assertStatus(410);
+    }
 }

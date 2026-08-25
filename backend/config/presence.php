@@ -32,6 +32,13 @@ return [
     | l'argument anti-fraude du système : un code photographié puis partagé est
     | déjà périmé quand le destinataire le scanne.
     |
+    | Le token n'est PAS à usage unique. Il l'a été, et la conséquence, mesurée,
+    | était qu'un seul étudiant pouvait valider par token : les suivants
+    | recevaient 410 jusqu'à la rotation suivante, soit au mieux un étudiant par
+    | minute. Ce qui rend un code partagé inexploitable est cette durée de vie,
+    | pas le nombre de fois qu'il sert. La protection contre la double validation
+    | est ailleurs : contrainte d'unicité (etudiant_id, evenement_id).
+    |
     | La rotation effective dépend du planificateur, qui tourne chaque minute.
     | Descendre nettement sous 60 secondes n'aurait donc pas d'effet réel sans
     | changer la fréquence du cron.
