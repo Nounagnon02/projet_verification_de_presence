@@ -22,6 +22,7 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 // Phase 3 - New pages
 const QRValidationPage = lazy(() => import('./pages/attendance/QRValidationPage'));
 const PresenceQueuePage = lazy(() => import('./pages/attendance/PresenceQueuePage'));
+const ImportLayout = lazy(() => import('./components/layout/ImportLayout'));
 const ImportPage = lazy(() => import('./pages/import/ImportPage'));
 const StudentStatsPage = lazy(() => import('./pages/attendance/StudentStatsPage'));
 const WeeklySchedulePage = lazy(() => import('./pages/schedules/WeeklySchedulePage'));
@@ -190,8 +191,16 @@ function App() {
               </Route>
               <Route path="admin/filieres/create" element={<CreateFilierePage />} />
               {/* Seule interface des imports CSV « UE/EC » et « emploi du temps » :
-                  ces deux endpoints n'ont aucun autre appelant dans le frontend. */}
-              <Route path="import" element={<ImportPage />} />
+                  ces deux endpoints n'ont aucun autre appelant dans le frontend.
+
+                  Une route par import, sous une barre d'onglets en haut de page,
+                  comme la section Presences. Les onglets vivaient auparavant DANS
+                  la page : la section ne ressemblait a aucune autre, et l'onglet
+                  actif ne se lisait pas dans l'URL. */}
+              <Route path="import" element={<ImportLayout />}>
+                <Route index element={<Navigate to="etudiants" replace />} />
+                <Route path=":type" element={<ImportPage />} />
+              </Route>
               <Route path="import/ai-analysis" element={<AIAnalysisProgressPage />} />
               <Route path="import/validate-schedule" element={<ScheduleValidationPage />} />
               <Route path="import/validate-courses" element={<CourseValidationPage />} />

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { FiUpload, FiCheck, FiAlertTriangle, FiTrash2, FiLoader, FiInfo, FiFileText } from 'react-icons/fi';
 import { MdPictureAsPdf, MdDescription, MdSchool } from 'react-icons/md';
 import api from '../../api/axios';
@@ -8,8 +8,37 @@ import CsvTemplateDownload from '../../components/import/CsvTemplateDownload';
 const STEP_UPLOAD = 0;
 const STEP_RESULTAT = 2;
 
-export default function ImportPage() {
-  const [tab, setTab] = useState('students');
+/**
+ * Correspondance entre le segment d'URL et le type d'import.
+ *
+ * Les segments sont en francais et lisibles : l'URL d'un onglet est partageable,
+ * et c'est elle qui porte desormais l'onglet actif — un etat local ne survivait
+ * pas a un rechargement.
+ */
+const TYPES = {
+  'etudiants': 'students',
+  'cours-csv': 'csv-courses',
+  'edt-csv':   'csv-schedule',
+  'edt-ia':    'schedule',
+  'cours-ia':  'courses',
+};
+
+/**
+ * Enrobage de route : il lit le type dans l'URL et le passe en clé.
+ *
+ * Changer d'onglet remonte donc le composant, ce qui remet à zéro le fichier
+ * sélectionné, le résultat et l'erreur — sans effet de bord à écrire. Sans ce
+ * remontage, un fichier déposé sur l'import des étudiants restait sélectionné
+ * en passant à l'import des cours, et le résultat de l'un s'affichait sous le
+ * titre de l'autre.
+ */
+export default function ImportPageRoute() {
+  const { type } = useParams();
+  return <ImportPage key={type ?? 'etudiants'} type={type} />;
+}
+
+function ImportPage({ type }) {
+  const tab = TYPES[type] ?? 'students';
   const [file, setFile] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -200,20 +229,6 @@ export default function ImportPage() {
     else if (tab === 'courses') handleAnalyzeCourses();
   };
 
-  // --- Tabs config ---
-  const tabs = [
-    { key: 'students', label: 'Import Étudiants', icon: FiUpload },
-    { key: 'csv-courses', label: 'Cours (CSV)', icon: FiFileText },
-    { key: 'csv-schedule', label: 'EDT (CSV)', icon: FiFileText },
-    { key: 'schedule', label: 'EDT (IA)', icon: MdPictureAsPdf },
-    { key: 'courses', label: 'Cours (IA)', icon: MdSchool },
-  ];
-
-  const templateTypes = {
-    'csv-courses': 'ue-ec',
-    'csv-schedule': 'edt',
-  };
-
   const actionLabels = {
     students: 'Importer les étudiants',
     'csv-courses': 'Importer les cours (CSV)',
@@ -222,24 +237,22 @@ export default function ImportPage() {
     courses: 'Analyser avec IA',
   };
 
+  // Le titre change avec l'onglet : « Importation » seul ne disait pas ce qu'on
+  // s'apprete a importer, alors que la barre d'onglets le porte deja au-dessus.
+  const titres = {
+    students:       ['Import des étudiants', 'Fichier CSV : une ligne par étudiant, identifiant unique généré automatiquement.'],
+    'csv-courses':  ['Import des cours (CSV)', 'Unités d\'enseignement et éléments constitutifs, une ligne par EC.'],
+    'csv-schedule': ["Import de l'emploi du temps (CSV)", 'Créneaux récurrents. Les conflits de salle sont détectés automatiquement.'],
+    schedule:       ["Import de l'emploi du temps (IA)", 'Document PDF analysé par le module d\'extraction. Rien n\'est enregistré avant votre validation.'],
+    courses:        ['Import de la maquette pédagogique (IA)', 'Document PDF analysé par le module d\'extraction. Rien n\'est enregistré avant votre validation.'],
+  };
+  const [titre, sousTitre] = titres[tab] ?? titres.students;
+
   return (
     <div className="max-w-2xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-primary font-headline">Importation</h1>
-        <p className="text-sm text-on-surface-variant">Importez des données via CSV ou analyse IA</p>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-2 mb-8 bg-surface-container-high rounded-xl p-1 flex-wrap">
-        {tabs.map((t) => (
-          <button key={t.key} onClick={() => { setTab(t.key); resetAll(); }}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-              tab === t.key ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-primary'
-            }`}>
-            <t.icon size={14} />
-            {t.label}
-          </button>
-        ))}
+      <div className="mb-6">
+        <h1 className="text-xl font-bold text-primary font-headline">{titre}</h1>
+        <p className="text-sm text-on-surface-variant mt-0.5">{sousTitre}</p>
       </div>
 
       {/* Drop zone */}
@@ -305,12 +318,6 @@ export default function ImportPage() {
           de requête : Sanctum ne lit que l'en-tête Authorization, le
           téléchargement repartait donc en 401 — et le jeton se retrouvait dans
           l'historique du navigateur et les journaux du serveur. */}
-      {(tab === 'csv-courses' || tab === 'csv-schedule') && !file && (
-        <div className="mt-4 flex justify-center">
-          <CsvTemplateDownload types={[templateTypes[tab]]} />
-        </div>
-      )}
-
       {error && !result && (
         <div className="mt-4 flex items-center gap-2 p-3 bg-error-container/30 rounded-xl text-on-error-container text-sm">
           <FiAlertTriangle /> {error}

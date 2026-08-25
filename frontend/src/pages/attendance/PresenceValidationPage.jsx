@@ -304,21 +304,28 @@ const PresenceValidationPage = () => {
     <div className="min-h-screen bg-surface flex flex-col">
       {/* TopBar */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-outline-variant/10">
-        <div className="max-w-md mx-auto px-5 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        {/* Deux lignes plutot qu'une. La hauteur etait figee a 64 px alors que le
+            logo, un titre en text-lg et son sous-titre occupent trois lignes dans
+            une colonne de 448 px : le titre chevauchait le logo. La marque et
+            l'etat de session tiennent la premiere ligne, le titre la seconde, et
+            la hauteur suit son contenu. */}
+        <div className="max-w-md mx-auto px-5 py-3">
+          <div className="flex items-center justify-between gap-3 mb-2">
             <img src="/images/logo-couleur-compact.png" alt="UAC Présences"
               className="h-6 w-auto shrink-0" />
-            <div>
-              <span className="font-headline font-bold text-primary text-lg leading-none block">Enregistrement de présence</span>
-              <span className="text-[10px] text-on-surface-variant font-medium">Saisissez votre identifiant pour confirmer votre présence</span>
-            </div>
+            {qrToken && (
+              <div className="bg-secondary/10 px-3 py-1.5 rounded-full flex items-center gap-1.5 shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+                <span className="text-[9px] font-bold uppercase tracking-widest text-secondary">Session active</span>
+              </div>
+            )}
           </div>
-          {qrToken && (
-            <div className="bg-secondary/10 px-3 py-1.5 rounded-full flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
-              <span className="text-[9px] font-bold uppercase tracking-widest text-secondary">Session active</span>
-            </div>
-          )}
+          <h1 className="font-headline font-bold text-primary text-base leading-snug">
+            Enregistrement de présence
+          </h1>
+          <p className="text-[11px] text-on-surface-variant font-medium leading-snug">
+            Saisissez votre identifiant pour confirmer votre présence
+          </p>
         </div>
       </header>
 
