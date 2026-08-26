@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiPlus, FiEdit2, FiTrash2, FiSave, FiX, FiRefreshCw, FiBook, FiBookOpen, FiChevronDown, FiChevronRight, FiAlertTriangle, FiSearch, FiUpload, FiFileText, FiLoader } from 'react-icons/fi';
 import api from '../../api/axios';
+import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 import CsvTemplateDownload from '../../components/import/CsvTemplateDownload';
 
 const INITIAL_UE = { code: '', intitule: '', filiere_id: '', annee_id: '', semestre: 1, volume_horaire: 30 };
@@ -10,8 +11,7 @@ const INITIAL_EC = { code: '', intitule: '', volume_horaire: 15 };
 export default function UEManagementPage() {
   const navigate = useNavigate();
   const [ues, setUes] = useState([]);
-  const [filieres, setFilieres] = useState([]);
-  const [annees, setAnnees] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -38,9 +38,10 @@ export default function UEManagementPage() {
   const importFileRef = useRef(null);
 
   // Filtres
-  const [filtreAnnee, setFiltreAnnee] = useState('');
-  const [filtreFiliere, setFiltreFiliere] = useState('');
-  const [filtreNiveau, setFiltreNiveau] = useState('');
+  // Filtres en cascade : l'année restreint les filières, qui déterminent le
+  // niveau. Les formulaires, eux, gardent la liste complète.
+  const filtres = useFiltresAcademiques();
+  const { annees, filieres, filieresToutes } = filtres;
 
   const handleImportDrop = (e) => {
     e.preventDefault();
@@ -133,17 +134,13 @@ export default function UEManagementPage() {
         setLoading(true);
         if (!annule) setError('');
         const params = {};
-        if (filtreAnnee) params.annee_id = filtreAnnee;
-        if (filtreFiliere) params.filiere_id = filtreFiliere;
-        if (filtreNiveau) params.niveau = filtreNiveau;
-        const [uesRes, filieresRes, anneesRes] = await Promise.all([
-          api.get('/admin/ues', { params }),
-          api.get('/admin/filieres'),
-          api.get('/admin/annees-academiques'),
-        ]);
+        if (filtres.annee) params.annee_id = filtres.annee;
+        if (filtres.filiere) params.filiere_id = filtres.filiere;
+        if (filtres.niveau) params.niveau = filtres.niveau;
+        // Les listes de référence sont chargées par useFiltresAcademiques :
+        // les redemander ici les aurait figées à leur version non filtrée.
+        const uesRes = await api.get('/admin/ues', { params });
         if (!annule) setUes(uesRes.data?.data ?? uesRes.data ?? []);
-        if (!annule) setFilieres(filieresRes.data?.data ?? filieresRes.data ?? []);
-        if (!annule) setAnnees(anneesRes.data?.data ?? anneesRes.data ?? []);
       } catch (err) {
         if (!annule) setError('Erreur lors du chargement des données.');
         console.error('[UE]', err);
@@ -154,7 +151,7 @@ export default function UEManagementPage() {
     })();
 
     return () => { annule = true; };
-  }, [filtreAnnee, filtreFiliere, filtreNiveau, rechargement]);
+  }, [filtres.annee, filtres.filiere, filtres.niveau, rechargement]);
 
   const filteredUes = ues.filter(ue =>
     !search || ue.code?.toLowerCase().includes(search.toLowerCase()) ||
@@ -293,7 +290,7 @@ export default function UEManagementPage() {
         <div className="flex flex-wrap items-end gap-4">
           <div className="space-y-1 min-w-[180px] flex-1">
             <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Année académique</label>
-            <select value={filtreAnnee} onChange={(e) => setFiltreAnnee(e.target.value)}
+            <select value={filtres.annee} onChange={(e) => filtres.setAnnee(e.target.value)}
               className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
               <option value="">Toutes les années</option>
               {annees.map(a => <option key={a.id} value={a.id}>{a.libelle}{a.active ? ' (Active)' : ''}</option>)}
@@ -301,22 +298,18 @@ export default function UEManagementPage() {
           </div>
           <div className="space-y-1 min-w-[180px] flex-1">
             <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Filière</label>
-            <select value={filtreFiliere} onChange={(e) => setFiltreFiliere(e.target.value)}
-              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
-              <option value="">Toutes les filières</option>
+            <select value={filtres.filiere} onChange={(e) => filtres.setFiliere(e.target.value)}
+              disabled={filtres.anneeVide} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
+              <option value="">{filtres.anneeVide ? 'Aucune filière cette année' : 'Toutes les filières'}</option>
               {filieres.map(f => <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>)}
             </select>
           </div>
           <div className="space-y-1 min-w-[140px]">
             <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Niveau</label>
-            <select value={filtreNiveau} onChange={(e) => setFiltreNiveau(e.target.value)}
-              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
+            <select value={filtres.niveau} onChange={(e) => filtres.setNiveau(e.target.value)}
+              disabled={filtres.niveaux.length === 0} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
               <option value="">Tous les niveaux</option>
-              <option value="L1">L1 — Licence 1</option>
-              <option value="L2">L2 — Licence 2</option>
-              <option value="L3">L3 — Licence 3</option>
-              <option value="M1">M1 — Master 1</option>
-              <option value="M2">M2 — Master 2</option>
+              {filtres.niveaux.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>
         </div>
@@ -485,7 +478,7 @@ export default function UEManagementPage() {
                   <select value={ueModal.data.filiere_id} onChange={(e) => setUeModal(prev => ({ ...prev, data: { ...prev.data, filiere_id: e.target.value } }))}
                     required className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                     <option value="">Sélectionner...</option>
-                    {filieres.map(f => <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>)}
+                    {filieresToutes.map(f => <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>)}
                   </select>
                 </div>
                 <div>

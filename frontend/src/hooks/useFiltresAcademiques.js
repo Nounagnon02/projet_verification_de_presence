@@ -25,11 +25,14 @@ import api from '../api/axios';
  * rendu intermédiaire incohérent qu'un effet produirait — ici, un appel réseau
  * parti avec un couple (année, filière) impossible.
  *
- * @param {{ onChangement?: () => void }} options
+ * @param {{ onChangement?: () => void, preselectionnerAnneeActive?: boolean }} options
  *   onChangement est appelé à chaque modification d'un filtre. Les écrans
  *   paginés y remettent la pagination à la première page.
+ *   preselectionnerAnneeActive ouvre l'écran sur l'année en cours plutôt que
+ *   sur « toutes les années » : ce que l'on veut d'un tableau de bord, qui
+ *   doit montrer l'exercice courant sans qu'on ait à le désigner.
  */
-export function useFiltresAcademiques({ onChangement } = {}) {
+export function useFiltresAcademiques({ onChangement, preselectionnerAnneeActive = false } = {}) {
   const [annee, setAnneeBrut] = useState('');
   const [filiere, setFiliereBrut] = useState('');
   const [niveau, setNiveauBrut] = useState('');
@@ -56,10 +59,21 @@ export function useFiltresAcademiques({ onChangement } = {}) {
     const controleur = new AbortController();
 
     api.get('/admin/annees-academiques', { signal: controleur.signal })
-      .then(({ data }) => setAnnees(data?.data ?? data ?? []))
+      .then(({ data }) => {
+        const liste = data?.data ?? data ?? [];
+        setAnnees(liste);
+
+        if (preselectionnerAnneeActive) {
+          const active = liste.find((a) => a.active);
+          if (active) setAnneeBrut(String(active.id));
+        }
+      })
       .catch(() => { /* l'écran affiche déjà son erreur de chargement */ });
 
     return () => controleur.abort();
+    // Le drapeau n'est lu qu'au premier chargement : le changer ensuite ne doit
+    // pas réécraser le choix de l'utilisateur.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Liste complète, chargée une fois. Elle sert aux formulaires, et de repli

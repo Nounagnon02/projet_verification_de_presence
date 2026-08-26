@@ -5,9 +5,8 @@ import DataTable from '../../components/ui/DataTable';
 import SearchInput from '../../components/ui/SearchInput';
 import Badge from '../../components/ui/Badge';
 import api from '../../api/axios';
+import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 
-const NIVEAUX = ['L1', 'L2', 'L3', 'M1', 'M2'];
-const SEMESTRES = Array.from({ length: 10 }, (_, i) => ({ value: i + 1, label: `S${i + 1}` }));
 
 const PresenceHistoryPage = () => {
   const [records, setRecords] = useState([]);
@@ -19,69 +18,59 @@ const PresenceHistoryPage = () => {
   const { addToast } = useToastCtx();
 
   // Filtres supplémentaires
-  const [filieres, setFilieres] = useState([]);
-  const [annees, setAnnees] = useState([]);
-  const [filtreAnnee, setFiltreAnnee] = useState('');
-  const [filtreFiliere, setFiltreFiliere] = useState('');
-  const [filtreNiveau, setFiltreNiveau] = useState('');
-  const [filtreSemestre, setFiltreSemestre] = useState('');
+  // Filtres académiques en cascade : l'année restreint les filières, qui
+  // restreignent niveaux et semestres. Le hook porte aussi la remise à zéro
+  // des filtres devenus impossibles.
+  const filtres = useFiltresAcademiques({ onChangement: () => setPage(1) });
+  const { annees, filieres } = filtres;
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const exportRef = useRef(null);
 
-  // Chargement initial des listes de filtres
+
+  // Chargement intégré à l'effet, son unique appelant, et annulable : neuf
+  // filtres pilotent cette liste, et deux changements rapprochés faisaient
+  // partir deux requêtes dont l'ordre de retour n'était pas garanti.
   useEffect(() => {
-    const init = async () => {
+    let annule = false;
+
+    (async () => {
+      setLoading(true);
       try {
-        const [filRes, anRes] = await Promise.all([
-          api.get('/admin/filieres'),
-          api.get('/admin/annees-academiques'),
-        ]);
-        setFilieres(filRes.data?.data ?? filRes.data ?? []);
-        setAnnees(anRes.data?.data ?? anRes.data ?? []);
+        const params = { page, per_page: 20 };
+        if (search.trim()) params.search = search;
+        if (filter !== 'all') params.statut = filter;
+        if (filtres.annee) params.annee_id = filtres.annee;
+        if (filtres.filiere) params.filiere_id = filtres.filiere;
+        if (filtres.niveau) params.niveau = filtres.niveau;
+        if (filtres.semestre) params.semestre = filtres.semestre;
+        if (dateDebut) params.date_debut = dateDebut;
+        if (dateFin) params.date_fin = dateFin;
+
+        const { data } = await api.get('/admin/presence/history', { params });
+        if (data.success) {
+          if (!annule) setRecords(data.data || []);
+          if (!annule) setPagination(data.meta || null);
+        } else {
+          if (!annule) setRecords(data.data || []);
+        }
       } catch {
-        // silencieux
+        if (!annule) setRecords([]);
+      } finally {
+        if (!annule) setLoading(false);
       }
-    };
-    init();
-  }, []);
+  
+    })();
 
-  const fetchHistory = async () => {
-    setLoading(true);
-    try {
-      const params = { page, per_page: 20 };
-      if (search.trim()) params.search = search;
-      if (filter !== 'all') params.statut = filter;
-      if (filtreAnnee) params.annee_id = filtreAnnee;
-      if (filtreFiliere) params.filiere_id = filtreFiliere;
-      if (filtreNiveau) params.niveau = filtreNiveau;
-      if (filtreSemestre) params.semestre = filtreSemestre;
-      if (dateDebut) params.date_debut = dateDebut;
-      if (dateFin) params.date_fin = dateFin;
-
-      const { data } = await api.get('/admin/presence/history', { params });
-      if (data.success) {
-        setRecords(data.data || []);
-        setPagination(data.meta || null);
-      } else {
-        setRecords(data.data || []);
-      }
-    } catch {
-      setRecords([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchHistory(); }, [page, search, filter, filtreAnnee, filtreFiliere, filtreNiveau, filtreSemestre, dateDebut, dateFin]);
+    return () => { annule = true; };
+  }, [page, search, filter, filtres.annee, filtres.filiere, filtres.niveau, filtres.semestre, dateDebut, dateFin]);
 
   const resetFilters = () => {
-    setFiltreAnnee('');
-    setFiltreFiliere('');
-    setFiltreNiveau('');
-    setFiltreSemestre('');
+    // Remettre l'année à zéro suffit : le hook en cascade vide filière,
+    // niveau et semestre.
+    filtres.setAnnee('');
     setDateDebut('');
     setDateFin('');
     setSearch('');
@@ -89,7 +78,7 @@ const PresenceHistoryPage = () => {
     setPage(1);
   };
 
-  const hasActiveFilters = filtreAnnee || filtreFiliere || filtreNiveau || filtreSemestre || dateDebut || dateFin;
+  const hasActiveFilters = filtres.annee || filtres.filiere || filtres.niveau || filtres.semestre || dateDebut || dateFin;
 
   // Fermer le menu d'export si on clique ailleurs
   useEffect(() => {
@@ -109,10 +98,10 @@ const PresenceHistoryPage = () => {
       const params = {};
       if (search.trim()) params.search = search;
       if (filter !== 'all') params.statut = filter;
-      if (filtreAnnee) params.annee_id = filtreAnnee;
-      if (filtreFiliere) params.filiere_id = filtreFiliere;
-      if (filtreNiveau) params.niveau = filtreNiveau;
-      if (filtreSemestre) params.semestre = filtreSemestre;
+      if (filtres.annee) params.annee_id = filtres.annee;
+      if (filtres.filiere) params.filiere_id = filtres.filiere;
+      if (filtres.niveau) params.niveau = filtres.niveau;
+      if (filtres.semestre) params.semestre = filtres.semestre;
       if (dateDebut) params.date_debut = dateDebut;
       if (dateFin) params.date_fin = dateFin;
       params.format = format;
@@ -233,7 +222,7 @@ const PresenceHistoryPage = () => {
         <div className="flex flex-wrap items-end gap-4">
           <div className="space-y-1 min-w-[160px] flex-1">
             <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Année académique</label>
-            <select value={filtreAnnee} onChange={e => { setFiltreAnnee(e.target.value); setPage(1); }}
+            <select value={filtres.annee} onChange={e => filtres.setAnnee(e.target.value)}
               className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
               <option value="">Toutes</option>
               {annees.map(a => <option key={a.id} value={a.id}>{a.libelle}</option>)}
@@ -241,26 +230,26 @@ const PresenceHistoryPage = () => {
           </div>
           <div className="space-y-1 min-w-[160px] flex-1">
             <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Filière</label>
-            <select value={filtreFiliere} onChange={e => { setFiltreFiliere(e.target.value); setPage(1); }}
-              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
-              <option value="">Toutes</option>
+            <select value={filtres.filiere} onChange={e => filtres.setFiliere(e.target.value)}
+              disabled={filtres.anneeVide} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
+              <option value="">{filtres.anneeVide ? 'Aucune filière cette année' : 'Toutes'}</option>
               {filieres.map(f => <option key={f.id} value={f.id}>{f.code}</option>)}
             </select>
           </div>
           <div className="space-y-1 min-w-[140px] flex-1">
             <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Niveau</label>
-            <select value={filtreNiveau} onChange={e => { setFiltreNiveau(e.target.value); setPage(1); }}
-              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
+            <select value={filtres.niveau} onChange={e => filtres.setNiveau(e.target.value)}
+              disabled={filtres.niveaux.length === 0} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
               <option value="">Tous</option>
-              {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
+              {filtres.niveaux.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>
           <div className="space-y-1 min-w-[140px] flex-1">
             <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Semestre</label>
-            <select value={filtreSemestre} onChange={e => { setFiltreSemestre(e.target.value); setPage(1); }}
-              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
+            <select value={filtres.semestre} onChange={e => filtres.setSemestre(e.target.value)}
+              disabled={filtres.semestres.length === 0} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
               <option value="">Tous</option>
-              {SEMESTRES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              {filtres.semestres.map(s => <option key={s} value={s}>S{s}</option>)}
             </select>
           </div>
           <div className="space-y-1 min-w-[140px] flex-1">

@@ -224,4 +224,23 @@ describe('useFiltresAcademiques', () => {
 
     await waitFor(() => expect(result.current.niveau).toBe(''));
   });
+
+  // Un tableau de bord doit s'ouvrir sur l'exercice courant, sans qu'on ait à
+  // le désigner. L'option n'est lue qu'au premier chargement.
+  it('peut s ouvrir sur l annee active', async () => {
+    const rendu = renderHook(() => useFiltresAcademiques({ preselectionnerAnneeActive: true }));
+
+    await waitFor(() => expect(rendu.result.current.annee).toBe('3'));
+    await waitFor(() => expect(rendu.result.current.filieres).toHaveLength(2));
+
+    const appels = mouchard.filtrer('GET', '/admin/filieres');
+    expect(appels.at(-1).parametres).toEqual({ annee_id: '3' });
+  });
+
+  it('n ouvre sur aucune annee par defaut', async () => {
+    const { result } = await monter();
+
+    expect(result.current.annee).toBe('');
+    expect(result.current.filieres).toHaveLength(3);
+  });
 });

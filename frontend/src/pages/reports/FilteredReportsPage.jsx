@@ -5,6 +5,7 @@ import {
   FiChevronLeft, FiChevronRight
 } from 'react-icons/fi';
 import api from '../../api/axios';
+import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 import BarChart from '../../components/charts/BarChart';
 import GaugeChart from '../../components/charts/GaugeChart';
 
@@ -15,7 +16,6 @@ const TRIMESTRES = [
   { value: 4, label: 'T4 (Jun-Aoû)' },
 ];
 
-const SEMESTRES = Array.from({ length: 10 }, (_, i) => ({ value: i + 1, label: `S${i + 1}` }));
 
 /**
  * En-tête de section repliable.
@@ -38,17 +38,19 @@ const SectionToggle = ({ open, setOpen, title, badge }) => (
 
 export default function FilteredReportsPage() {
   //Filtres
-  const [filieres, setFilieres] = useState([]);
-  const [annees, setAnnees] = useState([]);
   const [ues, setUes] = useState([]);
+
+  // Filtres en cascade. Les noms locaux sont conservés : ils sont lus par les
+  // paramètres de requête, les exports et les libellés de l'écran.
+  const filtres = useFiltresAcademiques({ preselectionnerAnneeActive: true });
+  const { annees, filieres } = filtres;
+  const { annee: anneeId, filiere: filiereId, semestre } = filtres;
+  const { setAnnee: setAnneeId, setFiliere: setFiliereId, setSemestre } = filtres;
 
   // Compteur de rechargement : le bouton « actualiser » l'incrémente, ce qui
   // relance l'effet. La requête n'est émise qu'à un seul endroit.
   const [rechargement, setRechargement] = useState(0);
 
-  const [filiereId, setFiliereId] = useState('');
-  const [anneeId, setAnneeId] = useState('');
-  const [semestre, setSemestre] = useState('');
   const [trimestre, setTrimestre] = useState('');
   const [ueId, setUeId] = useState('');
   const [ecId, setEcId] = useState('');
@@ -84,21 +86,10 @@ export default function FilteredReportsPage() {
   useEffect(() => {
     const init = async () => {
       try {
-        const [filRes, anRes, ueRes] = await Promise.all([
-          api.get('/admin/filieres'),
-          api.get('/admin/annees-academiques'),
-          api.get('/admin/ues'),
-        ]);
-        const filList = filRes.data?.data || filRes.data || [];
-        const anList = anRes.data?.data || anRes.data || [];
-        const ueList = ueRes.data?.data || ueRes.data || [];
-        if (Array.isArray(filList)) setFilieres(filList);
-        if (Array.isArray(anList)) {
-          setAnnees(anList);
-          const active = anList.find(y => y.active);
-          if (active) setAnneeId(String(active.id));
-        }
-        if (Array.isArray(ueList)) setUes(ueList);
+        // Filières et années viennent de useFiltresAcademiques ; les UEs, de
+        // l'effet qui suit l'année et la filière. Il ne reste rien à charger
+        // ici, mais l'écran doit sortir de son état initial.
+        await Promise.resolve();
       } catch {
         // silencieux
       } finally {
@@ -107,6 +98,27 @@ export default function FilteredReportsPage() {
     };
     init();
   }, []);
+
+  // UEs de l'année et de la filière choisies. L'endpoint honore annee_id et
+  // filiere_id depuis toujours ; la page ne les lui transmettait pas, si bien
+  // que la liste des UEs mélangeait toutes les années.
+  useEffect(() => {
+    // Tant que le hook n'a pas arrêté son année — il présélectionne l'année
+    // active — interroger le serveur enverrait une requête sans filtre, aussitôt
+    // remplacée par la bonne.
+    if (filtres.chargement) return undefined;
+
+    const controleur = new AbortController();
+    const parametres = {};
+    if (anneeId) parametres.annee_id = anneeId;
+    if (filiereId) parametres.filiere_id = filiereId;
+
+    api.get('/admin/ues', { params: parametres, signal: controleur.signal })
+      .then(({ data }) => setUes(data?.data ?? data ?? []))
+      .catch(() => { /* la liste précédente reste affichée */ });
+
+    return () => controleur.abort();
+  }, [anneeId, filiereId, filtres.chargement]);
 
   // ECs de l'UE choisie : une valeur calculée, pas un état à synchroniser.
   const ecs = useMemo(() => {
@@ -123,6 +135,13 @@ export default function FilteredReportsPage() {
   if (ueId !== ueIdPrecedent) {
     setUeIdPrecedent(ueId);
     setEcId('');
+  }
+
+  // Même raison un cran plus haut : changer d'année ou de filière peut retirer
+  // l'UE choisie de la liste. La garder interrogerait le serveur sur une UE que
+  // l'écran ne propose plus.
+  if (ueId && ues.length > 0 && !ues.some(u => String(u.id) === ueId)) {
+    setUeId('');
   }
 
   //Chargement stats filtrées
@@ -387,8 +406,9 @@ export default function FilteredReportsPage() {
           <div>
             <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Filière</label>
             <select value={filiereId} onChange={e => setFiliereId(e.target.value)}
-              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface">
-              <option value="">Toutes</option>
+              disabled={filtres.anneeVide}
+              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface disabled:opacity-40">
+              <option value="">{filtres.anneeVide ? 'Aucune' : 'Toutes'}</option>
               {filieres.map(f => <option key={f.id} value={f.id}>{f.code}</option>)}
             </select>
           </div>
@@ -405,7 +425,7 @@ export default function FilteredReportsPage() {
             <select value={semestre} onChange={e => setSemestre(e.target.value)}
               className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface">
               <option value="">Tous</option>
-              {SEMESTRES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              {filtres.semestres.map(s => <option key={s} value={s}>S{s}</option>)}
             </select>
           </div>
           <div>

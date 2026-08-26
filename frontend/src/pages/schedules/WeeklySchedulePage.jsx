@@ -2,6 +2,7 @@ import { useState, useEffect, useRef , useMemo} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiChevronLeft, FiChevronRight, FiMapPin, FiLoader, FiUpload, FiPlus, FiFileText, FiX, FiAlertTriangle, FiCheck } from 'react-icons/fi';
 import api from '../../api/axios';
+import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 import CsvTemplateDownload from '../../components/import/CsvTemplateDownload';
 
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
@@ -43,16 +44,16 @@ export default function WeeklySchedulePage() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filieres, setFilieres] = useState([]);
-  const [annees, setAnnees] = useState([]);
+
   // Mémorisé : recalculé à chaque rendu, cet objet changeait d'identité en
   // permanence et ne pouvait pas figurer dans les dépendances d'un effet.
   const weekRange = useMemo(() => getWeekDateRange(weekOffset), [weekOffset]);
 
   // Filtres
-  const [filtreAnnee, setFiltreAnnee] = useState('');
-  const [filtreFiliere, setFiltreFiliere] = useState('');
-  const [filtreSemestre, setFiltreSemestre] = useState('');
+  // Filtres en cascade : l'année restreint les filières, qui restreignent les
+  // semestres. Le formulaire d'ajout garde la liste complète.
+  const filtres = useFiltresAcademiques();
+  const { annees, filieres, filieresToutes } = filtres;
 
   // Modal Ajouter un cours
   const [showAddModal, setShowAddModal] = useState(false);
@@ -82,26 +83,13 @@ export default function WeeklySchedulePage() {
 
   // Charger les options de filtres
   useEffect(() => {
-    (async () => {
-      try {
-        const [filRes, annRes] = await Promise.all([
-          api.get('/admin/filieres'),
-          api.get('/admin/annees-academiques'),
-        ]);
-        setFilieres(filRes.data?.data ?? filRes.data ?? []);
-        setAnnees(annRes.data?.data ?? annRes.data ?? []);
-      } catch { /* silencieux */ }
-    })();
-  }, []);
-
-  useEffect(() => {
     const fetchEvents = async () => {
       setLoading(true);
       try {
         const params = { date_debut: weekRange.start, date_fin: weekRange.end };
-        if (filtreAnnee) params.annee_id = filtreAnnee;
-        if (filtreFiliere) params.filiere_id = filtreFiliere;
-        if (filtreSemestre) params.semestre = filtreSemestre;
+        if (filtres.annee) params.annee_id = filtres.annee;
+        if (filtres.filiere) params.filiere_id = filtres.filiere;
+        if (filtres.semestre) params.semestre = filtres.semestre;
         const { data: res } = await api.get('/admin/evenements', { params });
         const list = res.data || res;
         setEvents(Array.isArray(list) ? list : []);
@@ -112,7 +100,7 @@ export default function WeeklySchedulePage() {
       }
     };
     fetchEvents();
-  }, [weekRange, filtreAnnee, filtreFiliere, filtreSemestre, rechargement]);
+  }, [weekRange, filtres.annee, filtres.filiere, filtres.semestre, rechargement]);
 
   const handleImportDrop = (e) => {
     e.preventDefault();
@@ -210,9 +198,9 @@ export default function WeeklySchedulePage() {
       setAddForm({ ec_id: '', filiere_id: '', annee_id: '', date: '', heure_debut: '08:00', heure_fin: '10:00', salle: '' });
       // Recharger les événements
       const params = { date_debut: weekRange.start, date_fin: weekRange.end };
-      if (filtreAnnee) params.annee_id = filtreAnnee;
-      if (filtreFiliere) params.filiere_id = filtreFiliere;
-      if (filtreSemestre) params.semestre = filtreSemestre;
+      if (filtres.annee) params.annee_id = filtres.annee;
+      if (filtres.filiere) params.filiere_id = filtres.filiere;
+      if (filtres.semestre) params.semestre = filtres.semestre;
       const { data: res } = await api.get('/admin/evenements', { params });
       const list = res.data || res;
       setEvents(Array.isArray(list) ? list : []);
@@ -260,7 +248,7 @@ export default function WeeklySchedulePage() {
         <div className="flex flex-wrap items-center gap-3">
           <div className="space-y-1 flex-1 min-w-[180px]">
             <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Année académique</label>
-            <select value={filtreAnnee} onChange={(e) => setFiltreAnnee(e.target.value)}
+            <select value={filtres.annee} onChange={(e) => filtres.setAnnee(e.target.value)}
               className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
               <option value="">Toutes les années</option>
               {annees.map(a => <option key={a.id} value={a.id}>{a.libelle || a.annee}{a.active ? ' (Active)' : ''}</option>)}
@@ -268,18 +256,18 @@ export default function WeeklySchedulePage() {
           </div>
           <div className="space-y-1 flex-1 min-w-[180px]">
             <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Filière</label>
-            <select value={filtreFiliere} onChange={(e) => setFiltreFiliere(e.target.value)}
-              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
-              <option value="">Toutes les filières</option>
+            <select value={filtres.filiere} onChange={(e) => filtres.setFiliere(e.target.value)}
+              disabled={filtres.anneeVide} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
+              <option value="">{filtres.anneeVide ? 'Aucune filière cette année' : 'Toutes les filières'}</option>
               {filieres.map(f => <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>)}
             </select>
           </div>
           <div className="space-y-1 flex-1 min-w-[140px]">
             <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Semestre</label>
-            <select value={filtreSemestre} onChange={(e) => setFiltreSemestre(e.target.value)}
-              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
+            <select value={filtres.semestre} onChange={(e) => filtres.setSemestre(e.target.value)}
+              disabled={filtres.semestres.length === 0} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
               <option value="">Tous les semestres</option>
-              {[1,2,3,4,5,6].map(s => <option key={s} value={s}>Semestre {s}</option>)}
+              {filtres.semestres.map(s => <option key={s} value={s}>Semestre {s}</option>)}
             </select>
           </div>
           <div className="flex items-center gap-2 self-end pt-1">
@@ -402,7 +390,7 @@ export default function WeeklySchedulePage() {
                   <select required value={addForm.filiere_id} onChange={(e) => setAddForm(f => ({ ...f, filiere_id: e.target.value }))}
                     className="w-full px-3 py-2.5 bg-surface-container-high rounded-xl text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
                     <option value="">Sélectionner</option>
-                    {filieres.map(f => <option key={f.id} value={f.id}>{f.code}</option>)}
+                    {filieresToutes.map(f => <option key={f.id} value={f.id}>{f.code}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1">
