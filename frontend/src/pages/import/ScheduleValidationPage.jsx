@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiChevronRight, FiEdit, FiSave, FiAlertCircle, FiInfo, FiZoomIn, FiCheck, FiLoader } from 'react-icons/fi';
+import { FiChevronRight, FiSave, FiAlertCircle, FiInfo, FiZoomIn, FiCheck, FiLoader } from 'react-icons/fi';
 import { MdAutoAwesome } from 'react-icons/md';
 import api from '../../api/axios';
 
@@ -22,39 +22,60 @@ function detectConflicts(events) {
   return conflicts;
 }
 
+/**
+ * Lit l'analyse déposée en session par l'écran d'import.
+ *
+ * Fonction pure au niveau module : la lecture de sessionStorage est synchrone,
+ * elle peut donc servir de valeur initiale d'état. La faire dans un effet
+ * imposait un premier rendu à vide, suivi d'un second — visible sous la forme
+ * d'un écran vide qui se remplit après coup.
+ *
+ * Renvoie null si aucune analyse exploitable n'est disponible.
+ */
+function lireAnalyseEnSession() {
+  const stored = sessionStorage.getItem('import_analysis');
+
+  if (!stored) return null;
+
+  try {
+    const parsed = JSON.parse(stored);
+    const root = parsed?.data || parsed;
+    // Nouveau format : data.data.events ; ancien : data.data (tableau).
+    const eventsData = root?.data?.events || (Array.isArray(root?.data) ? root?.data : []);
+    const events = Array.isArray(eventsData) ? eventsData : [];
+
+    return {
+      analyse: {
+        ...parsed,
+        events,
+        score: root?.score_de_confiance ?? 0.9,
+        filename: root?.metadata?.filename || 'Emploi du temps',
+      },
+      // Tout est sélectionné par défaut.
+      selection: Object.fromEntries(events.map((_, i) => [i, true])),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function ScheduleValidationPage() {
   const navigate = useNavigate();
-  const [analysisData, setAnalysisData] = useState(null);
-  const [selected, setSelected] = useState({});
+
+  // Lecture une seule fois, à l'initialisation.
+  const [initial] = useState(lireAnalyseEnSession);
+  // Jamais réécrite après l'initialisation : une simple valeur suffit.
+  const analysisData = initial?.analyse ?? null;
+  const [selected, setSelected] = useState(() => initial?.selection ?? {});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
 
+  // Seule la redirection reste un effet : c'est une action sur l'extérieur, pas
+  // une écriture d'état.
   useEffect(() => {
-    const stored = sessionStorage.getItem('import_analysis');
-    if (!stored) {
-      navigate('/import');
-      return;
-    }
-    try {
-      const parsed = JSON.parse(stored);
-      const root = parsed?.data || parsed;
-      // Nouveau format: data.data.events; ancien: data.data (array)
-      const eventsData = root?.data?.events || (Array.isArray(root?.data) ? root?.data : []);
-      setAnalysisData({
-        ...parsed,
-        events: Array.isArray(eventsData) ? eventsData : [],
-        score: root?.score_de_confiance ?? 0.9,
-        filename: root?.metadata?.filename || 'Emploi du temps',
-      });
-      // Select all by default
-      const initSelected = {};
-      (Array.isArray(eventsData) ? eventsData : []).forEach((_, i) => { initSelected[i] = true; });
-      setSelected(initSelected);
-    } catch {
-      navigate('/import');
-    }
-  }, [navigate]);
+    if (!initial) navigate('/import');
+  }, [initial, navigate]);
 
   const events = useMemo(() => analysisData?.events || [], [analysisData]);
   const conflicts = useMemo(() => detectConflicts(events), [events]);
@@ -239,11 +260,13 @@ export default function ScheduleValidationPage() {
                             {status.label}
                           </span>
                         </td>
-                        <td className="py-5 px-6 text-right">
-                          <button className="p-2 text-on-surface-variant hover:text-primary transition-colors opacity-0 group-hover:opacity-100">
-                            <FiEdit className="text-sm" />
-                          </button>
-                        </td>
+                        {/* Un crayon d'edition figurait ici, sans aucun
+                            gestionnaire. Il est retire plutot que masque : une
+                            affordance qui promet une capacite inexistante est
+                            pire que son absence. Cette page permet d'ACCEPTER ou
+                            d'ECARTER une ligne extraite, pas de la corriger —
+                            la correction reste a construire. */}
+                        <td className="py-5 px-6" />
                       </tr>
                     );
                   })

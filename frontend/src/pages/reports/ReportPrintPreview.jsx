@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiPrinter, FiDownload, FiLoader } from 'react-icons/fi';
+import { FiPrinter, FiLoader } from 'react-icons/fi';
 import { formatDate } from '../../utils/formatters';
 import api from '../../api/axios';
 
@@ -41,9 +41,11 @@ export default function ReportPrintPreview() {
           <button onClick={() => window.print()} className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 transition-all">
             <FiPrinter /> Imprimer
           </button>
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-surface-container-low rounded-xl text-sm text-on-surface-variant hover:bg-surface-container-high transition-colors">
-            <FiDownload /> PDF
-          </button>
+          {/* Le bouton « PDF » n'avait aucun gestionnaire. Il est retire plutot
+              que cable : la boite d'impression du navigateur propose deja
+              « Enregistrer au format PDF », et un second chemin vers le meme
+              resultat n'apporte rien. Les exports PDF construits par le serveur
+              sont ailleurs — page Rapports et rapport par filiere. */}
         </div>
       </div>
 

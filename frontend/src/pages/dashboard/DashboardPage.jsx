@@ -1,5 +1,6 @@
 import { FiAlertTriangle, FiCheckCircle, FiBarChart2, FiActivity } from 'react-icons/fi';
 import { MdOutlineGroup, MdOutlineCalendarToday } from 'react-icons/md';
+import { Link } from 'react-router-dom';
 import AlertsBanner from '../../components/ui/AlertsBanner';
 import KPICard from '../../components/cards/KPICard';
 import BarChart from '../../components/charts/BarChart';
@@ -111,9 +112,15 @@ const DashboardPage = () => {
             {scans.length > 0 ? <RecentQRScans scans={scans} /> : (
               <p className="text-sm text-on-surface-variant text-center py-4">Aucun scan récent</p>
             )}
-            <button className="w-full mt-6 py-3 border border-outline-variant/20 rounded-xl text-xs font-bold text-primary hover:bg-surface-container-low transition-colors">
+            {/* Un <button> sans gestionnaire : le clic ne menait nulle part.
+                C'est une navigation, donc un lien — qui gagne au passage le
+                clavier et l'ouverture dans un nouvel onglet. */}
+            <Link
+              to="/attendance/history"
+              className="block w-full mt-6 py-3 border border-outline-variant/20 rounded-xl text-xs font-bold text-primary text-center hover:bg-surface-container-low transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+            >
               Voir l'historique complet
-            </button>
+            </Link>
           </div>
         </div>
       </div>

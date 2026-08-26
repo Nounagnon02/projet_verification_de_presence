@@ -11,16 +11,22 @@ export default function DepartmentFilterReport1() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data: res } = await api.get('/admin/filieres');
+        // /admin/reports/filiere-stats et non /admin/filieres : le second ne
+        // renvoie que la liste des filieres, sans aucune presence. La page
+        // affichait donc un taux de 85 % ECRIT EN DUR et un nombre de presents
+        // calcule comme « etudiants x 0,85 » — des chiffres fabriques, presentes
+        // comme des statistiques.
+        const { data: res } = await api.get('/admin/reports/filiere-stats');
         const filieres = res.data || res;
         if (Array.isArray(filieres)) {
           setData(filieres.map(f => ({
-            id: f.id, code: f.code,
+            id: f.id,
+            code: f.code,
             department: f.intitule || f.code,
             students: f.etudiants_count || 0,
-            present: Math.round((f.etudiants_count || 0) * 0.85),
-            rate: 85,
-            trend: 'up',
+            present: f.total_presences ?? 0,
+            rate: f.taux ?? 0,
+            evenements: f.total_evenements ?? 0,
           })));
         }
       } catch {
@@ -31,6 +37,28 @@ export default function DepartmentFilterReport1() {
     };
     fetchData();
   }, []);
+
+  const [exportEnCours, setExportEnCours] = useState(false);
+
+  const exporter = async () => {
+    if (!selected) return;
+    setExportEnCours(true);
+    try {
+      const { data: blob } = await api.get(`/admin/reports/department/${selected}`, {
+        params: { format: 'pdf' },
+        responseType: 'blob',
+      });
+      const lien = document.createElement('a');
+      lien.href = URL.createObjectURL(new Blob([blob]));
+      lien.download = `rapport_filiere_${selected}_${Date.now()}.pdf`;
+      lien.click();
+      URL.revokeObjectURL(lien.href);
+    } catch {
+      // L'echec reste visible : le bouton reprend son etat initial.
+    } finally {
+      setExportEnCours(false);
+    }
+  };
 
   const filtered = selected
     ? data.filter(d => d.id === selected)
@@ -45,8 +73,17 @@ export default function DepartmentFilterReport1() {
           <h1 className="text-2xl font-bold font-headline text-primary">Rapport par Département</h1>
           <p className="text-sm text-on-surface-variant">Filtrez par département/filière</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-surface-container-low rounded-xl text-sm text-on-surface-variant hover:bg-surface-container-high transition-colors">
-          <FiDownload /> Exporter
+        {/* Le bouton n'avait aucun gestionnaire. L'export porte sur la filiere
+            selectionnee : sans selection il n'y a rien a exporter, ce que
+            l'etat desactive dit plutot que de laisser cliquer dans le vide. */}
+        <button
+          onClick={exporter}
+          disabled={!selected || exportEnCours}
+          className="flex items-center gap-2 px-4 py-2 bg-surface-container-low rounded-xl text-sm text-on-surface-variant hover:bg-surface-container-high transition-colors disabled:opacity-50"
+          title={selected ? 'Exporter le rapport de la filière sélectionnée' : 'Sélectionnez une filière'}
+        >
+          {exportEnCours ? <FiLoader className="animate-spin" /> : <FiDownload />}
+          {exportEnCours ? 'Export…' : 'Exporter'}
         </button>
       </div>
 

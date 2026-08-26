@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { FiSearch, FiHelpCircle, FiMail, FiMessageCircle, FiBookOpen, FiChevronRight, FiChevronDown } from 'react-icons/fi';
 
 const HelpCenterPage = () => {
@@ -73,9 +74,14 @@ const HelpCenterPage = () => {
         <FiHelpCircle className="text-3xl text-primary mx-auto mb-3" />
         <h3 className="font-bold text-primary text-sm">Vous ne trouvez pas votre réponse ?</h3>
         <p className="text-xs text-on-surface-variant mt-1">Notre équipe est disponible pour vous aider</p>
-        <button className="mt-4 px-6 py-2.5 bg-primary text-on-primary rounded-xl font-semibold text-sm hover:opacity-90 transition-all">
+        {/* Idem : bouton sans action. Le formulaire de contact existe sur
+            /support/contact. */}
+        <Link
+          to="/support/contact"
+          className="inline-block mt-4 px-6 py-2.5 bg-primary text-on-primary rounded-xl font-semibold text-sm hover:opacity-90 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+        >
           Contacter le support
-        </button>
+        </Link>
       </div>
     </div>
   );
