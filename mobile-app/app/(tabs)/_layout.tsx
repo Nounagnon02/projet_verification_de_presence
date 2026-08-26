@@ -35,11 +35,15 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => <QrCode color={color} size={size} />,
         }}
       />
+      {/* « Accueil » promettait un ecran d'accueil qui n'existe pas : l'onglet
+          d'ouverture est Scanner, et cet ecran-ci est titre « Vos
+          statistiques ». Un etudiant qui cherche son taux de presence ne le
+          cherche pas sous Accueil. */}
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: 'Accueil',
-          headerTitle: 'Tableau de bord',
+          title: 'Statistiques',
+          headerTitle: 'Vos statistiques',
           tabBarIcon: ({ color, size }) => <LayoutDashboard color={color} size={size} />,
         }}
       />

@@ -349,7 +349,14 @@ export default function SallesPage() {
                 <p className="text-xs text-on-surface-variant">{showDelete.nom} ({showDelete.code})</p>
               </div>
             </div>
-            <p className="text-sm text-on-surface-variant mb-6">Cette action est irréversible. Les événements utilisant cette salle ne seront pas supprimés.</p>
+            {/* Le texte laissait croire que la suppression aboutirait toujours :
+                le serveur la refuse si des evenements FUTURS utilisent la
+                salle. On enonce la regle avant le clic, plutot que de la faire
+                decouvrir par une erreur. */}
+            <p className="text-sm text-on-surface-variant mb-6">
+              Cette action est irréversible. Elle sera refusée si des événements à venir
+              utilisent cette salle ; les événements passés sont conservés.
+            </p>
             <div className="flex gap-3">
               <button onClick={() => setShowDelete(null)} className="flex-1 px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl text-sm font-semibold hover:bg-surface-container transition-colors">Annuler</button>
               <button onClick={handleDelete} disabled={deleting} className="flex items-center justify-center gap-2 flex-1 px-4 py-2.5 bg-error text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50">
