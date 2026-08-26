@@ -107,7 +107,18 @@ class GeminiProvider implements AiProviderInterface
 
         while ($attempt <= $maxRetries) {
             try {
-                $response = Http::timeout(60)
+                // 60 s etait le delai le plus court des trois fournisseurs, alors
+                // que gemini fait le plus gros travail : il recoit le PDF entier
+                // et dechiffre lui-meme les pages scannees, la ou groq et
+                // openrouter ne recoivent que du texte deja extrait — avec
+                // 120 s chacun.
+                //
+                // Mesure du 2026-08-26 sur une offre de formation scannee de
+                // deux pages : 45 s, soit 75 % du budget. Quatre pages
+                // depassaient, et ProcessAiImportJob reessayait trois fois pour
+                // le meme resultat. Le job dispose de 300 s : 180 s laissent une
+                // marge reelle sans jamais le faire tuer en vol.
+                $response = Http::timeout(180)
                     ->post("{$this->baseUrl}/{$this->model}:generateContent?key={$this->apiKey}", $payload);
 
                 if ($response->successful()) {

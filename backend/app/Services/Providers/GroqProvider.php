@@ -39,7 +39,11 @@ class GroqProvider implements AiProviderInterface
             // Lire le contenu du PDF (texte uniquement)
             $text = $this->extractTextFromPdf($filePath);
             if (empty($text)) {
-                return AnalysisResult::failed('Impossible d\'extraire le texte du PDF.');
+                // Un message unique couvrait deux causes sans rapport, et
+                // n'indiquait de remede pour aucune des deux : soit l'outil
+                // d'extraction manque a l'installation, soit le document est un
+                // scan sans couche texte. On les distingue.
+                return AnalysisResult::failed($this->diagnostiquerEchecExtraction($filePath));
             }
 
             $prompt = $this->buildPrompt($type, $text);
@@ -70,16 +74,69 @@ class GroqProvider implements AiProviderInterface
 
     private function extractTextFromPdf(string $filePath): string
     {
-        // Tentative d'extraction via pdftotext (si disponible)
-        $output = '';
-        $cmd = "pdftotext " . escapeshellarg($filePath) . " - 2>/dev/null";
+        if (!$this->pdftotextDisponible()) {
+            return '';
+        }
+
+        $cmd = 'pdftotext ' . escapeshellarg($filePath) . ' - 2>/dev/null';
         $output = shell_exec($cmd);
+
         if ($output && strlen(trim($output)) > 50) {
             return trim($output);
         }
 
-        // Fallback : retourner un message indiquant que le PDF n'a pas pu être extrait
         return '';
+    }
+
+    /**
+     * L'outil d'extraction est-il installé ?
+     *
+     * Il vient du paquet poppler-utils, absent de l'image Docker de production.
+     * Groq est donc inutilisable en production tant que ce paquet n'y est pas :
+     * la distinction est ce qui permet de le dire, au lieu d'accuser le document.
+     */
+    private function pdftotextDisponible(): bool
+    {
+        return !empty(shell_exec('command -v pdftotext 2>/dev/null'));
+    }
+
+    /**
+     * Pourquoi l'extraction a échoué, et que faire.
+     *
+     * Le message précédent — « Impossible d'extraire le texte du PDF » — était
+     * exact et sans usage : il ne distinguait pas un outil manquant d'un
+     * document scanné, et n'indiquait de remède pour ni l'un ni l'autre.
+     */
+    private function diagnostiquerEchecExtraction(string $filePath): string
+    {
+        if (!$this->pdftotextDisponible()) {
+            return self::messageOutilManquant();
+        }
+
+        $pages = trim((string) shell_exec(
+            'pdfinfo ' . escapeshellarg($filePath) . " 2>/dev/null | grep -i '^Pages' | tr -dc '0-9'"
+        ));
+
+        return self::messageDocumentScanne($pages === '' ? null : (int) $pages);
+    }
+
+    /**
+     * Messages séparés de leur détection, pour être vérifiables sans dépendre
+     * de ce que la machine de test a ou non d'installé.
+     */
+    public static function messageOutilManquant(): string
+    {
+        return "L'outil d'extraction de texte (pdftotext, paquet poppler-utils) n'est pas "
+            . "installé sur le serveur. Installez-le, ou basculez AI_PROVIDER sur « gemini », "
+            . 'qui lit le PDF sans outil externe.';
+    }
+
+    public static function messageDocumentScanne(?int $pages = null): string
+    {
+        return 'Ce PDF ne contient aucun texte : c\'est une image, généralement un document '
+            . 'passé au scanner' . ($pages !== null ? " ({$pages} page(s))" : '') . '. Le fournisseur '
+            . '« groq » ne sait analyser que du texte. Basculez AI_PROVIDER sur « gemini », qui lit '
+            . "l'image du document, ou fournissez un PDF natif plutôt qu'un scan.";
     }
 
     private function buildPrompt(string $type, string $text): string

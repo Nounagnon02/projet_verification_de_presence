@@ -47,6 +47,11 @@ RUN apt-get update && apt-get install -y \
     curl \
     libpq-dev \
     netcat-openbsd \
+    # pdftotext et pdfinfo, pour AI_PROVIDER=groq et openrouter, qui analysent
+    # du texte et non l'image du document. Sans ce paquet, tout import IA
+    # echouait des le premier PDF — le fournisseur par defaut, gemini, lit le
+    # PDF lui-meme et masquait donc l'absence.
+    poppler-utils \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo pdo_pgsql pgsql pdo_sqlite gd zip opcache \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
