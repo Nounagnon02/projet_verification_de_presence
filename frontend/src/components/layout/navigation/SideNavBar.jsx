@@ -54,7 +54,15 @@ export default function SideNavBar() {
 
       <nav className="flex-1 space-y-0.5">
         {links.map((link) => (
-          <NavLink key={link.to} to={link.to} end className={linkClass}>
+          // Pas de « end » : il imposait une correspondance EXACTE, si bien que
+          // « Présences » et « Paramètres » ne s'allumaient jamais — leur index
+          // redirige vers une sous-route, leur chemin nu n'est donc jamais
+          // atteint. « Cours » et « Rapports » s'eteignaient de meme des qu'on
+          // ouvrait une de leurs sous-pages.
+          //
+          // Aucun chemin de cette liste n'est prefixe d'un autre : la
+          // correspondance par prefixe ne peut pas allumer deux entrees.
+          <NavLink key={link.to} to={link.to} className={linkClass}>
             <span className="text-lg">{link.icon}</span>
             <span>{link.label}</span>
           </NavLink>
@@ -62,7 +70,7 @@ export default function SideNavBar() {
       </nav>
 
       <div className="pt-4 border-t border-outline-variant/10 space-y-0.5">
-        <NavLink to="/help" end className={linkClass}>
+        <NavLink to="/help" className={linkClass}>
           <MdHelp className="text-lg" />
           <span>Aide</span>
         </NavLink>
