@@ -29,6 +29,7 @@ const StudentManagementPage = () => {
   const [filtreFiliere, setFiltreFiliere] = useState('');
   const [filtreSemestre, setFiltreSemestre] = useState('');
   const [filtreNiveau, setFiltreNiveau] = useState('');
+  const [filtreResponsable, setFiltreResponsable] = useState('');
 
   // Promotion (passage d'année / de niveau d'une promotion entière)
   const [showPromote, setShowPromote] = useState(false);
@@ -79,43 +80,52 @@ const StudentManagementPage = () => {
 
   const abortFetchRef = useRef(null);
 
-  const fetchStudents = useCallback(async () => {
-    abortFetchRef.current?.abort();
-    const controller = new AbortController();
-    abortFetchRef.current = controller;
-    setLoading(true);
-    setError(null);
-    try {
-      const params = { page, per_page: 15 };
-      if (search.trim()) params.search = search;
-      if (filtreAnnee) params.annee_id = filtreAnnee;
-      if (filtreFiliere) params.filiere_id = filtreFiliere;
-      if (filtreSemestre) params.semestre = filtreSemestre;
-      if (filtreNiveau) params.niveau = filtreNiveau;
-      const response = await api.get('/admin/students', { params, signal: controller.signal });
-      const result = response.data;
 
-      if (result.success) {
-        setStudents(result.data ?? []);
-        setPagination(result.meta ?? null);
-      } else {
-        setError(result.message || 'Erreur lors du chargement');
-        setStudents([]);
-      }
-    } catch (err) {
-      if (err.name === 'CanceledError' || err.name === 'AbortError') return;
-      const message = err.response?.data?.message || err.message || 'Erreur de connexion au serveur';
-      setError(message);
-      setStudents([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, search, filtreAnnee, filtreFiliere, filtreSemestre, filtreNiveau]);
+  // Compteur de rechargement : les six actions qui rafraîchissaient la liste
+  // l'incrémentent, au lieu d'appeler une fonction de chargement partagée. La
+  // requête part d'un seul endroit, et l'AbortController déjà en place annule
+  // la précédente à chaque relance.
+  const [rechargement, setRechargement] = useState(0);
+  const rafraichir = useCallback(() => setRechargement((n) => n + 1), []);
 
   useEffect(() => {
-    fetchStudents();
+    (async () => {
+      abortFetchRef.current?.abort();
+      const controller = new AbortController();
+      abortFetchRef.current = controller;
+      setLoading(true);
+      setError(null);
+      try {
+        const params = { page, per_page: 15 };
+        if (search.trim()) params.search = search;
+        if (filtreAnnee) params.annee_id = filtreAnnee;
+        if (filtreFiliere) params.filiere_id = filtreFiliere;
+        if (filtreSemestre) params.semestre = filtreSemestre;
+        if (filtreNiveau) params.niveau = filtreNiveau;
+        if (filtreResponsable) params.responsable = filtreResponsable;
+        const response = await api.get('/admin/students', { params, signal: controller.signal });
+        const result = response.data;
+
+        if (result.success) {
+          setStudents(result.data ?? []);
+          setPagination(result.meta ?? null);
+        } else {
+          setError(result.message || 'Erreur lors du chargement');
+          setStudents([]);
+        }
+      } catch (err) {
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+        const message = err.response?.data?.message || err.message || 'Erreur de connexion au serveur';
+        setError(message);
+        setStudents([]);
+      } finally {
+        setLoading(false);
+      }
+  
+    })();
+
     return () => abortFetchRef.current?.abort();
-  }, [fetchStudents]);
+  }, [page, search, filtreAnnee, filtreFiliere, filtreSemestre, filtreNiveau, filtreResponsable, rechargement]);
 
   // L'inscription se fait toujours dans l'année active : on ne la fait pas
   // choisir, on l'impose (le serveur la ré-applique de toute façon).
@@ -194,7 +204,7 @@ const StudentManagementPage = () => {
         addToast?.('Étudiant créé avec succès', 'success');
       }
       setShowModal(false);
-      fetchStudents();
+      rafraichir();
     } catch (err) {
       const data = err.response?.data;
       const msg = (data?.errors ? Object.values(data.errors).flat().join(', ') : null)
@@ -213,7 +223,7 @@ const StudentManagementPage = () => {
       await api.delete(`/admin/students/${deleteId}`);
       addToast?.('Étudiant supprimé', 'success');
       setDeleteId(null);
-      fetchStudents();
+      rafraichir();
     } catch (err) {
       const msg = err.response?.data?.message || 'Erreur lors de la suppression';
       addToast?.(msg, 'error');
@@ -265,7 +275,7 @@ const StudentManagementPage = () => {
       });
       addToast?.(data?.message || 'Promotion effectuée', 'success');
       setShowPromote(false);
-      fetchStudents();
+      rafraichir();
     } catch (err) {
       const d = err.response?.data;
       setPromoteError((d?.errors ? Object.values(d.errors).flat().join(', ') : null) || d?.message || 'Erreur lors de la promotion.');
@@ -319,7 +329,7 @@ const StudentManagementPage = () => {
           errors: [apiData.message || JSON.stringify(apiData)],
         });
       }
-      fetchStudents();
+      rafraichir();
     } catch (err) {
       const message = err.response?.data?.message || err.message || 'Erreur lors de l\'import';
       setImportError(message);
@@ -341,7 +351,7 @@ const StudentManagementPage = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={fetchStudents} className="p-2.5 hover:bg-surface-container-high rounded-xl transition-colors" title="Actualiser">
+          <button onClick={rafraichir} className="p-2.5 hover:bg-surface-container-high rounded-xl transition-colors" title="Actualiser">
             <FiRefreshCw className={`text-on-surface-variant ${loading ? 'animate-spin' : ''}`} />
           </button>
           <button onClick={openCreate} className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 transition-all shadow-sm">
@@ -395,6 +405,15 @@ const StudentManagementPage = () => {
               {[1,2,3,4,5,6].map(s => <option key={s} value={s}>Semestre {s}</option>)}
             </select>
           </div>
+          <div className="space-y-1 min-w-[140px]">
+            <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Responsable</label>
+            <select value={filtreResponsable} onChange={(e) => { setFiltreResponsable(e.target.value); setPage(1); }}
+              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
+              <option value="">Tous les étudiants</option>
+              <option value="1">Responsables uniquement</option>
+              <option value="0">Non-responsables</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -407,7 +426,7 @@ const StudentManagementPage = () => {
             <p className="font-semibold">Erreur de chargement</p>
             <p className="text-xs mt-1 opacity-80">{error}</p>
           </div>
-          <button onClick={fetchStudents} className="px-3 py-1 bg-error/10 hover:bg-error/20 rounded-lg text-xs font-semibold transition-colors">
+          <button onClick={rafraichir} className="px-3 py-1 bg-error/10 hover:bg-error/20 rounded-lg text-xs font-semibold transition-colors">
             Réessayer
           </button>
         </div>
@@ -450,7 +469,21 @@ const StudentManagementPage = () => {
             ) : Array.isArray(students) && students.map((s) => (
               <tr key={s.id} className="border-b border-outline-variant/5 hover:bg-surface-container-low/50 transition-colors">
                 <td className="p-4 font-mono text-xs font-semibold">{s.matricule}</td>
-                <td className="p-4 font-medium">{s.nom}</td>
+                <td className="p-4 font-medium">
+                  <span className="flex items-center gap-2">
+                    {s.nom}
+                    {/* Paire de jetons opaques : les modificateurs d'opacité
+                        (bg-primary/10) ne produisent aucun CSS sur les couleurs
+                        déclarées en var(), le badge serait invisible. */}
+                    {s.est_responsable && (
+                      <span
+                        title="Responsable de la promotion — accède au QR Code du cours en séance"
+                        className="shrink-0 rounded-full bg-secondary-container px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-on-secondary-container">
+                        Responsable
+                      </span>
+                    )}
+                  </span>
+                </td>
                 <td className="p-4">{s.prenom}</td>
                 <td className="p-4 text-on-surface-variant hidden md:table-cell">{s.email}</td>
                 <td className="p-4 hidden lg:table-cell">{s.filiere?.code || s.filiere || '-'}</td>
@@ -547,11 +580,11 @@ const StudentManagementPage = () => {
                 onChange={(e) => setForm({ ...form, est_responsable: e.target.checked })}
                 className="mt-0.5 h-4 w-4 accent-primary" />
               <span>
-                <span className="block text-sm font-semibold text-on-surface">Délégué de la promotion</span>
+                <span className="block text-sm font-semibold text-on-surface">Responsable de la promotion</span>
                 <span className="block text-xs text-on-surface-variant">
                   Donne accès, dans l'application mobile, à l'onglet affichant le QR Code du cours en
-                  séance. Le délégué peut le présenter et le partager, jamais le générer. Une promotion
-                  peut avoir plusieurs délégués.
+                  séance. Le responsable peut le présenter et le partager, jamais le générer. Une
+                  promotion peut avoir plusieurs responsables.
                 </span>
               </span>
             </label>
