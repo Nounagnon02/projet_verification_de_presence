@@ -414,7 +414,15 @@ const StudentManagementPage = () => {
       {deleteId && (
         <div className="mb-6 flex items-center gap-3 p-4 bg-error/10 rounded-xl text-error border border-error/10">
           <FiAlertTriangle />
-          <p className="flex-1 text-sm">Supprimer cet étudiant ? Cette action est irréversible.</p>
+          {/* « Irréversible » était faux : la suppression est douce, pour ne pas
+              effacer l'historique de présence qui pointe sur cet étudiant.
+              Annoncer une perte définitive dissuadait d'une action qui ne l'est
+              pas, et laissait croire le matricule libéré. */}
+          <p className="flex-1 text-sm">
+            Supprimer cet étudiant ? Il disparaît des listes, mais son historique de
+            présence est conservé : le réinscrire avec le même matricule lui rendra
+            son dossier.
+          </p>
           <button onClick={confirmDelete} disabled={deleting} className="flex items-center gap-2 px-4 py-1.5 bg-error text-white rounded-lg text-sm font-semibold disabled:opacity-50">
             {deleting && <FiLoader className="animate-spin" />} Confirmer</button>
           <button onClick={() => setDeleteId(null)} className="px-4 py-1.5 text-sm font-semibold hover:bg-surface-container-high rounded-lg transition-colors">Annuler</button>

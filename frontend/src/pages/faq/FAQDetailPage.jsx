@@ -27,7 +27,7 @@ const faqCategories = {
     items: [
       { q: 'Comment générer un rapport ?', r: 'Dans la section "Rapports Mensuels", sélectionnez le type de rapport et les filtres souhaités, puis cliquez sur "Générer".' },
       { q: 'Quelles données sont incluses dans les rapports ?', r: 'Les rapports incluent le taux de présence, les absences, les retards et les statistiques détaillées par cours, filière et période.' },
-      { q: 'Comment exporter en Excel ?', r: 'Utilisez la page "Export Excel" dans la section Rapports pour configurer les colonnes et la période avant export.' },
+      { q: 'Comment exporter en Excel ?', r: 'Ouvrez Présences puis Historique, et choisissez "Fichier Excel" dans le menu Exporter : c\'est le seul export au format XLSX. La page "Export CSV" de la section Rapports produit, elle, un fichier CSV — lisible par Excel, mais non formaté.' },
       { q: 'Puis-je comparer les données entre semestres ?', r: 'Oui, la section Comparaison vous permet de comparer les taux de présence par semestre, filière ou année académique.' },
     ],
   },

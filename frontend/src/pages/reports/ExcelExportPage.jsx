@@ -44,7 +44,11 @@ export default function ExcelExportPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold font-headline text-primary mb-2">Export Excel</h1>
+      {/* Le titre annoncait « Excel » alors que l'endpoint renvoie text/csv
+          et nomme le fichier .csv — la carte plus bas disait deja « Export
+          CSV », la page se contredisait. Le vrai export XLSX existe, mais
+          ailleurs : Presences puis Historique. */}
+      <h1 className="text-2xl font-bold font-headline text-primary mb-2">Export CSV</h1>
       <p className="text-sm text-on-surface-variant mb-8">Configurez et exportez les données de présence</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -21,29 +21,14 @@ class FiliereController extends Controller
         // Scope par établissement pour les admins faculté
         $this->scopeQuery($query, $request);
 
-        // Restriction à une année académique, pour les filtres en cascade.
-        //
-        // On NE se fie PAS au seul pivot « filiere_annee ». Ce pivot n'est
-        // alimenté qu'à la création d'une filière (méthode store, année active) :
-        // ni l'import d'étudiants, ni StudentPromotionService ne le mettent à
-        // jour. Après une promotion, il désigne encore l'année précédente, si
-        // bien qu'une cascade fondée sur lui seul masquerait des filières
-        // pourtant peuplées — le cas réel de DEMO-IM-L1, qui compte un étudiant
-        // en 2025-2026 sans ligne de pivot.
-        //
-        // La règle retenue : une filière appartient à une année si elle y a du
-        // contenu (étudiants, UEs ou événements) OU si le pivot le déclare. Le
-        // pivot reste utile pour la filière fraîchement créée, encore vide, que
-        // l'on doit pouvoir choisir afin d'y inscrire le premier étudiant.
+        // Restriction à une année, pour les filtres en cascade. La définition de
+        // « filière d'une année » vit sur Filiere::scopeForAnnee, que partage la
+        // reconduction : deux définitions divergentes affichaient onze filières
+        // pour une année dont la reconduction n'en reportait que dix.
         $anneeId = (int) $request->input('annee_id');
 
         if ($anneeId > 0) {
-            $query->where(function ($q) use ($anneeId) {
-                $q->whereHas('anneesAcademiques', fn ($p) => $p->where('annee_id', $anneeId))
-                  ->orWhereHas('etudiants', fn ($p) => $p->where('annee_id', $anneeId))
-                  ->orWhereHas('ues', fn ($p) => $p->where('annee_id', $anneeId))
-                  ->orWhereHas('evenements', fn ($p) => $p->where('annee_id', $anneeId));
-            });
+            $query->forAnnee($anneeId);
         }
 
         $filieres = $query->orderBy('intitule')->get();
@@ -154,7 +139,11 @@ class FiliereController extends Controller
         $sourceAnnee = AnneeAcademique::findOrFail($validated['source_annee_id']);
         $targetAnnee = AnneeAcademique::findOrFail($validated['target_annee_id']);
 
-        $filiereIds = $sourceAnnee->filieres()->pluck('filieres.id')->toArray();
+        // On reconduit ce que l'écran annonce. En lisant le seul pivot, ce bouton
+        // abandonnait en silence les filières que l'import ou la promotion y
+        // avaient omises, tout en affichant un décompte qui avait l'air d'une
+        // confirmation.
+        $filiereIds = Filiere::forAnnee($sourceAnnee->id)->pluck('id')->toArray();
         $targetAnnee->filieres()->syncWithoutDetaching($filiereIds);
 
         $count = count($filiereIds);

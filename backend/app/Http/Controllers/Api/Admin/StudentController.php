@@ -132,22 +132,54 @@ class StudentController extends Controller
         // sans transaction, une erreur pendant l'auto-inscription laissait un
         // étudiant créé mais sans cours, avec un 500 côté client — l'inscription
         // paraissait à la fois faite et échouée.
-        $etudiant = DB::transaction(function () use ($request, $matricule, $filiere, $annee, $identifiantUnique) {
-            $etudiant = Etudiant::create([
-                'id'                => (string) Str::uuid(),
-                'nom'               => IdentifiantService::normalize($request->nom),
-                'prenom'            => IdentifiantService::normalize($request->prenom),
-                'matricule'         => $matricule,
-                'filiere_id'        => $filiere->id,
-                'annee_id'          => $annee->id,
-                'email'             => $request->email,
-                'identifiant_unique' => $identifiantUnique,
-            ]);
+        // L'unicite validee plus haut ne porte que sur les etudiants vivants. Une
+        // ligne supprimee peut donc encore detenir l'email ou l'identifiant
+        // demande, sans que le matricule permette de la retrouver. Sans ce
+        // filet, l'index unique renvoyait une exception PDO brute en 500.
+        try {
+            $etudiant = DB::transaction(function () use ($request, $matricule, $filiere, $annee, $identifiantUnique) {
+                $champs = [
+                    'nom'               => IdentifiantService::normalize($request->nom),
+                    'prenom'            => IdentifiantService::normalize($request->prenom),
+                    'matricule'         => $matricule,
+                    'filiere_id'        => $filiere->id,
+                    'annee_id'          => $annee->id,
+                    'email'             => $request->email,
+                    'identifiant_unique' => $identifiantUnique,
+                ];
 
-            $etudiant->autoEnroll();
+                // Reinscription d'un etudiant supprime.
+                //
+                // La suppression d'un etudiant est douce, et elle doit l'etre : les
+                // presences portent etudiant_id, une suppression franche effacerait
+                // l'historique de presence. Mais l'index unique du matricule, lui,
+                // compte les lignes supprimees. Sans ce chemin, reinscrire un
+                // etudiant supprime etait refuse par une ligne invisible et
+                // irrecuperable — aucune route ne l'expose. On restaure donc, ce qui
+                // rend au passage son historique a l'etudiant.
+                $ancien = Etudiant::onlyTrashed()->where('matricule', $matricule)->first();
 
-            return $etudiant;
-        });
+                if ($ancien) {
+                    $ancien->restore();
+                    $ancien->update($champs);
+                    $ancien->recalculateEnrollments();
+
+                    return $ancien;
+                }
+
+                $etudiant = Etudiant::create(['id' => (string) Str::uuid()] + $champs);
+
+                $etudiant->autoEnroll();
+
+                return $etudiant;
+            });
+        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+            return $this->errorResponse(
+                "Cet email ou cet identifiant appartient encore a un etudiant supprime. "
+                . "Reinscrivez-le avec son matricule d'origine pour recuperer son dossier.",
+                409
+            );
+        }
 
         // La filière et l'année sont déjà chargées : les rattacher évite les deux
         // requêtes du load() final. Au-delà des ~400 ms gagnés en production,

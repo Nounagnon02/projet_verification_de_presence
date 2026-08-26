@@ -31,13 +31,18 @@ class StoreStudentRequest extends FormRequest
             // Sans lui, un identifiant provisoire (TEMP-xxxx) était généré puis
             // changeait quand le vrai matricule était saisi, invalidant les
             // identifiants déjà communiqués.
-            'matricule'  => ['required', 'string', 'max:50', Rule::unique('etudiants', 'matricule')],
+            // L'unicite ne porte que sur les etudiants vivants. Un index unique
+            // PostgreSQL, lui, compte les lignes supprimees en douceur : sans ce
+            // whereNull, reinscrire un etudiant supprime etait refuse par une
+            // ligne que l'administrateur ne pouvait ni voir ni restaurer. Le
+            // controleur restaure alors cette ligne au lieu d'en creer une.
+            'matricule'  => ['required', 'string', 'max:50', Rule::unique('etudiants', 'matricule')->whereNull('deleted_at')],
             'filiere_id' => ['required', 'integer', 'exists:filieres,id'],
             // annee_id n'est plus attendu : le serveur impose l'année active
             // (voir StudentController::store). Toléré mais ignoré s'il est
             // envoyé, pour ne pas casser les clients existants.
             'annee_id'   => ['nullable', 'integer', 'exists:annees_academiques,id'],
-            'email'      => ['required', 'email', Rule::unique('etudiants', 'email')],
+            'email'      => ['required', 'email', Rule::unique('etudiants', 'email')->whereNull('deleted_at')],
         ];
     }
 

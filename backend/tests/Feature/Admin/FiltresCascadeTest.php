@@ -182,4 +182,51 @@ class FiltresCascadeTest extends TestCase
             ->getJson('/api/admin/filieres?annee_id=pas-un-entier')
             ->assertOk();
     }
+
+    /**
+     * La reconduction lisait le seul pivot, alors que l'ecran affiche les
+     * filieres ayant du contenu. Le bouton « Reconduire les filieres »
+     * abandonnait donc en silence celles que l'import ou la promotion avaient
+     * omises du pivot, en annoncant un decompte qui avait l'air d'une
+     * confirmation.
+     */
+    public function test_la_reconduction_reporte_ce_que_l_ecran_affiche(): void
+    {
+        $affichees = array_column($this->filieresPour($this->anneePleine->id), 'code');
+
+        $reponse = $this->withHeader('Authorization', 'Bearer ' . $this->token)
+            ->postJson('/api/admin/filieres/reconduire', [
+                'source_annee_id' => $this->anneePleine->id,
+                'target_annee_id' => $this->anneeVide->id,
+            ])
+            ->assertOk();
+
+        $this->assertSame(
+            count($affichees),
+            $reponse->json('data.reconduites'),
+            'Le decompte annonce doit correspondre aux filieres visibles a l\'ecran.'
+        );
+
+        // La filiere rattachee par ses seuls etudiants, sans ligne de pivot,
+        // doit avoir suivi.
+        $this->assertDatabaseHas('filiere_annee', [
+            'filiere_id' => $this->avecEtudiants->id,
+            'annee_id'   => $this->anneeVide->id,
+        ]);
+    }
+
+    public function test_la_reconduction_n_emporte_pas_une_filiere_etrangere_a_l_annee(): void
+    {
+        $this->withHeader('Authorization', 'Bearer ' . $this->token)
+            ->postJson('/api/admin/filieres/reconduire', [
+                'source_annee_id' => $this->anneePleine->id,
+                'target_annee_id' => $this->anneeVide->id,
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseMissing('filiere_annee', [
+            'filiere_id' => $this->horsAnnee->id,
+            'annee_id'   => $this->anneeVide->id,
+        ]);
+    }
 }
