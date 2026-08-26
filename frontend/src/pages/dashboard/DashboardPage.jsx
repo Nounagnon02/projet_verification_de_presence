@@ -10,6 +10,23 @@ import RecentQRScans from '../../components/RecentQRScans';
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton';
 import useApi from '../../hooks/useApi';
 
+/**
+ * Libellés des anomalies de présence.
+ *
+ * Le tableau de bord affichait la valeur brute de la colonne « type » comme
+ * titre d'alerte : l'administrateur lisait « verification_echouee », ou
+ * « invalid_scan_challenge » — en anglais, dans une application française.
+ *
+ * Le repli nomme la catégorie plutôt que de laisser passer un identifiant
+ * technique : un type ajouté côté serveur et oublié ici doit rester lisible.
+ */
+const LIBELLES_ANOMALIE = {
+  verification_echouee: 'Vérification de présence échouée',
+  invalid_scan_challenge: 'Jeton de scan invalide',
+  appareil_partage: 'Appareil partagé entre étudiants',
+  double_scan_device_mismatch: 'Second scan depuis un autre appareil',
+};
+
 const DashboardPage = () => {
   const { data: dashData, loading } = useApi('/admin/dashboard');
   const { data: trendData } = useApi('/admin/dashboard/attendance-trend');
@@ -51,7 +68,7 @@ const DashboardPage = () => {
 
   const alerts = Array.isArray(alertsData) ? alertsData.slice(0, 5).map(a => ({
     type: 'attention',
-    title: a.type || 'Alerte',
+    title: LIBELLES_ANOMALIE[a.type] || 'Anomalie de présence',
     message: a.description || a.message || `${a.etudiant?.nom || ''} - ${a.evenement?.ec?.intitule || ''}`,
   })) : [];
 
