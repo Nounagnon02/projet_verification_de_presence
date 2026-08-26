@@ -50,8 +50,13 @@ class CsvImportController extends Controller
         'heure fin' => 'heure_fin', 'heure_fin' => 'heure_fin', 'fin' => 'heure_fin',
         'salle' => 'salle_code', 'salle_code' => 'salle_code', 'code salle' => 'salle_code',
         'type cours' => 'type_cours', 'type_cours' => 'type_cours', 'type' => 'type_cours',
-        'ue_code' => 'ue_code', 'code ue' => 'ue_code',
-        'ec_code' => 'ec_code', 'code ec' => 'ec_code',
+        // « code ue » et « code ec » NE figurent pas ici : ils sont deja definis
+        // plus haut vers code_ue et code_ec. Les redefinir vers ue_code et
+        // ec_code faisait gagner la seconde definition — PHP conserve la
+        // derniere valeur d'une cle repetee — si bien qu'un fichier a en-tetes
+        // espacees, « Code UE », echouait entierement sur « code_ue manquant ».
+        'ue_code' => 'ue_code',
+        'ec_code' => 'ec_code',
         'niveau' => 'niveau',
     ];
 
@@ -83,6 +88,7 @@ class CsvImportController extends Controller
 
         $results = ['success' => 0, 'errors' => [], 'total' => count($rows)];
         $etablissementId = $this->getEtablissementId($request);
+        $semesterService = app(\App\Services\SemesterService::class);
 
         DB::beginTransaction();
         try {
@@ -146,10 +152,29 @@ class CsvImportController extends Controller
                     continue;
                 }
 
-                // Valider semestre
+                // Valider semestre.
+                //
+                // La borne etait 6, alors que ues.semestre va jusqu'a 10 : aucune
+                // UE de Master n'etait importable, sans que le message le dise.
                 $semestre = (int) ($ueData['semestre'] ?? 0);
-                if ($semestre < 1 || $semestre > 6) {
-                    $results['errors'][] = ['line' => $lineNum, 'error' => "Semestre invalide : {$ueData['semestre']}."];
+
+                if ($semestre < 1 || $semestre > 10) {
+                    $results['errors'][] = ['line' => $lineNum, 'error' => "Semestre invalide : {$ueData['semestre']}. Attendu entre 1 et 10."];
+                    continue;
+                }
+
+                // Le semestre determine le niveau : S3 est en L2, quel que soit
+                // ce que la colonne « niveau » pretend. Laisser passer une UE de
+                // S3 dans une filiere de L1 produisait une maquette incoherente
+                // que rien ne signalait ensuite.
+                $semestresDuNiveau = $semesterService->getSemestersForNiveau((string) $filiere->niveau);
+
+                if ($semestresDuNiveau !== [] && !in_array($semestre, $semestresDuNiveau, true)) {
+                    $attendu = implode(' ou ', array_map(fn ($n) => "S{$n}", $semestresDuNiveau));
+                    $results['errors'][] = [
+                        'line'  => $lineNum,
+                        'error' => "Semestre S{$semestre} incompatible avec la filière '{$filiere->code}' ({$filiere->niveau}), qui couvre {$attendu}.",
+                    ];
                     continue;
                 }
 
@@ -561,6 +586,20 @@ class CsvImportController extends Controller
                     $row[$header] = $line[$i];
                 }
             }
+            // « code ue » et « ue_code » designent la meme colonne. L'import des
+            // UE lit code_ue, celui de l'emploi du temps lit ue_code : on
+            // renseigne les deux a partir de celle qui est presente, faute de
+            // quoi le fichier n'aurait fonctionne qu'avec l'orthographe attendue
+            // par l'import visé — sans que rien ne l'indique a l'utilisateur.
+            foreach ([['code_ue', 'ue_code'], ['code_ec', 'ec_code']] as [$a, $b]) {
+                $valeur = $row[$a] ?? $row[$b] ?? null;
+
+                if ($valeur !== null && $valeur !== '') {
+                    $row[$a] = $valeur;
+                    $row[$b] = $valeur;
+                }
+            }
+
             $rows[] = $row;
         }
 

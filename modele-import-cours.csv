@@ -1,0 +1,16 @@
+code_ue,intitule_ue,filiere_code,niveau,annee_libelle,semestre,volume_horaire_ue,code_ec,intitule_ec,volume_horaire_ec
+TST-MTH-31,Structures algébriques et applications,IM-L2,L2,2025-2026,3,125,TST-MTH-31A,Structures algébriques,125
+TST-INF-32,Approche orientée objet,IM-L2,L2,2025-2026,3,100,TST-INF-32A,Analyse et conception orientée objet,50
+TST-INF-32,Approche orientée objet,IM-L2,L2,2025-2026,3,100,TST-INF-32B,Programmation orientée objet,50
+TST-INF-33,Structures de données et applications,IM-L2,L2,2025-2026,3,75,TST-INF-33A,Structures de données en C,45
+TST-INF-33,Structures de données et applications,IM-L2,L2,2025-2026,3,75,TST-INF-33B,Structures de données en Python,30
+TST-INF-34,Programmation graphique et événementielle,IM-L2,L2,2025-2026,3,60,TST-INF-34A,Interfaces graphiques en Java,60
+TST-ANG-35,Anglais scientifique,IM-L2,L2,2025-2026,3,30,,,
+TST-INF-41,Bases de données relationnelles,IM-L2,L2,2025-2026,4,90,TST-INF-41A,Modélisation conceptuelle,40
+TST-INF-41,Bases de données relationnelles,IM-L2,L2,2025-2026,4,90,TST-INF-41B,Langage SQL,30
+TST-INF-41,Bases de données relationnelles,IM-L2,L2,2025-2026,4,90,TST-INF-41C,Administration de bases de données,20
+TST-INF-42,Réseaux informatiques,IM-L2,L2,2025-2026,4,70,TST-INF-42A,Modèle OSI et TCP/IP,40
+TST-INF-42,Réseaux informatiques,IM-L2,L2,2025-2026,4,70,TST-INF-42B,Travaux pratiques de réseaux,30
+TST-MTH-43,Probabilités et statistiques,IM-L2,L2,2025-2026,4,55,TST-MTH-43A,Probabilités,30
+TST-MTH-43,Probabilités et statistiques,IM-L2,L2,2025-2026,4,55,TST-MTH-43B,Statistiques descriptives,25
+TST-ENT-44,Entrepreneuriat et gestion de projet,IM-L2,L2,2025-2026,4,40,,,

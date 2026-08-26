@@ -310,11 +310,17 @@ class ImportController extends Controller
     {
         $validated = $request->validate([
             'ues'              => 'required|array|min:1',
-            'ues.*.code'       => 'required|string|max:20|unique:ues,code',
+            // Plus d'unicite globale sur le code : il est unique DANS sa filiere
+            // et son annee, ce que la contrainte de base exprime desormais. Une
+            // maquette se reconduit d'une annee sur l'autre, le meme code doit
+            // pouvoir reapparaitre. La reprise est traitee plus bas, en
+            // creation-ou-mise-a-jour.
+            'ues.*.code'       => 'required|string|max:20',
             'ues.*.intitule'   => 'required|string|max:255',
             'ues.*.filiere_id' => 'required|exists:filieres,id',
             'ues.*.annee_id'   => 'required|exists:annees_academiques,id',
-            'ues.*.semestre'   => 'required|integer|min:1|max:6',
+            // 10 et non 6 : le Master occupe les semestres 7 a 10.
+            'ues.*.semestre'   => 'required|integer|min:1|max:10',
             'ues.*.volume_horaire' => 'required|integer|min:1',
             'ues.*.ecs'        => 'nullable|array',
             'ues.*.ecs.*.code' => 'required_with:ues.*.ecs|string|max:20',
@@ -340,16 +346,51 @@ class ImportController extends Controller
             }
         }
 
+        // Le semestre determine le niveau : S3 est en L2. Accepter une UE de S3
+        // dans une filiere de L1 produisait une maquette incoherente que plus
+        // rien ne signalait ensuite — c'est ainsi que trente-huit lignes de S3
+        // se sont retrouvees en IM-L1.
+        $semesterService = app(\App\Services\SemesterService::class);
+        $filieres = Filiere::whereIn('id', array_column($validated['ues'], 'filiere_id'))->get()->keyBy('id');
+
+        foreach ($validated['ues'] as $i => $ueData) {
+            $filiere = $filieres->get($ueData['filiere_id']);
+            $attendus = $filiere ? $semesterService->getSemestersForNiveau((string) $filiere->niveau) : [];
+
+            if ($attendus !== [] && !in_array((int) $ueData['semestre'], $attendus, true)) {
+                $liste = implode(' ou ', array_map(fn ($n) => "S{$n}", $attendus));
+
+                return $this->errorResponse(
+                    "L'UE « {$ueData['code']} » est en S{$ueData['semestre']}, "
+                    . "incompatible avec la filière {$filiere->code} ({$filiere->niveau}), qui couvre {$liste}. "
+                    . 'Corrigez la filière ou le semestre avant de valider.',
+                    422
+                );
+            }
+        }
+
         $created = [];
         foreach ($validated['ues'] as $ueData) {
             $ecsData = $ueData['ecs'] ?? [];
             unset($ueData['ecs']);
 
-            $ue = \App\Models\Ue::create($ueData);
+            // Creation ou mise a jour : revalider un import corrige ne doit pas
+            // echouer sur la contrainte d'unicite, ni creer un doublon.
+            $ue = \App\Models\Ue::updateOrCreate(
+                [
+                    'code'       => $ueData['code'],
+                    'filiere_id' => $ueData['filiere_id'],
+                    'annee_id'   => $ueData['annee_id'],
+                ],
+                $ueData
+            );
+
             $ecs = [];
             foreach ($ecsData as $ecData) {
-                $ecData['ue_id'] = $ue->id;
-                $ec = \App\Models\Ec::create($ecData);
+                $ec = \App\Models\Ec::updateOrCreate(
+                    ['code' => $ecData['code'], 'ue_id' => $ue->id],
+                    $ecData + ['ue_id' => $ue->id]
+                );
                 $ecs[] = $ec;
             }
 

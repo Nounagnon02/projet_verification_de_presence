@@ -188,8 +188,8 @@ class CsvImportControllerTest extends TestCase
 
         $reponse = $this->importerUeEc(
             self::ENTETE_UE_EC . "\n"
-            . "{$codeUe},Informatique Fondamentale,{$this->filiereA->code},M1,{$this->annee->libelle},1,60,NEWEC1{$this->sfx},Algorithmique,30\n"
-            . "{$codeUe},Informatique Fondamentale,{$this->filiereA->code},M1,{$this->annee->libelle},1,60,NEWEC2{$this->sfx},Programmation,30\n"
+            . "{$codeUe},Informatique Fondamentale,{$this->filiereA->code},M1,{$this->annee->libelle},7,60,NEWEC1{$this->sfx},Algorithmique,30\n"
+            . "{$codeUe},Informatique Fondamentale,{$this->filiereA->code},M1,{$this->annee->libelle},7,60,NEWEC2{$this->sfx},Programmation,30\n"
         );
 
         $reponse->assertStatus(200)
@@ -203,7 +203,7 @@ class CsvImportControllerTest extends TestCase
             'intitule'       => 'Informatique Fondamentale',
             'filiere_id'     => $this->filiereA->id,
             'annee_id'       => $this->annee->id,
-            'semestre'       => 1,
+            'semestre'       => 7,
             'volume_horaire' => 60,
         ]);
 
@@ -224,7 +224,7 @@ class CsvImportControllerTest extends TestCase
     {
         $codeUe = 'NEWUE' . $this->sfx;
         $codeEc = 'NEWEC1' . $this->sfx;
-        $ligne = "{$codeUe},Informatique,{$this->filiereA->code},M1,{$this->annee->libelle},1,60,{$codeEc},Algorithmique,30";
+        $ligne = "{$codeUe},Informatique,{$this->filiereA->code},M1,{$this->annee->libelle},7,60,{$codeEc},Algorithmique,30";
 
         $reponse = $this->importerUeEc(self::ENTETE_UE_EC . "\n" . $ligne . "\n" . $ligne . "\n" . $ligne . "\n");
 
@@ -257,24 +257,28 @@ class CsvImportControllerTest extends TestCase
         $this->assertSame($ecsAvant, Ec::count());
     }
 
-    public function test_import_ue_ec_avec_alias_dentete_espace_echoue(): void
+    /**
+     * Régression : la clé 'code ue' était définie DEUX FOIS dans HEADER_ALIASES,
+     * et PHP ne conserve que la dernière valeur d'une clé répétée. La seconde
+     * pointait vers 'ue_code', que l'import UE/EC ne lit jamais — il lit
+     * 'code_ue'. Un fichier à en-têtes espacées ne retrouvait donc aucune de ses
+     * colonnes et cassait en 500. Idem pour 'code ec'.
+     *
+     * Ce test asseyait ce défaut comme comportement attendu. Il vérifie
+     * desormais l'inverse : les libellés déclarés dans HEADER_ALIASES doivent
+     * fonctionner, c'est leur seule raison d'exister.
+     */
+    public function test_import_ue_ec_accepte_les_alias_dentete_espaces(): void
     {
-        $uesAvant = Ue::count();
-
-        // Ces libellés sont pourtant déclarés dans HEADER_ALIASES.
         $reponse = $this->importerUeEc(
             "Code UE,Intitule UE,Filiere,Annee,Semestre,VH UE,Code EC,Intitule EC,VH EC\n"
-            . "ALIAS{$this->sfx},Informatique,{$this->filiereA->code},{$this->annee->libelle},1,60,ALIASEC{$this->sfx},Algorithmique,30\n"
+            . "ALIAS{$this->sfx},Informatique,{$this->filiereA->code},{$this->annee->libelle},7,60,ALIASEC{$this->sfx},Algorithmique,30\n"
         );
 
-        // DÉFAUT (CsvImportController.php:39 et 53) : la clé 'code ue' est définie
-        // deux fois dans HEADER_ALIASES ; la seconde (=> 'ue_code') écrase la
-        // première (=> 'code_ue'). Idem pour 'code ec' (=> 'ec_code'). L'import
-        // UE/EC ne retrouve donc jamais ses colonnes et casse en 500.
-        $reponse->assertStatus(500)->assertJsonPath('success', false);
+        $reponse->assertOk()->assertJsonPath('success', true);
 
-        $this->assertSame($uesAvant, Ue::count());
-        $this->assertDatabaseMissing('ues', ['code' => 'ALIAS' . $this->sfx]);
+        $this->assertDatabaseHas('ues', ['code' => 'ALIAS' . $this->sfx]);
+        $this->assertDatabaseHas('ecs', ['code' => 'ALIASEC' . $this->sfx]);
     }
 
     public function test_import_ue_ec_signale_une_colonne_requise_absente(): void
@@ -341,9 +345,9 @@ class CsvImportControllerTest extends TestCase
     {
         $reponse = $this->importerUeEc(
             self::ENTETE_UE_EC . "\n"
-            . "T1{$this->sfx},Un,{$this->filiereA->code},M1,{$this->annee->libelle},1,60,T1EC{$this->sfx},EC un,30\n"
-            . "T2{$this->sfx},Deux,{$this->filiereA->code},M1,{$this->annee->libelle},1,40,T2EC{$this->sfx},EC deux,20\n"
-            . "T3{$this->sfx},Trois,{$this->filiereA->code},M1,{$this->annee->libelle},1,0,T3EC{$this->sfx},EC trois,10\n"
+            . "T1{$this->sfx},Un,{$this->filiereA->code},M1,{$this->annee->libelle},7,60,T1EC{$this->sfx},EC un,30\n"
+            . "T2{$this->sfx},Deux,{$this->filiereA->code},M1,{$this->annee->libelle},7,40,T2EC{$this->sfx},EC deux,20\n"
+            . "T3{$this->sfx},Trois,{$this->filiereA->code},M1,{$this->annee->libelle},7,0,T3EC{$this->sfx},EC trois,10\n"
         );
 
         // COMPORTEMENT RÉEL : l'import n'est pas atomique malgré le
@@ -365,31 +369,108 @@ class CsvImportControllerTest extends TestCase
         $this->assertDatabaseMissing('ues', ['code' => 'T3' . $this->sfx]);
     }
 
-    public function test_import_ue_ec_annule_tout_sur_erreur_sql(): void
+    /**
+     * Régression : `ues.code` était unique sur TOUTE la table, alors que le
+     * contrôleur cherche l'UE existante sur (code, filiere_id, annee_id). Un
+     * code déjà pris par une autre filière déclenchait donc une violation
+     * d'unicité, remontée brute au client en 500 — et le rollback emportait au
+     * passage les lignes valides du même fichier.
+     *
+     * Le modèle métier dit l'inverse : un code de tronc commun peut être partagé
+     * par deux filières, et une maquette se reconduit d'une année sur l'autre.
+     * La contrainte porte désormais sur le triplet.
+     */
+    public function test_import_ue_ec_accepte_un_code_deja_pris_par_une_autre_filiere(): void
     {
         $reponse = $this->importerUeEc(
             self::ENTETE_UE_EC . "\n"
-            . "OK{$this->sfx},Valide,{$this->filiereA->code},M1,{$this->annee->libelle},1,60,OKEC{$this->sfx},EC valide,30\n"
-            . "{$this->codeUeDejaPris},Doublon global,{$this->filiereA->code},M1,{$this->annee->libelle},1,60,KOEC{$this->sfx},EC refusé,30\n"
+            . "OK{$this->sfx},Valide,{$this->filiereA->code},M1,{$this->annee->libelle},7,60,OKEC{$this->sfx},EC valide,30\n"
+            . "{$this->codeUeDejaPris},Tronc commun,{$this->filiereA->code},M1,{$this->annee->libelle},7,60,KOEC{$this->sfx},EC partagé,30\n"
         );
 
-        // `ues.code` est unique sur toute la table alors que le contrôleur cherche
-        // l'UE existante sur (code, filiere_id, annee_id) : un code déjà pris par
-        // une autre filière déclenche une violation d'unicité. Là, le rollback
-        // s'applique — la première UE, valide, est perdue elle aussi, et le client
-        // reçoit un 500 sans indication de ligne.
-        $reponse->assertStatus(500)->assertJsonPath('success', false);
-        $this->assertStringContainsString('Erreur lors de l\'import', $reponse->json('message'));
+        $reponse->assertOk()->assertJsonPath('data.success', 2);
 
-        $this->assertDatabaseMissing('ues', ['code' => 'OK' . $this->sfx]);
-        $this->assertDatabaseMissing('ecs', ['code' => 'OKEC' . $this->sfx]);
+        // La ligne valide n'est plus emportee par le rollback.
+        $this->assertDatabaseHas('ues', ['code' => 'OK' . $this->sfx]);
+
+        // Les deux filieres portent le meme code, chacune la sienne.
+        $this->assertSame(
+            2,
+            Ue::where('code', $this->codeUeDejaPris)->count(),
+            'Le meme code doit pouvoir exister dans deux filieres.'
+        );
+    }
+
+    /**
+     * Le cas qui motive la correction : reconduire une maquette d'une annee sur
+     * l'autre. Avec l'ancienne contrainte, la seconde annee etait impossible.
+     */
+    public function test_import_ue_ec_accepte_le_meme_code_sur_deux_annees(): void
+    {
+        $anneeSuivante = AnneeAcademique::create([
+            'libelle'    => '2092-2093 ' . $this->sfx,
+            'date_debut' => '2092-09-01',
+            'date_fin'   => '2093-07-31',
+            'active'     => false,
+        ]);
+
+        $code = 'RECOND' . $this->sfx;
+
+        $this->importerUeEc(
+            self::ENTETE_UE_EC . "\n"
+            . "{$code},Maquette,{$this->filiereA->code},M1,{$this->annee->libelle},7,60,{$code}A,EC,30\n"
+        )->assertOk()->assertJsonPath('data.success', 1);
+
+        $this->importerUeEc(
+            self::ENTETE_UE_EC . "\n"
+            . "{$code},Maquette,{$this->filiereA->code},M1,{$anneeSuivante->libelle},7,60,{$code}B,EC,30\n"
+        )->assertOk()->assertJsonPath('data.success', 1);
+
+        $this->assertSame(2, Ue::where('code', $code)->count());
+    }
+
+    /**
+     * Le semestre determine le niveau : S3 est en L2. Une UE de S3 rangee dans
+     * une filiere de M1 produisait une maquette incoherente que plus rien ne
+     * signalait — c'est ainsi que trente-huit lignes de S3 se sont retrouvees
+     * dans une filiere de L1.
+     */
+    public function test_import_ue_ec_refuse_un_semestre_etranger_au_niveau(): void
+    {
+        $reponse = $this->importerUeEc(
+            self::ENTETE_UE_EC . "\n"
+            . "INCOH{$this->sfx},Incoherente,{$this->filiereA->code},M1,{$this->annee->libelle},3,60,INCOHEC{$this->sfx},EC,30\n"
+        );
+
+        $reponse->assertOk()->assertJsonPath('data.success', 0);
+
+        $this->assertStringContainsString(
+            'incompatible',
+            $reponse->json('data.errors.0.error')
+        );
+        $this->assertDatabaseMissing('ues', ['code' => 'INCOH' . $this->sfx]);
+    }
+
+    /**
+     * La borne etait 6, alors que ues.semestre va jusqu'a 10 : aucune UE de
+     * Master n'etait importable.
+     */
+    public function test_import_ue_ec_accepte_les_semestres_de_master(): void
+    {
+        $reponse = $this->importerUeEc(
+            self::ENTETE_UE_EC . "\n"
+            . "MAST{$this->sfx},Master,{$this->filiereA->code},M1,{$this->annee->libelle},8,60,MASTEC{$this->sfx},EC,30\n"
+        );
+
+        $reponse->assertOk()->assertJsonPath('data.success', 1);
+        $this->assertDatabaseHas('ues', ['code' => 'MAST' . $this->sfx, 'semestre' => 8]);
     }
 
     public function test_import_ue_ec_signale_une_filiere_introuvable(): void
     {
         $reponse = $this->importerUeEc(
             self::ENTETE_UE_EC . "\n"
-            . "INC{$this->sfx},Informatique,FILIERE-INEXISTANTE,M1,{$this->annee->libelle},1,60,INCEC{$this->sfx},EC,30\n"
+            . "INC{$this->sfx},Informatique,FILIERE-INEXISTANTE,M1,{$this->annee->libelle},7,60,INCEC{$this->sfx},EC,30\n"
         );
 
         $reponse->assertStatus(200)
@@ -690,7 +771,7 @@ class CsvImportControllerTest extends TestCase
 
         $reponse = $this->importerUeEc(
             self::ENTETE_UE_EC . "\n"
-            . "MINE{$this->sfx},Informatique,{$this->filiereA->code},M1,{$this->annee->libelle},1,60,MINEEC{$this->sfx},EC,30\n",
+            . "MINE{$this->sfx},Informatique,{$this->filiereA->code},M1,{$this->annee->libelle},7,60,MINEEC{$this->sfx},EC,30\n",
             $jeton
         );
 
@@ -708,7 +789,7 @@ class CsvImportControllerTest extends TestCase
 
         $reponse = $this->importerUeEc(
             self::ENTETE_UE_EC . "\n"
-            . "OTHER{$this->sfx},Informatique,{$this->filiereB->code},M1,{$this->annee->libelle},1,60,OTHEREC{$this->sfx},EC,30\n",
+            . "OTHER{$this->sfx},Informatique,{$this->filiereB->code},M1,{$this->annee->libelle},7,60,OTHEREC{$this->sfx},EC,30\n",
             $jeton
         );
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiChevronRight, FiCheck, FiAlertCircle, FiPlus, FiArrowRight, FiLoader } from 'react-icons/fi';
 import { MdCloudDone } from 'react-icons/md';
 import api from '../../api/axios';
+import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 
 const LIGNE_VIDE = { id: 0, code: '', intitule: '', semestre: '', credits: '', edited: true, isUe: true };
 
@@ -103,6 +104,85 @@ function lireCoursEnSession() {
   return { courses: [LIGNE_VIDE], sourceType: 'schedule', meta: { filename: 'Document importé', score: 0 } };
 }
 
+/**
+ * Le semestre determine le niveau : S3 est en L2, S8 en M1.
+ *
+ * Meme table que App\Services\SemesterService cote serveur, qui refuse
+ * desormais une UE dont le semestre est etranger au niveau de la filiere. La
+ * reprendre ici permet de guider le choix AVANT l'envoi, plutot que de laisser
+ * l'utilisateur decouvrir le refus apres coup.
+ */
+const NIVEAU_PAR_SEMESTRE = {
+  1: 'L1', 2: 'L1',
+  3: 'L2', 4: 'L2',
+  5: 'L3', 6: 'L3',
+  7: 'M1', 8: 'M1',
+  9: 'M2', 10: 'M2',
+};
+
+function niveauxDesLignes(lignes) {
+  const niveaux = lignes
+    .filter((l) => l.isUe)
+    .map((l) => NIVEAU_PAR_SEMESTRE[parseInt(String(l.semestre).replace(/[^0-9]/g, ''), 10)])
+    .filter(Boolean);
+
+  return [...new Set(niveaux)];
+}
+
+/**
+ * Regroupe les lignes a plat en UEs portant leurs ECs.
+ *
+ * L'ecran affiche une ligne par UE ET par EC, le drapeau « isUe » les
+ * distinguant. Ce drapeau etait calcule puis ignore a l'enregistrement : chaque
+ * ligne partait en UE. Un catalogue de seize UE et vingt-deux ECs creait donc
+ * trente-huit UE, aucune ne portant d'EC.
+ *
+ * Chaque ligne d'UE ouvre un groupe ; les lignes d'EC qui suivent s'y
+ * rattachent, jusqu'a la prochaine UE. Les ECs precedant toute UE sont ignores :
+ * ils n'ont pas de parent, et les inventer un serait pire que de les omettre.
+ *
+ * Le volume horaire d'une UE est la SOMME de ses ECs, une valeur reelle, et non
+ * « credits x 10 » — les credits eux-memes n'ayant pas ce sens. Une UE sans EC
+ * garde l'estimation faute de mieux, ce que l'ecran signale.
+ */
+function grouperUesEtEcs(lignes) {
+  const nombre = (valeur, defaut = 0) => {
+    const n = parseInt(String(valeur ?? '').replace(/[^0-9]/g, ''), 10);
+    return Number.isNaN(n) ? defaut : n;
+  };
+
+  const groupes = [];
+
+  lignes.forEach((ligne) => {
+    if (ligne.isUe) {
+      groupes.push({
+        code: ligne.code,
+        intitule: ligne.intitule,
+        semestre: nombre(ligne.semestre, 1) || 1,
+        credits: nombre(ligne.credits, 3),
+        ecs: [],
+      });
+      return;
+    }
+
+    const parent = groupes[groupes.length - 1];
+    if (!parent) return;
+
+    parent.ecs.push({
+      code: ligne.code,
+      intitule: ligne.intitule,
+      volumeHoraire: Math.max(nombre(ligne.credits, 3) * 10, 1),
+    });
+  });
+
+  return groupes.map((g) => ({
+    ...g,
+    volumeHoraire: g.ecs.length > 0
+      ? g.ecs.reduce((total, e) => total + e.volumeHoraire, 0)
+      : Math.max(g.credits * 10, 30),
+  }));
+}
+
 export default function CourseValidationPage() {
   const navigate = useNavigate();
 
@@ -114,6 +194,19 @@ export default function CourseValidationPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [analysisMeta] = useState(() => initial.meta);
+
+  // Destination de l'import. Elle etait ecrite en dur — filiere_id: 1,
+  // annee_id: 1 — si bien que TOUTE analyse atterrissait dans la premiere
+  // filiere et la premiere annee de la base.
+  const filtres = useFiltresAcademiques({ preselectionnerAnneeActive: true });
+
+  // Niveaux impliques par les semestres extraits. Un catalogue de S3 designe
+  // L2 : proposer L1 n'aurait aucun sens, et le serveur le refuserait.
+  const niveauxAttendus = niveauxDesLignes(courses);
+
+  const filieresCompatibles = niveauxAttendus.length > 0
+    ? filtres.filieres.filter((f) => niveauxAttendus.includes(f.niveau))
+    : filtres.filieres;
 
   const updateCourse = (id, field, value) => {
     setCourses((prev) => prev.map((c) => (c.id === id ? { ...c, [field]: value, edited: true } : c)));
@@ -149,19 +242,43 @@ export default function CourseValidationPage() {
       return;
     }
 
+    if (!filtres.filiere || !filtres.annee) {
+      setError('Choisissez la filière et l\'année académique de destination avant de valider.');
+      return;
+    }
+
+    const groupes = grouperUesEtEcs(validCourses);
+
+    if (groupes.length === 0) {
+      setError('Aucune UE à importer : la première ligne doit être une UE, pas un EC.');
+      return;
+    }
+
     setSaving(true);
     setError('');
 
     try {
       const payload = {
-        ues: validCourses.map((c) => ({
-          code: c.code.toUpperCase(),
-          intitule: c.intitule,
-          filiere_id: 1,
-          annee_id: 1,
-          semestre: parseInt(c.semestre.toString().replace(/[^0-9]/g, ''), 10) || 1,
-          volume_horaire: Math.max(parseInt(c.credits, 10) * 10, 30),
-          ecs: [],
+        // Les ECs repartent SOUS leur UE. Ils etaient jetes — « ecs: [] » — et
+        // chaque ligne, UE comme EC, etait envoyee en tant qu'UE : un import de
+        // seize UE et vingt-deux ECs creait trente-huit UE sans aucun EC.
+        //
+        // La filiere et l'annee etaient ecrites en dur a 1. Toute analyse
+        // atterrissait donc dans la premiere filiere et la premiere annee de la
+        // base, quel que soit le document — des UE de S3 se sont ainsi
+        // retrouvees en L1.
+        ues: groupes.map((g) => ({
+          code: g.code.toUpperCase(),
+          intitule: g.intitule,
+          filiere_id: Number(filtres.filiere),
+          annee_id: Number(filtres.annee),
+          semestre: g.semestre,
+          volume_horaire: g.volumeHoraire,
+          ecs: g.ecs.map((e) => ({
+            code: e.code.toUpperCase(),
+            intitule: e.intitule,
+            volume_horaire: e.volumeHoraire,
+          })),
         })),
       };
 
@@ -254,7 +371,10 @@ export default function CourseValidationPage() {
         <div className="col-span-12 lg:col-span-9">
           <div className="bg-surface-container-lowest rounded-[24px] overflow-hidden shadow-sm">
             <div className="px-8 py-6 flex justify-between items-center border-b border-surface-container-high">
-              <h2 className="text-lg font-bold text-primary">Données extraites ({courses.length})</h2>
+              <h2 className="text-lg font-bold text-primary">
+                Données extraites — {courses.filter((c) => c.isUe).length} UE,{' '}
+                {courses.filter((c) => !c.isUe).length} EC
+              </h2>
               <div className="flex gap-2">
                 <span className="text-[10px] font-medium text-on-surface-variant bg-surface-container-low px-3 py-1.5 rounded-lg">
                   {sourceType === 'dedicated' ? 'Analyse dédiée' : 'Dérivé de l\'emploi du temps'}
@@ -266,6 +386,10 @@ export default function CourseValidationPage() {
                 <thead>
                   <tr className="bg-surface-container-low/50 text-[11px] uppercase tracking-wider text-outline font-bold">
                     <th className="px-8 py-4 w-12">#</th>
+                    {/* Rien ne distinguait une UE d'un EC : trente-huit lignes
+                        melant les deux avaient l'air d'un catalogue de
+                        trente-huit UE. */}
+                    <th className="px-4 py-4 w-16">Type</th>
                     <th className="px-4 py-4">Code</th>
                     <th className="px-4 py-4">Intitulé</th>
                     <th className="px-4 py-4">Semestre</th>
@@ -280,6 +404,13 @@ export default function CourseValidationPage() {
                     return (
                       <tr key={course.id} className={`hover:bg-surface-container-low group transition-colors ${course.isUe ? '' : 'bg-surface/30'}`}>
                         <td className="px-8 py-4 text-xs text-on-surface-variant font-mono">{course.id + 1}</td>
+                        <td className="px-4 py-4">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${course.isUe
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-surface-container-high text-on-surface-variant'}`}>
+                            {course.isUe ? 'UE' : 'EC'}
+                          </span>
+                        </td>
                         <td className="px-4 py-4">
                           <input
                             type="text"
@@ -387,8 +518,52 @@ export default function CourseValidationPage() {
             </div>
           </div>
 
+          {/* Destination de l'import.
+              Elle etait ecrite en dur : filiere_id: 1, annee_id: 1. Toute
+              analyse atterrissait donc dans la premiere filiere et la premiere
+              annee de la base, quel que soit le document. */}
+          <div className="bg-surface-container-lowest p-6 rounded-[24px] shadow-sm space-y-4">
+            <h3 className="text-sm font-bold text-primary">Destination</h3>
+
+            <div className="space-y-1">
+              <label htmlFor="import-annee" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Année académique</label>
+              <select id="import-annee" value={filtres.annee} onChange={(e) => filtres.setAnnee(e.target.value)} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50">
+                <option value="">Choisir une année…</option>
+                {filtres.annees.map((a) => (
+                  <option key={a.id} value={a.id}>{a.libelle}{a.active ? ' (active)' : ''}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label htmlFor="import-filiere" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Filière</label>
+              <select id="import-filiere" value={filtres.filiere} onChange={(e) => filtres.setFiliere(e.target.value)}
+                disabled={!filtres.annee} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50">
+                <option value="">Choisir une filière…</option>
+                {filieresCompatibles.map((f) => (
+                  <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>
+                ))}
+              </select>
+            </div>
+
+            {niveauxAttendus.length > 0 && (
+              <p className="text-xs text-on-surface-variant">
+                Les semestres extraits désignent {niveauxAttendus.join(' et ')} : seules
+                les filières de ce niveau sont proposées. Une UE de S3 rangée en L1
+                serait refusée.
+              </p>
+            )}
+
+            {filtres.annee && filieresCompatibles.length === 0 && (
+              <p className="text-xs text-error">
+                Aucune filière de niveau {niveauxAttendus.join(' ou ')} pour cette année.
+                Créez-la, ou corrigez les semestres ci-contre.
+              </p>
+            )}
+          </div>
+
           <div className="flex flex-col gap-3">
-            <button onClick={handleSave} disabled={saving || readyCount === 0}
+            <button onClick={handleSave} disabled={saving || readyCount === 0 || !filtres.filiere || !filtres.annee}
               className="w-full py-4 rounded-xl bg-gradient-to-br from-primary to-primary-container text-white font-bold text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2">
               <MdCloudDone className="text-[20px]" />
               {saving ? <><FiLoader className="animate-spin" /> Enregistrement...</> : 'Valider et enregistrer'}
