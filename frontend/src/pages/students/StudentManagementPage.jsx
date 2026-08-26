@@ -4,6 +4,7 @@ import api from '../../api/axios';
 import SearchInput from '../../components/ui/SearchInput';
 import Pagination from '../../components/ui/Pagination';
 import Modal from '../../components/ui/Modal';
+import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 import { useToastCtx } from '../../context/ToastContext';
 
 const StudentManagementPage = () => {
@@ -11,7 +12,6 @@ const StudentManagementPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -20,15 +20,19 @@ const StudentManagementPage = () => {
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [deleting, setDeleting] = useState(false);
-  const [filieres, setFilieres] = useState([]);
-  const [annees, setAnnees] = useState([]);
   const { addToast } = useToastCtx();
 
-  // Filtres
-  const [filtreAnnee, setFiltreAnnee] = useState('');
-  const [filtreFiliere, setFiltreFiliere] = useState('');
-  const [filtreSemestre, setFiltreSemestre] = useState('');
-  const [filtreNiveau, setFiltreNiveau] = useState('');
+  // Filtres académiques en cascade : choisir une année restreint les filières,
+  // qui restreignent à leur tour niveaux et semestres. Le hook porte aussi la
+  // remise à zéro des filtres enfants, sans quoi on garderait une filière
+  // absente de la nouvelle année et la liste se viderait sans explication.
+  const [page, setPageCourante] = useState(1);
+
+  const filtres = useFiltresAcademiques({ onChangement: () => setPageCourante(1) });
+  const { annees, filieres, filieresToutes } = filtres;
+
+  // Indépendant de l'année : un étudiant est responsable ou non, quelle que
+  // soit la promotion. Le mettre en cascade n'aurait aucun sens.
   const [filtreResponsable, setFiltreResponsable] = useState('');
 
   // Promotion (passage d'année / de niveau d'une promotion entière)
@@ -46,37 +50,6 @@ const StudentManagementPage = () => {
   const [importResult, setImportResult] = useState(null);
   const [importError, setImportError] = useState('');
   const importFileRef = useRef(null);
-
-  // Charger les filières et années académiques pour les selects
-  useEffect(() => {
-    const controller = new AbortController();
-    const { signal } = controller;
-    api.get('/admin/filieres', { signal }).then(({ data }) => {
-      if (data.success) setFilieres(data.data || []);
-      else if (Array.isArray(data)) setFilieres(data);
-      else if (data.data) setFilieres(data.data);
-    }).catch((err) => {
-      // Une annulation au démontage est normale ; toute autre erreur doit être
-      // visible, sinon les listes restent vides sans explication.
-      if (err.name !== 'CanceledError' && err.name !== 'AbortError') {
-        setError('Erreur lors du chargement des listes de référence.');
-      }
-    });
-
-    api.get('/admin/annees-academiques', { signal }).then(({ data }) => {
-      if (data.success) setAnnees(data.data || []);
-      else if (Array.isArray(data)) setAnnees(data);
-      else if (data.data) setAnnees(data.data);
-    }).catch((err) => {
-      // Une annulation au démontage est normale ; toute autre erreur doit être
-      // visible, sinon les listes restent vides sans explication.
-      if (err.name !== 'CanceledError' && err.name !== 'AbortError') {
-        setError('Erreur lors du chargement des listes de référence.');
-      }
-    });
-
-    return () => controller.abort();
-  }, []);
 
   const abortFetchRef = useRef(null);
 
@@ -98,10 +71,10 @@ const StudentManagementPage = () => {
       try {
         const params = { page, per_page: 15 };
         if (search.trim()) params.search = search;
-        if (filtreAnnee) params.annee_id = filtreAnnee;
-        if (filtreFiliere) params.filiere_id = filtreFiliere;
-        if (filtreSemestre) params.semestre = filtreSemestre;
-        if (filtreNiveau) params.niveau = filtreNiveau;
+        if (filtres.annee) params.annee_id = filtres.annee;
+        if (filtres.filiere) params.filiere_id = filtres.filiere;
+        if (filtres.semestre) params.semestre = filtres.semestre;
+        if (filtres.niveau) params.niveau = filtres.niveau;
         if (filtreResponsable) params.responsable = filtreResponsable;
         const response = await api.get('/admin/students', { params, signal: controller.signal });
         const result = response.data;
@@ -125,7 +98,7 @@ const StudentManagementPage = () => {
     })();
 
     return () => abortFetchRef.current?.abort();
-  }, [page, search, filtreAnnee, filtreFiliere, filtreSemestre, filtreNiveau, filtreResponsable, rechargement]);
+  }, [page, search, filtres.annee, filtres.filiere, filtres.semestre, filtres.niveau, filtreResponsable, rechargement]);
 
   // L'inscription se fait toujours dans l'année active : on ne la fait pas
   // choisir, on l'impose (le serveur la ré-applique de toute façon).
@@ -371,53 +344,59 @@ const StudentManagementPage = () => {
         <div className="flex flex-wrap items-end gap-4">
           <div className="space-y-1 flex-1 min-w-[160px]">
             <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Année académique</label>
-            <select value={filtreAnnee} onChange={(e) => { setFiltreAnnee(e.target.value); setPage(1); }}
-              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
+            <select value={filtres.annee} onChange={(e) => filtres.setAnnee(e.target.value)}
+              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
               <option value="">Toutes les années</option>
               {annees.map(a => <option key={a.id} value={a.id}>{a.libelle || a.annee}{a.active ? ' (Active)' : ''}</option>)}
             </select>
           </div>
           <div className="space-y-1 flex-1 min-w-[160px]">
             <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Filière</label>
-            <select value={filtreFiliere} onChange={(e) => { setFiltreFiliere(e.target.value); setPage(1); }}
-              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
-              <option value="">Toutes les filières</option>
+            <select value={filtres.filiere} onChange={(e) => filtres.setFiliere(e.target.value)}
+              disabled={filtres.anneeVide} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
+              <option value="">{filtres.anneeVide ? 'Aucune filière cette année' : 'Toutes les filières'}</option>
               {filieres.map(f => <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>)}
             </select>
           </div>
           <div className="space-y-1 min-w-[140px]">
             <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Niveau</label>
-            <select value={filtreNiveau} onChange={(e) => { setFiltreNiveau(e.target.value); setPage(1); }}
-              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
+            <select value={filtres.niveau} onChange={(e) => filtres.setNiveau(e.target.value)}
+              disabled={filtres.niveaux.length === 0} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
               <option value="">Tous les niveaux</option>
-              <option value="L1">L1 — Licence 1</option>
-              <option value="L2">L2 — Licence 2</option>
-              <option value="L3">L3 — Licence 3</option>
-              <option value="M1">M1 — Master 1</option>
-              <option value="M2">M2 — Master 2</option>
+              {filtres.niveaux.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>
           <div className="space-y-1 min-w-[120px]">
             <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Semestre</label>
-            <select value={filtreSemestre} onChange={(e) => { setFiltreSemestre(e.target.value); setPage(1); }}
-              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
+            <select value={filtres.semestre} onChange={(e) => filtres.setSemestre(e.target.value)}
+              disabled={filtres.semestres.length === 0} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
               <option value="">Tous</option>
-              {[1,2,3,4,5,6].map(s => <option key={s} value={s}>Semestre {s}</option>)}
+              {filtres.semestres.map(s => <option key={s} value={s}>Semestre {s}</option>)}
             </select>
           </div>
           <div className="space-y-1 min-w-[140px]">
             <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Responsable</label>
-            <select value={filtreResponsable} onChange={(e) => { setFiltreResponsable(e.target.value); setPage(1); }}
-              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
+            <select value={filtreResponsable} onChange={(e) => { setFiltreResponsable(e.target.value); setPageCourante(1); }}
+              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
               <option value="">Tous les étudiants</option>
               <option value="1">Responsables uniquement</option>
               <option value="0">Non-responsables</option>
             </select>
           </div>
         </div>
+
+        {/* Une année sans aucune filière est un cas courant en début
+            d'exercice. Le dire évite de laisser croire à une panne devant un
+            tableau vide. */}
+        {filtres.anneeVide && (
+          <p className="mt-3 text-xs text-on-surface-variant">
+            Cette année académique ne contient encore aucune filière. Rattachez-lui
+            des filières, ou choisissez une autre année.
+          </p>
+        )}
       </div>
 
-      <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Rechercher par nom, prénom, matricule..." className="mb-6 max-w-md" />
+      <SearchInput value={search} onChange={(v) => { setSearch(v); setPageCourante(1); }} placeholder="Rechercher par nom, prénom, matricule..." className="mb-6 max-w-md" />
 
       {error && (
         <div className="mb-6 flex items-start gap-3 p-4 bg-error-container/30 rounded-xl text-on-error-container text-sm border border-error/10">
@@ -506,7 +485,7 @@ const StudentManagementPage = () => {
         </table>
 
         <div className="px-4 pb-4">
-          <Pagination pagination={pagination || { current_page: page, last_page: 1, from: 1, to: students.length, total: students.length }} onPageChange={setPage} />
+          <Pagination pagination={pagination || { current_page: page, last_page: 1, from: 1, to: students.length, total: students.length }} onPageChange={setPageCourante} />
         </div>
       </div>
 
@@ -545,7 +524,7 @@ const StudentManagementPage = () => {
               <select className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
                 value={form.filiere_id} onChange={(e) => setForm({ ...form, filiere_id: e.target.value })}>
                 <option value="">Sélectionner une filière</option>
-                {filieres.map((f) => (
+                {filieresToutes.map((f) => (
                   <option key={f.id} value={f.id}>
                     {f.code} — {f.intitule}
                   </option>
@@ -621,7 +600,7 @@ const StudentManagementPage = () => {
                 value={promoteForm.from_filiere_id}
                 onChange={(e) => { const v = e.target.value; setPromoteForm({ ...promoteForm, from_filiere_id: v }); previewPromotion(v); }}>
                 <option value="">Sélectionner...</option>
-                {filieres.map((f) => <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>)}
+                {filieresToutes.map((f) => <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>)}
               </select>
               {promotePreview !== null && (
                 <p className="text-xs text-on-surface-variant">{promotePreview} étudiant(s) concerné(s)</p>
@@ -633,7 +612,7 @@ const StudentManagementPage = () => {
                 value={promoteForm.to_filiere_id}
                 onChange={(e) => setPromoteForm({ ...promoteForm, to_filiere_id: e.target.value })}>
                 <option value="">Sélectionner...</option>
-                {filieres.filter((f) => f.id?.toString() !== promoteForm.from_filiere_id).map((f) => (
+                {filieresToutes.filter((f) => f.id?.toString() !== promoteForm.from_filiere_id).map((f) => (
                   <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>
                 ))}
               </select>
