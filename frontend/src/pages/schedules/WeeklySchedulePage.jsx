@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef , useMemo} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiChevronLeft, FiChevronRight, FiMapPin, FiLoader, FiUpload, FiPlus, FiFileText, FiX, FiAlertTriangle, FiCheck } from 'react-icons/fi';
 import api from '../../api/axios';
+import CsvTemplateDownload from '../../components/import/CsvTemplateDownload';
 
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 const HOURS = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'];
@@ -44,7 +45,9 @@ export default function WeeklySchedulePage() {
   const [loading, setLoading] = useState(true);
   const [filieres, setFilieres] = useState([]);
   const [annees, setAnnees] = useState([]);
-  const weekRange = getWeekDateRange(weekOffset);
+  // Mémorisé : recalculé à chaque rendu, cet objet changeait d'identité en
+  // permanence et ne pouvait pas figurer dans les dépendances d'un effet.
+  const weekRange = useMemo(() => getWeekDateRange(weekOffset), [weekOffset]);
 
   // Filtres
   const [filtreAnnee, setFiltreAnnee] = useState('');
@@ -66,6 +69,14 @@ export default function WeeklySchedulePage() {
   const [importFile, setImportFile] = useState(null);
   const [importDragOver, setImportDragOver] = useState(false);
   const [importUploading, setImportUploading] = useState(false);
+  // Deux formats pour la meme modale : PDF analyse par l'IA, ou CSV structure.
+  // L'import CSV de l'emploi du temps vivait dans une section « Imports »
+  // separee ; il rejoint l'ecran qui affiche les creneaux qu'il alimente.
+  const [importFormat, setImportFormat] = useState('pdf');
+  // Compteur de rechargement : l'incrementer relance l'effet qui charge les
+  // creneaux, sans dupliquer la requete a un second endroit.
+  const [rechargement, setRechargement] = useState(0);
+  const [importResultat, setImportResultat] = useState(null);
   const [importError, setImportError] = useState('');
   const importFileRef = useRef(null);
 
@@ -101,22 +112,56 @@ export default function WeeklySchedulePage() {
       }
     };
     fetchEvents();
-  }, [weekOffset, filtreAnnee, filtreFiliere, filtreSemestre]);
+  }, [weekRange, filtreAnnee, filtreFiliere, filtreSemestre, rechargement]);
 
   const handleImportDrop = (e) => {
     e.preventDefault();
     setImportDragOver(false);
     const f = e.dataTransfer.files[0];
-    if (f && (f.type === 'application/pdf' || f.name.endsWith('.pdf'))) {
+    if (!f) return;
+
+    const estPdf = f.type === 'application/pdf' || f.name.endsWith('.pdf');
+    const estCsv = f.name.endsWith('.csv');
+
+    if (importFormat === 'pdf' ? estPdf : estCsv) {
       setImportFile(f);
       setImportError('');
     } else {
-      setImportError('Veuillez sélectionner un fichier PDF.');
+      setImportError(importFormat === 'pdf'
+        ? 'Veuillez sélectionner un fichier PDF.'
+        : 'Veuillez sélectionner un fichier CSV.');
+    }
+  };
+
+  /** Import CSV : reponse directe du serveur, sans etape de validation. */
+  const handleImportCsv = async () => {
+    if (!importFile) return;
+    setImportUploading(true);
+    setImportError('');
+    setImportResultat(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', importFile);
+      const { data } = await api.post('/admin/import/csv/schedule', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const d = data?.data ?? data;
+      setImportResultat({
+        crees: d.created ?? d.success ?? 0,
+        ignores: d.skipped ?? 0,
+        erreurs: Array.isArray(d.errors) ? d.errors : [],
+      });
+      setRechargement((n) => n + 1);
+    } catch (err) {
+      setImportError(err.response?.data?.message || "Erreur lors de l'import du fichier.");
+    } finally {
+      setImportUploading(false);
     }
   };
 
   const handleImportUpload = async () => {
     if (!importFile) return;
+    if (importFormat === 'csv') return handleImportCsv();
     setImportUploading(true);
     setImportError('');
     try {
@@ -138,16 +183,21 @@ export default function WeeklySchedulePage() {
   };
 
   // Charger les ECs quand le modal s'ouvre
+  // Liste des ECs, chargée à la première ouverture du formulaire d'ajout.
   useEffect(() => {
-    if (showAddModal && ecs.length === 0) {
-      (async () => {
-        try {
-          const { data: res } = await api.get('/admin/ecs');
-          const list = res.data || res;
-          setEcs(Array.isArray(list) ? list : []);
-        } catch { /* silencieux */ }
-      })();
-    }
+    if (!showAddModal) return;
+
+    let annule = false;
+
+    (async () => {
+      try {
+        const { data: res } = await api.get('/admin/ecs');
+        const list = res.data || res;
+        if (!annule) setEcs(Array.isArray(list) ? list : []);
+      } catch { /* liste laissée en l'état */ }
+    })();
+
+    return () => { annule = true; };
   }, [showAddModal]);
 
   const handleAddSubmit = async (e) => {
@@ -177,6 +227,7 @@ export default function WeeklySchedulePage() {
     setImportFile(null);
     setImportError('');
     setImportUploading(false);
+    setImportResultat(null);
   };
 
   const mappedEvents = events.map((e, i) => {
@@ -419,11 +470,34 @@ export default function WeeklySchedulePage() {
               </button>
             </div>
 
+            {/* Choix du format. Le PDF passe par une extraction IA suivie d'une
+                validation ; le CSV est structure et s'applique directement. */}
+            <div className="flex gap-1 mb-5 bg-surface-container-high rounded-xl p-1">
+              {[
+                ['pdf', 'PDF — analyse par IA'],
+                ['csv', 'CSV — structuré'],
+              ].map(([cle, libelle]) => (
+                <button
+                  key={cle}
+                  type="button"
+                  onClick={() => { setImportFormat(cle); resetImport(); }}
+                  disabled={importUploading}
+                  className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all disabled:opacity-50 ${
+                    importFormat === cle
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'text-on-surface-variant hover:text-primary'
+                  }`}
+                >
+                  {libelle}
+                </button>
+              ))}
+            </div>
+
             {/* Drop zone */}
             <div onDragOver={(e) => { e.preventDefault(); setImportDragOver(true); }} onDragLeave={() => setImportDragOver(false)} onDrop={handleImportDrop}
               className={`border-2 border-dashed rounded-xl p-10 text-center transition-all cursor-pointer ${importDragOver ? 'border-primary bg-primary/5' : 'border-outline-variant/30 hover:border-primary/40'} ${importFile ? 'bg-surface-container-low' : ''}`}
               onClick={() => importFileRef.current?.click()}>
-              <input ref={importFileRef} type="file" accept=".pdf" className="hidden" onChange={(e) => {
+              <input ref={importFileRef} type="file" accept={importFormat === 'pdf' ? '.pdf' : '.csv'} className="hidden" onChange={(e) => {
                 const f = e.target.files[0]; if (f) { setImportFile(f); setImportError(''); }
               }} />
               {!importFile ? (
@@ -431,9 +505,16 @@ export default function WeeklySchedulePage() {
                   <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
                     <FiUpload className="text-2xl text-primary" />
                   </div>
-                  <h3 className="text-sm font-semibold text-on-surface mb-1">Importez un fichier PDF</h3>
-                  <p className="text-xs text-on-surface-variant mb-4">Analyse par IA Gemini — ou <span className="text-primary font-semibold cursor-pointer hover:underline">parcourez</span></p>
-                  <p className="text-[10px] text-on-surface-variant/60">PDF uniquement — 10 Mo max</p>
+                  <h3 className="text-sm font-semibold text-on-surface mb-1">
+                    {importFormat === 'pdf' ? 'Importez un fichier PDF' : 'Importez un fichier CSV'}
+                  </h3>
+                  <p className="text-xs text-on-surface-variant mb-4">
+                    {importFormat === 'pdf' ? 'Analyse par IA' : 'Une ligne par créneau'} — ou{' '}
+                    <span className="text-primary font-semibold cursor-pointer hover:underline">parcourez</span>
+                  </p>
+                  <p className="text-[10px] text-on-surface-variant/60">
+                    {importFormat === 'pdf' ? 'PDF uniquement — 10 Mo max' : 'CSV uniquement — 5 Mo max'}
+                  </p>
                 </>
               ) : (
                 <div className="flex items-center gap-4 justify-center">
@@ -460,21 +541,67 @@ export default function WeeklySchedulePage() {
             {importFile && !importUploading && (
               <button onClick={handleImportUpload}
                 className="mt-6 w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-br from-primary to-primary-container text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-primary/20 active:scale-[0.99] transition-all">
-                <FiUpload /> Analyser avec l'IA
+                <FiUpload /> {importFormat === 'pdf' ? "Analyser avec l'IA" : "Importer l'emploi du temps"}
               </button>
             )}
 
             {importUploading && (
               <div className="mt-6 bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10 text-center">
                 <FiLoader className="animate-spin mx-auto text-primary text-2xl mb-3" />
-                <p className="font-semibold text-primary text-sm">Analyse IA en cours...</p>
-                <p className="text-xs text-on-surface-variant mt-1">Redirection vers la page d'analyse</p>
+                <p className="font-semibold text-primary text-sm">
+                  {importFormat === 'pdf' ? 'Analyse IA en cours…' : 'Import CSV en cours…'}
+                </p>
+                {importFormat === 'pdf' && (
+                  <p className="text-xs text-on-surface-variant mt-1">Redirection vers la page d'analyse</p>
+                )}
+              </div>
+            )}
+
+            {/* Resultat de l'import CSV : reponse directe, sans validation. */}
+            {importResultat && (
+              <div className="mt-6 rounded-xl p-4 bg-surface-container-low border border-outline-variant/10">
+                <p className="text-sm font-bold text-primary mb-1">
+                  {importResultat.crees} créneau(x) créé(s)
+                  {importResultat.ignores > 0 && `, ${importResultat.ignores} ignoré(s)`}
+                </p>
+                {importResultat.erreurs.length > 0 ? (
+                  <>
+                    <p className="text-xs font-semibold text-error mt-2 mb-1">
+                      {importResultat.erreurs.length} ligne(s) refusée(s) :
+                    </p>
+                    <ul className="text-[11px] text-on-surface-variant list-disc list-inside space-y-0.5 max-h-40 overflow-y-auto">
+                      {importResultat.erreurs.slice(0, 20).map((e, i) => (
+                        <li key={i}>{typeof e === 'string' ? e : JSON.stringify(e)}</li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p className="text-xs text-on-surface-variant">Aucune ligne refusée.</p>
+                )}
               </div>
             )}
 
             <div className="mt-6 bg-surface-container-high rounded-xl p-4">
-              <h4 className="text-xs font-bold text-primary mb-2">Informations</h4>
-              <p className="text-[11px] text-on-surface-variant">Le fichier PDF sera analysé par l'IA Gemini pour extraire les créneaux. Vous pourrez valider les données avant l'import final.</p>
+              <h4 className="text-xs font-bold text-primary mb-2">Format attendu</h4>
+              {importFormat === 'pdf' ? (
+                <p className="text-[11px] text-on-surface-variant">
+                  Le PDF est analysé pour en extraire les créneaux. Rien n'est enregistré
+                  avant votre validation, ligne par ligne.
+                </p>
+              ) : (
+                <>
+                  <p className="text-[11px] text-on-surface-variant font-mono">
+                    filiere_code, niveau, annee_libelle, semestre, ue_code, ec_code, jour,
+                    heure_debut, heure_fin, salle_code, type_cours
+                  </p>
+                  <p className="text-[11px] text-on-surface-variant mt-2">
+                    Les conflits de salle et les chevauchements sont détectés automatiquement.
+                  </p>
+                  <div className="mt-3">
+                    <CsvTemplateDownload types={['edt']} />
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

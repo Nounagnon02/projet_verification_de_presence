@@ -5,7 +5,6 @@ import {
   MdBook,
   MdCalendarMonth,
   MdHowToReg,
-  MdUploadFile,
   MdAssessment,
   MdSettings,
   MdHelp,
@@ -25,7 +24,6 @@ const links = [
   // onglets de AttendanceLayout donnent acces au reste. « Présences » pointait
   // auparavant vers /attendance/validate, la page publique de l'etudiant.
   { to: '/attendance', icon: <MdHowToReg />, label: 'Présences' },
-  { to: '/import', icon: <MdUploadFile />, label: 'Imports' },
   { to: '/reports', icon: <MdAssessment />, label: 'Rapports' },
   { to: '/settings', icon: <MdSettings />, label: 'Paramètres' },
 ];

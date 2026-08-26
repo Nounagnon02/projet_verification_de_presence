@@ -74,7 +74,7 @@ export default function ScheduleValidationPage() {
   // Seule la redirection reste un effet : c'est une action sur l'extérieur, pas
   // une écriture d'état.
   useEffect(() => {
-    if (!initial) navigate('/import');
+    if (!initial) navigate('/schedules/weekly');
   }, [initial, navigate]);
 
   const events = useMemo(() => analysisData?.events || [], [analysisData]);
@@ -342,7 +342,7 @@ export default function ScheduleValidationPage() {
             <span className="text-sm font-semibold text-primary">{selectedCount} événement(s) sélectionné(s)</span>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/import')}
+            <button onClick={() => navigate('/schedules/weekly')}
               className="px-6 py-2.5 rounded-lg font-bold text-sm text-on-surface hover:bg-surface-container transition-all active:scale-95">
               Annuler
             </button>

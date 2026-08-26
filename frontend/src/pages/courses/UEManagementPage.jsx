@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiPlus, FiEdit2, FiTrash2, FiSave, FiX, FiRefreshCw, FiBook, FiBookOpen, FiChevronDown, FiChevronRight, FiAlertTriangle, FiSearch, FiUpload, FiFileText, FiLoader } from 'react-icons/fi';
 import api from '../../api/axios';
+import CsvTemplateDownload from '../../components/import/CsvTemplateDownload';
 
 const INITIAL_UE = { code: '', intitule: '', filiere_id: '', annee_id: '', semestre: 1, volume_horaire: 30 };
 const INITIAL_EC = { code: '', intitule: '', volume_horaire: 15 };
@@ -28,6 +29,11 @@ export default function UEManagementPage() {
   const [importFile, setImportFile] = useState(null);
   const [importDragOver, setImportDragOver] = useState(false);
   const [importUploading, setImportUploading] = useState(false);
+  // Deux formats pour la meme modale : PDF analyse par l'IA, ou CSV structure.
+  // L'import CSV vivait dans une section « Imports » separee, loin des UE et EC
+  // qu'il alimente ; il rejoint l'ecran qui les gere.
+  const [importFormat, setImportFormat] = useState('pdf');
+  const [importResultat, setImportResultat] = useState(null);
   const [importError, setImportError] = useState('');
   const importFileRef = useRef(null);
 
@@ -40,16 +46,50 @@ export default function UEManagementPage() {
     e.preventDefault();
     setImportDragOver(false);
     const f = e.dataTransfer.files[0];
-    if (f && (f.type === 'application/pdf' || f.name.endsWith('.pdf'))) {
+    if (!f) return;
+
+    const estPdf = f.type === 'application/pdf' || f.name.endsWith('.pdf');
+    const estCsv = f.name.endsWith('.csv');
+
+    if (importFormat === 'pdf' ? estPdf : estCsv) {
       setImportFile(f);
       setImportError('');
     } else {
-      setImportError('Veuillez sélectionner un fichier PDF.');
+      setImportError(importFormat === 'pdf'
+        ? 'Veuillez sélectionner un fichier PDF.'
+        : 'Veuillez sélectionner un fichier CSV.');
+    }
+  };
+
+  /** Import CSV : le serveur repond directement, sans etape de validation. */
+  const handleImportCsv = async () => {
+    if (!importFile) return;
+    setImportUploading(true);
+    setImportError('');
+    setImportResultat(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', importFile);
+      const { data } = await api.post('/admin/import/csv/courses', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const d = data?.data ?? data;
+      setImportResultat({
+        crees: d.created ?? d.success ?? 0,
+        ignores: d.skipped ?? 0,
+        erreurs: Array.isArray(d.errors) ? d.errors : [],
+      });
+      rafraichir();
+    } catch (err) {
+      setImportError(err.response?.data?.message || "Erreur lors de l'import du fichier.");
+    } finally {
+      setImportUploading(false);
     }
   };
 
   const handleImportUpload = async () => {
     if (!importFile) return;
+    if (importFormat === 'csv') return handleImportCsv();
     setImportUploading(true);
     setImportError('');
     try {
@@ -74,6 +114,7 @@ export default function UEManagementPage() {
     setImportFile(null);
     setImportError('');
     setImportUploading(false);
+    setImportResultat(null);
   };
 
 
@@ -535,11 +576,35 @@ export default function UEManagementPage() {
               </button>
             </div>
 
+            {/* Choix du format. Les deux chemins aboutissent aux memes UE et EC :
+                le PDF passe par une extraction IA suivie d'une validation, le CSV
+                est structure et s'applique directement. */}
+            <div className="flex gap-1 mb-5 bg-surface-container-high rounded-xl p-1">
+              {[
+                ['pdf', 'PDF — analyse par IA'],
+                ['csv', 'CSV — structuré'],
+              ].map(([cle, libelle]) => (
+                <button
+                  key={cle}
+                  type="button"
+                  onClick={() => { setImportFormat(cle); resetImport(); }}
+                  disabled={importUploading}
+                  className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all disabled:opacity-50 ${
+                    importFormat === cle
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'text-on-surface-variant hover:text-primary'
+                  }`}
+                >
+                  {libelle}
+                </button>
+              ))}
+            </div>
+
             {/* Drop zone */}
             <div onDragOver={(e) => { e.preventDefault(); setImportDragOver(true); }} onDragLeave={() => setImportDragOver(false)} onDrop={handleImportDrop}
               className={`border-2 border-dashed rounded-xl p-10 text-center transition-all cursor-pointer ${importDragOver ? 'border-primary bg-primary/5' : 'border-outline-variant/30 hover:border-primary/40'} ${importFile ? 'bg-surface-container-low' : ''}`}
               onClick={() => importFileRef.current?.click()}>
-              <input ref={importFileRef} type="file" accept=".pdf" className="hidden" onChange={(e) => {
+              <input ref={importFileRef} type="file" accept={importFormat === 'pdf' ? '.pdf' : '.csv'} className="hidden" onChange={(e) => {
                 const f = e.target.files[0]; if (f) { setImportFile(f); setImportError(''); }
               }} />
               {!importFile ? (
@@ -547,9 +612,16 @@ export default function UEManagementPage() {
                   <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
                     <FiUpload className="text-2xl text-primary" />
                   </div>
-                  <h3 className="text-sm font-semibold text-on-surface mb-1">Importez un fichier PDF</h3>
-                  <p className="text-xs text-on-surface-variant mb-4">Analyse par IA Gemini — ou <span className="text-primary font-semibold cursor-pointer hover:underline">parcourez</span></p>
-                  <p className="text-[10px] text-on-surface-variant/60">PDF uniquement — 10 Mo max</p>
+                  <h3 className="text-sm font-semibold text-on-surface mb-1">
+                    {importFormat === 'pdf' ? 'Importez un fichier PDF' : 'Importez un fichier CSV'}
+                  </h3>
+                  <p className="text-xs text-on-surface-variant mb-4">
+                    {importFormat === 'pdf' ? 'Analyse par IA' : 'Une ligne par EC'} — ou{' '}
+                    <span className="text-primary font-semibold cursor-pointer hover:underline">parcourez</span>
+                  </p>
+                  <p className="text-[10px] text-on-surface-variant/60">
+                    {importFormat === 'pdf' ? 'PDF uniquement — 10 Mo max' : 'CSV uniquement — 5 Mo max'}
+                  </p>
                 </>
               ) : (
                 <div className="flex items-center gap-4 justify-center">
@@ -576,22 +648,69 @@ export default function UEManagementPage() {
             {importFile && !importUploading && (
               <button onClick={handleImportUpload}
                 className="mt-6 w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-br from-primary to-primary-container text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-primary/20 active:scale-[0.99] transition-all">
-                <FiUpload /> Analyser avec l'IA
+                <FiUpload /> {importFormat === 'pdf' ? "Analyser avec l'IA" : 'Importer les cours'}
               </button>
             )}
 
-            {/* Loading */}
+            {/* Attente */}
             {importUploading && (
               <div className="mt-6 bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10 text-center">
                 <FiLoader className="animate-spin mx-auto text-primary text-2xl mb-3" />
-                <p className="font-semibold text-primary text-sm">Analyse IA en cours...</p>
-                <p className="text-xs text-on-surface-variant mt-1">Redirection vers la page d'analyse</p>
+                <p className="font-semibold text-primary text-sm">
+                  {importFormat === 'pdf' ? 'Analyse IA en cours…' : 'Import CSV en cours…'}
+                </p>
+                {importFormat === 'pdf' && (
+                  <p className="text-xs text-on-surface-variant mt-1">Redirection vers la page d'analyse</p>
+                )}
+              </div>
+            )}
+
+            {/* Resultat de l'import CSV : le serveur repond directement, il n'y a
+                pas d'etape de validation comme pour le PDF. */}
+            {importResultat && (
+              <div className="mt-6 rounded-xl p-4 bg-surface-container-low border border-outline-variant/10">
+                <p className="text-sm font-bold text-primary mb-1">
+                  {importResultat.crees} élément(s) créé(s)
+                  {importResultat.ignores > 0 && `, ${importResultat.ignores} ignoré(s)`}
+                </p>
+                {importResultat.erreurs.length > 0 ? (
+                  <>
+                    <p className="text-xs font-semibold text-error mt-2 mb-1">
+                      {importResultat.erreurs.length} ligne(s) refusée(s) :
+                    </p>
+                    <ul className="text-[11px] text-on-surface-variant list-disc list-inside space-y-0.5 max-h-40 overflow-y-auto">
+                      {importResultat.erreurs.slice(0, 20).map((e, i) => (
+                        <li key={i}>{typeof e === 'string' ? e : JSON.stringify(e)}</li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p className="text-xs text-on-surface-variant">Aucune ligne refusée.</p>
+                )}
               </div>
             )}
 
             <div className="mt-6 bg-surface-container-high rounded-xl p-4">
-              <h4 className="text-xs font-bold text-primary mb-2">Informations</h4>
-              <p className="text-[11px] text-on-surface-variant">Le fichier PDF sera analysé par l'IA Gemini pour extraire automatiquement les UE et EC. Vous pourrez valider les données avant l'import final.</p>
+              <h4 className="text-xs font-bold text-primary mb-2">Format attendu</h4>
+              {importFormat === 'pdf' ? (
+                <p className="text-[11px] text-on-surface-variant">
+                  Le PDF est analysé pour en extraire les UE et EC. Rien n'est enregistré
+                  avant votre validation, ligne par ligne.
+                </p>
+              ) : (
+                <>
+                  <p className="text-[11px] text-on-surface-variant font-mono">
+                    code_ue, intitule_ue, filiere_code, niveau, annee_libelle, semestre,
+                    volume_horaire_ue, code_ec, intitule_ec, volume_horaire_ec
+                  </p>
+                  <p className="text-[11px] text-on-surface-variant mt-2">
+                    Une UE avec plusieurs EC occupe plusieurs lignes, une par EC.
+                  </p>
+                  <div className="mt-3">
+                    <CsvTemplateDownload types={['ue-ec']} />
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

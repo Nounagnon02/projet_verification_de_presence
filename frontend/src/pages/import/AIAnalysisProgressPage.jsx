@@ -11,11 +11,50 @@ const STAGES = [
   { key: 'validation', label: 'Validation des résultats', icon: FiCheck },
 ];
 
+/**
+ * Lit l'analyse en cours déposée en session par l'écran d'import.
+ *
+ * Fonction pure au niveau module : la lecture de sessionStorage est synchrone et
+ * peut donc servir de valeur initiale d'état. Effectuée dans un effet, elle
+ * imposait un rendu supplémentaire et affichait brièvement une progression à
+ * zéro avant de basculer sur l'erreur quand aucune analyse n'existait.
+ *
+ * Renvoie soit l'identifiant et le type, soit le message d'erreur à afficher.
+ */
+function lireAnalyseEnSession() {
+  let stored;
+
+  try {
+    stored = JSON.parse(sessionStorage.getItem('import_analysis'));
+  } catch {
+    stored = null;
+  }
+
+  if (!stored || !stored.analysis_id) {
+    return { erreur: 'Aucune analyse en cours. Veuillez importer un fichier.' };
+  }
+
+  const id = Number(stored.analysis_id);
+
+  if (!id || Number.isNaN(id)) {
+    return { erreur: "Identifiant d'analyse invalide. Veuillez relancer l'import." };
+  }
+
+  return { id, type: stored.type };
+}
+
 export default function AIAnalysisProgressPage() {
+  // Lecture une seule fois, à l'initialisation.
+  const [initial] = useState(lireAnalyseEnSession);
   const [currentStage, setCurrentStage] = useState(0);
-  const [error, setError] = useState(null);
-  const [analysisId, setAnalysisId] = useState(null);
-  const [analysisType, setAnalysisType] = useState(null);
+  const [error, setError] = useState(() => initial.erreur ?? null);
+  const [analysisId] = useState(() => initial.id ?? null);
+  const [analysisType] = useState(() => initial.type ?? null);
+
+  // La section « Imports » a ete supprimee : chaque import vit desormais dans
+  // l'ecran qui gere les donnees qu'il alimente. Le retour mene donc la, selon
+  // le type de document analyse.
+  const retourVersLOrigine = analysisType === 'courses' ? '/courses' : '/schedules/weekly';
   const [pollCount, setPollCount] = useState(0);
   const navigate = useNavigate();
 
@@ -65,31 +104,12 @@ export default function AIAnalysisProgressPage() {
     }
   }, [navigate, analysisType]);
 
+  // Seule l'interrogation périodique du statut reste un effet : c'est une
+  // souscription à un système extérieur, ce à quoi les effets servent.
   useEffect(() => {
-    // Lire les données depuis sessionStorage
-    let stored;
-    try {
-      stored = JSON.parse(sessionStorage.getItem('import_analysis'));
-    } catch {
-      // Ignorer
-    }
+    if (!analysisId) return;
 
-    if (!stored || !stored.analysis_id) {
-      setError('Aucune analyse en cours. Veuillez importer un fichier.');
-      return;
-    }
-
-    const id = Number(stored.analysis_id);
-    if (!id || isNaN(id)) {
-      setError('Identifiant d\'analyse invalide. Veuillez relancer l\'import.');
-      return;
-    }
-
-    setAnalysisId(id);
-    setAnalysisType(stored.type);
-    setCurrentStage(getStageFromStatus('pending'));
-
-    // Polling du statut
+    const id = analysisId;
     let cancelled = false;
     let retries = 0;
     const MAX_RETRIES = 60; // 2 minutes max (60 × 2s)
@@ -117,7 +137,7 @@ export default function AIAnalysisProgressPage() {
       cancelled = true;
       clearTimeout(initialTimer);
     };
-  }, [pollAnalysisStatus]);
+  }, [analysisId, pollAnalysisStatus]);
 
   const handleRetry = () => {
     if (!analysisId || isNaN(Number(analysisId))) {
@@ -157,10 +177,10 @@ export default function AIAnalysisProgressPage() {
               <FiRefreshCw /> Réessayer
             </button>
             <button
-              onClick={() => navigate('/import')}
+              onClick={() => navigate(retourVersLOrigine)}
               className="bg-surface-container-high text-on-surface-variant px-6 py-3 rounded-xl font-semibold hover:bg-surface-container-high/80 transition-all"
             >
-              Retour à l'import
+              Retour
             </button>
           </div>
         </div>
@@ -234,7 +254,7 @@ export default function AIAnalysisProgressPage() {
             </p>
 
             <button
-              onClick={() => navigate('/import')}
+              onClick={() => navigate(retourVersLOrigine)}
               className="mt-4 text-sm text-on-surface-variant hover:text-primary transition-colors"
             >
               Annuler

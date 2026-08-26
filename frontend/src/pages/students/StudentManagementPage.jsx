@@ -583,8 +583,7 @@ const StudentManagementPage = () => {
                 <span className="block text-sm font-semibold text-on-surface">Responsable de la promotion</span>
                 <span className="block text-xs text-on-surface-variant">
                   Donne accès, dans l'application mobile, à l'onglet affichant le QR Code du cours en
-                  séance. Le responsable peut le présenter et le partager, jamais le générer. Une
-                  promotion peut avoir plusieurs responsables.
+                  séance. Le responsable peut le présenter et le partager, jamais le générer.
                 </span>
               </span>
             </label>

@@ -1,78 +1,85 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiChevronRight, FiCheck, FiAlertCircle, FiPlus, FiArrowRight, FiLoader } from 'react-icons/fi';
 import { MdCloudDone } from 'react-icons/md';
 import api from '../../api/axios';
 
-export default function CourseValidationPage() {
-  const navigate = useNavigate();
-  const [courses, setCourses] = useState([]);
-  const [sourceType, setSourceType] = useState('schedule'); // 'schedule' or 'dedicated'
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState('');
-  const [analysisMeta, setAnalysisMeta] = useState({ filename: 'Document importé', score: 0 });
+const LIGNE_VIDE = { id: 0, code: '', intitule: '', semestre: '', credits: '', edited: true, isUe: true };
 
-  useEffect(() => {
-    // Chercher d'abord une analyse dédiée aux cours
-    const dedicated = sessionStorage.getItem('import_courses_analysis');
-    const schedule = sessionStorage.getItem('import_analysis');
+/**
+ * Lit l'analyse déposée en session par l'écran d'import et la traduit en lignes
+ * de cours éditables.
+ *
+ * Fonction pure au niveau module : la lecture de sessionStorage est synchrone,
+ * elle sert donc de valeur initiale d'état. Effectuée dans un effet, elle
+ * imposait un premier rendu avec une liste vide, aussitôt remplacé.
+ *
+ * Deux sources possibles, par ordre de préférence : une analyse dédiée aux
+ * cours, sinon une analyse d'emploi du temps dont on dérive les cours.
+ */
+function lireCoursEnSession() {
+  const dedie = sessionStorage.getItem('import_courses_analysis');
 
-    if (dedicated) {
-      try {
-        const parsed = JSON.parse(dedicated);
-        // Le job stocke analyse.result = gemini.data = { ues: [...] }
-        // L'API retourne { analysis_id, type, status, result: { ues: [...] }, ... }
-        const root = parsed?.result || parsed?.data || parsed;
-        const uesData = root?.ues || root?.data?.ues || [];
+  if (dedie) {
+    try {
+      const parsed = JSON.parse(dedie);
+      // Le job stocke analyse.result = gemini.data = { ues: [...] } ; l'API
+      // renvoie { analysis_id, type, status, result: { ues: [...] }, ... }.
+      const root = parsed?.result || parsed?.data || parsed;
+      const uesData = root?.ues || root?.data?.ues || [];
 
-        if (Array.isArray(uesData) && uesData.length > 0) {
-          // Aplatir UEs + ECs en lignes de cours
-          const flat = [];
-          uesData.forEach((ue) => {
-            flat.push({
-              id: flat.length,
-              code: ue.code || '',
-              intitule: ue.intitule || '',
-              semestre: `S${ue.semestre || 1}`,
-              credits: ue.credits?.toString() || '',
-              edited: false,
-              isUe: true,
-            });
-            (ue.ecs || []).forEach((ec) => {
-              flat.push({
-                id: flat.length,
-                code: ec.code || '',
-                intitule: ec.intitule || '',
-                semestre: `S${ue.semestre || 1}`,
-                credits: (ec.volume_horaire ? Math.round(ec.volume_horaire / 10) : 3).toString(),
-                edited: false,
-                isUe: false,
-              });
-            });
+      if (Array.isArray(uesData) && uesData.length > 0) {
+        // Aplatir UEs et ECs en lignes de cours.
+        const lignes = [];
+
+        uesData.forEach((ue) => {
+          lignes.push({
+            id: lignes.length,
+            code: ue.code || '',
+            intitule: ue.intitule || '',
+            semestre: `S${ue.semestre || 1}`,
+            credits: ue.credits?.toString() || '',
+            edited: false,
+            isUe: true,
           });
 
-          setCourses(flat);
-          setSourceType('dedicated');
-          setAnalysisMeta({
+          (ue.ecs || []).forEach((ec) => {
+            lignes.push({
+              id: lignes.length,
+              code: ec.code || '',
+              intitule: ec.intitule || '',
+              semestre: `S${ue.semestre || 1}`,
+              credits: (ec.volume_horaire ? Math.round(ec.volume_horaire / 10) : 3).toString(),
+              edited: false,
+              isUe: false,
+            });
+          });
+        });
+
+        return {
+          courses: lignes,
+          sourceType: 'dedicated',
+          meta: {
             filename: parsed?.metadata?.filename || root?.metadata?.filename || 'Catalogue cours.pdf',
             score: parsed?.score_de_confiance ?? root?.score_de_confiance ?? 0.95,
             total: uesData.length,
-          });
-          return;
-        }
-      } catch { /* fallback to schedule */ }
-    }
+          },
+        };
+      }
+    } catch { /* on se rabat sur l'emploi du temps */ }
+  }
 
-    // Fallback : analyse d'emploi du temps (cours dérivés des événements)
-    if (schedule) {
-      try {
-        const parsed = JSON.parse(schedule);
-        const root = parsed?.data || parsed;
-        const coursesData = root?.data?.courses || root?.courses || [];
+  const edt = sessionStorage.getItem('import_analysis');
 
-        if (Array.isArray(coursesData) && coursesData.length > 0) {
-          setCourses(coursesData.map((c, i) => ({
+  if (edt) {
+    try {
+      const parsed = JSON.parse(edt);
+      const root = parsed?.data || parsed;
+      const coursesData = root?.data?.courses || root?.courses || [];
+
+      if (Array.isArray(coursesData) && coursesData.length > 0) {
+        return {
+          courses: coursesData.map((c, i) => ({
             id: i,
             code: c.code || '',
             intitule: c.intitule || '',
@@ -80,21 +87,33 @@ export default function CourseValidationPage() {
             credits: c.credits?.toString() || '',
             edited: false,
             isUe: true,
-          })));
-          setSourceType('schedule');
-          setAnalysisMeta({
+          })),
+          sourceType: 'schedule',
+          meta: {
             filename: root?.metadata?.filename || 'Emploi du temps.pdf',
             score: root?.score_de_confiance ?? 0.9,
             total: coursesData.length,
-          });
-          return;
-        }
-      } catch { /* fallback to empty */ }
-    }
+          },
+        };
+      }
+    } catch { /* on se rabat sur une ligne vide */ }
+  }
 
-    // Aucune donnée
-    setCourses([{ id: 0, code: '', intitule: '', semestre: '', credits: '', edited: true, isUe: true }]);
-  }, [navigate]);
+  // Aucune donnée exploitable : une ligne vierge à remplir à la main.
+  return { courses: [LIGNE_VIDE], sourceType: 'schedule', meta: { filename: 'Document importé', score: 0 } };
+}
+
+export default function CourseValidationPage() {
+  const navigate = useNavigate();
+
+  // Lecture une seule fois, à l'initialisation des états.
+  const [initial] = useState(lireCoursEnSession);
+  const [courses, setCourses] = useState(() => initial.courses);
+  const [sourceType] = useState(() => initial.sourceType);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+  const [analysisMeta] = useState(() => initial.meta);
 
   const updateCourse = (id, field, value) => {
     setCourses((prev) => prev.map((c) => (c.id === id ? { ...c, [field]: value, edited: true } : c)));
@@ -374,7 +393,7 @@ export default function CourseValidationPage() {
               <MdCloudDone className="text-[20px]" />
               {saving ? <><FiLoader className="animate-spin" /> Enregistrement...</> : 'Valider et enregistrer'}
             </button>
-            <button onClick={() => navigate('/import')}
+            <button onClick={() => navigate('/courses')}
               className="w-full py-4 rounded-xl bg-surface-container-highest text-on-surface font-bold text-sm hover:bg-surface-container-high transition-colors">
               Annuler
             </button>
