@@ -707,7 +707,7 @@ export default function UEManagementPage() {
                     Une UE avec plusieurs EC occupe plusieurs lignes, une par EC.
                   </p>
                   <div className="mt-3">
-                    <CsvTemplateDownload types={['ue-ec']} />
+                    <CsvTemplateDownload types={['ue-ec']} avecColonnes={false} />
                   </div>
                 </>
               )}

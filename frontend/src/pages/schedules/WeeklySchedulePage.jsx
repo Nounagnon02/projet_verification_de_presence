@@ -598,7 +598,7 @@ export default function WeeklySchedulePage() {
                     Les conflits de salle et les chevauchements sont détectés automatiquement.
                   </p>
                   <div className="mt-3">
-                    <CsvTemplateDownload types={['edt']} />
+                    <CsvTemplateDownload types={['edt']} avecColonnes={false} />
                   </div>
                 </>
               )}

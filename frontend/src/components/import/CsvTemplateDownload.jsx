@@ -40,10 +40,13 @@ const nomDeFichier = (contentDisposition, type) => {
  * derrière le middleware d'authentification, le jeton Bearer est donc requis
  * et ne doit pas transiter par l'URL.
  *
- * @param {string[]} [types]  Restreint l'affichage à certains types de modèle.
+ * @param {string[]} [types]          Restreint l'affichage à certains types de modèle.
+ * @param {boolean}  [avecColonnes]    Affiche la liste des colonnes. À laisser
+ *   à faux quand l'écran appelant la donne déjà — c'était le cas des deux
+ *   modales d'import, où les mêmes colonnes apparaissaient deux fois.
  * @param {string}   [className]
  */
-const CsvTemplateDownload = ({ types, className = '' }) => {
+const CsvTemplateDownload = ({ types, avecColonnes = true, className = '' }) => {
   // Type en cours de téléchargement : pilote l'état de chargement du bouton.
   const [enCours, setEnCours] = useState(null);
 
@@ -96,7 +99,10 @@ const CsvTemplateDownload = ({ types, className = '' }) => {
         Modèles CSV
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      {/* Une seule colonne quand il n'y a qu'un modèle : « sm:grid-cols-2 »
+          inconditionnel le laissait occuper la moitié de la largeur, avec un
+          vide à droite. */}
+      <div className={`grid gap-3 ${modeles.length > 1 ? 'sm:grid-cols-2' : ''}`}>
         {modeles.map((modele) => (
           <div
             key={modele.type}
@@ -104,15 +110,17 @@ const CsvTemplateDownload = ({ types, className = '' }) => {
           >
             <div className="space-y-1">
               <p className="text-sm font-semibold text-on-surface">{modele.libelle}</p>
-              <p className="text-[10px] font-mono text-on-surface-variant break-words">
-                {modele.colonnes}
-              </p>
+              {avecColonnes && (
+                <p className="text-[10px] font-mono text-on-surface-variant break-words">
+                  {modele.colonnes}
+                </p>
+              )}
             </div>
 
             <Button
               variant="outline"
               size="sm"
-              className="mt-auto text-primary"
+              className="mt-auto w-full justify-center text-primary"
               loading={enCours === modele.type}
               disabled={enCours !== null}
               onClick={() => telecharger(modele)}
