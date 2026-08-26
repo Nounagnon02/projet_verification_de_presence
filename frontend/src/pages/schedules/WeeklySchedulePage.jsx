@@ -55,7 +55,7 @@ export default function WeeklySchedulePage() {
   const filtres = useFiltresAcademiques();
   const { annees, filieres, filieresToutes } = filtres;
 
-  // Modal Ajouter un cours
+  // Modal Ajouter un EDT
   const [showAddModal, setShowAddModal] = useState(false);
   const [ecs, setEcs] = useState([]);
   const [adding, setAdding] = useState(false);
@@ -273,7 +273,7 @@ export default function WeeklySchedulePage() {
           <div className="flex items-center gap-2 self-end pt-1">
             <button onClick={() => setShowAddModal(true)}
               className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-br from-primary to-primary-container text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-primary/20 active:scale-[0.99] transition-all">
-              <FiPlus size={15} /> Ajouter un cours
+              <FiPlus size={15} /> Ajouter un EDT
             </button>
             <button onClick={() => setShowImportModal(true)}
               className="flex items-center gap-2 px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl font-bold text-sm border border-outline-variant/20 hover:bg-surface-container-low transition-all">
@@ -350,14 +350,14 @@ export default function WeeklySchedulePage() {
         </div>
       )}
 
-      {/* ─── Modal Ajouter un cours ──────────────────────── */}
+      {/* ─── Modal Ajouter un EDT ───────────────────────── */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           onClick={() => { if (!adding) setShowAddModal(false); }}>
           <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-primary">Ajouter un cours</h2>
+              <h2 className="text-lg font-bold text-primary">Ajouter un EDT</h2>
               <button onClick={() => setShowAddModal(false)} disabled={adding}
                 className="p-1 hover:bg-surface-container-high rounded-lg transition-colors">
                 <FiX size={20} className="text-outline" />
@@ -436,7 +436,7 @@ export default function WeeklySchedulePage() {
                 <button type="submit" disabled={adding}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-br from-primary to-primary-container text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-primary/20 active:scale-[0.99] transition-all">
                   {adding ? <FiLoader className="animate-spin" /> : <FiCheck />}
-                  {adding ? 'Ajout en cours...' : 'Ajouter le cours'}
+                  {adding ? 'Ajout en cours...' : "Ajouter l'EDT"}
                 </button>
               </div>
             </form>
