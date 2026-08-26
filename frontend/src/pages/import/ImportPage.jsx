@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiUpload, FiCheck, FiAlertTriangle, FiTrash2, FiLoader, FiInfo, FiFileText } from 'react-icons/fi';
+import { FiUpload, FiCheck, FiAlertTriangle, FiTrash2, FiLoader, FiInfo } from 'react-icons/fi';
 import { MdPictureAsPdf, MdDescription, MdSchool } from 'react-icons/md';
 import api from '../../api/axios';
 import CsvTemplateDownload from '../../components/import/CsvTemplateDownload';
@@ -16,7 +16,6 @@ const STEP_RESULTAT = 2;
  * pas a un rechargement.
  */
 const TYPES = {
-  'etudiants': 'students',
   'cours-csv': 'csv-courses',
   'edt-csv':   'csv-schedule',
   'edt-ia':    'schedule',
@@ -34,11 +33,11 @@ const TYPES = {
  */
 export default function ImportPageRoute() {
   const { type } = useParams();
-  return <ImportPage key={type ?? 'etudiants'} type={type} />;
+  return <ImportPage key={type ?? 'cours-csv'} type={type} />;
 }
 
 function ImportPage({ type }) {
-  const tab = TYPES[type] ?? 'students';
+  const tab = TYPES[type] ?? 'csv-courses';
   const [file, setFile] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -49,7 +48,7 @@ function ImportPage({ type }) {
   const fileRef = useRef(null);
   const navigate = useNavigate();
 
-  const isCsvTab = tab === 'students' || tab === 'csv-courses' || tab === 'csv-schedule';
+  const isCsvTab = tab === 'csv-courses' || tab === 'csv-schedule';
   const isIaTab = tab === 'schedule' || tab === 'courses';
 
   const handleDrop = (e) => {
@@ -58,7 +57,7 @@ function ImportPage({ type }) {
     const f = e.dataTransfer.files[0];
     if (!f) return;
     const ext = '.' + f.name.split('.').pop().toLowerCase();
-    if (tab === 'students' || tab === 'csv-courses' || tab === 'csv-schedule') {
+    if (tab === 'csv-courses' || tab === 'csv-schedule') {
       if (ext === '.csv') {
         setFile(f); setError(''); setResult(null); setStep(STEP_UPLOAD);
       } else setError('Format non supporté. Utilisez CSV.');
@@ -66,57 +65,6 @@ function ImportPage({ type }) {
       if (ext === '.pdf') {
         setFile(f); setError(''); setResult(null); setStep(STEP_UPLOAD);
       } else setError('Format non supporté. Utilisez PDF.');
-    }
-  };
-
-  const handleImportStudents = async () => {
-    if (!file) return;
-    setUploading(true);
-    setError('');
-    setResult(null);
-    const formData = new FormData();
-    formData.append('file', file);
-    try {
-      const response = await api.post('/admin/import/students', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      const apiData = response.data;
-
-      if (apiData.success && apiData.data) {
-        setResult({
-          success: true,
-          imported: apiData.data.success ?? 0,
-          total: apiData.data.total ?? 0,
-          errors: apiData.data.errors || [],
-        });
-      } else if (apiData.data && typeof apiData.data.success === 'number') {
-        setResult({
-          success: apiData.data.success > 0,
-          imported: apiData.data.success ?? 0,
-          total: apiData.data.total ?? 0,
-          errors: apiData.data.errors || [],
-        });
-      } else {
-        const errMsg = apiData.message || JSON.stringify(apiData);
-        setResult({
-          success: false,
-          imported: 0,
-          total: 0,
-          errors: [errMsg],
-        });
-      }
-      setStep(STEP_RESULTAT);
-    } catch (err) {
-      console.error('[Import] API error:', err.response || err);
-      const message = err.response?.data?.message
-        || (err.response?.data?.errors ? JSON.stringify(err.response.data.errors) : null)
-        || err.message
-        || 'Erreur lors de l\'import';
-      setError(message);
-      setResult(null);
-      setStep(STEP_UPLOAD);
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -222,15 +170,13 @@ function ImportPage({ type }) {
   };
 
   const handleAction = () => {
-    if (tab === 'students') handleImportStudents();
-    else if (tab === 'csv-courses') handleCsvImport('/admin/import/csv/courses');
+    if (tab === 'csv-courses') handleCsvImport('/admin/import/csv/courses');
     else if (tab === 'csv-schedule') handleCsvImport('/admin/import/csv/schedule');
     else if (tab === 'schedule') handleAnalyzeSchedule();
     else if (tab === 'courses') handleAnalyzeCourses();
   };
 
   const actionLabels = {
-    students: 'Importer les étudiants',
     'csv-courses': 'Importer les cours (CSV)',
     'csv-schedule': "Importer l'emploi du temps (CSV)",
     schedule: 'Analyser avec IA',
@@ -240,13 +186,12 @@ function ImportPage({ type }) {
   // Le titre change avec l'onglet : « Importation » seul ne disait pas ce qu'on
   // s'apprete a importer, alors que la barre d'onglets le porte deja au-dessus.
   const titres = {
-    students:       ['Import des étudiants', 'Fichier CSV : une ligne par étudiant, identifiant unique généré automatiquement.'],
     'csv-courses':  ['Import des cours (CSV)', 'Unités d\'enseignement et éléments constitutifs, une ligne par EC.'],
     'csv-schedule': ["Import de l'emploi du temps (CSV)", 'Créneaux récurrents. Les conflits de salle sont détectés automatiquement.'],
     schedule:       ["Import de l'emploi du temps (IA)", 'Document PDF analysé par le module d\'extraction. Rien n\'est enregistré avant votre validation.'],
     courses:        ['Import de la maquette pédagogique (IA)', 'Document PDF analysé par le module d\'extraction. Rien n\'est enregistré avant votre validation.'],
   };
-  const [titre, sousTitre] = titres[tab] ?? titres.students;
+  const [titre, sousTitre] = titres[tab] ?? titres['csv-courses'];
 
   return (
     <div className="max-w-2xl">
@@ -272,7 +217,6 @@ function ImportPage({ type }) {
               {isCsvTab ? <FiUpload className="text-3xl text-primary" /> : tab === 'schedule' ? <MdPictureAsPdf className="text-4xl text-primary" /> : <MdSchool className="text-4xl text-primary" />}
             </div>
             <h3 className="text-lg font-semibold text-on-surface mb-2">
-              {tab === 'students' && 'Importez votre fichier étudiants'}
               {tab === 'csv-courses' && 'Importez vos cours (UE/EC) au format CSV'}
               {tab === 'csv-schedule' && "Importez votre emploi du temps au format CSV"}
               {tab === 'schedule' && 'Glissez votre emploi du temps PDF ici'}
@@ -379,7 +323,7 @@ function ImportPage({ type }) {
         <div className="mt-8 bg-surface-container-lowest rounded-xl p-8 shadow-sm border border-outline-variant/10 text-center">
           <FiLoader className="animate-spin mx-auto text-primary text-3xl mb-4" />
           <p className="font-semibold text-primary">
-            {tab === 'students' ? 'Analyse du fichier en cours...' : isIaTab ? 'Analyse IA en cours...' : 'Import CSV en cours...'}
+            {isIaTab ? 'Analyse IA en cours...' : 'Import CSV en cours...'}
           </p>
           <p className="text-sm text-on-surface-variant mt-1">Veuillez patienter</p>
         </div>
@@ -404,21 +348,6 @@ function ImportPage({ type }) {
             <div className="mt-3">
               <CsvTemplateDownload types={['edt']} />
             </div>
-          </div>
-        )}
-        {tab === 'students' && (
-          <div className="text-xs text-on-surface-variant space-y-1">
-            <p>Colonnes requises : <span className="font-mono font-medium text-primary">nom, prenom, email, matricule, filiere_code, annee_libelle</span></p>
-            <p className="mt-2">Fichier CSV avec séparateur virgule. Encodage UTF-8.</p>
-            <div className="mt-3 flex items-center gap-2 text-primary">
-              <FiFileText size={14} />
-              <span className="font-semibold">Étapes de l'import :</span>
-            </div>
-            <ol className="list-decimal list-inside space-y-1 ml-1 mt-1">
-              <li><span className="font-medium">Upload</span> — Sélection et envoi du fichier CSV</li>
-              <li><span className="font-medium">Analyse &amp; Validation</span> — Vérification des données ligne par ligne</li>
-              <li><span className="font-medium">Résultat</span> — Récapitulatif des importations réussies et des erreurs</li>
-            </ol>
           </div>
         )}
         {tab === 'schedule' && (

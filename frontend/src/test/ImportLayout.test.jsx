@@ -4,7 +4,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom'
 
 import ImportLayout from '../components/layout/ImportLayout'
 
-const monter = (chemin = '/import/etudiants') => render(
+const monter = (chemin = '/import/cours-csv') => render(
   <MemoryRouter initialEntries={[chemin]}>
     <Routes>
       <Route path="/import" element={<ImportLayout />}>
@@ -15,17 +15,23 @@ const monter = (chemin = '/import/etudiants') => render(
 )
 
 describe('ImportLayout', () => {
-  it('expose les cinq imports en onglets', () => {
+  it('expose les quatre imports en onglets', () => {
     monter()
-    for (const libelle of ['Étudiants', 'Cours (CSV)', 'EDT (CSV)', 'EDT (IA)', 'Cours (IA)']) {
+    for (const libelle of ['Cours (CSV)', 'EDT (CSV)', 'EDT (IA)', 'Cours (IA)']) {
       expect(screen.getByText(libelle)).toBeInTheDocument()
     }
+  })
+
+  it('n\'expose pas l\'import des etudiants', () => {
+    // Il appartient a la page de gestion des etudiants, au plus pres des
+    // donnees qu'il alimente.
+    monter()
+    expect(screen.queryByText('Étudiants')).not.toBeInTheDocument()
   })
 
   it('chaque onglet pointe vers sa propre route', () => {
     monter()
     const attendus = {
-      'Étudiants':   '/import/etudiants',
       'Cours (CSV)': '/import/cours-csv',
       'EDT (CSV)':   '/import/edt-csv',
       'EDT (IA)':    '/import/edt-ia',

@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { FiUpload, FiFileText } from 'react-icons/fi';
+import { FiFileText } from 'react-icons/fi';
 import { MdPictureAsPdf, MdSchool } from 'react-icons/md';
 
 /**
@@ -11,8 +11,12 @@ import { MdPictureAsPdf, MdSchool } from 'react-icons/md';
  * désormais sa route, ce qui le rend partageable et permet d'y revenir
  * directement.
  */
+// L'import des etudiants ne figure PAS ici : il vit dans la page de gestion des
+// etudiants, ou l'on voit le resultat de l'import juste apres l'avoir lance.
+// Il etait accessible aux deux endroits, avec deux ecrans differents pour le
+// meme endpoint — l'un des deux devait partir, et c'est celui qui etait loin
+// des donnees concernees.
 const tabs = [
-  { to: '/import/etudiants',    label: 'Étudiants',   icon: FiUpload },
   { to: '/import/cours-csv',    label: 'Cours (CSV)', icon: FiFileText },
   { to: '/import/edt-csv',      label: 'EDT (CSV)',   icon: FiFileText },
   { to: '/import/edt-ia',       label: 'EDT (IA)',    icon: MdPictureAsPdf },

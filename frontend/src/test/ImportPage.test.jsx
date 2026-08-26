@@ -27,12 +27,6 @@ const monter = (segment) => render(
 describe('ImportPage', () => {
   beforeEach(() => { vi.clearAllMocks() })
 
-  it('titre et zone de depot pour l\'import des etudiants', () => {
-    monter('etudiants')
-    expect(screen.getByText('Import des étudiants')).toBeInTheDocument()
-    expect(screen.getByText(/Importez votre fichier étudiants/)).toBeInTheDocument()
-  })
-
   it.each([
     ['cours-csv',    'Import des cours (CSV)',                 /Importez vos cours/],
     ['edt-csv',      "Import de l'emploi du temps (CSV)",      /emploi du temps au format CSV/],
@@ -44,15 +38,23 @@ describe('ImportPage', () => {
     expect(screen.getByText(consigne)).toBeInTheDocument()
   })
 
-  it('un segment inconnu retombe sur l\'import des etudiants', () => {
+  it('n\'expose pas l\'import des etudiants', () => {
+    // Il vit uniquement dans la page de gestion des etudiants : le proposer ici
+    // aussi donnait deux ecrans differents pour le meme endpoint.
+    monter('etudiants')
+    expect(screen.queryByText('Import des étudiants')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Importez votre fichier étudiants/)).not.toBeInTheDocument()
+  })
+
+  it('un segment inconnu retombe sur le premier import', () => {
     // Plutot qu'un ecran vide : le layout ne propose que des segments valides,
     // mais une URL saisie a la main ne doit pas casser la page.
     monter('segment-inexistant')
-    expect(screen.getByText('Import des étudiants')).toBeInTheDocument()
+    expect(screen.getByText('Import des cours (CSV)')).toBeInTheDocument()
   })
 
   it('n\'affiche plus de barre d\'onglets : elle appartient au layout', () => {
-    monter('etudiants')
+    monter('cours-csv')
     // Les libelles des onglets ne doivent plus apparaitre dans la page elle-meme,
     // sinon ils seraient affiches deux fois sous le layout.
     expect(screen.queryByText('EDT (IA)')).not.toBeInTheDocument()

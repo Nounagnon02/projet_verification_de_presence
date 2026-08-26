@@ -198,7 +198,7 @@ function App() {
                   la page : la section ne ressemblait a aucune autre, et l'onglet
                   actif ne se lisait pas dans l'URL. */}
               <Route path="import" element={<ImportLayout />}>
-                <Route index element={<Navigate to="etudiants" replace />} />
+                <Route index element={<Navigate to="cours-csv" replace />} />
                 <Route path=":type" element={<ImportPage />} />
               </Route>
               <Route path="import/ai-analysis" element={<AIAnalysisProgressPage />} />
