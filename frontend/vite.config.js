@@ -13,7 +13,11 @@ export default defineConfig(({ mode }) => {
   // contexte ou « process » n'est pas declare pour ESLint, et loadEnv lit en
   // plus les fichiers .env du projet.
   const env = loadEnv(mode, process.cwd(), '')
-  const BACKEND = env.VITE_BACKEND_URL || 'http://localhost:8000'
+  // « 127.0.0.1 » et non « localhost » : ce dernier resout d'abord en IPv6
+  // (::1) sur la plupart des systemes, alors que « php artisan serve » n'ecoute
+  // qu'en IPv4. Le proxy repondait alors 502 pendant que le backend, joint
+  // directement, repondait 200 — un ecart difficile a interpreter.
+  const BACKEND = env.VITE_BACKEND_URL || 'http://127.0.0.1:8000'
 
   return {
   plugins: [react()],
