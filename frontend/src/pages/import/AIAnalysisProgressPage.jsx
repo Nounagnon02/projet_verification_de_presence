@@ -25,7 +25,11 @@ function lireAnalyseEnSession() {
   let stored;
 
   try {
-    stored = JSON.parse(sessionStorage.getItem('import_analysis'));
+    // « import_en_cours » et non « import_analysis » : cette derniere porte le
+    // RESULTAT de l'analyse d'un emploi du temps, ecrit par cette page elle-meme
+    // un peu plus bas. Lire et ecrire la meme cle faisait qu'un second import
+    // relisait le resultat du premier, lequel ne contient aucun analysis_id.
+    stored = JSON.parse(sessionStorage.getItem('import_en_cours'));
   } catch {
     stored = null;
   }
@@ -39,6 +43,11 @@ function lireAnalyseEnSession() {
   if (!id || Number.isNaN(id)) {
     return { erreur: "Identifiant d'analyse invalide. Veuillez relancer l'import." };
   }
+
+  // Consommee : sans cela, revenir sur cette page apres coup relancerait le
+  // suivi d'une analyse deja validee, et renverrait vers un ecran de validation
+  // dont les donnees ont ete traitees.
+  sessionStorage.removeItem('import_en_cours');
 
   return { id, type: stored.type };
 }

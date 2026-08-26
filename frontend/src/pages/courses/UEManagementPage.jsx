@@ -99,11 +99,35 @@ export default function UEManagementPage() {
       const { data } = await api.post('/admin/import/courses', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      const analysisId = data?.data?.id || data?.analysis_id;
-      if (analysisId) {
-        sessionStorage.setItem('analysis_id', analysisId);
-        sessionStorage.setItem('import_type', 'courses');
+      // L'API repond { success, message, data: { analysis_id, status } }.
+      // On lisait « data.data.id » puis « data.analysis_id » a la racine :
+      // aucune des deux n'existe, si bien que l'identifiant etait TOUJOURS
+      // indefini et que l'ecran de progression n'avait rien a suivre.
+      const charge = data?.data ?? data;
+      const analysisId = charge?.analysis_id ?? charge?.id ?? null;
+      if (!analysisId) {
+        // Sans identifiant, l'ecran de progression n'a rien a suivre : on le dit
+        // ici plutot que de l'y envoyer se plaindre.
+        setImportError("Le serveur n'a pas renvoyé d'identifiant d'analyse. Relancez l'import.");
+        setImportUploading(false);
+        return;
       }
+
+      // Passage de relais vers l'ecran de progression. Une seule cle, un seul
+      // objet : deux cles separees ne pouvaient pas etre ecrites de facon
+      // atomique, et surtout l'ecran de progression n'en lisait aucune des
+      // deux — il attendait « import_analysis », que personne n'ecrivait. Le
+      // serveur analysait le document, l'interface jetait le resultat et
+      // affichait « Aucune analyse en cours ».
+      //
+      // La cle est distincte de « import_analysis », qui porte le RESULTAT de
+      // l'analyse d'un emploi du temps : la meme cle pour le passage de relais
+      // et pour le resultat se serait ecrasee d'un import a l'autre.
+      sessionStorage.setItem('import_en_cours', JSON.stringify({
+        analysis_id: analysisId,
+        type: 'courses',
+      }));
+
       navigate('/import/ai-analysis');
     } catch (err) {
       setImportError(err.response?.data?.message || 'Erreur lors de l\'import du fichier.');
