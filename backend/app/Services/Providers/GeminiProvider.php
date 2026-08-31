@@ -20,8 +20,15 @@ class GeminiProvider implements AiProviderInterface
     private string $model;
     private string $baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
 
+    /**
+     * Le classificateur remplace l'ancien filtre de sortie, qui ecartait en
+     * silence tout creneau sans date calendaire.
+     */
+    private \App\Services\Schedule\ClassificateurExtraction $classificateur;
+
     public function __construct(?string $apiKey)
     {
+        $this->classificateur = new \App\Services\Schedule\ClassificateurExtraction();
         $this->apiKey = $apiKey ?? '';
         $this->model  = (string) config('ai.providers.gemini.model', 'gemini-3.6-flash');
     }
@@ -175,20 +182,46 @@ class GeminiProvider implements AiProviderInterface
             ], $events);
         }
 
-        $events = array_values(array_filter($events, fn($e) => !empty($e['ec']) && !empty($e['date'])));
+        // ANCIEN CODE, cause directe du defaut :
+        //
+        //   array_filter($events, fn($e) => !empty($e['ec']) && !empty($e['date']))
+        //
+        // Tout creneau sans date calendaire etait ecarte EN SILENCE. Les emplois du
+        // temps hebdomadaires — la forme habituelle a l'UAC — n'en ont aucune : ils
+        // rendaient donc systematiquement vide, et l'utilisateur ne voyait qu'un
+        // ecran sans creneaux, sans rien qui distingue un document vide d'un
+        // document dont le contenu avait ete jete.
+        //
+        // Le classificateur remplace ce filtre : il normalise ce qui peut l'etre,
+        // conserve le MOTIF de chaque ecart, et observe le document pour dire si
+        // celui-ci est reellement vide.
+        $diagnostic = $this->classificateur->classer(array_values($events), $filePath);
 
-        $confidence = $this->calculateConfidence($events);
-        $courses = $this->extractUniqueCourses($events);
+        $creneaux = $diagnostic->retenus;
+        $courses  = $this->extractUniqueCourses($creneaux);
+
+        // La confiance ne peut plus se deduire du seul nombre de creneaux : un
+        // document dont la moitie des creneaux a ete ecartee n'est pas fiable a
+        // moitie, il demande une relecture. Elle reflete donc la proportion
+        // effectivement comprise.
+        $total = count($creneaux) + count($diagnostic->ecartes);
+        $confidence = $total === 0 ? 0.0 : round(count($creneaux) / $total, 2);
 
         return AnalysisResult::completed(
             data: [
-                'events'  => $events,
-                'courses' => $courses,
+                // « events » reste la cle attendue par les ecrans existants.
+                'events'     => $creneaux,
+                'courses'    => $courses,
+                'diagnostic' => $diagnostic->toArray(),
             ],
             confidence: $confidence,
-            warning: $confidence < 0.70 ? 'Le score de confiance est inférieur à 70%. Vérification manuelle requise.' : null,
+            warning: $diagnostic->estExploitable() && $confidence >= 0.70
+                ? null
+                : $diagnostic->message(),
             metadata: [
-                'total_events'  => count($events),
+                'statut'        => $diagnostic->statut,
+                'total_events'  => count($creneaux),
+                'total_ecartes' => count($diagnostic->ecartes),
                 'total_courses' => count($courses),
                 'filename'      => basename($filePath),
             ],
@@ -261,15 +294,51 @@ class GeminiProvider implements AiProviderInterface
         return $courses;
     }
 
+    /**
+     * Consigne d'extraction d'un emploi du temps.
+     *
+     * L'ancienne version exigeait « date (format YYYY-MM-DD) ». Or l'emploi du
+     * temps universitaire habituel est HEBDOMADAIRE : ses colonnes sont
+     * « Lundi … Samedi », ses lignes des bandes horaires « 8h – 13h ». Aucune
+     * date. Le modèle suivait donc correctement la consigne et rendait un tableau
+     * vide — sur les quatre documents hebdomadaires du corpus, mesuré à 0 %.
+     *
+     * La consigne accepte désormais les DEUX formes et interdit explicitement
+     * d'inventer une date absente : un créneau daté à tort crée un cours fantôme,
+     * donc des absences pour des étudiants réels.
+     */
     private function getSchedulePrompt(): string
     {
-        return "Tu es un assistant administratif de l'UAC (Université d'Abomey-Calavi). " .
-               "Analyse ce PDF d'emploi du temps universitaire et extraits TOUS les événements de cours " .
-               "sous forme d'un tableau JSON structuré. " .
-               "Chaque événement DOIT contenir : ec (nom du cours), date (format YYYY-MM-DD), " .
-               "heure_debut (HH:mm), heure_fin (HH:mm), salle (si disponible). " .
-               "Réponds UNIQUEMENT avec le JSON. " .
-               "Si le document est un PDF scanné sans couche texte, réponds avec un tableau vide et un avertissement.";
+        return implode("\n", [
+            "Tu es un assistant administratif de l'Universite d'Abomey-Calavi.",
+            "Analyse ce PDF d'emploi du temps et extrais TOUS les creneaux de cours en JSON.",
+            "",
+            "Chaque creneau porte :",
+            "- ec : intitule du cours tel qu'ecrit dans le document (obligatoire) ;",
+            "- ec_code : le code de l'EC s'il figure dans le document, sinon omets le champ ;",
+            "- jour : le jour de la semaine tel qu'ecrit (Lundi, Mardi...) si le document est",
+            "  un emploi du temps hebdomadaire ;",
+            "- date : au format YYYY-MM-DD UNIQUEMENT si le document donne une date calendaire",
+            "  explicite. N'INVENTE JAMAIS de date : si le document ne donne qu'un jour de la",
+            "  semaine, renseigne « jour » et OMETS « date » ;",
+            "- heure_debut et heure_fin : recopie la notation du document (8h, 08:00, 14h30)",
+            "  sans la convertir ;",
+            "- salle : le lieu s'il est indique ;",
+            "- enseignant : le ou les enseignants s'ils sont indiques, separes par / ;",
+            "- filiere : la filiere ou le groupe si la cellule le precise. Un meme document",
+            "  peut couvrir plusieurs filieres, chaque cellule indiquant la sienne ;",
+            "- type_seance : cours, TD, TP, evaluation... si le document le precise.",
+            "",
+            "REGLES ABSOLUES :",
+            "1. N'invente aucune donnee. Un champ absent du document est omis, jamais devine.",
+            "2. Une cellule vide n'est pas un creneau : ne la rapporte pas.",
+            "3. Si une cellule empile plusieurs informations (filiere, intitule, volume, salle,",
+            "   enseignant), separe-les dans les champs correspondants.",
+            "4. Si le document ne contient aucun emploi du temps, renvoie un tableau vide.",
+            "5. Si le document est un scan sans couche texte, renvoie un tableau vide.",
+            "",
+            'Reponds UNIQUEMENT avec le JSON, sous la forme {"events": [ ... ]}.',
+        ]);
     }
 
     private function getCoursesPrompt(): string

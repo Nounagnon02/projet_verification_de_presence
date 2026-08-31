@@ -1236,6 +1236,97 @@ paths:
         '201':
           description: Événements créés
 
+  /admin/import/schedule/verifier:
+    post:
+      tags: [Admin Imports]
+      summary: Vérifier un emploi du temps sans rien enregistrer
+      description: |
+        Normalise et valide chaque créneau extrait, puis rend un rapport ligne
+        par ligne. AUCUN effet de bord : rien n'est écrit en base.
+
+        Chaque ligne porte un statut — valide, invalide, ambigu, introuvable,
+        conflit, doublon — et le motif exact du refus le cas échéant.
+
+        Les créneaux hebdomadaires (jour de la semaine) et datés sont acceptés.
+        L'ancien chemin exigeait une date calendaire et écartait le reste en
+        silence.
+      security:
+        - sanctum: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [creneaux, filiere_id, annee_id]
+              properties:
+                creneaux:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    properties:
+                      ec:          { type: string, example: Algorithmique avancée }
+                      ec_code:     { type: string, example: INF1322 }
+                      jour:        { type: string, example: Lundi, description: "Jour de la semaine, pour un emploi du temps hebdomadaire" }
+                      date:        { type: string, format: date, description: "Uniquement si le document donne une date explicite" }
+                      heure_debut: { type: string, example: 8h }
+                      heure_fin:   { type: string, example: 10h }
+                      salle:       { type: string, example: A-101 }
+                      enseignant:  { type: string, example: M. Ratheil HOUNDJI / Mme. Mélène TONOU }
+                      type_seance: { type: string, example: TP }
+                filiere_id: { type: integer }
+                annee_id:   { type: integer }
+      responses:
+        '200':
+          description: Rapport de vérification
+        '403':
+          description: Filière hors de votre établissement
+        '422':
+          description: Requête invalide
+
+  /admin/import/schedule/confirmer:
+    post:
+      tags: [Admin Imports]
+      summary: Enregistrer un emploi du temps vérifié
+      description: |
+        REVALIDE l'intégralité du lot — le rapport rendu au client n'est jamais
+        une autorisation, la base ayant pu changer entre-temps — puis écrit en
+        une seule transaction.
+
+        Tout ou rien : si une ligne est refusée, RIEN n'est écrit, sauf demande
+        explicite via `ignorer_les_refuses`.
+
+        Les créneaux sont enregistrés dans `emploi_du_temps` (créneaux
+        hebdomadaires), que la commande `events:generate-from-schedule`
+        matérialise ensuite en événements datés.
+      security:
+        - sanctum: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [creneaux, filiere_id, annee_id]
+              properties:
+                creneaux:   { type: array, minItems: 1, items: { type: object } }
+                filiere_id: { type: integer }
+                annee_id:   { type: integer }
+                ignorer_les_refuses:
+                  type: boolean
+                  default: false
+                  description: |
+                    N'enregistre que les lignes valides et rapporte les autres.
+                    Décision explicite de l'administrateur, jamais un défaut.
+      responses:
+        '201':
+          description: Créneaux enregistrés
+        '403':
+          description: Filière hors de votre établissement
+        '422':
+          description: Lignes refusées, rien n'a été écrit
+
   /admin/import/validate-courses:
     post:
       tags: [Admin Imports]

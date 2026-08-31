@@ -3,16 +3,35 @@ import { useNavigate } from 'react-router-dom';
 import { FiChevronRight, FiSave, FiAlertCircle, FiInfo, FiZoomIn, FiCheck, FiLoader } from 'react-icons/fi';
 import { MdAutoAwesome } from 'react-icons/md';
 import api from '../../api/axios';
+import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 
 const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
+/**
+ * Repère local des chevauchements, pour un premier signalement à l'écran.
+ *
+ * L'AUTORITÉ reste le serveur : /import/schedule/verifier applique les règles
+ * académiques et les conflits contre la base, que le navigateur ne connaît pas.
+ * Cette fonction ne fait que colorer la liste avant l'appel.
+ *
+ * Elle comparait « a.date !== b.date ». Sur des créneaux hebdomadaires, qui
+ * n'ont pas de date, les deux valeurs valaient undefined : la comparaison des
+ * heures se faisait donc TOUS JOURS CONFONDUS, et un cours du lundi entrait en
+ * conflit avec un cours du mardi à la même heure.
+ */
 function detectConflicts(events) {
   const conflicts = new Set();
+  const memeJour = (a, b) => {
+    if (a.date && b.date) return a.date === b.date;
+    if (a.jour_semaine && b.jour_semaine) return a.jour_semaine === b.jour_semaine;
+    return false;
+  };
+
   for (let i = 0; i < events.length; i++) {
     for (let j = i + 1; j < events.length; j++) {
       const a = events[i];
       const b = events[j];
-      if (a.date !== b.date) continue;
+      if (!memeJour(a, b)) continue;
       if (a.heure_debut < b.heure_fin && b.heure_debut < a.heure_fin) {
         conflicts.add(i);
         conflicts.add(j);
@@ -39,16 +58,30 @@ function lireAnalyseEnSession() {
 
   try {
     const parsed = JSON.parse(stored);
-    const root = parsed?.data || parsed;
-    // Nouveau format : data.data.events ; ancien : data.data (tableau).
-    const eventsData = root?.data?.events || (Array.isArray(root?.data) ? root?.data : []);
+
+    // L'API d'état d'analyse répond { analysis_id, type, status, result }, où
+    // « result » porte { events, courses, diagnostic }. La lecture ne regardait
+    // que « data », jamais « result » : les créneaux n'étaient donc JAMAIS
+    // trouvés, et l'écran affichait une liste vide quelle que soit la qualité de
+    // l'extraction. CourseValidationPage, lui, regardait bien « result ».
+    const root = parsed?.result || parsed?.data || parsed;
+
+    const eventsData = root?.events
+      || root?.data?.events
+      || (Array.isArray(root?.data) ? root.data : [])
+      || [];
+
     const events = Array.isArray(eventsData) ? eventsData : [];
 
     return {
       analyse: {
         ...parsed,
         events,
-        score: root?.score_de_confiance ?? 0.9,
+        // Diagnostic d'extraction : distingue un document vide d'un document
+        // dont le contenu a été détecté mais pas compris. Sans lui, l'écran
+        // affichait « aucun créneau » dans les deux cas.
+        diagnostic: root?.diagnostic ?? root?.data?.diagnostic ?? null,
+        score: parsed?.score_de_confiance ?? root?.score_de_confiance ?? root?.confidence ?? 0.9,
         filename: root?.metadata?.filename || 'Emploi du temps',
       },
       // Tout est sélectionné par défaut.
@@ -68,6 +101,17 @@ export default function ScheduleValidationPage() {
   const analysisData = initial?.analyse ?? null;
   const [selected, setSelected] = useState(() => initial?.selection ?? {});
   const [saving, setSaving] = useState(false);
+
+  // Destination de l'import. L'ancien chemin n'en demandait aucune, alors que le
+  // serveur l'exige : c'est l'une des raisons pour lesquelles il ne pouvait pas
+  // aboutir.
+  const filtres = useFiltresAcademiques({ preselectionnerAnneeActive: true });
+
+  // Rapport ligne par ligne rendu par le serveur : statut et motif de chaque
+  // créneau. Il remplace la devinette côté client, qui ne connaissait ni le
+  // référentiel des EC ni l'état de la base.
+  const [rapport, setRapport] = useState(null);
+  const [ignorerRefuses, setIgnorerRefuses] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
 
@@ -91,8 +135,12 @@ export default function ScheduleValidationPage() {
     setSelected((prev) => ({ ...prev, [idx]: !prev[idx] }));
   };
 
-  const getDayName = (dateStr) => {
-    if (!dateStr) return '—';
+  // Un créneau hebdomadaire porte jour_semaine (1 = lundi … 7 = dimanche) et
+  // aucune date. Ne savoir lire qu'une date affichait « — » sur toute la liste.
+  const getDayName = (dateStr, jourSemaine) => {
+    if (!dateStr) {
+      return jourSemaine ? DAY_NAMES[jourSemaine % 7] : '—';
+    }
     const d = new Date(dateStr + 'T12:00:00');
     return DAY_NAMES[d.getDay()] || '—';
   };
@@ -111,10 +159,24 @@ export default function ScheduleValidationPage() {
   const selectedCount = Object.values(selected).filter(Boolean).length;
   const conflictCount = conflicts.size;
 
-  const handleSave = async () => {
+  /**
+   * Vérifie le lot auprès du serveur, SANS rien enregistrer.
+   *
+   * L'ancien code postait directement vers /import/validate-events, qui exige
+   * ec_id, filiere_id et annee_id par événement. La page envoyait les créneaux
+   * bruts — ec, date, heure — donc l'appel repartait en 422 à tous les coups :
+   * l'import d'emploi du temps par IA n'a jamais pu aboutir.
+   */
+  const handleVerify = async () => {
     const toSave = events.filter((_, i) => selected[i]);
+
     if (toSave.length === 0) {
-      setError('Sélectionnez au moins un événement à importer.');
+      setError('Sélectionnez au moins un créneau à importer.');
+      return;
+    }
+
+    if (!filtres.filiere || !filtres.annee) {
+      setError("Choisissez la filière et l'année académique de destination.");
       return;
     }
 
@@ -122,16 +184,51 @@ export default function ScheduleValidationPage() {
     setError('');
 
     try {
-      // Envoyer les événements bruts au backend pour création
-      const { data: res } = await api.post('/admin/import/validate-events', { events: toSave });
-      if (res.success) {
-        setSaved(true);
-        // Stocker le résultat pour la page suivante
-        sessionStorage.setItem('import_events_result', JSON.stringify(res));
-      } else {
-        setError(res.message || 'Erreur lors de la sauvegarde.');
+      const { data: res } = await api.post('/admin/import/schedule/verifier', {
+        creneaux: toSave,
+        filiere_id: Number(filtres.filiere),
+        annee_id: Number(filtres.annee),
+      });
+
+      setRapport(res.data ?? null);
+
+      if (!res.success) {
+        setError(res.message || 'La vérification a échoué.');
       }
     } catch (err) {
+      setError(err.response?.data?.message || 'Erreur de connexion au serveur.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /**
+   * Enregistre après vérification. Le serveur REVALIDE : le rapport affiché
+   * n'est pas une autorisation.
+   */
+  const handleSave = async () => {
+    const toSave = events.filter((_, i) => selected[i]);
+
+    setSaving(true);
+    setError('');
+
+    try {
+      const { data: res } = await api.post('/admin/import/schedule/confirmer', {
+        creneaux: toSave,
+        filiere_id: Number(filtres.filiere),
+        annee_id: Number(filtres.annee),
+        ignorer_les_refuses: ignorerRefuses,
+      });
+
+      if (res.success) {
+        setSaved(true);
+        sessionStorage.setItem('import_events_result', JSON.stringify(res));
+      } else {
+        setRapport(res.data ?? null);
+        setError(res.message || 'Enregistrement refusé.');
+      }
+    } catch (err) {
+      setRapport(err.response?.data?.data ?? null);
       setError(err.response?.data?.message || 'Erreur de connexion au serveur.');
     } finally {
       setSaving(false);
@@ -148,9 +245,17 @@ export default function ScheduleValidationPage() {
             <FiCheck className="text-secondary" size={32} />
           </div>
           <h1 className="text-2xl font-bold font-headline text-primary mb-3">Événements importés !</h1>
-          <p className="text-on-surface-variant mb-2">{selectedCount} événement(s) créé(s) avec succès.</p>
+          {/* « événements » désignait autre chose : ce sont des CRÉNEAUX
+              hebdomadaires, que la commande events:generate-from-schedule
+              matérialisera ensuite en événements datés. Et le décompte affiché
+              était celui des lignes SÉLECTIONNÉES, non des lignes réellement
+              enregistrées — deux nombres qui diffèrent dès qu'une ligne est
+              refusée. */}
+          <p className="text-on-surface-variant mb-2">
+            {rapport?.valides ?? selectedCount} créneau(x) ajouté(s) à l&apos;emploi du temps.
+          </p>
           {conflictCount > 0 && (
-            <p className="text-xs text-warning mb-8">{conflictCount} conflit(s) ont été exclus.</p>
+            <p className="text-xs text-warning mb-8">{conflictCount} chevauchement(s) repéré(s) à l&apos;écran.</p>
           )}
           <div className="flex gap-3 justify-center">
             <button onClick={() => navigate('/schedules/weekly')}
@@ -239,8 +344,8 @@ export default function ScheduleValidationPage() {
                           </div>
                         </td>
                         <td className="py-5 px-6">
-                          <span className="text-sm font-medium">{getDayName(event.date)}</span>
-                          <span className="text-xs text-on-surface-variant block">{event.date || '—'}</span>
+                          <span className="text-sm font-medium">{getDayName(event.date, event.jour_semaine)}</span>
+                          <span className="text-xs text-on-surface-variant block">{event.date || 'chaque semaine'}</span>
                         </td>
                         <td className="py-5 px-6">
                           <div className="flex items-center gap-2 font-mono text-sm text-primary">
@@ -290,6 +395,71 @@ export default function ScheduleValidationPage() {
 
         {/* Sidebar */}
         <aside className="w-full lg:w-80 space-y-6">
+          {/* Destination. L'ancien chemin n'en demandait aucune, alors que le
+              serveur exige filiere_id et annee_id : l'appel repartait en 422. */}
+          <div className="bg-surface-container-lowest rounded-xl p-5 shadow-sm space-y-4">
+            <h3 className="font-bold text-primary text-sm">Destination</h3>
+
+            <div className="space-y-1">
+              <label htmlFor="edt-annee" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Année académique</label>
+              <select id="edt-annee" value={filtres.annee} onChange={(e) => { filtres.setAnnee(e.target.value); setRapport(null); }}
+                className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50">
+                <option value="">Choisir une année…</option>
+                {filtres.annees.map((a) => (
+                  <option key={a.id} value={a.id}>{a.libelle}{a.active ? ' (active)' : ''}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label htmlFor="edt-filiere" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Filière</label>
+              <select id="edt-filiere" value={filtres.filiere} onChange={(e) => { filtres.setFiliere(e.target.value); setRapport(null); }}
+                disabled={!filtres.annee} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50">
+                <option value="">Choisir une filière…</option>
+                {filtres.filieres.map((f) => (
+                  <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>
+                ))}
+              </select>
+            </div>
+
+            <button onClick={handleVerify} disabled={saving || !filtres.filiere || !filtres.annee}
+              className="w-full py-2.5 rounded-lg bg-surface-container-high text-on-surface font-bold text-sm hover:bg-surface-container transition-colors disabled:opacity-50">
+              {saving ? 'Vérification…' : 'Vérifier sans enregistrer'}
+            </button>
+          </div>
+
+          {/* Rapport du serveur. Il remplace la devinette côté client, qui ne
+              connaissait ni le référentiel des EC ni l'état de la base. */}
+          {rapport && (
+            <div className="bg-surface-container-lowest rounded-xl p-5 shadow-sm space-y-3">
+              <h3 className="font-bold text-primary text-sm">Rapport de vérification</h3>
+
+              <p className="text-xs text-on-surface-variant">
+                {rapport.valides ?? 0} créneau(x) sur {rapport.total ?? 0} sont enregistrables.
+              </p>
+
+              <ul className="space-y-2 max-h-64 overflow-y-auto">
+                {(rapport.lignes ?? []).filter((l) => l.statut !== 'valide').map((l) => (
+                  <li key={l.rang} className="text-xs p-2 rounded-lg bg-error-container/20 text-on-error-container">
+                    <span className="font-bold">Ligne {l.rang} — {l.statut}</span>
+                    <span className="block mt-0.5">{l.motifs.join(' ')}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {(rapport.valides ?? 0) < (rapport.total ?? 0) && (
+                <label className="flex items-start gap-2 text-xs text-on-surface-variant cursor-pointer">
+                  <input type="checkbox" checked={ignorerRefuses} onChange={(e) => setIgnorerRefuses(e.target.checked)}
+                    className="mt-0.5" />
+                  <span>
+                    N&apos;enregistrer que les {rapport.valides ?? 0} ligne(s) valide(s) et ignorer les autres.
+                    Sans cette case, rien ne sera écrit tant qu&apos;une ligne est refusée.
+                  </span>
+                </label>
+              )}
+            </div>
+          )}
+
           <div className="bg-surface-container-low rounded-xl p-1 shadow-sm">
             <div className="bg-surface-container-lowest rounded-lg p-5">
               <div className="flex items-center justify-between mb-4">
@@ -346,7 +516,8 @@ export default function ScheduleValidationPage() {
               className="px-6 py-2.5 rounded-lg font-bold text-sm text-on-surface hover:bg-surface-container transition-all active:scale-95">
               Annuler
             </button>
-            <button onClick={handleSave} disabled={saving || selectedCount === 0}
+            <button onClick={handleSave}
+              disabled={saving || selectedCount === 0 || !filtres.filiere || !filtres.annee || rapport === null}
               className="px-8 py-2.5 rounded-lg font-bold text-sm text-white bg-gradient-to-br from-primary to-primary-container shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2">
               <FiSave className="text-sm" />
               {saving ? <><FiLoader className="animate-spin" /> Enregistrement...</> : 'Valider et enregistrer'}

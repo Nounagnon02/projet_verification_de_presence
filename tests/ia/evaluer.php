@@ -78,6 +78,44 @@ function normaliser(mixed $v): string
  *
  * @return array{0:int,1:int,2:int,3:int} [champs corrects, champs attendus, inventés, produits]
  */
+/**
+ * Repère temporel canonique d'un créneau, quelle que soit la forme.
+ *
+ * Le harnais comparait le champ « date » des deux côtés. Depuis que le pipeline
+ * accepte les emplois du temps HEBDOMADAIRES, un créneau porte « jour_semaine »
+ * (1 = lundi … 7 = dimanche) et aucune date : la comparaison ne trouvait plus
+ * rien et rapportait 0 % d'extraction avec 100 % de faux positifs, sur des
+ * extractions pourtant exactes.
+ *
+ * Mesurer contre une forme que le contrat n'a plus fait passer une extraction
+ * correcte pour un échec total. On ramène donc les deux côtés au même repère.
+ */
+function repereTemporel(array $creneau): string
+{
+    static $jours = [1 => 'lundi', 2 => 'mardi', 3 => 'mercredi', 4 => 'jeudi',
+                     5 => 'vendredi', 6 => 'samedi', 7 => 'dimanche'];
+
+    if (!empty($creneau['date'])) {
+        return normaliser((string) $creneau['date']);
+    }
+
+    if (!empty($creneau['jour_semaine']) && isset($jours[(int) $creneau['jour_semaine']])) {
+        return $jours[(int) $creneau['jour_semaine']];
+    }
+
+    return normaliser((string) ($creneau['jour'] ?? ''));
+}
+
+/** Désignation de l'EC, quel que soit le champ qui la porte. */
+function designationEc(array $creneau): string
+{
+    return normaliser(trim(implode(' ', array_filter([
+        $creneau['ec'] ?? null,
+        $creneau['ec_code'] ?? null,
+        $creneau['ec_libelle'] ?? null,
+    ]))));
+}
+
 function comparerListes(array $extraits, array $attendus, array $clesIdentite, array $clesComparees): array
 {
     $indexer = function (array $liste) use ($clesIdentite) {
@@ -225,35 +263,45 @@ foreach ($index['liste'] as $doc) {
         // attendu y FIGURE, plutot qu'une egalite stricte.
         $extraits = extraireListe($brut['data'] ?? null, ['events', 'creneaux', 'schedule', 'seances']);
 
+        // Les deux cotes sont ramenes au meme repere temporel : une date
+        // calendaire pour un planning date, un jour de semaine pour un emploi du
+        // temps hebdomadaire.
         $attendusNormalises = array_map(fn ($c) => [
-            'date'        => $c['jour'],
+            'repere'      => repereTemporel($c),
             'heure_debut' => $c['heure_debut'],
             'heure_fin'   => $c['heure_fin'],
             'salle'       => $c['salle'],
             'ec'          => $c['ec_code'],
         ], $attendu['creneaux']);
 
+        $extraitsNormalises = array_map(fn ($e) => is_array($e) ? [
+            'repere'      => repereTemporel($e),
+            'heure_debut' => $e['heure_debut'] ?? '',
+            'heure_fin'   => $e['heure_fin'] ?? '',
+            'salle'       => $e['salle'] ?? '',
+            'ec'          => designationEc($e),
+        ] : [], $extraits);
+
         [$ok, $total, $inventes, $produits] = comparerListes(
-            $extraits,
+            $extraitsNormalises,
             $attendusNormalises,
-            ['date', 'heure_debut'],
-            ['date', 'heure_debut', 'heure_fin', 'salle'],
+            ['repere', 'heure_debut'],
+            ['repere', 'heure_debut', 'heure_fin', 'salle'],
         );
 
         // Le code d'EC, compte a part car sa comparaison est une inclusion.
         $parIdentite = [];
-        foreach ($extraits as $e) {
-            if (!is_array($e)) {
+        foreach ($extraitsNormalises as $e) {
+            if ($e === []) {
                 continue;
             }
-            $parIdentite[normaliser($e['date'] ?? '') . '|' . normaliser($e['heure_debut'] ?? '')] = $e;
+            $parIdentite[$e['repere'] . '|' . normaliser($e['heure_debut'])] = $e;
         }
         foreach ($attendusNormalises as $a) {
             $total++;
-            $cle = normaliser($a['date']) . '|' . normaliser($a['heure_debut']);
+            $cle = $a['repere'] . '|' . normaliser($a['heure_debut']);
             $trouve = $parIdentite[$cle] ?? null;
-            if ($trouve !== null
-                && str_contains(normaliser($trouve['ec'] ?? ''), normaliser($a['ec']))) {
+            if ($trouve !== null && str_contains($trouve['ec'], normaliser($a['ec']))) {
                 $ok++;
             }
         }

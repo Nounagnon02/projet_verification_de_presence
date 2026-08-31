@@ -184,6 +184,13 @@ Route::middleware(['auth:sanctum', 'ability:admin', 'scoped.etablissement', 'pas
     Route::post('/import/schedule', [ImportController::class, 'schedule']);
     Route::post('/import/courses', [ImportController::class, 'courses']);
     Route::post('/import/validate-events', [ImportController::class, 'validateEvents']);
+
+    // Import d'emploi du temps en deux temps : vérification sans effet de bord,
+    // puis persistance transactionnelle qui REVALIDE tout. L'ancien chemin
+    // validate-events validait et écrivait dans le même appel, sans transaction
+    // et sans contrôle de cohérence académique.
+    Route::post('/import/schedule/verifier', [\App\Http\Controllers\Api\Admin\ScheduleImportController::class, 'verifier']);
+    Route::post('/import/schedule/confirmer', [\App\Http\Controllers\Api\Admin\ScheduleImportController::class, 'confirmer']);
     Route::post('/import/validate-courses', [ImportController::class, 'validateCourses']);
     Route::get('/import/analysis-status/{id}', [ImportController::class, 'analysisStatus']);
 
