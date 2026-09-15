@@ -2,6 +2,7 @@ import { FiAlertTriangle, FiCheckCircle, FiBarChart2, FiActivity } from 'react-i
 import { MdOutlineGroup, MdOutlineCalendarToday } from 'react-icons/md';
 import { Link } from 'react-router-dom';
 import AlertsBanner from '../../components/ui/AlertsBanner';
+import AlerteCalendrier from '../../components/ui/AlerteCalendrier';
 import KPICard from '../../components/cards/KPICard';
 import BarChart from '../../components/charts/BarChart';
 import ProgressBar from '../../components/charts/ProgressBar';
@@ -10,35 +11,19 @@ import RecentQRScans from '../../components/RecentQRScans';
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton';
 import useApi from '../../hooks/useApi';
 
-/**
- * Libellés des anomalies de présence.
- *
- * Le tableau de bord affichait la valeur brute de la colonne « type » comme
- * titre d'alerte : l'administrateur lisait « verification_echouee », ou
- * « invalid_scan_challenge » — en anglais, dans une application française.
- *
- * Le repli nomme la catégorie plutôt que de laisser passer un identifiant
- * technique : un type ajouté côté serveur et oublié ici doit rester lisible.
- */
-const LIBELLES_ANOMALIE = {
-  verification_echouee: 'Vérification de présence échouée',
-  invalid_scan_challenge: 'Jeton de scan invalide',
-  appareil_partage: 'Appareil partagé entre étudiants',
-  double_scan_device_mismatch: 'Second scan depuis un autre appareil',
-};
-
 const DashboardPage = () => {
   const { data: dashData, loading } = useApi('/admin/dashboard');
   const { data: trendData } = useApi('/admin/dashboard/attendance-trend');
   const { data: topAbsencesData } = useApi('/admin/dashboard/top-absences');
   const { data: todayEventsData } = useApi('/admin/dashboard/today-events');
-  const { data: alertsData } = useApi('/admin/alerts');
 
   const kpis = [
     { label: 'Total Étudiants', value: dashData?.total_etudiants ?? '—', change: null, icon: <MdOutlineGroup size={20} />, trend: 'up' },
     { label: 'Présences Aujourd\'hui', value: dashData?.presences_aujourd_hui ?? '—', change: null, icon: <FiCheckCircle size={20} />, trend: 'up' },
     { label: 'Taux Présence Global', value: dashData?.taux_presence_global ? `${dashData.taux_presence_global}%` : '—', change: null, icon: <FiBarChart2 size={20} />, trend: 'up' },
-    { label: 'Alertes Fraude', value: dashData?.fraudes_suspectees ?? '—', change: null, icon: <FiAlertTriangle size={20} />, trend: 'down' },
+    // Les refus du jour sont donnés pour information : aucune présence n'a été
+    // créée, il n'y a rien à trancher. Seuls les scans suspects attendent une décision.
+    { label: 'Scans à arbitrer', value: dashData?.scans_a_arbitrer ?? '—', change: dashData ? `${dashData.scans_refuses_du_jour ?? 0} refus aujourd'hui` : null, icon: <FiAlertTriangle size={20} />, trend: 'neutral' },
   ];
 
   const attendanceData = (Array.isArray(trendData) ? trendData : []).map(item => ({
@@ -66,17 +51,21 @@ const DashboardPage = () => {
     image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" fill="%23e0e0e0" rx="16"/%3E%3Ctext x="16" y="20" text-anchor="middle" font-size="14" fill="%23999"%3E%3F%3C/text%3E%3C/svg%3E',
   }));
 
-  const alerts = Array.isArray(alertsData) ? alertsData.slice(0, 5).map(a => ({
-    type: 'attention',
-    title: LIBELLES_ANOMALIE[a.type] || 'Anomalie de présence',
-    message: a.description || a.message || `${a.etudiant?.nom || ''} - ${a.evenement?.ec?.intitule || ''}`,
-  })) : [];
+  // Bandeau : les scans suspects attendent une décision dans la file d'attente.
+  // Il reprenait toutes les anomalies ouvertes, scans refusés compris, qui ne
+  // demandent aucune décision et ne se fermaient jamais.
+  const aArbitrer = Number(dashData?.scans_a_arbitrer ?? 0);
+  const alerts = aArbitrer > 0 ? [{
+    title: `${aArbitrer} scan${aArbitrer > 1 ? 's' : ''} suspect${aArbitrer > 1 ? 's' : ''} à arbitrer`,
+    message: 'Un même téléphone a servi à plusieurs étudiants pendant une séance.',
+  }] : [];
 
   if (loading) return <LoadingSkeleton type="card" cols={4} />;
 
   return (
     <div>
-      {alerts.length > 0 && <AlertsBanner alerts={alerts} />}
+      {alerts.length > 0 && <AlertsBanner alerts={alerts} to="/attendance/queue" />}
+      <AlerteCalendrier className="mb-8" />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {kpis.map((kpi, i) => (<KPICard key={i} {...kpi} />))}

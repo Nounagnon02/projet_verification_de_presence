@@ -1,10 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { MdDashboard, MdBusiness, MdCloudUpload, MdSettings, MdHelp, MdAccountCircle, MdLogout } from 'react-icons/md';
+import { MdDashboard, MdBusiness, MdCalendarMonth, MdEventBusy, MdCloudUpload, MdSettings, MdHelp, MdAccountCircle, MdLogout } from 'react-icons/md';
 import { useAuth } from '../../../context/AuthContext';
 
 const links = [
   { to: '/super-admin', icon: <MdDashboard />, label: 'Dashboard UAC', end: true },
   { to: '/super-admin/etablissements', icon: <MdBusiness />, label: 'Facultés / Écoles' },
+  { to: '/super-admin/annees', icon: <MdCalendarMonth />, label: 'Années académiques' },
+  { to: '/super-admin/jours-feries', icon: <MdEventBusy />, label: 'Jours fériés' },
   { to: '/super-admin/import', icon: <MdCloudUpload />, label: 'Import CSV' },
   { to: '/super-admin/settings', icon: <MdSettings />, label: 'Paramètres' },
 ];
@@ -26,16 +28,10 @@ export default function SuperAdminSidebar() {
   return (
     <aside className="hidden md:flex flex-col h-screen p-5 fixed left-0 top-0 bg-[#f7f9fd] w-64 z-50">
       <div className="mb-8 px-2">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-8 h-8 bg-[#011549] rounded-xl flex items-center justify-center">
-            <MdBusiness size={16} className="text-white" />
-          </div>
-          <h1 className="text-lg font-bold text-[#011549] tracking-tight font-headline">
-            Super Admin
-          </h1>
-        </div>
+        <img src="/images/logo-couleur-compact.png" alt="UAC Présences"
+            className="h-7 w-auto mb-1.5" />
         <p className="text-[10px] text-slate-500 font-medium tracking-widest uppercase">
-          Portail UAC
+          Super Admin — Portail UAC
         </p>
       </div>
 

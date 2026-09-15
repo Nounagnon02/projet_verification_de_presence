@@ -115,16 +115,25 @@ abstract class TestCase extends BaseTestCase
         if (DB::connection()->getDriverName() === 'pgsql') {
             DB::statement('SET statement_timeout TO 0');
         }
+    }
 
-        // Migrations exécutées une seule fois pour toute la suite, mais le verrou
-        // est indexé sur l'empreinte du répertoire de migrations.
-        //
-        // Un verrou à nom fixe survivait à l'ajout d'une migration : la base de
-        // test restait sur un schéma périmé et les tests échouaient sur des
-        // colonnes absentes, sans que rien n'indique la cause. Il fallait penser
-        // à supprimer le fichier à la main. Ici, ajouter, renommer ou supprimer
-        // une migration change l'empreinte, donc le nom du verrou, donc relance
-        // la migration.
+    /**
+     * Migrations de la base de test, AVANT l'ouverture de la transaction du test.
+     *
+     * Elles s'exécutaient dans setUp(), donc dans la transaction qu'ouvre
+     * DatabaseTransactions. PostgreSQL annule aussi le DDL avec la transaction :
+     * la migration disparaissait à la fin du premier test, pendant que le verrou,
+     * lui, restait. Les tests suivants tombaient sur des tables absentes — la
+     * migration du fuseau horaire n'avait jamais atteint la base de test.
+     */
+    protected function setUpTraits()
+    {
+        $this->guardAgainstProductionDatabase();
+
+        // Une seule fois pour toute la suite, mais le verrou est indexé sur
+        // l'empreinte du répertoire de migrations : ajouter, renommer ou
+        // supprimer une migration change le nom du verrou, donc relance la
+        // migration. Un verrou à nom fixe laissait la base sur un schéma périmé.
         $migrations = glob(database_path('migrations/*.php')) ?: [];
         sort($migrations);
         $empreinte = substr(md5(implode('|', array_map('basename', $migrations))), 0, 12);
@@ -134,6 +143,8 @@ abstract class TestCase extends BaseTestCase
             $this->artisan('migrate', ['--force' => true]);
             file_put_contents($lockFile, date('Y-m-d H:i:s'));
         }
+
+        return parent::setUpTraits();
     }
 
     /**
@@ -229,5 +240,20 @@ abstract class TestCase extends BaseTestCase
             'host'     => $valeurs['DB_HOST']     ?? null,
             'database' => $valeurs['DB_DATABASE'] ?? null,
         ];
+    }
+
+    /**
+     * Déclare les périodes des semestres impairs et pairs d'un établissement
+     * (null : les filières sans établissement). Sans elles, la génération ne
+     * crée aucune séance.
+     */
+    protected function ouvrirSemestres(\App\Models\AnneeAcademique $annee, ?int $etablissementId = null, string $du = '2000-01-01', string $au = '2099-12-31'): void
+    {
+        foreach (\App\Models\PeriodeSemestre::PARITES as $parite) {
+            \App\Models\PeriodeSemestre::updateOrCreate(
+                ['etablissement_id' => $etablissementId, 'annee_id' => $annee->id, 'parite' => $parite],
+                ['date_debut' => $du, 'date_fin' => $au]
+            );
+        }
     }
 }

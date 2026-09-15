@@ -1,227 +1,258 @@
 import { useState } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiCalendar, FiArrowRight, FiStar, FiLoader, FiCopy } from 'react-icons/fi';
+import { FiCalendar, FiArrowRight, FiLoader, FiCopy, FiAlertTriangle, FiInfo, FiCheckCircle } from 'react-icons/fi';
 import Modal from '../../components/ui/Modal';
 import useApi from '../../hooks/useApi';
 import api from '../../api/axios';
 import { useToastCtx } from '../../context/ToastContext';
+import PreparationAnnee from './PreparationAnnee';
+import AlerteCalendrier from '../../components/ui/AlerteCalendrier';
+import {
+  LIBELLES_STATUT, anneesApres, contenuAnnee, formatDateLongue, joursAvant, pluriel,
+} from '../../utils/annees';
 
-function formatDate(dateStr) {
-  if (!dateStr) return '—';
-  try {
-    return new Date(dateStr).toLocaleDateString('fr-FR', {
-      day: 'numeric', month: 'long', year: 'numeric',
-    });
-  } catch {
-    return dateStr;
+// Jetons pleins : les couleurs du thème sont des variables hexadécimales, et
+// Tailwind ne produit rien pour « bg-secondary/10 » ou « bg-primary/10 ».
+const CLASSES_STATUT = {
+  terminee: 'bg-surface-container-high text-on-surface-variant',
+  en_cours: 'bg-secondary-container text-on-secondary-container',
+  a_venir: 'border border-primary text-primary',
+};
+
+/** Un libellé d'année ne se coupe pas à son trait d'union. */
+const Libelle = ({ children }) => <span className="whitespace-nowrap">{children}</span>;
+
+/**
+ * Ce qui doit être signalé en tête de page : l'année active s'achève et la
+ * suivante n'existe pas, ou elle est finie et la suivante attend.
+ */
+function alerteAnnee(active, suivante) {
+  if (!active) {
+    return { niveau: 'erreur', texte: "Aucune année n'est active pour votre établissement. Choisissez-en une ci-dessous : les inscriptions et la génération des séances en dépendent." };
   }
+
+  const jours = joursAvant(active.date_fin);
+
+  if (!suivante && jours !== null && jours <= 30) {
+    const quand = jours < 0
+      ? `est terminée depuis le ${formatDateLongue(active.date_fin)}`
+      : jours === 0 ? "se termine aujourd'hui" : `se termine le ${formatDateLongue(active.date_fin)}, dans ${pluriel(jours, 'jour')}`;
+
+    return {
+      niveau: 'attention',
+      texte: `${active.libelle} ${quand}, et l'année suivante n'a pas encore été créée. Seul le super administrateur de l'université peut la créer : demandez-lui de l'ouvrir.`,
+    };
+  }
+
+  if (suivante && active.statut === 'terminee') {
+    return {
+      niveau: 'info',
+      texte: `${active.libelle} est terminée depuis le ${formatDateLongue(active.date_fin)}. Passez sur ${suivante.libelle} quand votre établissement a bouclé l'année.`,
+    };
+  }
+
+  return null;
 }
 
 export default function AcademicYearsPage() {
   const { data: years, loading, refetch } = useApi('/admin/annees-academiques');
-  const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ libelle: '', date_debut: '', date_fin: '' });
-  const [saving, setSaving] = useState(false);
-  const [reconduireLoading, setReconduireLoading] = useState(null);
+  const [cible, setCible] = useState(null);
+  const [activation, setActivation] = useState(false);
+  const [aPreparer, setAPreparer] = useState(null);
   const { addToast } = useToastCtx();
-  const activeYear = (years || []).find(y => y.active);
 
-  const openCreate = () => {
-    setEditing(null);
-    setForm({ libelle: '', date_debut: '', date_fin: '' });
-    setShowModal(true);
-  };
+  const annees = years || [];
+  const activeYear = annees.find((y) => y.active);
+  const suivantes = anneesApres(annees, activeYear);
+  const alerte = loading ? null : alerteAnnee(activeYear, suivantes[0]);
 
-  const openEdit = (y) => {
-    setEditing(y);
-    setForm({ libelle: y.libelle, date_debut: y.date_debut || '', date_fin: y.date_fin || '' });
-    setShowModal(true);
-  };
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setSaving(true);
+  const activer = async () => {
+    setActivation(true);
     try {
-      if (editing) {
-        await api.put(`/admin/annees-academiques/${editing.id}`, form);
-      } else {
-        await api.post('/admin/annees-academiques', form);
-      }
-      setShowModal(false);
+      const { data } = await api.patch(`/admin/annees-academiques/${cible.id}/activate`);
+      addToast?.(data?.message || `${cible.libelle} est désormais l'année active.`, 'success');
+      setCible(null);
       refetch();
     } catch (err) {
-      alert(err.response?.data?.message || "Erreur lors de l'enregistrement");
+      addToast?.(err.response?.data?.message || "Le changement d'année a échoué.", 'error');
     } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (!window.confirm("Supprimer cette année académique ?")) return;
-    try {
-      await api.delete(`/admin/annees-academiques/${id}`);
-      refetch();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Erreur lors de la suppression');
-    }
-  };
-
-  const setActive = async (id) => {
-    try {
-      await api.patch(`/admin/annees-academiques/${id}/activate`);
-      refetch();
-    } catch (err) {
-      alert(err.response?.data?.message || "Erreur lors de l'activation");
-    }
-  };
-
-  const handleReconduire = async (targetId, activeId) => {
-    setReconduireLoading(targetId);
-    try {
-      const { data } = await api.post('/admin/filieres/reconduire', {
-        source_annee_id: activeId,
-        target_annee_id: targetId,
-      });
-      addToast?.(data?.message || 'Filières reconduites avec succès', 'success');
-      refetch();
-    } catch (err) {
-      addToast?.(err.response?.data?.message || 'Erreur lors de la reconduction', 'error');
-    } finally {
-      setReconduireLoading(null);
+      setActivation(false);
     }
   };
 
   return (
     <div>
-      {/* En-tête */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold font-headline text-primary">Années Académiques</h1>
-          <p className="text-sm text-on-surface-variant">Gérez les années académiques</p>
-        </div>
-        <button onClick={openCreate} className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 transition-all">
-          <FiPlus /> Nouvelle année
-        </button>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold font-headline text-primary">Années académiques</h1>
+        <p className="text-sm text-on-surface-variant max-w-2xl mt-1">
+          Les années sont communes à toute l'université : le super administrateur les crée.
+          Vous choisissez celle sur laquelle travaille votre établissement.
+        </p>
       </div>
 
-      {loading ? (
-        <div className="text-center py-12 text-on-surface-variant">Chargement...</div>
-      ) : !years || years.length === 0 ? (
-        <div className="text-center py-12 text-on-surface-variant bg-surface-container-lowest rounded-xxl">
-          Aucune année académique. Créez-en une !
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {(years || []).map((year) => (
-            <div
-              key={year.id}
-              className={`bg-surface-container-lowest rounded-xxl p-5 shadow-sm border-2 transition-all ${
-                year.active
-                  ? 'border-primary/30 bg-primary/[0.02]'
-                  : 'border-transparent hover:border-outline-variant/20'
-              }`}
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2.5 rounded-xl ${
-                    year.active ? 'bg-primary/10' : 'bg-surface-container-high'
-                  }`}>
-                    <FiCalendar className={`${year.active ? 'text-primary' : 'text-outline'}`} size={20} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-primary text-base">{year.annee || year.libelle}</h3>
-                      {year.active && (
-                        <span className="flex items-center gap-1 px-2 py-0.5 bg-secondary/10 text-secondary rounded-full text-[10px] font-bold">
-                          <FiStar size={10} /> Active
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-on-surface-variant mt-0.5">Année académique</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-1">
-                  {!year.active && (
-                    <button
-                      onClick={() => setActive(year.id)}
-                      className="p-2 hover:bg-secondary/10 rounded-lg transition-colors"
-                      title="Définir comme active"
-                    >
-                      <FiStar className="text-on-surface-variant hover:text-secondary" size={15} />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => openEdit(year)}
-                    className="p-2 hover:bg-surface-container-high rounded-lg transition-colors"
-                    title="Modifier"
-                  >
-                    <FiEdit2 className="text-on-surface-variant" size={15} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(year.id)}
-                    className="p-2 hover:bg-error/10 rounded-lg transition-colors"
-                    title="Supprimer"
-                  >
-                    <FiTrash2 className="text-error" size={15} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Période */}
-              <div className="bg-surface-container-high rounded-xl p-3.5">
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="flex-1">
-                    <p className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider mb-0.5">Début</p>
-                    <p className="font-semibold text-on-surface">{formatDate(year.date_debut)}</p>
-                  </div>
-                  <div className="text-outline flex-shrink-0">
-                    <FiArrowRight size={16} />
-                  </div>
-                  <div className="flex-1 text-right">
-                    <p className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider mb-0.5">Fin</p>
-                    <p className="font-semibold text-on-surface">{formatDate(year.date_fin)}</p>
-                  </div>
-                </div>
-                {!year.active && activeYear && (
-                  <button
-                    onClick={() => handleReconduire(year.id, activeYear.id)}
-                    disabled={reconduireLoading === year.id}
-                    className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 bg-primary/10 text-primary rounded-lg text-xs font-semibold hover:bg-primary/20 transition-all disabled:opacity-50"
-                  >
-                    {reconduireLoading === year.id ? <FiLoader className="animate-spin" size={12} /> : <FiCopy size={12} />}
-                    {reconduireLoading === year.id ? 'Reconduction...' : 'Reconduire les filières'}
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+      {alerte && (
+        <div
+          role={alerte.niveau === 'info' ? 'status' : 'alert'}
+          className={`flex items-start gap-3 rounded-xl px-4 py-3 mb-6 text-sm text-on-surface ${
+            alerte.niveau === 'info' ? 'bg-surface-container-high' : 'bg-warning-container'
+          }`}
+        >
+          {alerte.niveau === 'info'
+            ? <FiInfo className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
+            : <FiAlertTriangle className="shrink-0 mt-0.5" aria-hidden="true" />}
+          <p>{alerte.texte}</p>
         </div>
       )}
 
-      {/* Modal */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editing ? "Modifier l'année" : 'Nouvelle année académique'}>
-        <form onSubmit={handleSave} className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-on-surface-variant">Libellé</label>
-            <input className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all" value={form.libelle} onChange={(e) => setForm({ ...form, libelle: e.target.value })} placeholder="Ex: 2026-2027" required />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-on-surface-variant">Date début</label>
-              <input type="date" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all" value={form.date_debut} onChange={(e) => setForm({ ...form, date_debut: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-on-surface-variant">Date fin</label>
-              <input type="date" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all" value={form.date_fin} onChange={(e) => setForm({ ...form, date_fin: e.target.value })} />
-            </div>
-          </div>
-          <div className="flex justify-end gap-3 pt-4">
-            <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors">Annuler</button>
-            <button type="submit" disabled={saving} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-all">{saving && <FiLoader className="animate-spin" />}{saving ? 'Enregistrement...' : editing ? 'Modifier' : 'Créer'}</button>
-          </div>
-        </form>
+      <AlerteCalendrier className="mb-6" />
+
+      {loading ? (
+        <div className="text-center py-12 text-on-surface-variant">Chargement...</div>
+      ) : annees.length === 0 ? (
+        <div className="text-center py-12 text-on-surface-variant bg-surface-container-lowest rounded-xxl">
+          Aucune année académique n'a encore été créée. Le super administrateur de l'université les ouvre.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {annees.map((year) => {
+            const contenu = contenuAnnee(year);
+            const apresActive = suivantes.some((s) => s.id === year.id);
+
+            return (
+              <article
+                key={year.id}
+                aria-label={year.libelle}
+                className={`bg-surface-container-lowest rounded-xxl p-5 shadow-sm border-2 flex flex-col gap-4 ${
+                  year.active ? 'border-primary' : 'border-transparent'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="p-2.5 rounded-xl bg-surface-container-high">
+                    <FiCalendar className={year.active ? 'text-primary' : 'text-outline'} size={20} aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="font-bold text-primary text-base">{year.libelle}</h2>
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${CLASSES_STATUT[year.statut] || CLASSES_STATUT.terminee}`}>
+                        {LIBELLES_STATUT[year.statut] || year.statut}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-1.5">
+                      {year.active && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
+                          <FiCheckCircle size={12} aria-hidden="true" /> Active pour votre établissement
+                        </span>
+                      )}
+                      {!year.active && year.en_cours_universite && (
+                        <span className="text-[11px] text-on-surface-variant">Année en cours de l'université</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-surface-container-high rounded-xl p-3.5 flex items-center gap-3 text-sm">
+                  <div className="flex-1">
+                    <p className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider mb-0.5">Début</p>
+                    <p className="font-semibold text-on-surface">{formatDateLongue(year.date_debut)}</p>
+                  </div>
+                  <FiArrowRight size={16} className="text-outline shrink-0" aria-hidden="true" />
+                  <div className="flex-1 text-right">
+                    <p className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider mb-0.5">Fin</p>
+                    <p className="font-semibold text-on-surface">{formatDateLongue(year.date_fin)}</p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-on-surface-variant">
+                  {contenu || 'Rien encore pour votre établissement'}
+                </p>
+
+                {!year.active && (
+                  <div className="flex flex-wrap gap-2 mt-auto">
+                    <button
+                      type="button"
+                      onClick={() => setCible(year)}
+                      className="px-3 py-2 rounded-lg text-xs font-semibold border border-outline-variant text-primary hover:bg-surface-container-high transition-colors"
+                    >
+                      Travailler sur {year.libelle}
+                    </button>
+                    {/* On prépare une année à partir de l'année active : seulement
+                        vers les années qui la suivent. */}
+                    {apresActive && (
+                      <button
+                        type="button"
+                        onClick={() => setAPreparer(year)}
+                        className="flex items-center gap-2 px-3 py-2 bg-surface-container-high text-primary rounded-lg text-xs font-semibold hover:bg-surface-container-highest transition-all"
+                      >
+                        <FiCopy size={12} aria-hidden="true" /> Préparer {year.libelle}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      {aPreparer && activeYear && (
+        <PreparationAnnee cible={aPreparer} source={activeYear} onClose={() => setAPreparer(null)} onPreparee={refetch} />
+      )}
+
+      <Modal isOpen={!!cible} onClose={() => !activation && setCible(null)} title={cible ? `Passer sur ${cible.libelle} ?` : ''}>
+        {cible && (
+          <ConsequencesBascule cible={cible} active={activeYear} />
+        )}
+        <div className="flex justify-end gap-3 pt-5">
+          <button type="button" onClick={() => setCible(null)} disabled={activation} className="px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors">
+            Annuler
+          </button>
+          <button type="button" onClick={activer} disabled={activation} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-all">
+            {activation && <FiLoader className="animate-spin" />}
+            {cible ? `Passer sur ${cible.libelle}` : ''}
+          </button>
+        </div>
       </Modal>
+    </div>
+  );
+}
+
+/** Ce que change le passage d'une année à l'autre, dit avant le clic. */
+function ConsequencesBascule({ cible, active }) {
+  const creneaux = cible.emplois_du_temps_count ?? 0;
+  const retirees = active?.seances_a_venir_count ?? 0;
+
+  return (
+    <div className="space-y-4 text-sm text-on-surface">
+      <p>
+        {active ? <>Votre établissement travaille aujourd'hui sur <strong><Libelle>{active.libelle}</Libelle></strong>. </> : null}
+        En passant sur <Libelle>{cible.libelle}</Libelle> :
+      </p>
+      <ul className="list-disc pl-5 space-y-1.5">
+        <li>les nouvelles inscriptions iront dans {cible.libelle} ;</li>
+        {creneaux > 0 ? (
+          <li>les séances seront générées chaque nuit depuis son emploi du temps ({pluriel(creneaux, 'créneau', 'créneaux')}) ;</li>
+        ) : (
+          <li>
+            <strong>aucune séance ne sera générée</strong> : {cible.libelle} n'a pas encore d'emploi du temps pour votre établissement ;
+          </li>
+        )}
+        {active && retirees > 0 && (
+          <li>
+            {pluriel(retirees, 'séance déjà planifiée', 'séances déjà planifiées')} de {active.libelle} après aujourd'hui
+            {retirees > 1 ? ' seront retirées' : ' sera retirée'} — aucune n'a de présence ;
+          </li>
+        )}
+        <li>
+          les écrans s'ouvriront sur {cible.libelle}
+          {active ? <> ; les données de {active.libelle} restent consultables</> : null}.
+        </li>
+      </ul>
+      {cible.statut === 'terminee' && (
+        <p className="flex items-start gap-2 rounded-lg bg-warning-container px-3 py-2">
+          <FiAlertTriangle className="shrink-0 mt-0.5" aria-hidden="true" />
+          {cible.libelle} est terminée : y revenir ne sert qu'à corriger un changement d'année fait par erreur.
+        </p>
+      )}
+      <p className="text-xs text-on-surface-variant">Les autres établissements ne sont pas concernés.</p>
     </div>
   );
 }

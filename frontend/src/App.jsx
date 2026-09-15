@@ -20,7 +20,7 @@ const FAQPage = lazy(() => import('./pages/faq/FAQPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // Phase 3 - New pages
-const QRValidationPage = lazy(() => import('./pages/attendance/QRValidationPage'));
+const SaisieManuellePage = lazy(() => import('./pages/attendance/SaisieManuellePage'));
 const PresenceQueuePage = lazy(() => import('./pages/attendance/PresenceQueuePage'));
 const StudentStatsPage = lazy(() => import('./pages/attendance/StudentStatsPage'));
 const WeeklySchedulePage = lazy(() => import('./pages/schedules/WeeklySchedulePage'));
@@ -49,8 +49,8 @@ const FilteredReportsPage = lazy(() => import('./pages/reports/FilteredReportsPa
 // Phase 7 - Settings pages
 const AcademicYearsPage = lazy(() => import('./pages/settings/AcademicYearsPage'));
 const FilieresPage = lazy(() => import('./pages/settings/FilieresPage'));
-const SecurityPage = lazy(() => import('./pages/settings/SecurityPage'));
 const SallesPage = lazy(() => import('./pages/settings/SallesPage'));
+const CalendrierPage = lazy(() => import('./pages/settings/CalendrierPage'));
 
 // Landing page
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -69,7 +69,6 @@ const KnowledgeBaseArticle = lazy(() => import('./pages/help/KnowledgeBaseArticl
 const ContactFormPage = lazy(() => import('./pages/support/ContactFormPage'));
 const TicketsListPage = lazy(() => import('./pages/support/TicketsListPage'));
 const TicketDetailPage = lazy(() => import('./pages/support/TicketDetailPage'));
-const CreateFilierePage = lazy(() => import('./pages/settings/CreateFilierePage'));
 
 // Phase 9 - Profile & Notifications
 const ProfilePage = lazy(() => import('./pages/profile/ProfilePage'));
@@ -78,7 +77,7 @@ const NotificationsPage = lazy(() => import('./pages/notifications/Notifications
 // Phase 10 - UE/EC & Events & Alerts
 const UEManagementPage = lazy(() => import('./pages/courses/UEManagementPage'));
 const EvenementManagementPage = lazy(() => import('./pages/events/EvenementManagementPage'));
-const AnomaliesListPage = lazy(() => import('./pages/alerts/AnomaliesListPage'));
+const ScansRefusesPage = lazy(() => import('./pages/attendance/ScansRefusesPage'));
 
 // Super Admin pages
 const SuperAdminDashboardPage = lazy(() => import('./pages/super-admin/SuperAdminDashboardPage'));
@@ -86,6 +85,8 @@ const EtablissementManagementPage = lazy(() => import('./pages/super-admin/Etabl
 const CreateEtablissementPage = lazy(() => import('./pages/super-admin/CreateEtablissementPage'));
 const EtablissementDetailPage = lazy(() => import('./pages/super-admin/EtablissementDetailPage'));
 const BulkImportPage = lazy(() => import('./pages/super-admin/BulkImportPage'));
+const AnneesUniversitairesPage = lazy(() => import('./pages/super-admin/AnneesUniversitairesPage'));
+const JoursFeriesPage = lazy(() => import('./pages/super-admin/JoursFeriesPage'));
 
 function LoadingFallback() {
   return (
@@ -133,6 +134,8 @@ function App() {
               <Route path="etablissements/create" element={<CreateEtablissementPage />} />
               <Route path="etablissements/:id" element={<EtablissementDetailPage />} />
               <Route path="import" element={<BulkImportPage />} />
+              <Route path="annees" element={<AnneesUniversitairesPage />} />
+              <Route path="jours-feries" element={<JoursFeriesPage />} />
               <Route path="settings" element={<div className="text-center py-16 text-slate-400">Paramètres globaux (à venir)</div>} />
             </Route>
 
@@ -160,9 +163,9 @@ function App() {
               <Route path="attendance" element={<AttendanceLayout />}>
                 <Route index element={<Navigate to="queue" replace />} />
                 <Route path="queue" element={<PresenceQueuePage />} />
-                <Route path="alerts" element={<AnomaliesListPage />} />
+                <Route path="alerts" element={<ScansRefusesPage />} />
                 <Route path="history" element={<PresenceHistoryPage />} />
-                <Route path="scan" element={<QRValidationPage />} />
+                <Route path="scan" element={<SaisieManuellePage />} />
               </Route>
               <Route path="attendance/student-stats/:studentId" element={<StudentStatsPage />} />
               <Route path="courses" element={<UEManagementPage />} />
@@ -185,9 +188,10 @@ function App() {
                 <Route path="academic-years" element={<AcademicYearsPage />} />
                 <Route path="filieres" element={<FilieresPage />} />
                 <Route path="salles" element={<SallesPage />} />
-                <Route path="security" element={<SecurityPage />} />
+                <Route path="calendrier" element={<CalendrierPage />} />
+                {/* La sécurité du compte est passée dans Profil. */}
+                <Route path="security" element={<Navigate to="/profile" replace />} />
               </Route>
-              <Route path="admin/filieres/create" element={<CreateFilierePage />} />
               <Route path="import/ai-analysis" element={<AIAnalysisProgressPage />} />
               <Route path="import/validate-schedule" element={<ScheduleValidationPage />} />
               <Route path="import/validate-courses" element={<CourseValidationPage />} />

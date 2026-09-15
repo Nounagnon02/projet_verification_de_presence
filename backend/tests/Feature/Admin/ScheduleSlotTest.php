@@ -181,6 +181,12 @@ class ScheduleSlotTest extends TestCase
     {
         $date = $this->lundi->format('Y-m-d');
 
+        // La commande ne génère que l'année active : celle de l'université ici,
+        // la filière n'ayant pas d'établissement.
+        AnneeAcademique::where('active', true)->update(['active' => false]);
+        $this->annee->update(['active' => true]);
+        $this->ouvrirSemestres($this->annee);
+
         $this->artisan('events:generate-from-schedule', ['--date' => $date, '--days' => 1])
             ->assertSuccessful();
 
