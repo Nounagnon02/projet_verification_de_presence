@@ -76,11 +76,7 @@ class OpenRouterProvider implements AiProviderInterface
                           "Extrais TOUS les événements sous forme d'un tableau JSON avec : " .
                           "ec (nom du cours), date (YYYY-MM-DD), heure_debut (HH:mm), heure_fin (HH:mm), salle. " .
                           "Réponds UNIQUEMENT avec le JSON.",
-            'courses'  => "Analyse ce PDF de catalogue de cours. " .
-                          "Extrais toutes les UE avec leurs ECs sous forme d'un tableau JSON 'ues'. " .
-                          "Chaque UE a : code, intitule, semestre, credits, ecs[]. " .
-                          "Chaque EC a : code, intitule, volume_horaire. " .
-                          "Réponds UNIQUEMENT avec le JSON.",
+            'courses'  => ConsignesMaquette::cours(),
             default    => "Extrais les informations structurées de ce document.",
         };
     }

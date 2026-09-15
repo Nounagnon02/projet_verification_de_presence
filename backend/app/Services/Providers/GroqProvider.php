@@ -144,9 +144,7 @@ class GroqProvider implements AiProviderInterface
         $instruction = match ($type) {
             'schedule' => "Extrais tous les événements de cours depuis ce texte d'emploi du temps. " .
                           "Retourne un JSON avec un tableau 'events'. Chaque événement a : ec, date, heure_debut, heure_fin, salle.",
-            'courses'  => "Extrais toutes les Unités d'Enseignement (UE) avec leurs Éléments Constitutifs (EC). " .
-                          "Retourne un JSON avec un tableau 'ues'. Chaque UE a : code, intitule, semestre, credits, ecs[]. " .
-                          "Chaque EC a : code, intitule, volume_horaire.",
+            'courses'  => ConsignesMaquette::cours(),
             default    => "Extrais les informations structurées de ce texte académique.",
         };
 

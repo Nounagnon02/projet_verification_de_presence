@@ -4,6 +4,24 @@ import { FiChevronRight, FiCheck, FiAlertCircle, FiPlus, FiArrowRight, FiLoader 
 import { MdCloudDone } from 'react-icons/md';
 import api from '../../api/axios';
 import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
+import BandeauAnneeClose from '../../components/ui/BandeauAnneeClose';
+import { VOLUMES } from '../../utils/typesSeance';
+
+const heures = (valeur) => {
+  const n = parseInt(String(valeur ?? ''), 10);
+  return Number.isNaN(n) || n < 0 ? 0 : n;
+};
+
+/**
+ * Une ligne est prête : code et intitulé, et des heures par type pour un EC.
+ * Un total seul ne suffit plus : sur la maquette réelle, l'IA y mettait le
+ * CTT (125 h pour 5 crédits, dont 75 h de travail personnel), et l'EC,
+ * enregistré « à ventiler », ne se terminait jamais.
+ */
+const estComplete = (ligne) => Boolean(
+  ligne.code && ligne.intitule
+  && (ligne.isUe || VOLUMES.some(([champ]) => heures(ligne[champ]) > 0))
+);
 
 const LIGNE_VIDE = { id: 0, code: '', intitule: '', semestre: '', credits: '', edited: true, isUe: true };
 
@@ -50,7 +68,18 @@ function lireCoursEnSession() {
               code: ec.code || '',
               intitule: ec.intitule || '',
               semestre: `S${ue.semestre || 1}`,
-              credits: (ec.volume_horaire ? Math.round(ec.volume_horaire / 10) : 3).toString(),
+              credits: '',
+              // Heures en présentiel par type ; jamais le TPE ni le CTT. Les
+              // crédits d'un EC n'existent pas : on en fabriquait à partir du
+              // volume, puis un volume à partir de ces crédits.
+              volume_cm: heures(ec.cm ?? ec.volume_cm),
+              volume_td: heures(ec.td ?? ec.volume_td),
+              volume_tp: heures(ec.tp ?? ec.volume_tp),
+              volume_td_tp: heures(ec.td_tp ?? ec.volume_td_tp),
+              // Pour information : ce que le document donne en plus, jamais planifié.
+              volume_horaire: heures(ec.volume_horaire),
+              tpe: heures(ec.tpe),
+              ctt: heures(ec.ctt),
               edited: false,
               isUe: false,
             });
@@ -141,9 +170,9 @@ function niveauxDesLignes(lignes) {
  * rattachent, jusqu'a la prochaine UE. Les ECs precedant toute UE sont ignores :
  * ils n'ont pas de parent, et les inventer un serait pire que de les omettre.
  *
- * Le volume horaire d'une UE est la SOMME de ses ECs, une valeur reelle, et non
- * « credits x 10 » — les credits eux-memes n'ayant pas ce sens. Une UE sans EC
- * garde l'estimation faute de mieux, ce que l'ecran signale.
+ * Chaque EC porte ses heures par type (CM, TD, TP, reserve TP/TD) ; le serveur
+ * en deduit le volume de l'UE. Les credits restent des credits : on fabriquait
+ * un volume a partir d'eux (« credits x 10 »).
  */
 function grouperUesEtEcs(lignes) {
   const nombre = (valeur, defaut = 0) => {
@@ -159,7 +188,7 @@ function grouperUesEtEcs(lignes) {
         code: ligne.code,
         intitule: ligne.intitule,
         semestre: nombre(ligne.semestre, 1) || 1,
-        credits: nombre(ligne.credits, 3),
+        credits: ligne.credits === '' || ligne.credits === undefined ? null : nombre(ligne.credits, 0),
         ecs: [],
       });
       return;
@@ -171,16 +200,11 @@ function grouperUesEtEcs(lignes) {
     parent.ecs.push({
       code: ligne.code,
       intitule: ligne.intitule,
-      volumeHoraire: Math.max(nombre(ligne.credits, 3) * 10, 1),
+      volumes: Object.fromEntries(VOLUMES.map(([champ]) => [champ, heures(ligne[champ])])),
     });
   });
 
-  return groupes.map((g) => ({
-    ...g,
-    volumeHoraire: g.ecs.length > 0
-      ? g.ecs.reduce((total, e) => total + e.volumeHoraire, 0)
-      : Math.max(g.credits * 10, 30),
-  }));
+  return groupes;
 }
 
 export default function CourseValidationPage() {
@@ -225,18 +249,21 @@ export default function CourseValidationPage() {
     if (!course.intitule && !course.code) {
       return { label: 'Vide', color: 'bg-surface-container-high text-on-surface-variant' };
     }
-    if (course.code && course.intitule && course.credits) {
+    if (estComplete(course)) {
       return { label: 'Prêt', color: 'bg-secondary-container text-on-secondary-container' };
+    }
+    if (!course.isUe && course.code && course.intitule) {
+      return { label: 'Heures à saisir', color: 'bg-warning-container text-on-surface' };
     }
     return { label: 'Action requis', color: 'bg-tertiary-fixed text-on-tertiary-fixed' };
   };
 
-  const readyCount = courses.filter((c) => c.code && c.intitule && c.credits).length;
-  const alertCount = courses.filter((c) => !c.code || !c.intitule || !c.credits).length;
+  const readyCount = courses.filter(estComplete).length;
+  const alertCount = courses.filter((c) => !estComplete(c)).length;
   const confidence = Math.round(analysisMeta.score * 100);
 
   const handleSave = async () => {
-    const validCourses = courses.filter((c) => c.code && c.intitule && c.credits);
+    const validCourses = courses.filter(estComplete);
     if (validCourses.length === 0) {
       setError('Aucun cours valide à importer. Remplissez au moins le code, l\'intitulé et les crédits.');
       return;
@@ -273,11 +300,13 @@ export default function CourseValidationPage() {
           filiere_id: Number(filtres.filiere),
           annee_id: Number(filtres.annee),
           semestre: g.semestre,
-          volume_horaire: g.volumeHoraire,
+          credits: g.credits,
+          // Heures par type, et elles seules : un total lu dans le document
+          // (souvent le CTT) ne s'enregistre jamais comme volume.
           ecs: g.ecs.map((e) => ({
             code: e.code.toUpperCase(),
             intitule: e.intitule,
-            volume_horaire: e.volumeHoraire,
+            ...e.volumes,
           })),
         })),
       };
@@ -304,7 +333,10 @@ export default function CourseValidationPage() {
             <FiCheck className="text-secondary" size={32} />
           </div>
           <h1 className="text-2xl font-bold font-headline text-primary mb-3">Cours importés !</h1>
-          <p className="text-on-surface-variant mb-2">{readyCount} cours créés avec succès.</p>
+          <p className="text-on-surface-variant mb-2">
+            {courses.filter((c) => c.isUe && estComplete(c)).length} UE et {courses.filter((c) => !c.isUe && estComplete(c)).length} EC enregistrés.
+            {alertCount > 0 && ` ${alertCount} ligne(s) laissée(s) de côté, faute d'heures par type.`}
+          </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mt-6">
             {sourceType === 'schedule' && (
               <button onClick={() => navigate('/import/validate-schedule')}
@@ -393,7 +425,7 @@ export default function CourseValidationPage() {
                     <th className="px-4 py-4">Code</th>
                     <th className="px-4 py-4">Intitulé</th>
                     <th className="px-4 py-4">Semestre</th>
-                    <th className="px-4 py-4">Crédits</th>
+                    <th className="px-4 py-4">Crédits / heures</th>
                     <th className="px-4 py-4">Statut</th>
                     <th className="px-8 py-4 text-right">Action</th>
                   </tr>
@@ -435,21 +467,51 @@ export default function CourseValidationPage() {
                             onChange={(e) => updateCourse(course.id, 'semestre', `S${e.target.value}`)}
                             className="bg-transparent text-sm border-none focus:ring-0 py-1">
                             <option value="">Semestre</option>
-                            {[1, 2, 3, 4, 5, 6].map((s) => (
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((s) => (
                               <option key={s} value={s}>S{s}</option>
                             ))}
                           </select>
                         </td>
                         <td className="px-4 py-4">
-                          <input
-                            type="number"
-                            value={course.credits}
-                            onChange={(e) => updateCourse(course.id, 'credits', e.target.value)}
-                            className="bg-transparent border-b py-1 text-sm font-mono focus:ring-0 w-16 text-center"
-                            placeholder="0"
-                            min="1"
-                            max="30"
-                          />
+                          {course.isUe ? (
+                            <input
+                              type="number"
+                              value={course.credits}
+                              onChange={(e) => updateCourse(course.id, 'credits', e.target.value)}
+                              className="bg-transparent border-b py-1 text-sm font-mono focus:ring-0 w-16 text-center"
+                              placeholder="—"
+                              min="0"
+                              max="60"
+                              aria-label={`Crédits de ${course.code || "l'UE"}`}
+                            />
+                          ) : (
+                            <div className="space-y-1">
+                            <div className="flex gap-1.5">
+                              {VOLUMES.map(([champ, libelle]) => (
+                                <label key={champ} className="flex flex-col items-center text-[9px] font-semibold text-on-surface-variant">
+                                  {libelle}
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={course[champ] ?? 0}
+                                    onChange={(e) => updateCourse(course.id, champ, e.target.value)}
+                                    className="bg-transparent border-b py-1 text-sm font-mono focus:ring-0 w-12 text-center"
+                                    aria-label={`${libelle} de ${course.code || "l'EC"}`}
+                                  />
+                                </label>
+                              ))}
+                            </div>
+                            {(course.volume_horaire > 0 || course.tpe > 0 || course.ctt > 0) && (
+                              <p className="text-[10px] text-on-surface-variant max-w-[14rem]">
+                                Lu dans le document : {[
+                                  course.volume_horaire > 0 && `total ${course.volume_horaire} h`,
+                                  course.tpe > 0 && `TPE ${course.tpe} h`,
+                                  course.ctt > 0 && `CTT ${course.ctt} h`,
+                                ].filter(Boolean).join(' · ')}. Seules les heures de cours, par type, se planifient.
+                              </p>
+                            )}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-4">
                           <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${status.color}`}>
@@ -535,6 +597,8 @@ export default function CourseValidationPage() {
               </select>
             </div>
 
+            {filtres.anneeClose && <BandeauAnneeClose annee={filtres.anneeChoisie} />}
+
             <div className="space-y-1">
               <label htmlFor="import-filiere" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Filière</label>
               <select id="import-filiere" value={filtres.filiere} onChange={(e) => filtres.setFiliere(e.target.value)}
@@ -563,7 +627,7 @@ export default function CourseValidationPage() {
           </div>
 
           <div className="flex flex-col gap-3">
-            <button onClick={handleSave} disabled={saving || readyCount === 0 || !filtres.filiere || !filtres.annee}
+            <button onClick={handleSave} disabled={saving || readyCount === 0 || !filtres.filiere || !filtres.annee || filtres.anneeClose}
               className="w-full py-4 rounded-xl bg-gradient-to-br from-primary to-primary-container text-white font-bold text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2">
               <MdCloudDone className="text-[20px]" />
               {saving ? <><FiLoader className="animate-spin" /> Enregistrement...</> : 'Valider et enregistrer'}

@@ -213,6 +213,8 @@ class GeminiProvider implements AiProviderInterface
                 'events'     => $creneaux,
                 'courses'    => $courses,
                 'diagnostic' => $diagnostic->toArray(),
+                // Version du document, à partir de laquelle il s'applique.
+                'valide_du'  => self::dateDuDocument($data['valide_du'] ?? null),
             ],
             confidence: $confidence,
             warning: $diagnostic->estExploitable() && $confidence >= 0.70
@@ -226,6 +228,16 @@ class GeminiProvider implements AiProviderInterface
                 'filename'      => basename($filePath),
             ],
         );
+    }
+
+    /** Date lue au niveau du document, retenue seulement si c'est une vraie date AAAA-MM-JJ. */
+    private static function dateDuDocument(mixed $valeur): ?string
+    {
+        if (!is_string($valeur) || !preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $valeur, $m)) {
+            return null;
+        }
+
+        return checkdate((int) $m[2], (int) $m[3], (int) $m[1]) ? $valeur : null;
     }
 
     private function processCoursesResult(array $data, string $filePath): AnalysisResult
@@ -329,6 +341,11 @@ class GeminiProvider implements AiProviderInterface
             "  peut couvrir plusieurs filieres, chaque cellule indiquant la sienne ;",
             "- type_seance : cours, TD, TP, evaluation... si le document le precise.",
             "",
+            "Au niveau du document, et seulement s'il l'indique : valide_du, la date a partir",
+            "de laquelle cet emploi du temps s'applique (« Emploi du temps ... du 15 juin 2026 »,",
+            "« a compter du ... »), au format YYYY-MM-DD. Une nouvelle version d'un emploi du",
+            "temps « susceptible de modifications » remplace la precedente a cette date.",
+            "",
             "REGLES ABSOLUES :",
             "1. N'invente aucune donnee. Un champ absent du document est omis, jamais devine.",
             "2. Une cellule vide n'est pas un creneau : ne la rapporte pas.",
@@ -337,19 +354,14 @@ class GeminiProvider implements AiProviderInterface
             "4. Si le document ne contient aucun emploi du temps, renvoie un tableau vide.",
             "5. Si le document est un scan sans couche texte, renvoie un tableau vide.",
             "",
-            'Reponds UNIQUEMENT avec le JSON, sous la forme {"events": [ ... ]}.',
+            'Reponds UNIQUEMENT avec le JSON, sous la forme {"events": [ ... ], "valide_du": "YYYY-MM-DD"}, valide_du omis si le document ne le dit pas.',
         ]);
     }
 
     private function getCoursesPrompt(): string
     {
-        return "Tu es un assistant administratif de l'UAC. " .
-               "Analyse ce PDF de catalogue de cours / offre de formation et extrait TOUTES les " .
-               "Unités d'Enseignement (UE) avec leurs Éléments Constitutifs (EC). " .
-               "Réponds avec un JSON structuré contenant un tableau 'ues'. " .
-               "Chaque UE a : code, intitule, semestre (numéro), credits (nombre), " .
-               "et un tableau 'ecs'. Chaque EC a : code, intitule, volume_horaire (en heures). " .
-               "Réponds UNIQUEMENT avec le JSON valide.";
+        // Une seule consigne pour tous les fournisseurs : les heures par type.
+        return ConsignesMaquette::cours();
     }
 
     private function errorResult(string $message): array

@@ -27,7 +27,20 @@ const ANALYSE = {
 }
 
 const ANNEES = [{ id: 3, libelle: '2025-2026', active: true }]
-const FILIERES = [{ id: 5, code: 'IM-L2', intitule: 'Informatique L2', niveau: 'L2', semestres: [3, 4] }]
+const FILIERES = [{ id: 5, code: 'IM-L2', intitule: 'Informatique L2', niveau: 'L2', semestres: [3, 4], etablissement_id: 1 }]
+
+const SALLES = [
+  { id: 9, nom: 'A-101', code: 'A-101', etablissement_id: 1, verifie_gps: true, verifie_wifi: false },
+  { id: 10, nom: 'B-204', code: 'B-204', etablissement_id: 1, verifie_gps: false, verifie_wifi: false },
+]
+
+const cle = (nom) => nom.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+
+/** Reconnaissance telle que le serveur la rend : chaque nom, et sa salle ou null. */
+const reconnaissance = (salles) => http.post(`${API}/admin/salles/reconnaitre`, async ({ request }) => {
+  const { noms } = await request.json()
+  return succes(noms.map((nom) => ({ nom, salle: salles.find((s) => cle(s.nom) === cle(nom)) ?? null, desactivee: false })))
+})
 
 let mouchard
 
@@ -44,6 +57,8 @@ beforeEach(() => {
   server.use(
     http.get(`${API}/admin/annees-academiques`, () => succes(ANNEES)),
     http.get(`${API}/admin/filieres`, () => succes(FILIERES)),
+    http.get(`${API}/admin/salles/disponibles`, () => succes(SALLES)),
+    reconnaissance(SALLES),
   )
   mouchard = installerMouchard()
 })
@@ -60,9 +75,11 @@ async function afficher() {
   return user
 }
 
-async function choisirDestination(user) {
+async function choisirDestination(user, { attendre = true } = {}) {
   await waitFor(() => expect(screen.getByRole('option', { name: /IM-L2/ })).toBeInTheDocument())
   await user.selectOptions(screen.getByLabelText(/Filière/i), '5')
+  // La reconnaissance des salles part avec la destination.
+  if (attendre) await waitFor(() => expect(screen.getByLabelText('Salle pour « B-204 »')).toHaveValue('10'))
 }
 
 describe('Validation d un emploi du temps extrait', () => {
@@ -103,6 +120,24 @@ describe('Validation d un emploi du temps extrait', () => {
 
     // Rien n'a ete confirme.
     expect(mouchard.filtrer('POST', 'schedule/confirmer')).toHaveLength(0)
+  })
+
+  // « Emploi du temps ... du 15 juin 2026 » : la version du document, lue par
+  // l'IA, pre-remplit la validite, que l'on peut corriger.
+  it('reprend la date lue dans le document et l envoie avec le lot', async () => {
+    sessionStorage.setItem('import_analysis', JSON.stringify({ ...ANALYSE, result: { ...ANALYSE.result, valide_du: '2026-06-15' } }))
+    server.use(http.post(`${API}/admin/import/schedule/verifier`,
+      () => succes({ total: 2, valides: 2, lignes: [] })))
+
+    const user = await afficher()
+    expect(screen.getByLabelText('Valable du')).toHaveValue('2026-06-15')
+    expect(screen.getByText(/Date lue dans le document/)).toBeInTheDocument()
+
+    await choisirDestination(user)
+    await user.click(screen.getByRole('button', { name: /Vérifier sans enregistrer/i }))
+
+    await waitFor(() => expect(mouchard.filtrer('POST', 'schedule/verifier')).toHaveLength(1))
+    expect(mouchard.filtrer('POST', 'schedule/verifier')[0].corps.valide_du).toBe('2026-06-15')
   })
 
   it('n autorise l enregistrement qu apres verification', async () => {
@@ -189,5 +224,79 @@ describe('Validation d un emploi du temps extrait', () => {
 
     await waitFor(() => expect(screen.getByText(/Rien n'a été écrit/)).toBeInTheDocument())
     expect(screen.getByText(/Conflit de promotion/)).toBeInTheDocument()
+  })
+
+  describe('salle de chaque creneau', () => {
+    it('pre-remplit les salles reconnues et envoie leur identifiant', async () => {
+      server.use(http.post(`${API}/admin/import/schedule/verifier`,
+        () => succes({ total: 2, valides: 2, lignes: [] })))
+
+      const user = await afficher()
+      await choisirDestination(user)
+
+      expect(screen.getByLabelText('Salle pour « A-101 »')).toHaveValue('9')
+      await user.click(screen.getByRole('button', { name: /Vérifier sans enregistrer/i }))
+
+      await waitFor(() => expect(mouchard.filtrer('POST', 'schedule/verifier')).toHaveLength(1))
+      const [premier, second] = mouchard.filtrer('POST', 'schedule/verifier')[0].corps.creneaux
+      expect(premier).toMatchObject({ salle_id: 9, sans_salle: false })
+      expect(second).toMatchObject({ salle_id: 10, sans_salle: false })
+    })
+
+    it('bloque la verification tant qu une salle lue n est pas choisie, et accepte « Aucune »', async () => {
+      server.use(
+        reconnaissance(SALLES.filter((s) => s.id === 9)),
+        http.post(`${API}/admin/import/schedule/verifier`, () => succes({ total: 2, valides: 2, lignes: [] })),
+      )
+
+      const user = await afficher()
+      await choisirDestination(user, { attendre: false })
+      await waitFor(() => expect(screen.getByLabelText('Salle pour « A-101 »')).toHaveValue('9'))
+
+      expect(screen.getByLabelText('Salle pour « B-204 »')).toHaveValue('a-choisir')
+      expect(screen.getByText('Salle à choisir')).toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: /Vérifier sans enregistrer/i }))
+      expect(await screen.findByText(/1 créneau\(x\) ont une salle à choisir/)).toBeInTheDocument()
+      expect(mouchard.filtrer('POST', 'schedule/verifier')).toHaveLength(0)
+
+      await user.selectOptions(screen.getByLabelText('Salle pour « B-204 »'), 'aucune')
+      await user.click(screen.getByRole('button', { name: /Vérifier sans enregistrer/i }))
+
+      await waitFor(() => expect(mouchard.filtrer('POST', 'schedule/verifier')).toHaveLength(1))
+      expect(mouchard.filtrer('POST', 'schedule/verifier')[0].corps.creneaux[1]).toMatchObject({ salle_id: null, sans_salle: true })
+    })
+
+    it('« Créer » cree la salle une fois et l applique a toutes les lignes du meme nom', async () => {
+      sessionStorage.setItem('import_analysis', JSON.stringify({
+        ...ANALYSE,
+        result: {
+          ...ANALYSE.result,
+          events: [
+            { ec_libelle: 'Algorithmique avancée', jour_semaine: 1, heure_debut: '08:00', heure_fin: '10:00', salle: 'Labo 3' },
+            { ec_libelle: 'Bases de données', jour_semaine: 3, heure_debut: '08:00', heure_fin: '10:00', salle: 'labo 3' },
+            { ec_libelle: 'Réseaux', jour_semaine: 4, heure_debut: '08:00', heure_fin: '10:00', salle: 'A-101' },
+          ],
+        },
+      }))
+      const LABO = { id: 42, nom: 'Labo 3', code: 'LABO-3', etablissement_id: 1, verifie_gps: false, verifie_wifi: false }
+      server.use(http.post(`${API}/admin/salles/depuis-nom`,
+        () => succes(LABO, 'Salle « Labo 3 » créée. Elle ne vérifie que le QR code : GPS et Wi-Fi à configurer dans Paramètres > Salles.')))
+
+      const user = await afficher()
+      await choisirDestination(user, { attendre: false })
+      await waitFor(() => expect(screen.getByLabelText('Salle pour « A-101 »')).toHaveValue('9'))
+
+      await user.selectOptions(screen.getByLabelText('Salle pour « Labo 3 »'), 'creer')
+
+      await waitFor(() => expect(screen.getByLabelText('Salle pour « Labo 3 »')).toHaveValue('42'))
+      expect(screen.getByLabelText('Salle pour « labo 3 »')).toHaveValue('42')
+      expect(screen.getByLabelText('Salle pour « A-101 »')).toHaveValue('9')
+
+      const creations = mouchard.filtrer('POST', 'salles/depuis-nom')
+      expect(creations).toHaveLength(1)
+      expect(creations[0].corps).toEqual({ filiere_id: 5, nom: 'Labo 3' })
+      expect(screen.getByText(/GPS et Wi-Fi à configurer/)).toBeInTheDocument()
+    })
   })
 })

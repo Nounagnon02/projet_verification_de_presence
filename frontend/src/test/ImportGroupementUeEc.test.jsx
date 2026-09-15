@@ -9,7 +9,8 @@ import { installerMouchard } from './msw/mouchard'
 
 const API = '*/api'
 
-// Resultat REEL de Gemini : les UE portent leurs EC, imbriques.
+// Resultat de Gemini, au format de la consigne : les UE portent leurs EC,
+// imbriques, avec leurs heures par type.
 const ANALYSE = {
   analysis_id: 7,
   type: 'courses',
@@ -19,8 +20,8 @@ const ANALYSE = {
       {
         code: 'INF1322', intitule: 'Approche orientée objet', semestre: 3, credits: 6,
         ecs: [
-          { code: '1INF1322', intitule: 'Analyse et conception', volume_horaire: 50 },
-          { code: '2INF1322', intitule: 'Programmation', volume_horaire: 50 },
+          { code: '1INF1322', intitule: 'Analyse et conception', cm: 10, td_tp: 15, tpe: 25, ctt: 50 },
+          { code: '2INF1322', intitule: 'Programmation', cm: 20, td_tp: 30, tpe: 50, ctt: 100 },
         ],
       },
       { code: 'ANG1325', intitule: 'Anglais scientifique', semestre: 3, credits: 3, ecs: [] },
@@ -95,6 +96,32 @@ describe('Validation des cours extraits', () => {
     expect(ues[0].ecs.map((e) => e.code)).toEqual(['1INF1322', '2INF1322'])
     expect(ues[1].code).toBe('ANG1325')
     expect(ues[1].ecs).toEqual([])
+    // Les heures par type, jamais le TPE ni le CTT.
+    expect(ues[0].ecs[0]).toEqual({ code: '1INF1322', intitule: 'Analyse et conception', volume_cm: 10, volume_td: 0, volume_tp: 0, volume_td_tp: 15 })
+  })
+
+  // Maquette reelle de l'IFRI : l'IA ne rendait qu'un total, le CTT (125 h pour
+  // 5 credits, TPE compris). L'ecran le disait « Pret » et l'enregistrait
+  // « a ventiler » : l'EC ne se serait jamais termine.
+  it("ne tient pas un total pour des heures de cours : l'EC reste a completer", async () => {
+    sessionStorage.setItem('import_courses_analysis', JSON.stringify({
+      ...ANALYSE,
+      result: { ues: [{ code: 'MTH1321', intitule: 'Structures algébriques', semestre: 3, credits: 5, ecs: [
+        { code: '1MTH1321', intitule: 'Structures algébriques', volume_horaire: 125 },
+      ] }] },
+    }))
+    const user = await afficher()
+
+    expect(screen.getByText('Heures à saisir')).toBeInTheDocument()
+    expect(screen.getByText(/Lu dans le document : total 125 h/)).toBeInTheDocument()
+
+    await waitFor(() => expect(screen.getByRole('option', { name: /IM-L2/ })).toBeInTheDocument())
+    await user.selectOptions(screen.getByLabelText(/Filière/i), '5')
+    await user.click(screen.getByRole('button', { name: /Valider et enregistrer/i }))
+
+    await waitFor(() => expect(mouchard.filtrer('POST', 'validate-courses')).toHaveLength(1))
+    const { ues } = mouchard.filtrer('POST', 'validate-courses')[0].corps
+    expect(ues[0].ecs).toEqual([])
   })
 
   // Regression : filiere_id et annee_id etaient ecrits en dur a 1. Toute analyse
