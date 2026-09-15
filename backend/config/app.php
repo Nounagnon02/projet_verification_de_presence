@@ -62,12 +62,18 @@ return [
     |--------------------------------------------------------------------------
     |
     | Here you may specify the default timezone for your application, which
-    | will be used by the PHP date and date-time functions. The timezone
-    | is set to "UTC" by default as it is suitable for most use cases.
+    | will be used by the PHP date and date-time functions.
+    |
+    | Heure du Bénin (UTC+1, sans heure d'été) : les heures de cours sont
+    | saisies à l'heure locale, et la fenêtre de scan, les tâches planifiées et
+    | « aujourd'hui » doivent suivre la même horloge. En UTC, le scan d'un cours
+    | finissant à 10h00 ouvrait à 10h45 heure locale. Les horodatages écrits
+    | avant ce changement ont été décalés par la migration
+    | 2026_09_14_090000_horodatages_a_l_heure_du_benin.
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', 'Africa/Porto-Novo'),
 
     /*
     |--------------------------------------------------------------------------
