@@ -1,11 +1,26 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiAlertTriangle, FiLoader, FiRefreshCw, FiUpload, FiCheck, FiFileText, FiTrendingUp } from 'react-icons/fi';
+// Modales rendues dans <body> : placées dans la page, elles héritaient de la
+// marge de son conteneur (space-y) et laissaient une bande découverte en haut.
+import { createPortal } from 'react-dom';
+import { FiPlus, FiEdit2, FiTrash2, FiAlertTriangle, FiLoader, FiRefreshCw, FiUpload, FiCheck, FiFileText, FiTrendingUp, FiUsers } from 'react-icons/fi';
 import api from '../../api/axios';
 import SearchInput from '../../components/ui/SearchInput';
 import Pagination from '../../components/ui/Pagination';
 import Modal from '../../components/ui/Modal';
+import { useSearchParams } from 'react-router-dom';
 import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
+import useNiveaux from '../../hooks/useNiveaux';
 import { useToastCtx } from '../../context/ToastContext';
+import GroupesPromotion from '../../components/students/GroupesPromotion';
+
+/** Identifiant du groupe de TD ou de TP d'un étudiant, '' s'il n'en a pas. */
+const groupeDe = (etudiant, type) => String(etudiant?.groupes?.find((g) => g.type === type)?.id ?? '');
+
+/** L'étudiant reste-t-il dans sa promotion ? Changer de filière ou d'année le retire de ses groupes. */
+const memePromotion = (etudiant, form) => (
+  String(etudiant?.filiere?.id ?? etudiant?.filiere_id ?? '') === String(form.filiere_id)
+  && String(etudiant?.annee?.id ?? etudiant?.annee_id ?? '') === String(form.annee_id)
+);
 
 const StudentManagementPage = () => {
   const [students, setStudents] = useState([]);
@@ -28,8 +43,22 @@ const StudentManagementPage = () => {
   // absente de la nouvelle année et la liste se viderait sans explication.
   const [page, setPageCourante] = useState(1);
 
-  const filtres = useFiltresAcademiques({ onChangement: () => setPageCourante(1) });
+  // Groupes de TD et de TP : filtre de la liste, fenêtre de gestion, et
+  // groupes de l'étudiant en cours de modification.
+  const [filtreGroupe, setFiltreGroupe] = useState('');
+  const [groupesPromo, setGroupesPromo] = useState({ cle: '', liste: [] });
+  const [showGroupes, setShowGroupes] = useState(false);
+  const [formGroupes, setFormGroupes] = useState({ td: '', tp: '' });
+  const [groupesEleve, setGroupesEleve] = useState([]);
+
+  // La grille des filières mène ici avec ?filiere=…&annee=… : les filtres s'y ouvrent.
+  const [parametres] = useSearchParams();
+  const filtres = useFiltresAcademiques({
+    onChangement: () => { setPageCourante(1); setFiltreGroupe(''); },
+    initial: { annee: parametres.get('annee'), filiere: parametres.get('filiere') },
+  });
   const { annees, filieres, filieresToutes } = filtres;
+  const niveaux = useNiveaux();
 
   // Indépendant de l'année : un étudiant est responsable ou non, quelle que
   // soit la promotion. Le mettre en cascade n'aurait aucun sens.
@@ -76,6 +105,7 @@ const StudentManagementPage = () => {
         if (filtres.semestre) params.semestre = filtres.semestre;
         if (filtres.niveau) params.niveau = filtres.niveau;
         if (filtreResponsable) params.responsable = filtreResponsable;
+        if (filtreGroupe) params.groupe_id = filtreGroupe;
         const response = await api.get('/admin/students', { params, signal: controller.signal });
         const result = response.data;
 
@@ -98,11 +128,25 @@ const StudentManagementPage = () => {
     })();
 
     return () => abortFetchRef.current?.abort();
-  }, [page, search, filtres.annee, filtres.filiere, filtres.semestre, filtres.niveau, filtreResponsable, rechargement]);
+  }, [page, search, filtres.annee, filtres.filiere, filtres.semestre, filtres.niveau, filtreResponsable, filtreGroupe, rechargement]);
 
   // L'inscription se fait toujours dans l'année active : on ne la fait pas
   // choisir, on l'impose (le serveur la ré-applique de toute façon).
   const activeYear = annees.find((a) => a.active || a.is_active) || null;
+
+  // Groupes de la promotion filtrée (filière, et année choisie ou active).
+  const anneeGroupes = filtres.annee || (activeYear ? String(activeYear.id) : '');
+  const cleGroupes = filtres.filiere && anneeGroupes ? `${filtres.filiere}|${anneeGroupes}` : '';
+  useEffect(() => {
+    if (!cleGroupes) return undefined;
+    let annule = false;
+    const [filiere_id, annee_id] = cleGroupes.split('|');
+    api.get('/admin/groupes', { params: { filiere_id, annee_id } })
+      .then(({ data }) => { if (!annule) setGroupesPromo({ cle: cleGroupes, liste: data?.data ?? [] }); })
+      .catch(() => { if (!annule) setGroupesPromo({ cle: cleGroupes, liste: [] }); });
+    return () => { annule = true; };
+  }, [cleGroupes, rechargement]);
+  const groupesFiltre = groupesPromo.cle === cleGroupes ? groupesPromo.liste : [];
 
   const openCreate = () => {
     setEditing(null);
@@ -122,6 +166,15 @@ const StudentManagementPage = () => {
       filiere_id: s.filiere?.id?.toString() || s.filiere_id?.toString() || '',
       annee_id: s.annee?.id?.toString() || s.annee_id?.toString() || '',
     });
+    setFormGroupes({ td: groupeDe(s, 'td'), tp: groupeDe(s, 'tp') });
+    setGroupesEleve([]);
+    const filiereId = s.filiere?.id ?? s.filiere_id;
+    const anneeId = s.annee?.id ?? s.annee_id;
+    if (filiereId && anneeId) {
+      api.get('/admin/groupes', { params: { filiere_id: filiereId, annee_id: anneeId } })
+        .then(({ data }) => setGroupesEleve(data?.data ?? []))
+        .catch(() => setGroupesEleve([]));
+    }
     setFormError('');
     setShowModal(true);
   };
@@ -171,6 +224,12 @@ const StudentManagementPage = () => {
 
       if (editing) {
         await api.put(`/admin/students/${editing.id}`, payload);
+        // Les groupes ne se choisissent que dans la même promotion : un changement
+        // de filière ou d'année en retire l'étudiant, côté serveur.
+        if (memePromotion(editing, form)
+          && (formGroupes.td !== groupeDe(editing, 'td') || formGroupes.tp !== groupeDe(editing, 'tp'))) {
+          await api.put(`/admin/students/${editing.id}/groupes`, { td: formGroupes.td || null, tp: formGroupes.tp || null });
+        }
         addToast?.('Étudiant modifié avec succès', 'success');
       } else {
         await api.post('/admin/students', payload);
@@ -228,6 +287,19 @@ const StudentManagementPage = () => {
       setPromotePreview(null);
     }
   }, []);
+
+  // Filière qui suit, dans le même programme : IM-L1 → IM-L2. La destination se
+  // choisissait sans aide, et rien ne signalait IM-L1 → GEA-M2.
+  const ordreNiveaux = niveaux.map((n) => n.code);
+  const filiereSuivante = (depart) => {
+    const rang = depart ? ordreNiveaux.indexOf(depart.niveau) : -1;
+    if (!depart?.programme_id || rang < 0 || rang + 1 >= ordreNiveaux.length) return null;
+    return filieresToutes.find((f) => f.programme_id === depart.programme_id && f.niveau === ordreNiveaux[rang + 1]) ?? null;
+  };
+  const filiereDepart = filieresToutes.find((f) => String(f.id) === promoteForm.from_filiere_id) ?? null;
+  const filiereProposee = filiereSuivante(filiereDepart);
+  const filiereDestination = filieresToutes.find((f) => String(f.id) === promoteForm.to_filiere_id) ?? null;
+  const horsParcours = Boolean(filiereDepart && filiereDestination && filiereProposee?.id !== filiereDestination.id);
 
   const handlePromote = async () => {
     if (!promoteForm.from_filiere_id || !promoteForm.to_filiere_id) {
@@ -323,7 +395,7 @@ const StudentManagementPage = () => {
             {pagination?.total ?? students.length} étudiant(s) inscrit(s)
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button onClick={rafraichir} className="p-2.5 hover:bg-surface-container-high rounded-xl transition-colors" title="Actualiser">
             <FiRefreshCw className={`text-on-surface-variant ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -335,6 +407,9 @@ const StudentManagementPage = () => {
           </button>
           <button onClick={openPromote} className="flex items-center gap-2 bg-tertiary/10 text-tertiary px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-tertiary/20 transition-all shadow-sm" title="Passer une promotion à l'année/niveau suivant">
             <FiTrendingUp /> Promouvoir
+          </button>
+          <button onClick={() => setShowGroupes(true)} className="flex items-center gap-2 bg-surface-container-high text-on-surface px-5 py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 transition-all shadow-sm" title="Groupes de TD et de TP d'une promotion">
+            <FiUsers /> Groupes
           </button>
         </div>
       </div>
@@ -381,6 +456,15 @@ const StudentManagementPage = () => {
               <option value="">Tous les étudiants</option>
               <option value="1">Responsables uniquement</option>
               <option value="0">Non-responsables</option>
+            </select>
+          </div>
+          <div className="space-y-1 min-w-[140px]">
+            <label htmlFor="filtre-groupe" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Groupe</label>
+            <select id="filtre-groupe" value={filtreGroupe} onChange={(e) => { setFiltreGroupe(e.target.value); setPageCourante(1); }}
+              disabled={groupesFiltre.length === 0}
+              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
+              <option value="">{!filtres.filiere ? 'Choisir une filière' : groupesFiltre.length ? 'Tous les groupes' : 'Aucun groupe'}</option>
+              {groupesFiltre.map((g) => <option key={g.id} value={g.id}>{g.type.toUpperCase()} {g.libelle}</option>)}
             </select>
           </div>
         </div>
@@ -439,19 +523,20 @@ const StudentManagementPage = () => {
               <th className="text-left p-4 font-semibold hidden md:table-cell">Email</th>
               <th className="text-left p-4 font-semibold hidden lg:table-cell">Filière</th>
               <th className="text-left p-4 font-semibold hidden lg:table-cell">Année</th>
+              <th className="text-left p-4 font-semibold hidden lg:table-cell">Groupes</th>
               <th className="text-right p-4 font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} className="p-8 text-center">
+                <td colSpan={8} className="p-8 text-center">
                   <FiLoader className="animate-spin mx-auto text-primary" />
                 </td>
               </tr>
             ) : students.length === 0 ? (
               <tr>
-                <td colSpan={7} className="p-8 text-center text-on-surface-variant">Aucun étudiant trouvé</td>
+                <td colSpan={8} className="p-8 text-center text-on-surface-variant">Aucun étudiant trouvé</td>
               </tr>
             ) : Array.isArray(students) && students.map((s) => (
               <tr key={s.id} className="border-b border-outline-variant/5 hover:bg-surface-container-low/50 transition-colors">
@@ -476,6 +561,17 @@ const StudentManagementPage = () => {
                 <td className="p-4 hidden lg:table-cell">{s.filiere?.code || s.filiere || '-'}</td>
                 <td className="p-4 hidden lg:table-cell">
                   <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-semibold">{s.annee?.annee || s.annee || '-'}</span>
+                </td>
+                <td className="p-4 hidden lg:table-cell">
+                  {s.groupes?.length ? (
+                    <span className="flex flex-wrap gap-1">
+                      {[...s.groupes].sort((a, b) => a.type.localeCompare(b.type)).map((g) => (
+                        <span key={g.id} className="px-2 py-0.5 bg-surface-container-high rounded text-xs font-medium whitespace-nowrap">
+                          {g.type.toUpperCase()} {g.libelle}
+                        </span>
+                      ))}
+                    </span>
+                  ) : <span className="text-on-surface-variant">—</span>}
                 </td>
                 <td className="p-4 text-right">
                   <div className="flex items-center justify-end gap-2">
@@ -562,6 +658,32 @@ const StudentManagementPage = () => {
             </div>
           </div>
           {editing && (
+            <fieldset className="space-y-2">
+              <legend className="text-xs font-semibold text-on-surface-variant">Groupes de TD et de TP</legend>
+              {!memePromotion(editing, form) ? (
+                <p className="text-xs text-on-surface-variant">
+                  Changer de filière ou d'année retire l'étudiant de ses groupes : placez-le ensuite dans ceux de sa
+                  nouvelle promotion.
+                </p>
+              ) : groupesEleve.length === 0 ? (
+                <p className="text-xs text-on-surface-variant">Aucun groupe dans cette promotion : créez-les depuis « Groupes ».</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  {['td', 'tp'].map((type) => (
+                    <div key={type} className="space-y-1.5">
+                      <label htmlFor={`etudiant-groupe-${type}`} className="text-xs font-semibold text-on-surface-variant">Groupe de {type.toUpperCase()}</label>
+                      <select id={`etudiant-groupe-${type}`} value={formGroupes[type]} onChange={(e) => setFormGroupes((g) => ({ ...g, [type]: e.target.value }))}
+                        className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors">
+                        <option value="">Aucun</option>
+                        {groupesEleve.filter((g) => g.type === type).map((g) => <option key={g.id} value={g.id}>{g.libelle}</option>)}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </fieldset>
+          )}
+          {editing && (
             <label className="flex items-start gap-3 rounded-xl bg-surface-container-high px-3 py-3 cursor-pointer">
               <input type="checkbox" checked={form.est_responsable}
                 onChange={(e) => setForm({ ...form, est_responsable: e.target.checked })}
@@ -592,7 +714,8 @@ const StudentManagementPage = () => {
           <p className="text-sm text-on-surface-variant">
             Fait passer tous les étudiants d'une filière vers une autre (ex. L1 → L2), et
             réinscrit chacun aux cours de sa nouvelle filière. L'identifiant de connexion des
-            étudiants reste inchangé.
+            étudiants reste inchangé. Ils quittent leurs groupes de TD et de TP : répartissez ensuite la
+            nouvelle promotion depuis « Groupes ».
           </p>
 
           {promoteError && (
@@ -603,10 +726,16 @@ const StudentManagementPage = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-on-surface-variant">Filière de départ *</label>
-              <select className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              <label htmlFor="promo-depart" className="text-xs font-semibold text-on-surface-variant">Filière de départ *</label>
+              <select id="promo-depart" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                 value={promoteForm.from_filiere_id}
-                onChange={(e) => { const v = e.target.value; setPromoteForm({ ...promoteForm, from_filiere_id: v }); previewPromotion(v); }}>
+                onChange={(e) => {
+                  const v = e.target.value;
+                  // La destination proposée : le niveau suivant du même programme.
+                  const suivante = filiereSuivante(filieresToutes.find((f) => String(f.id) === v));
+                  setPromoteForm({ ...promoteForm, from_filiere_id: v, to_filiere_id: suivante ? String(suivante.id) : '' });
+                  previewPromotion(v);
+                }}>
                 <option value="">Sélectionner...</option>
                 {filieresToutes.map((f) => <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>)}
               </select>
@@ -615,8 +744,8 @@ const StudentManagementPage = () => {
               )}
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-on-surface-variant">Filière de destination *</label>
-              <select className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              <label htmlFor="promo-destination" className="text-xs font-semibold text-on-surface-variant">Filière de destination *</label>
+              <select id="promo-destination" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                 value={promoteForm.to_filiere_id}
                 onChange={(e) => setPromoteForm({ ...promoteForm, to_filiere_id: e.target.value })}>
                 <option value="">Sélectionner...</option>
@@ -624,8 +753,25 @@ const StudentManagementPage = () => {
                   <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>
                 ))}
               </select>
+              {filiereDepart && (
+                <p className="text-xs text-on-surface-variant">
+                  {filiereProposee
+                    ? `Proposée : ${filiereProposee.code}, niveau suivant du même programme.`
+                    : 'Aucune filière de niveau suivant dans ce programme : fin de cycle, ou niveau pas encore ouvert.'}
+                </p>
+              )}
             </div>
           </div>
+
+          {horsParcours && (
+            <p role="alert" className="flex items-start gap-2 p-3 bg-warning-container rounded-lg text-xs text-on-surface">
+              <FiAlertTriangle className="mt-0.5 shrink-0" aria-hidden="true" />
+              <span>
+                {filiereDepart.code} → {filiereDestination.code} : ce n'est pas le niveau suivant du même programme.
+                Vérifiez avant de promouvoir (passage en Master, réorientation…).
+              </span>
+            </p>
+          )}
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-on-surface-variant">Année de destination</label>
@@ -637,6 +783,14 @@ const StudentManagementPage = () => {
                 <option key={a.id} value={a.id}>{a.libelle || a.annee} {a.active || a.is_active ? '(active)' : ''}</option>
               ))}
             </select>
+            {/* Promus, les étudiants ne sont plus attendus aux séances restantes
+                de l'année qu'ils quittent : on promeut une fois ses cours finis. */}
+            {activeYear && promoteForm.to_annee_id && promoteForm.to_annee_id !== String(activeYear.id) && (
+              <p className="text-xs text-on-surface-variant">
+                Les étudiants quitteront {activeYear.libelle} : leurs présences y restent comptées, mais ils ne seront
+                plus attendus à ses séances restantes. Promouvez une fois les cours de {activeYear.libelle} terminés.
+              </p>
+            )}
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
@@ -651,8 +805,11 @@ const StudentManagementPage = () => {
         </div>
       </Modal>
 
+      <GroupesPromotion isOpen={showGroupes} onClose={() => setShowGroupes(false)} annees={annees} filieres={filieresToutes}
+        filiereInitiale={filtres.filiere} anneeInitiale={anneeGroupes} onModifie={rafraichir} />
+
       {/* ─── Modal Import CSV ───────────────────────────── */}
-      {showImportModal && (
+      {showImportModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           onClick={() => { if (!importUploading) { setShowImportModal(false); resetImport(); } }}>
           <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto"
@@ -744,6 +901,7 @@ const StudentManagementPage = () => {
             <div className="mt-6 bg-surface-container-high rounded-xl p-4">
               <h4 className="text-xs font-bold text-primary mb-2">Format attendu</h4>
               <p className="text-[11px] text-on-surface-variant">Colonnes : <span className="font-mono font-medium text-primary">nom, prenom, email, matricule, filiere_code, annee_libelle</span></p>
+              <p className="text-[11px] text-on-surface-variant mt-1">Facultatives : <span className="font-mono font-medium text-primary">groupe_td, groupe_tp</span> — le groupe est créé dans la promotion s'il n'existe pas.</p>
               <p className="text-[11px] text-on-surface-variant mt-1">CSV avec séparateur virgule, encodage UTF-8.</p>
             </div>
 
@@ -754,7 +912,8 @@ const StudentManagementPage = () => {
               </button>
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

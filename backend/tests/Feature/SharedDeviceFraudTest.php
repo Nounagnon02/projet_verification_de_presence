@@ -17,8 +17,8 @@ use Tests\TestCase;
 
 /**
  * Fraude « un seul téléphone pour toute la classe » : un même appareil
- * utilisé par plusieurs étudiants pour le même événement doit marquer les
- * scans suivants comme suspects et créer une anomalie.
+ * utilisé par plusieurs étudiants pour le même événement met tous leurs scans
+ * en suspect, le premier compris, et crée une anomalie.
  */
 class SharedDeviceFraudTest extends TestCase
 {
@@ -84,7 +84,7 @@ class SharedDeviceFraudTest extends TestCase
         ]);
     }
 
-    public function test_deuxieme_etudiant_sur_le_meme_appareil_est_marque_suspect(): void
+    public function test_un_telephone_partage_met_tout_le_groupe_en_suspect(): void
     {
         $device = 'device-partage-xyz';
         $a = $this->etudiantInscrit('A' . Str::random(4));
@@ -98,6 +98,45 @@ class SharedDeviceFraudTest extends TestCase
         $this->scan($b, $device)->assertStatus(201);
         $this->assertDatabaseHas('presences', ['etudiant_id' => $b->id, 'evenement_id' => $this->evenement->id, 'statut' => 'suspect']);
         $this->assertDatabaseHas('anomalies', ['type' => 'appareil_partage', 'etudiant_id' => $b->id]);
+
+        // Le premier scan rejoint la file : c'est souvent le propriétaire du
+        // téléphone qui pointe pour les autres.
+        $this->assertDatabaseHas('presences', ['etudiant_id' => $a->id, 'evenement_id' => $this->evenement->id, 'statut' => 'suspect']);
+    }
+
+    public function test_une_presence_deja_arbitree_n_est_pas_rouverte(): void
+    {
+        $device = 'device-arbitre-' . Str::random(4);
+        $a = $this->etudiantInscrit('E' . Str::random(4));
+        $b = $this->etudiantInscrit('F' . Str::random(4));
+
+        $this->scan($a, $device)->assertStatus(201);
+        \App\Models\Presence::where('etudiant_id', $a->id)->where('evenement_id', $this->evenement->id)
+            ->update(['validated_by' => \App\Models\User::factory()->create()->id, 'validated_at' => now()]);
+
+        $this->scan($b, $device)->assertStatus(201);
+
+        $this->assertDatabaseHas('presences', ['etudiant_id' => $a->id, 'evenement_id' => $this->evenement->id, 'statut' => 'valide']);
+        $this->assertDatabaseHas('presences', ['etudiant_id' => $b->id, 'evenement_id' => $this->evenement->id, 'statut' => 'suspect']);
+    }
+
+    public function test_une_presence_supprimee_puis_rescannee_sur_un_telephone_partage_est_suspecte(): void
+    {
+        $partage = 'device-restaure-' . Str::random(4);
+        $a = $this->etudiantInscrit('G' . Str::random(4));
+        $b = $this->etudiantInscrit('H' . Str::random(4));
+
+        $this->scan($a, $partage)->assertStatus(201);
+        $this->scan($b, 'device-b-' . Str::random(4))->assertStatus(201);
+
+        // Présence de B supprimée par un administrateur, puis B rescanne avec le
+        // téléphone de A : le contrôle d'appareil doit s'appliquer comme au
+        // premier scan.
+        \App\Models\Presence::where('etudiant_id', $b->id)->where('evenement_id', $this->evenement->id)->first()->delete();
+        $this->scan($b, $partage)->assertSuccessful();
+
+        $this->assertDatabaseHas('presences', ['etudiant_id' => $b->id, 'evenement_id' => $this->evenement->id, 'statut' => 'suspect', 'deleted_at' => null]);
+        $this->assertDatabaseHas('presences', ['etudiant_id' => $a->id, 'evenement_id' => $this->evenement->id, 'statut' => 'suspect']);
     }
 
     public function test_deux_etudiants_sur_leurs_propres_appareils_restent_valides(): void

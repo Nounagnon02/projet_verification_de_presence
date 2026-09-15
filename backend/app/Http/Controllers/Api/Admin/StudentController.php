@@ -29,7 +29,7 @@ class StudentController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Etudiant::with(['filiere', 'anneeAcademique']);
+        $query = Etudiant::with(['filiere', 'anneeAcademique', 'groupes:groupes.id,groupes.libelle,groupes.type']);
 
         // Scope par établissement via la filière
         $this->scopeViaRelation($query, $request, 'filiere');
@@ -64,6 +64,10 @@ class StudentController extends Controller
         // ce qu'un `if ($x = request(...))` avalerait comme un filtre absent.
         if ($request->filled('responsable')) {
             $query->where('est_responsable', $request->boolean('responsable'));
+        }
+
+        if ($request->filled('groupe_id')) {
+            $query->whereHas('groupes', fn ($g) => $g->where('groupes.id', $request->integer('groupe_id')));
         }
 
         $perPage = min((int) request('per_page', 15), 100);
@@ -107,11 +111,10 @@ class StudentController extends Controller
         $filiere = Filiere::findOrFail($request->filiere_id);
 
         // L'inscription se fait toujours dans l'année active : on l'impose ici
-        // plutôt que de laisser l'administrateur la choisir. L'année est celle
-        // de l'établissement de la filière (une seule active à la fois).
-        $annee = AnneeAcademique::where('active', true)
-            ->when($filiere->etablissement_id, fn ($q) => $q->where('etablissement_id', $filiere->etablissement_id))
-            ->first();
+        // plutôt que de laisser l'administrateur la choisir. C'est celle de
+        // l'établissement de la filière — les facultés ne basculent pas toutes
+        // le même jour.
+        $annee = AnneeAcademique::activePour($filiere->etablissement_id);
 
         if (!$annee) {
             return $this->errorResponse(
@@ -258,14 +261,21 @@ class StudentController extends Controller
             $data['prenom'] = IdentifiantService::normalize($data['prenom']);
         }
 
+        if (isset($data['annee_id']) && (int) $data['annee_id'] !== (int) $student->annee_id) {
+            $this->refuserSiAnneeClose((int) $data['annee_id'], $request);
+        }
+
         $oldFiliereId = $student->filiere_id;
         $oldAnneeId   = $student->annee_id;
 
         $student->update($data);
 
-        // Si la filière ou l'année a changé, recalculer les inscriptions aux ECs
+        // Si la filière ou l'année a changé, recalculer les inscriptions aux ECs.
+        // Changer l'année ici corrige une erreur de saisie (le passage d'année
+        // se fait par la promotion) : les inscriptions de l'année erronée sont
+        // effacées avec celles de l'année courante.
         if ($student->filiere_id !== $oldFiliereId || $student->annee_id !== $oldAnneeId) {
-            $student->recalculateEnrollments();
+            $student->recalculateEnrollments($student->annee_id !== $oldAnneeId ? $oldAnneeId : null);
         }
 
         return $this->successResponse(
@@ -328,8 +338,8 @@ class StudentController extends Controller
 
         $toAnnee = null;
         if (!empty($validated['to_annee_id'])) {
+            // Les années sont communes à l'université : pas d'établissement à vérifier.
             $toAnnee = AnneeAcademique::findOrFail($validated['to_annee_id']);
-            $this->authorizeEtablissement($toAnnee, $request);
         }
 
         if ($concernes === 0) {

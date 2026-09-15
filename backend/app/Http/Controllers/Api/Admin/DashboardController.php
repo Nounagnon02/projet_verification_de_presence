@@ -93,17 +93,16 @@ class DashboardController extends Controller
             return $query;
         };
 
-        $fraudesSuspectees = $scopeAnomalies(Anomaly::where('resolved', false))->count();
+        // Scans à arbitrer : les présences suspectes de la file de validation,
+        // seul lieu de décision. L'ancien compteur « fraudes suspectées »
+        // comptait les anomalies ouvertes, pour la plupart des scans déjà
+        // refusés (rien à trancher), et qui ne se fermaient jamais.
+        $scansAArbitrer = $this->scopePresence(Presence::where('statut', 'suspect'), $etablissementId)->count();
 
-        // Aucun eager load : le mapping ci-dessous ne lit que des colonnes de la
-        // table. Le precedent with('member') visait une relation vers une classe
-        // App\Models\Member inexistante — vestige d'un modele metier abandonne —
-        // et faisait donc repondre 500 au tableau de bord des la premiere anomalie
-        // enregistree.
-        $dernieresAnomalies = $scopeAnomalies(Anomaly::where('resolved', false))
-            ->latest()
-            ->take(5)
-            ->get();
+        // Scans refusés du jour, pour information : aucune présence créée.
+        $scansRefusesDuJour = $scopeAnomalies(
+            Anomaly::whereIn('type', Anomaly::TYPES_SCAN_REFUSE)->where('created_at', '>=', today())
+        )->count();
 
         $heatmapAujourdhui = $this->scopePresence(Presence::whereBetween('heure_scan', [today()->startOfDay(), today()->endOfDay()]), $etablissementId)
             ->select(DB::raw("EXTRACT(HOUR FROM heure_scan) as heure"), DB::raw('COUNT(*) as total'))
@@ -118,14 +117,8 @@ class DashboardController extends Controller
             'presences_valides'     => (int) $presencesDuJour->valides,
             'presences_suspectes'   => (int) $presencesDuJour->suspectes,
             'taux_presence_global'  => $tauxPresenceGlobal,
-            'fraudes_suspectees'    => $fraudesSuspectees,
-            'dernieres_anomalies'   => $dernieresAnomalies->map(fn ($a) => [
-                'id'          => $a->id,
-                'type'        => $a->type,
-                'severite'    => $a->severity,
-                'description' => $a->description,
-                'creee_le'    => $a->created_at,
-            ]),
+            'scans_a_arbitrer'      => $scansAArbitrer,
+            'scans_refuses_du_jour' => $scansRefusesDuJour,
             'heatmap' => $heatmapAujourdhui,
         ]);
     }
@@ -170,14 +163,33 @@ class DashboardController extends Controller
         // denominateur. Ici les deux membres partagent le meme perimetre, donc
         // les presences sont par construction un sous-ensemble des seances et la
         // difference reste positive ou nulle.
+        // Séances où l'étudiant était attendu : celles des EC auxquels il est
+        // inscrit pour leur année ; à défaut de toute inscription, celles des cours
+        // que suit sa filière (cours communs compris) — la règle du scan,
+        // Etudiant::scopeAttendusA. On comparait la filière de la SÉANCE à la
+        // sienne : un cours commun porté par une autre filière ne comptait pas, et
+        // un cours de sa filière auquel il n'est pas inscrit comptait.
+        $attenduA = fn (string $ev) => "(EXISTS (SELECT 1 FROM etudiant_ec ee
+                                            WHERE ee.etudiant_id = etudiants.id
+                                              AND ee.ec_id = {$ev}.ec_id
+                                              AND ee.annee_id = {$ev}.annee_id)
+                                      OR (NOT EXISTS (SELECT 1 FROM etudiant_ec ee0 WHERE ee0.etudiant_id = etudiants.id)
+                                          AND {$ev}.ec_id IN (SELECT c.id FROM ecs c
+                                                                JOIN ue_filiere uf ON uf.ue_id = c.ue_id
+                                                               WHERE uf.filiere_id = etudiants.filiere_id)))";
+        $attenduSeance = $attenduA('ev');
+        $attenduPresence = $attenduA('ev2');
+
         $seancesPassees = "(SELECT COUNT(*) FROM evenements ev
-                              WHERE ev.filiere_id = etudiants.filiere_id
+                              WHERE {$attenduSeance}
+                                AND ev.deleted_at IS NULL
                                 AND ev.date < now())";
 
         $presencesRetenues = "(SELECT COUNT(*) FROM presences p
                                  JOIN evenements ev2 ON ev2.id = p.evenement_id
                                 WHERE p.etudiant_id = etudiants.id
-                                  AND ev2.filiere_id = etudiants.filiere_id
+                                  AND {$attenduPresence}
+                                  AND ev2.deleted_at IS NULL
                                   AND ev2.date < now())";
 
         $topAbsences = $this->scopeEtudiant(Etudiant::with('filiere')

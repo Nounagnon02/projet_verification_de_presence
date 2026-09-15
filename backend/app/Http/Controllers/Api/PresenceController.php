@@ -9,6 +9,7 @@ use App\Models\Evenement;
 use App\Models\Presence;
 use App\Models\QrCode;
 use App\Models\Salle;
+use App\Traits\ScopedByEtablissement;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,8 @@ use Illuminate\Support\Facades\Hash;
 
 class PresenceController extends Controller
 {
+    use ScopedByEtablissement;
+
     /**
      * Récupère les informations du cours associé à un token QR (public).
      * Conforme CDC 7.4.1 : le QR code redirige vers un formulaire avec les infos du cours.
@@ -195,24 +198,9 @@ class PresenceController extends Controller
         //-------------------------------------------------------------
         // 5. Vérification inscription au cours
         //-------------------------------------------------------------
-        // L'inscription a CET EC est verifiee en premier : dans le cas nominal —
-        // l'etudiant est bien inscrit — une seule requete suffit. L'ordre
-        // inverse en emettait systematiquement deux, y compris quand la reponse
-        // etait evidente.
-        $inscritACetEc = $etudiant->ecs()
-            ->where('ec_id', $evenement->ec_id)
-            ->wherePivot('annee_id', $etudiant->annee_id)
-            ->exists();
-
-        if (!$inscritACetEc) {
-            // Deux situations a distinguer : l'etudiant a des inscriptions mais
-            // pas a ce cours (refus), ou il n'en a aucune et l'on retombe alors
-            // sur son rattachement de filiere.
-            $aDesInscriptions = $etudiant->ecs()->exists();
-
-            if ($aDesInscriptions || $etudiant->filiere_id !== $evenement->filiere_id) {
-                return $this->forbiddenResponse('Étudiant non inscrit à ce cours.');
-            }
+        // Règle partagée avec l'enregistrement manuel d'une présence.
+        if (!$etudiant->peutAssisterA($evenement)) {
+            return $this->forbiddenResponse('Étudiant non inscrit à ce cours.');
         }
 
         //-------------------------------------------------------------
@@ -235,6 +223,7 @@ class PresenceController extends Controller
                     'metadata'   => [
                         'challenge_recu'   => $request->scan_challenge,
                         'device_fingerprint' => $request->device_fingerprint,
+                        'evenement_id'     => $evenement->id,
                     ],
                 ]);
 
@@ -331,14 +320,16 @@ class PresenceController extends Controller
                     'etudiant_id' => $etudiant->id,
                     'type'        => 'verification_echouee',
                     'description' => "Vérification localisation/réseau échouée pour {$etudiant->nom} {$etudiant->prenom} " .
-                        "— salle {$salle->nom} — " . implode('; ', $raisons),
+                        "— salle {$salle->nom} — " . implode(' ', $raisons),
                     'severity' => 'medium',
-                    'metadata'  => $verificationLog,
+                    'metadata'  => $verificationLog + ['evenement_id' => $evenement->id],
                 ]);
 
                 return $this->forbiddenResponse(
+                    // Chaque raison est déjà une phrase terminée par un point : les
+                    // joindre par « . » puis en ajouter un produisait « 50 m).. ».
                     'Vérification de présence échouée. Vous devez être physiquement dans la salle de cours. ' .
-                    implode('. ', $raisons) . '.'
+                    implode(' ', $raisons)
                 );
             }
 
@@ -365,12 +356,21 @@ class PresenceController extends Controller
         // données du nouveau passage. Refuser reviendrait à priver l'étudiant de
         // toute nouvelle tentative pour ce cours.
         if ($existing && $existing->trashed()) {
+            // Même contrôle d'appareil qu'un premier scan : sans lui, une présence
+            // supprimée puis rescannée depuis le téléphone d'un autre revenait
+            // « valide ». L'arbitrage éventuel de l'ancienne présence est effacé :
+            // c'est un nouveau passage.
+            $statut = $this->statutSelonAppareil($evenement, $etudiant, $request->device_fingerprint);
+
             $existing->restore();
             $existing->update([
                 'heure_scan'        => $now,
                 'device_fingerprint' => $request->device_fingerprint,
                 'ip_address'        => $request->ip(),
-                'statut'            => 'valide',
+                'statut'            => $statut,
+                'validated_by'      => null,
+                'validated_at'      => null,
+                'validation_motif'  => null,
                 'latitude'          => $request->latitude,
                 'longitude'         => $request->longitude,
             ]);
@@ -395,6 +395,7 @@ class PresenceController extends Controller
                         'premier_device'      => $existing->device_fingerprint,
                         'nouveau_device'      => $request->device_fingerprint,
                         'premiere_presence_id' => $existing->id,
+                        'evenement_id'        => $evenement->id,
                     ],
                 ]);
 
@@ -407,41 +408,7 @@ class PresenceController extends Controller
         //-------------------------------------------------------------
         // 8 bis. Détection d'appareil partagé (buddy punching)
         //-------------------------------------------------------------
-        // Fraude la plus courante : un seul téléphone qui scanne pour toute la
-        // classe (chaque étudiant se connecte à tour de rôle). On compte les
-        // autres étudiants ayant déjà utilisé CE device pour CET événement.
-        // La présence n'est pas bloquée mais marquée « suspect » : elle part
-        // en file de validation manuelle, l'administrateur tranche.
-        $statut = 'valide';
-
-        // « exists » plutot que « count(distinct) » : dans le cas nominal — aucun
-        // appareil partage — la question posee est binaire, et un COUNT DISTINCT
-        // parcourt toutes les presences de l'evenement pour rien. Le decompte
-        // exact n'est calcule que lorsqu'il sert reellement, c'est-a-dire pour
-        // rediger l'anomalie.
-        $memeAppareil = Presence::where('evenement_id', $evenement->id)
-            ->where('device_fingerprint', $request->device_fingerprint)
-            ->where('etudiant_id', '!=', $etudiant->id);
-
-        if ($memeAppareil->exists()) {
-            $autresEtudiantsMemeAppareil = (clone $memeAppareil)->distinct()->count('etudiant_id');
-
-            $statut = 'suspect';
-
-            Anomaly::create([
-                'etudiant_id' => $etudiant->id,
-                'type'        => 'appareil_partage',
-                'description' => "Appareil partagé suspecté : le même appareil a déjà servi à "
-                    . "{$autresEtudiantsMemeAppareil} autre(s) étudiant(s) pour l'événement "
-                    . "#{$evenement->id}. Scan de {$etudiant->nom} {$etudiant->prenom} marqué à vérifier.",
-                'severity'    => 'high',
-                'metadata'    => [
-                    'device_fingerprint'          => $request->device_fingerprint,
-                    'evenement_id'                => $evenement->id,
-                    'autres_etudiants_meme_device' => $autresEtudiantsMemeAppareil,
-                ],
-            ]);
-        }
+        $statut = $this->statutSelonAppareil($evenement, $etudiant, $request->device_fingerprint);
 
         //-------------------------------------------------------------
         // 9. Enregistrement de la présence
@@ -520,6 +487,9 @@ class PresenceController extends Controller
         $action = $request->action;
         $motif = $request->motif ?? null;
 
+        // Lu avant la mise à jour : c'est lui que le journal doit conserver.
+        $ancienStatut = $presence->statut;
+
         if ($action === 'valider') {
             if ($presence->statut === 'valide') {
                 return $this->conflictResponse('Cette présence est déjà validée.');
@@ -532,11 +502,14 @@ class PresenceController extends Controller
                 'validation_motif' => $motif,
             ]);
 
-            // Créer une entrée d'audit
+            $this->fermerAlertesAppareilPartage($presence);
+
+            // logAudit n'enregistre que old_values et new_values. Les clés
+            // old_status et new_status passées jusqu'ici étaient ignorées : le
+            // journal ne gardait aucun statut, et l'ancien était écrit en dur.
             $this->logAudit('presence.validate_manual', $presence, $user, [
-                'old_status' => 'invalide',
-                'new_status' => 'valide',
-                'motif' => $motif,
+                'old_values' => ['statut' => $ancienStatut],
+                'new_values' => ['statut' => 'valide', 'motif' => $motif],
             ]);
 
             return $this->successResponse([
@@ -557,11 +530,12 @@ class PresenceController extends Controller
                 'validation_motif' => $motif,
             ]);
 
+            $this->fermerAlertesAppareilPartage($presence);
+
             // Créer une entrée d'audit
             $this->logAudit('presence.reject_manual', $presence, $user, [
-                'old_status' => $presence->statut,
-                'new_status' => 'rejete',
-                'motif' => $motif,
+                'old_values' => ['statut' => $ancienStatut],
+                'new_values' => ['statut' => 'rejete', 'motif' => $motif],
             ]);
 
             return $this->successResponse([
@@ -574,15 +548,31 @@ class PresenceController extends Controller
     }
 
     /**
-     * Lister les présences en attente de validation (suspectes ou sans scan)
+     * File des présences à arbitrer.
+     *
+     * Seul le scan en produit, pour un seul motif : un même téléphone utilisé
+     * par plusieurs étudiants pendant une séance (statut « suspect »). Les
+     * statuts « en_attente » et « invalide » que cette file acceptait n'étaient
+     * écrits nulle part.
+     *
+     * Chaque ligne porte « meme_appareil » : les autres scans du même téléphone
+     * pour la même séance. C'est la raison de la suspicion, et l'administrateur
+     * doit voir le groupe entier pour trancher ; les lignes d'un groupe se
+     * suivent.
      *
      * GET /api/admin/presence/pending
      */
     public function pendingValidations(Request $request): JsonResponse
     {
         $query = Presence::with(['etudiant.filiere', 'evenement.ec', 'evenement.filiere', 'evenement.salleRef'])
-            ->whereIn('statut', ['suspect', 'en_attente', 'invalide'])
-            ->orderBy('created_at', 'desc');
+            ->where('statut', 'suspect');
+
+        // Un administrateur de faculté ne voit que ses étudiants. La file
+        // n'appliquait aucun cloisonnement : elle exposait les noms et
+        // matricules des autres établissements.
+        if ($etablissementId = $this->getEtablissementId($request)) {
+            $query->whereHas('etudiant.filiere', fn ($q) => $q->where('etablissement_id', $etablissementId));
+        }
 
         // Filtres
         if ($request->filled('filiere_id')) {
@@ -601,11 +591,135 @@ class PresenceController extends Controller
             $query->whereHas('evenement', fn ($q) => $q->whereDate('date', '<=', $request->date_to));
         }
 
+        // Recherche côté serveur : faite dans le navigateur, elle ne portait que
+        // sur la page affichée.
+        if ($request->filled('search')) {
+            $terme = '%' . addcslashes(trim((string) $request->search), '%_\\') . '%';
+            $query->whereHas('etudiant', fn ($q) => $q->where(fn ($q) => $q
+                ->where('nom', 'ilike', $terme)
+                ->orWhere('prenom', 'ilike', $terme)
+                ->orWhere('matricule', 'ilike', $terme)
+                ->orWhereRaw("prenom || ' ' || nom ilike ?", [$terme])));
+        }
+
+        // Séances les plus récentes d'abord ; dans une séance, les scans d'un
+        // même téléphone se suivent, dans l'ordre où ils ont eu lieu.
+        $query->orderByDesc(Evenement::select('date')->whereColumn('evenements.id', 'presences.evenement_id'))
+            ->orderBy('evenement_id')
+            ->orderBy('device_fingerprint')
+            ->orderBy('heure_scan')
+            // À la seconde près, les scans d'un même téléphone tombent souvent
+            // ensemble : l'identifiant garde leur ordre d'arrivée.
+            ->orderBy('id');
+
         // Pagination
         $perPage = min($request->integer('per_page', 20), 100);
         $presences = $query->paginate($perPage);
 
+        $this->joindreMemeAppareil($presences->getCollection());
+
         return $this->successResponse($presences);
+    }
+
+    /**
+     * Ajoute à chaque présence les autres scans du même téléphone pour la même
+     * séance, rejetés ou validés compris, en une requête pour toute la page.
+     */
+    private function joindreMemeAppareil(\Illuminate\Support\Collection $presences): void
+    {
+        if ($presences->isEmpty()) {
+            return;
+        }
+
+        $groupes = Presence::with('etudiant:id,nom,prenom,matricule')
+            ->whereIn('evenement_id', $presences->pluck('evenement_id')->unique()->values())
+            ->whereIn('device_fingerprint', $presences->pluck('device_fingerprint')->filter()->unique()->values())
+            ->orderBy('heure_scan')
+            ->orderBy('id')
+            ->get(['id', 'etudiant_id', 'evenement_id', 'device_fingerprint', 'heure_scan', 'statut'])
+            ->groupBy(fn (Presence $p) => $p->evenement_id . '|' . $p->device_fingerprint);
+
+        foreach ($presences as $presence) {
+            $voisins = $groupes->get($presence->evenement_id . '|' . $presence->device_fingerprint, collect())
+                ->reject(fn (Presence $p) => $p->id === $presence->id)
+                ->map(fn (Presence $p) => [
+                    'id'         => $p->id,
+                    'etudiant'   => $p->etudiant?->only(['id', 'nom', 'prenom', 'matricule']),
+                    'heure_scan' => $p->heure_scan?->toIso8601String(),
+                    'statut'     => $p->statut,
+                ])
+                ->values()
+                ->all();
+
+            $presence->setAttribute('meme_appareil', $voisins);
+        }
+    }
+
+    /**
+     * Ferme l'alerte « appareil partagé » d'une présence qui vient d'être
+     * arbitrée : la décision est prise, l'alerte n'a plus rien à signaler.
+     * Elle restait sinon ouverte indéfiniment.
+     */
+    private function fermerAlertesAppareilPartage(Presence $presence): void
+    {
+        Anomaly::where('type', 'appareil_partage')
+            ->where('etudiant_id', $presence->etudiant_id)
+            // Chaîne : ->> renvoie du texte, que PostgreSQL ne compare pas à un entier.
+            ->where('metadata->evenement_id', (string) $presence->evenement_id)
+            ->where('resolved', false)
+            ->update(['resolved' => true, 'resolved_at' => now()]);
+    }
+
+    /**
+     * Statut d'un scan au regard du téléphone utilisé.
+     *
+     * Fraude la plus courante : un seul téléphone scanne pour toute la classe,
+     * chaque étudiant se connectant à tour de rôle. Le scan n'est pas bloqué
+     * mais part en file de validation, où l'administrateur tranche.
+     *
+     * Les scans précédents du même téléphone y partent aussi : le premier est
+     * souvent celui du propriétaire, qui pointe pour les autres, et c'est le
+     * groupe entier qu'il faut voir pour arbitrer. Laissé « valide », il
+     * échappait à tout contrôle. Une présence déjà arbitrée par un
+     * administrateur n'est pas rouverte.
+     */
+    private function statutSelonAppareil(Evenement $evenement, Etudiant $etudiant, string $empreinte): string
+    {
+        // « exists » plutot que « count(distinct) » : dans le cas nominal — aucun
+        // appareil partage — la question posee est binaire, et un COUNT DISTINCT
+        // parcourt toutes les presences de l'evenement pour rien. Le decompte
+        // exact n'est calcule que lorsqu'il sert reellement, c'est-a-dire pour
+        // rediger l'anomalie.
+        $memeAppareil = Presence::where('evenement_id', $evenement->id)
+            ->where('device_fingerprint', $empreinte)
+            ->where('etudiant_id', '!=', $etudiant->id);
+
+        if (!$memeAppareil->exists()) {
+            return 'valide';
+        }
+
+        $autresEtudiantsMemeAppareil = (clone $memeAppareil)->distinct()->count('etudiant_id');
+
+        (clone $memeAppareil)
+            ->where('statut', 'valide')
+            ->whereNull('validated_by')
+            ->update(['statut' => 'suspect']);
+
+        Anomaly::create([
+            'etudiant_id' => $etudiant->id,
+            'type'        => 'appareil_partage',
+            'description' => "Appareil partagé suspecté : le même appareil a déjà servi à "
+                . "{$autresEtudiantsMemeAppareil} autre(s) étudiant(s) pour l'événement "
+                . "#{$evenement->id}. Scan de {$etudiant->nom} {$etudiant->prenom} marqué à vérifier.",
+            'severity'    => 'high',
+            'metadata'    => [
+                'device_fingerprint'          => $empreinte,
+                'evenement_id'                => $evenement->id,
+                'autres_etudiants_meme_device' => $autresEtudiantsMemeAppareil,
+            ],
+        ]);
+
+        return 'suspect';
     }
 
     /**

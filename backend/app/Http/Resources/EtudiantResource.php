@@ -19,6 +19,11 @@ class EtudiantResource extends JsonResource
             'est_responsable' => (bool) $this->est_responsable,
             'filiere' => new \App\Http\Resources\FiliereResource($this->whenLoaded('filiere')),
             'annee' => new \App\Http\Resources\AnneeAcademiqueResource($this->whenLoaded('anneeAcademique')),
+            // Groupes de TD et de TP de son année.
+            'groupes' => $this->whenLoaded('groupes', fn () => $this->groupes
+                ->filter(fn ($g) => (int) $g->pivot->annee_id === (int) $this->annee_id)
+                ->map(fn ($g) => ['id' => $g->id, 'libelle' => $g->libelle, 'type' => $g->type])
+                ->values()),
             'created_at' => $this->created_at,
         ];
     }

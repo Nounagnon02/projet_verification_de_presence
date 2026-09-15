@@ -16,6 +16,11 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Services\CriteresExport;
+use App\Services\AttendanceRateService;
+use Carbon\Carbon;
+use Closure;
+
 
 class ReportController extends Controller
 {
@@ -47,19 +52,22 @@ class ReportController extends Controller
     public function departmentReport(Request $request, Filiere $filiere, \App\Services\AttendanceRateService $attendance): mixed
     {
         $totalEtudiants = Etudiant::where('filiere_id', $filiere->id)->count();
-        $totalEvenements = Evenement::where('filiere_id', $filiere->id)->where('date', '<', now())->count();
+        $totalEvenements = Evenement::whereHas('ec.ue.filieres', fn ($q) => $q->where('filieres.id', $filiere->id))->where('date', '<', now())->count();
 
         // Périmètre : événements passés de cette filière. Le taux est calculé
         // sur les étudiants réellement inscrits aux ECs concernés, pas sur
         // « tous les étudiants de la filière × tous les événements ».
-        $filtre = fn ($q) => $q->where('e.filiere_id', $filiere->id)->where('e.date', '<', now());
+        $filtre = function ($q) use ($filiere) {
+            $this->filtrerFiliere($q, $filiere->id);
+            $q->where('e.date', '<', now());
+        };
 
         $presences = $attendance->recorded($filtre);
         $taux      = $attendance->rate($filtre);
 
-        $presencesParCours = Evenement::where('filiere_id', $filiere->id)
+        $presencesParCours = Evenement::whereHas('ec.ue.filieres', fn ($q) => $q->where('filieres.id', $filiere->id))
             ->with('ec')
-            ->withCount('presences')
+            ->withCount(['presences' => fn ($q) => $q->whereHas('etudiant', fn ($e) => $e->where('filiere_id', $filiere->id))])
             ->orderBy('date', 'desc')
             ->take(20)
             ->get()
@@ -120,7 +128,7 @@ class ReportController extends Controller
                   ->where('f.etablissement_id', $etablissementId);
             }
             if ($request->filled('filiere_id')) {
-                $q->where('e.filiere_id', $request->integer('filiere_id'));
+                $this->filtrerFiliere($q, $request->integer('filiere_id'));
             }
             if ($request->filled('semestre')) {
                 $q->where('u.semestre', $request->integer('semestre'));
@@ -152,7 +160,7 @@ class ReportController extends Controller
 
         // Filtre optionnel par filière
         if ($request->filled('filiere_id')) {
-            $query->where('ues.filiere_id', $request->integer('filiere_id'));
+            $query->whereIn('ues.id', fn ($p) => $p->select('ue_id')->from('ue_filiere')->where('filiere_id', $request->integer('filiere_id')));
         }
 
         // Filtre optionnel par semestre
@@ -186,7 +194,8 @@ class ReportController extends Controller
         $filieres = Filiere::select('filieres.id', 'filieres.code', 'filieres.intitule', 'filieres.niveau',
                 DB::raw('COUNT(DISTINCT presences.id) as total_presences'),
                 DB::raw('COUNT(DISTINCT evenements.id) as total_evenements'))
-            ->join('ues', 'ues.filiere_id', '=', 'filieres.id')
+            ->join('ue_filiere as uf', 'uf.filiere_id', '=', 'filieres.id')
+            ->join('ues', 'ues.id', '=', 'uf.ue_id')
             ->join('ecs', 'ecs.ue_id', '=', 'ues.id')
             ->join('evenements', 'evenements.ec_id', '=', 'ecs.id')
             ->leftJoin('presences', 'presences.evenement_id', '=', 'evenements.id')
@@ -205,8 +214,8 @@ class ReportController extends Controller
                 $filtreFiliere = function ($q) use ($f, $yearId) {
                     $q->join('ecs as ec', 'ec.id', '=', 'e.ec_id')
                       ->join('ues as u', 'u.id', '=', 'ec.ue_id')
-                      ->where('u.annee_id', $yearId)
-                      ->where('e.filiere_id', $f->id);
+                      ->where('u.annee_id', $yearId);
+                    $this->filtrerFiliere($q, $f->id);
                 };
                 return [
                     'id'               => $f->id,
@@ -214,7 +223,7 @@ class ReportController extends Controller
                     'intitule'         => $f->intitule,
                     'niveau'           => $f->niveau,
                     'taux'             => $attendance->rate($filtreFiliere),
-                    'total_presences'  => (int) $f->total_presences,
+                    'total_presences'  => $attendance->recorded($filtreFiliere),
                 ];
             });
 
@@ -230,10 +239,17 @@ class ReportController extends Controller
     }
 
     /**
-     * Comparaison des taux de présence entre deux semestres pour une filière.
+     * Taux par semestre d'une filière, sur une année.
+     *
+     * Même définition que le reste des rapports (AttendanceRateService) :
+     * présences valides ÷ présences attendues, sur les séances terminées.
+     * L'ancien calcul multipliait les séances du semestre par tous ses inscrits
+     * et comptait les scans rejetés : 5,4 % pour un S1 dont la filière
+     * affichait 17,3 % au classement.
+     *
      * GET /api/admin/reports/semester-comparison?filiere_id=X&annee_id=Y
      */
-    public function semesterComparison(Request $request): JsonResponse
+    public function semesterComparison(Request $request, AttendanceRateService $attendance): JsonResponse
     {
         $anneeId = $request->integer('annee_id');
         $filiereId = $request->integer('filiere_id');
@@ -243,33 +259,62 @@ class ReportController extends Controller
         }
 
         $filiere = Filiere::findOrFail($filiereId);
-        $semesterService = app(SemesterService::class);
-        $semestres = $semesterService->getSemestersForFiliere($filiere);
 
-        $data = [];
-        foreach ($semestres as $sem) {
-            $stats = $semesterService->tauxParSemestre($anneeId, $filiereId)
-                ->firstWhere('semestre', $sem);
+        // La filière vient du client : sans ce contrôle, un autre établissement
+        // lisait ses taux.
+        $this->authorizeEtablissement($filiere, $request);
 
-            $data[] = [
-                'semestre'        => $sem,
-                'label'           => "S{$sem}",
-                'taux'            => $stats['taux'] ?? 0,
-                'total_presences' => $stats['total_presences'] ?? 0,
+        $perimetre = function ($q) use ($anneeId, $filiereId) {
+            $q->join('ecs as c', 'c.id', '=', 'e.ec_id')
+              ->join('ues as u', 'u.id', '=', 'c.ue_id')
+              ->where('e.statut', 'termine')
+              ->where('e.annee_id', $anneeId);
+            $this->filtrerFiliere($q, $filiereId);
+        };
+
+        $seances = DB::table('evenements as e')->whereNull('e.deleted_at')->tap($perimetre)
+            ->selectRaw('u.semestre as cle, COUNT(*) as n')->groupBy('u.semestre')->pluck('n', 'cle');
+        $attendus = $attendance->expectedBy($perimetre, 'u.semestre');
+        $presents = $attendance->recordedBy($perimetre, 'u.semestre');
+
+        // Les semestres du niveau, et ceux où la filière a réellement eu cours.
+        $semestres = collect(app(SemesterService::class)->getSemestersForFiliere($filiere))
+            ->merge($seances->keys()->map(fn ($s) => (int) $s))
+            ->unique()
+            ->sort()
+            ->values();
+
+        $data = $semestres->map(function (int $semestre) use ($seances, $attendus, $presents) {
+            $attendu = $attendus[$semestre] ?? 0;
+            $present = $presents[$semestre] ?? 0;
+
+            return [
+                'semestre'            => $semestre,
+                'label'               => "S{$semestre}",
+                'taux'                => $attendu > 0 ? round(($present / $attendu) * 100, 1) : 0.0,
+                'presences_attendues' => $attendu,
+                'total_presences'     => $present,
+                'total_evenements'    => (int) ($seances[$semestre] ?? 0),
             ];
-        }
+        })->all();
 
         return $this->successResponse([
-            'filiere'    => ['id' => $filiere->id, 'code' => $filiere->code, 'intitule' => $filiere->intitule, 'niveau' => $filiere->niveau],
-            'semestres'  => $data,
+            'filiere'   => ['id' => $filiere->id, 'code' => $filiere->code, 'intitule' => $filiere->intitule, 'niveau' => $filiere->niveau],
+            'semestres' => $data,
         ]);
     }
 
     /**
-     * Stats globales des filières pour les graphiques de comparaison.
+     * Classement des filières par taux de présence.
+     *
+     * Même définition que le tableau de bord et le rapport filtré : présences
+     * valides ÷ présences attendues (inscrits de chaque cours), sur les
+     * séances terminées. Le calcul précédent divisait toutes les présences par
+     * (séances × effectif de la filière), inscrits ou non.
+     *
      * GET /api/admin/reports/filiere-stats?annee_id=X
      */
-    public function filiereStats(Request $request): JsonResponse
+    public function filiereStats(Request $request, AttendanceRateService $attendance): JsonResponse
     {
         $anneeId = $request->integer('annee_id');
 
@@ -279,276 +324,146 @@ class ReportController extends Controller
             }]);
 
         $this->scopeQuery($filiereQuery, $request);
+        $filieres = $filiereQuery->get();
 
-        $filieres = $filiereQuery->get()
-            ->map(function ($filiere) use ($anneeId) {
-                $totalEvenements = Evenement::where('filiere_id', $filiere->id)
-                    ->where('annee_id', $anneeId)
-                    ->where('date', '<', now())
-                    ->count();
+        // Par filière de l'ÉTUDIANT : une séance d'un cours commun compte, pour
+        // chaque filière, ses seuls étudiants.
+        $perimetre = function ($q) use ($anneeId, $filieres) {
+            $q->where('e.statut', 'termine')
+              ->where('e.annee_id', $anneeId)
+              ->whereIn('s.filiere_id', $filieres->pluck('id'));
+        };
 
-                $totalPresences = Presence::whereHas('etudiant', fn($q) => $q->where('filiere_id', $filiere->id))
-                    ->whereHas('evenement', fn($q) => $q->where('filiere_id', $filiere->id)->where('annee_id', $anneeId))
-                    ->count();
+        $seances = DB::table('evenements as e')->whereNull('e.deleted_at')
+            ->join('ecs as c', 'c.id', '=', 'e.ec_id')
+            ->join('ue_filiere as uf', 'uf.ue_id', '=', 'c.ue_id')
+            ->where('e.statut', 'termine')
+            ->where('e.annee_id', $anneeId)
+            ->whereIn('uf.filiere_id', $filieres->pluck('id'))
+            ->selectRaw('uf.filiere_id as cle, COUNT(*) as n')->groupBy('uf.filiere_id')->pluck('n', 'cle');
+        $attendus = $attendance->expectedBy($perimetre, 's.filiere_id');
+        $presents = $attendance->recordedBy($perimetre, 's.filiere_id');
 
-                $totalAttendus = $totalEvenements * max($filiere->etudiants_count, 1);
-                $taux = $totalAttendus > 0 ? round(($totalPresences / $totalAttendus) * 100, 1) : 0;
+        $lignes = $filieres->map(function ($filiere) use ($seances, $attendus, $presents) {
+            $attendu = $attendus[$filiere->id] ?? 0;
+            $present = $presents[$filiere->id] ?? 0;
 
-                return [
-                    'id'               => $filiere->id,
-                    'code'             => $filiere->code,
-                    'intitule'         => $filiere->intitule,
-                    'niveau'           => $filiere->niveau,
-                    'etudiants_count'  => $filiere->etudiants_count ?? 0,
-                    'taux'             => $taux,
-                    'total_presences'  => $totalPresences,
-                    'total_evenements' => $totalEvenements,
-                ];
-            })
+            return [
+                'id'                  => $filiere->id,
+                'code'                => $filiere->code,
+                'intitule'            => $filiere->intitule,
+                'niveau'              => $filiere->niveau,
+                'etudiants_count'     => $filiere->etudiants_count ?? 0,
+                'taux'                => $attendu > 0 ? round(($present / $attendu) * 100, 1) : 0.0,
+                'presences_attendues' => $attendu,
+                'total_presences'     => $present,
+                'total_evenements'    => (int) ($seances[$filiere->id] ?? 0),
+            ];
+        })
             ->sortByDesc('taux')
             ->values();
 
-        return $this->successResponse($filieres);
+        return $this->successResponse($lignes);
     }
 
     /**
-     * Rapport filtré avec tous les paramètres : filière, année, semestre,
-     * trimestre, UE, EC, plage de dates.
+     * Taux de chaque année académique de l'entité, sur les séances terminées.
      *
-     * GET /api/admin/reports/filtered
+     * La page Rapports interrogeait pour cela le rapport semestriel, année par
+     * année : son taux ignorait le statut des séances, si bien qu'une séance
+     * à venir y comptait déjà comme une absence.
      *
-     * Query params (tous optionnels) :
-     *   - filiere_id
-     *   - annee_id
-     *   - semestre (1-10)
-     *   - ue_id
-     *   - ec_id
-     *   - trimestre (1, 2, 3 — divisé sur l'année académique)
-     *   - date_debut (YYYY-MM-DD)
-     *   - date_fin   (YYYY-MM-DD)
+     * GET /api/admin/reports/annee-stats
      */
-    public function filteredStats(Request $request): JsonResponse
+    public function anneeStats(Request $request, AttendanceRateService $attendance): JsonResponse
     {
         $etablissementId = $this->getEtablissementId($request);
 
-        //1. Construire la requête de base
-        $query = Presence::query()
-            ->selectRaw('COUNT(DISTINCT presences.id) as total_presences')
-            ->selectRaw('COUNT(DISTINCT evenements.id) as total_evenements')
-            ->selectRaw("SUM(CASE WHEN presences.statut = 'valide' THEN 1 ELSE 0 END) as presences_valides")
-            ->selectRaw("SUM(CASE WHEN presences.statut = 'suspect' THEN 1 ELSE 0 END) as presences_suspectes")
-            ->join('evenements', 'presences.evenement_id', '=', 'evenements.id')
-            ->join('ecs', 'evenements.ec_id', '=', 'ecs.id')
-            ->join('ues', 'ecs.ue_id', '=', 'ues.id')
-            ->join('etudiants', 'presences.etudiant_id', '=', 'etudiants.id');
+        $perimetre = function ($q) use ($etablissementId) {
+            $q->where('e.statut', 'termine');
 
-        // Scope par établissement via filières des UEs
-        if ($etablissementId) {
-            $query->whereExists(function ($q) use ($etablissementId) {
-                $q->selectRaw('1')
-                  ->from('filieres')
-                  ->whereColumn('filieres.id', 'ues.filiere_id')
-                  ->where('filieres.etablissement_id', $etablissementId);
-            });
-        }
-
-        //2. Appliquer les filtres
-        if ($request->filled('filiere_id')) {
-            $filiereId = $request->integer('filiere_id');
-            $query->where('evenements.filiere_id', $filiereId)
-                  ->where('ues.filiere_id', $filiereId);
-        }
-
-        if ($request->filled('annee_id')) {
-            $anneeId = $request->integer('annee_id');
-            $query->where('evenements.annee_id', $anneeId)
-                  ->where('ues.annee_id', $anneeId);
-        }
-
-        if ($request->filled('semestre')) {
-            $query->where('ues.semestre', $request->integer('semestre'));
-        }
-
-        if ($request->filled('ue_id')) {
-            $query->where('ecs.ue_id', $request->integer('ue_id'));
-        }
-
-        if ($request->filled('ec_id')) {
-            $query->where('evenements.ec_id', $request->integer('ec_id'));
-        }
-
-        if ($request->filled('date_debut')) {
-            $query->whereDate('presences.heure_scan', '>=', $request->date_debut);
-        }
-
-        if ($request->filled('date_fin')) {
-            $query->whereDate('presences.heure_scan', '<=', $request->date_fin);
-        }
-
-        //3. Filtre trimestre (découpage de l'année académique)
-        if ($request->filled('trimestre')) {
-            $trimestre = $request->integer('trimestre');
-            // L'année académique commence en septembre
-            // T1: sept-oct-nov, T2: déc-janv-fév, T3: mars-avril-mai, T4: juin-juil-août
-            if ($trimestre === 1) {
-                $query->where(function ($q) {
-                    $q->whereMonth('evenements.date', '>=', 9)
-                      ->whereMonth('evenements.date', '<=', 11);
-                });
-            } elseif ($trimestre === 2) {
-                $query->where(function ($q) {
-                    $q->whereIn(DB::raw('EXTRACT(MONTH FROM evenements.date)'), [12, 1, 2]);
-                });
-            } elseif ($trimestre === 3) {
-                $query->where(function ($q) {
-                    $q->whereMonth('evenements.date', '>=', 3)
-                      ->whereMonth('evenements.date', '<=', 5);
-                });
-            } elseif ($trimestre === 4) {
-                $query->where(function ($q) {
-                    $q->whereMonth('evenements.date', '>=', 6)
-                      ->whereMonth('evenements.date', '<=', 8);
-                });
+            if ($etablissementId) {
+                $q->whereIn('e.filiere_id', fn ($f) => $f->select('id')->from('filieres')->where('etablissement_id', $etablissementId));
             }
-        }
+        };
 
-        //4. Exécuter la requête principale
-        $stats = $query->first();
+        $seances = DB::table('evenements as e')->whereNull('e.deleted_at')->tap($perimetre)
+            ->selectRaw('e.annee_id as cle, COUNT(*) as n')->groupBy('e.annee_id')->pluck('n', 'cle');
+        $attendus = $attendance->expectedBy($perimetre, 'e.annee_id');
+        $presents = $attendance->recordedBy($perimetre, 'e.annee_id');
 
-        //5. Évolution journalière (pour graphique)
-        $jours = $request->integer('jours', 30); // Nombre de jours personnalisable, défaut 30
-        $evolutionQuery = Presence::selectRaw('DATE(presences.heure_scan) as date, COUNT(*) as total')
-            ->join('evenements', 'presences.evenement_id', '=', 'evenements.id')
-            ->join('ecs', 'evenements.ec_id', '=', 'ecs.id')
-            ->join('ues', 'ecs.ue_id', '=', 'ues.id');
+        // L'année active de CET établissement, pas celle de l'université.
+        $activeId = AnneeAcademique::activePour($etablissementId)?->id;
 
-        // Scope établissement pour l'évolution
-        if ($etablissementId) {
-            $evolutionQuery->whereExists(function ($q) use ($etablissementId) {
-                $q->selectRaw('1')->from('filieres')
-                  ->whereColumn('filieres.id', 'ues.filiere_id')
-                  ->where('filieres.etablissement_id', $etablissementId);
-            });
-        }
+        $annees = AnneeAcademique::orderBy('libelle')->get()
+            ->map(function (AnneeAcademique $annee) use ($seances, $attendus, $presents, $activeId) {
+                $attendu = $attendus[$annee->id] ?? 0;
+                $present = $presents[$annee->id] ?? 0;
 
-        if ($request->filled('filiere_id')) {
-            $evolutionQuery->where('evenements.filiere_id', $request->integer('filiere_id'));
-        }
-        if ($request->filled('annee_id')) {
-            $evolutionQuery->where('evenements.annee_id', $request->integer('annee_id'));
-        }
-        if ($request->filled('semestre')) {
-            $evolutionQuery->where('ues.semestre', $request->integer('semestre'));
-        }
-        if ($request->filled('ue_id')) {
-            $evolutionQuery->where('ecs.ue_id', $request->integer('ue_id'));
-        }
-        if ($request->filled('ec_id')) {
-            $evolutionQuery->where('evenements.ec_id', $request->integer('ec_id'));
-        }
-        if ($request->filled('trimestre')) {
-            $trimestre = $request->integer('trimestre');
-            // Même logique que ci-dessus
-            if ($trimestre === 1) {
-                $evolutionQuery->whereMonth('evenements.date', '>=', 9)->whereMonth('evenements.date', '<=', 11);
-            } elseif ($trimestre === 2) {
-                $evolutionQuery->whereIn(DB::raw('EXTRACT(MONTH FROM evenements.date)'), [12, 1, 2]);
-            } elseif ($trimestre === 3) {
-                $evolutionQuery->whereMonth('evenements.date', '>=', 3)->whereMonth('evenements.date', '<=', 5);
-            } elseif ($trimestre === 4) {
-                $evolutionQuery->whereMonth('evenements.date', '>=', 6)->whereMonth('evenements.date', '<=', 8);
-            }
-        }
-
-        $evolution = $evolutionQuery
-            ->where('presences.heure_scan', '>=', now()->subDays($jours))
-            ->groupBy(DB::raw('DATE(presences.heure_scan)'))
-            ->orderBy('date')
-            ->get();
-
-        //6. Stats par UE (pour graphique à barres)
-        // « ues.filiere_id » doit figurer dans le SELECT : sans lui, la relation
-        // belongsTo n'a pas sa cle etrangere et with('filiere') resolvait
-        // toujours null. Les colonnes filiere_code / filiere_intitule sortaient
-        // donc vides, ce qui laissait le filtre par filiere du tableau « stats
-        // par UE » sans aucune option cote interface.
-        $statsParUeQuery = Ue::select('ues.id', 'ues.code', 'ues.intitule', 'ues.semestre', 'ues.filiere_id',
-                DB::raw('COUNT(DISTINCT presences.id) as total_presences'),
-                DB::raw('COUNT(DISTINCT evenements.id) as total_evenements'))
-            ->with('filiere:id,code,intitule')
-            ->join('ecs', 'ecs.ue_id', '=', 'ues.id')
-            ->join('evenements', 'evenements.ec_id', '=', 'ecs.id')
-            ->leftJoin('presences', 'presences.evenement_id', '=', 'evenements.id');
-
-        // Scope établissement pour les stats par UE
-        if ($etablissementId) {
-            $statsParUeQuery->whereExists(function ($q) use ($etablissementId) {
-                $q->selectRaw('1')->from('filieres')
-                  ->whereColumn('filieres.id', 'ues.filiere_id')
-                  ->where('filieres.etablissement_id', $etablissementId);
-            });
-        }
-
-        if ($request->filled('filiere_id')) {
-            $statsParUeQuery->where('ues.filiere_id', $request->integer('filiere_id'));
-        }
-        if ($request->filled('annee_id')) {
-            $statsParUeQuery->where('ues.annee_id', $request->integer('annee_id'));
-        }
-        if ($request->filled('semestre')) {
-            $statsParUeQuery->where('ues.semestre', $request->integer('semestre'));
-        }
-
-        $statsParUe = $statsParUeQuery
-            ->groupBy('ues.id', 'ues.code', 'ues.intitule', 'ues.semestre', 'ues.filiere_id')
-            ->orderBy('ues.code')
-            ->get()
-            ->map(function ($ue) {
-                $totalEtudiants = Etudiant::whereHas('ecs', fn($q) => $q->where('ue_id', $ue->id))->count();
-                $totalAttendus = ($ue->total_evenements ?? 0) * max($totalEtudiants, 1);
                 return [
-                    'ue_id'            => $ue->id,
-                    'code'             => $ue->code,
-                    'intitule'         => $ue->intitule,
-                    'semestre'         => (int) $ue->semestre,
-                    'filiere_code'     => $ue->filiere?->code ?? null,
-                    'filiere_intitule' => $ue->filiere?->intitule ?? null,
-                    'total_presences'  => (int) $ue->total_presences,
-                    'total_evenements' => (int) $ue->total_evenements,
-                    'total_etudiants'  => $totalEtudiants,
-                    'taux'             => $totalAttendus > 0 ? round(($ue->total_presences / $totalAttendus) * 100, 1) : 0,
+                    'id'                  => $annee->id,
+                    'libelle'             => $annee->libelle,
+                    'active'              => $annee->id === $activeId,
+                    // Pas de taux sans séance terminée, plutôt qu'un 0 % trompeur.
+                    'taux'                => $attendu > 0 ? round(($present / $attendu) * 100, 1) : null,
+                    'presences_attendues' => $attendu,
+                    'total_presences'     => $present,
+                    'total_evenements'    => (int) ($seances[$annee->id] ?? 0),
                 ];
-            });
+            })
+            ->values();
 
-        //7. Calcul du taux global
-        $totalPresences = (int) ($stats->total_presences ?? 0);
-        $totalEvenements = (int) ($stats->total_evenements ?? 0);
-        $etudiantBaseQuery = Etudiant::query();
-        if ($etablissementId) {
-            $etudiantBaseQuery->whereHas('filiere', fn($q) => $q->where('etablissement_id', $etablissementId));
-        }
-        $totalEtudiants = $etudiantBaseQuery->count();
+        return $this->successResponse($annees);
+    }
 
-        // Si un filtre filière est actif, compter les étudiants de cette filière
-        if ($request->filled('filiere_id')) {
-            $totalEtudiants = Etudiant::where('filiere_id', $request->integer('filiere_id'))->count();
-        }
+    /**
+     * Rapport filtré : filière, année, semestre, trimestre, UE, EC, période.
+     *
+     * Le taux est celui du tableau de bord (AttendanceRateService) : présences
+     * valides ÷ présences attendues, sur les séances terminées. Ce rapport
+     * divisait toutes les présences, rejetées comprises, par (séances ayant au
+     * moins un scan × tous les étudiants de l'établissement) : 2,7 % ici pour
+     * 16,4 % au tableau de bord, sur les mêmes données. Compteurs, UE et
+     * évolution portent désormais tous sur le même périmètre.
+     *
+     * GET /api/admin/reports/filtered
+     */
+    public function filteredStats(Request $request, AttendanceRateService $attendance, CriteresExport $descripteur): JsonResponse
+    {
+        $this->validerFiltres($request);
 
-        $tauxGlobal = $totalEvenements > 0 && $totalEtudiants > 0
-            ? round(($totalPresences / ($totalEvenements * max($totalEtudiants, 1))) * 100, 1)
-            : 0;
+        $perimetre = $this->perimetreSeances($request);
+        $seances = fn () => DB::table('evenements as e')->whereNull('e.deleted_at')->tap($perimetre);
 
-        //8. Retourner la réponse
+        $scans = DB::table('presences as p')
+            ->join('evenements as e', 'e.id', '=', 'p.evenement_id')
+            ->whereNull('p.deleted_at')
+            ->whereNull('e.deleted_at')
+            ->tap($perimetre)
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw("SUM(CASE WHEN p.statut = 'suspect' THEN 1 ELSE 0 END) as suspectes")
+            ->selectRaw("SUM(CASE WHEN p.statut = 'rejete' THEN 1 ELSE 0 END) as rejetees")
+            ->first();
+
+        $attendus = $attendance->expected($perimetre);
+        $presents = $attendance->recorded($perimetre);
+
         return $this->successResponse([
-            'taux_global'       => $tauxGlobal,
-            'total_presences'   => $totalPresences,
-            'total_evenements'  => $totalEvenements,
-            'total_etudiants'   => $totalEtudiants,
-            'presences_valides' => (int) ($stats->presences_valides ?? 0),
-            'presences_suspectes' => (int) ($stats->presences_suspectes ?? 0),
-            'evolution'         => $evolution,
-            'stats_par_ue'      => $statsParUe,
-            'filtres_appliques' => [
+            // L'en-tête de la page dit ce que l'on regarde : entité, année, période.
+            'entite'              => $descripteur->decrire($request, $this->getEtablissementId($request))['entite'],
+            'taux_global'         => $attendus > 0 ? round(($presents / $attendus) * 100, 1) : 0.0,
+            'total_evenements'    => $seances()->count(),
+            'presences_attendues' => $attendus,
+            'presences_valides'   => $presents,
+            'absences'            => max(0, $attendus - $presents),
+            'presences_suspectes' => (int) ($scans->suspectes ?? 0),
+            'presences_rejetees'  => (int) ($scans->rejetees ?? 0),
+            // Tous les scans de ces séances, quel que soit leur statut.
+            'total_presences'     => (int) ($scans->total ?? 0),
+            'total_etudiants'     => $attendance->expectedStudents($perimetre),
+            'evolution'           => $this->evolutionHebdomadaire($request, $perimetre, $seances, $attendance),
+            'stats_par_ue'        => $this->statsParUe($perimetre, $attendance),
+            'filtres_appliques'   => [
                 'filiere_id'  => $request->filled('filiere_id') ? $request->integer('filiere_id') : null,
                 'annee_id'    => $request->filled('annee_id') ? $request->integer('annee_id') : null,
                 'semestre'    => $request->filled('semestre') ? $request->integer('semestre') : null,
@@ -560,57 +475,338 @@ class ReportController extends Controller
     }
 
     /**
-     * Export Excel des données de présence.
+     * Séances d'un rapport, sur l'alias « e ».
+     *
+     * Pour un taux : les séances terminées (statut « termine », posé à la
+     * fermeture du scan ; une séance annulée ne l'est jamais), comme au tableau
+     * de bord. Pour un export de présences : toutes les séances. Les filtres de
+     * la page s'appliquent à l'identique aux compteurs, aux UE, à l'évolution
+     * et à l'export — plusieurs blocs en ignoraient une partie.
+     */
+    private function perimetreSeances(Request $request, bool $terminees = true): Closure
+    {
+        $etablissementId = $this->getEtablissementId($request);
+
+        return function ($q) use ($request, $etablissementId, $terminees) {
+            if ($terminees) {
+                $q->where('e.statut', 'termine');
+            }
+
+            if ($etablissementId) {
+                $q->whereIn('e.filiere_id', fn ($f) => $f->select('id')->from('filieres')->where('etablissement_id', $etablissementId));
+            }
+
+            if ($request->filled('filiere_id')) {
+                $this->filtrerFiliere($q, $request->integer('filiere_id'));
+            }
+
+            if ($request->filled('annee_id')) {
+                $q->where('e.annee_id', $request->integer('annee_id'));
+            }
+
+            if ($request->filled('ec_id')) {
+                $q->where('e.ec_id', $request->integer('ec_id'));
+            }
+
+            if ($request->filled('ue_id') || $request->filled('semestre')) {
+                $q->whereIn('e.ec_id', function ($ecs) use ($request) {
+                    $ecs->select('ecs.id')->from('ecs')->join('ues', 'ues.id', '=', 'ecs.ue_id');
+                    if ($request->filled('ue_id')) {
+                        $ecs->where('ecs.ue_id', $request->integer('ue_id'));
+                    }
+                    if ($request->filled('semestre')) {
+                        $ecs->where('ues.semestre', $request->integer('semestre'));
+                    }
+                });
+            }
+
+            // Période sur la date de la séance.
+            if ($request->filled('date_debut')) {
+                $q->where('e.date', '>=', $request->date_debut);
+            }
+
+            if ($request->filled('date_fin')) {
+                $q->where('e.date', '<=', $request->date_fin);
+            }
+
+            // Trimestres de l'année académique, qui commence en septembre.
+            $mois = [1 => [9, 10, 11], 2 => [12, 1, 2], 3 => [3, 4, 5], 4 => [6, 7, 8]][$request->integer('trimestre')] ?? null;
+            if ($request->filled('trimestre') && $mois) {
+                $q->whereIn(DB::raw('EXTRACT(MONTH FROM e.date)'), $mois);
+            }
+        };
+    }
+
+    /**
+     * Taux par UE sur le même périmètre, en quatre requêtes pour toutes les UE.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function statsParUe(Closure $perimetre, AttendanceRateService $attendance): array
+    {
+        // Regroupement par l'UE de l'EC de la séance (alias « c »).
+        $parUe = function ($q) use ($perimetre) {
+            $q->join('ecs as c', 'c.id', '=', 'e.ec_id');
+            $perimetre($q);
+        };
+
+        $seances = DB::table('evenements as e')->whereNull('e.deleted_at')->tap($parUe)
+            ->selectRaw('c.ue_id as cle, COUNT(*) as n')->groupBy('c.ue_id')->pluck('n', 'cle');
+
+        if ($seances->isEmpty()) {
+            return [];
+        }
+
+        $attendus = $attendance->expectedBy($parUe, 'c.ue_id');
+        $presents = $attendance->recordedBy($parUe, 'c.ue_id');
+        $etudiants = $attendance->expectedStudentsBy($parUe, 'c.ue_id');
+
+        return Ue::with('filiere:id,code,intitule')
+            ->whereIn('id', $seances->keys())
+            ->orderBy('code')
+            ->get()
+            ->map(function (Ue $ue) use ($seances, $attendus, $presents, $etudiants) {
+                $attendu = $attendus[$ue->id] ?? 0;
+                $present = $presents[$ue->id] ?? 0;
+
+                return [
+                    'ue_id'               => $ue->id,
+                    'code'                => $ue->code,
+                    'intitule'            => $ue->intitule,
+                    'semestre'            => (int) $ue->semestre,
+                    'filiere_code'        => $ue->filiere?->code,
+                    'filiere_intitule'    => $ue->filiere?->intitule,
+                    'total_evenements'    => (int) $seances[$ue->id],
+                    'presences_attendues' => $attendu,
+                    // Présents : présences valides.
+                    'total_presences'     => $present,
+                    'total_etudiants'     => $etudiants[$ue->id] ?? 0,
+                    'taux'                => $attendu > 0 ? round(($present / $attendu) * 100, 1) : 0.0,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Taux de présence semaine par semaine sur la période, semaines sans séance
+     * comprises (taux null). L'ancien graphique comptait des scans par jour et
+     * sautait les jours sans scan.
+     *
+     * @return array<int, array{semaine: string, seances: int, attendus: int, presents: int, taux: ?float}>
+     */
+    private function evolutionHebdomadaire(Request $request, Closure $perimetre, Closure $seances, AttendanceRateService $attendance): array
+    {
+        $bornes = $seances()->selectRaw('MIN(e.date) as debut, MAX(e.date) as fin')->first();
+
+        // Aucune séance terminée : rien à tracer.
+        if (!$bornes || !$bornes->debut) {
+            return [];
+        }
+
+        $debut = Carbon::parse($request->date_debut ?: $bornes->debut)->startOfWeek(Carbon::MONDAY);
+        $fin = Carbon::parse($request->date_fin ?: $bornes->fin)->startOfWeek(Carbon::MONDAY);
+
+        if ($debut->gt($fin)) {
+            return [];
+        }
+
+        $semaine = "to_char(date_trunc('week', e.date), 'YYYY-MM-DD')";
+        $nbSeances = $seances()->selectRaw("{$semaine} as cle, COUNT(*) as n")->groupByRaw($semaine)->pluck('n', 'cle');
+        $attendus = $attendance->expectedBy($perimetre, $semaine);
+        $presents = $attendance->recordedBy($perimetre, $semaine);
+
+        $semaines = [];
+        for ($s = $debut->copy(); $s->lte($fin); $s->addWeek()) {
+            $cle = $s->format('Y-m-d');
+            $attendu = $attendus[$cle] ?? 0;
+            $present = $presents[$cle] ?? 0;
+
+            $semaines[] = [
+                'semaine'  => $cle,
+                'seances'  => (int) ($nbSeances[$cle] ?? 0),
+                'attendus' => $attendu,
+                'presents' => $present,
+                'taux'     => $attendu > 0 ? round(($present / $attendu) * 100, 1) : null,
+            ];
+        }
+
+        // Au plus un an : les semaines les plus récentes.
+        return array_slice($semaines, -53);
+    }
+
+    /**
+     * Étudiants ayant manqué au moins une séance du périmètre, les plus absents
+     * d'abord : de quoi prévenir un étudiant ou sa filière. Mêmes filtres et
+     * même définition que le rapport filtré ; « format=csv » renvoie la liste
+     * entière en fichier.
+     *
+     * GET /api/admin/reports/etudiants-absents
+     */
+    public function etudiantsAbsents(Request $request, AttendanceRateService $attendance, CriteresExport $descripteur): mixed
+    {
+        $this->validerFiltres($request);
+
+        $perimetre = $this->perimetreSeances($request);
+        $absences = $attendance->absencesParEtudiant($perimetre);
+
+        $etudiants = Etudiant::with('filiere:id,code')
+            ->whereIn('id', array_keys($absences))
+            ->get(['id', 'nom', 'prenom', 'matricule', 'filiere_id'])
+            ->keyBy('id');
+
+        $lignes = collect($absences)
+            ->filter(fn ($absence, $id) => $etudiants->has($id))
+            ->map(function ($absence, $id) use ($etudiants) {
+                $etudiant = $etudiants[$id];
+
+                return [
+                    'etudiant_id'    => $id,
+                    'nom'            => $etudiant->nom,
+                    'prenom'         => $etudiant->prenom,
+                    'matricule'      => $etudiant->matricule,
+                    'filiere_code'   => $etudiant->filiere?->code,
+                    'attendus'       => $absence['attendus'],
+                    'presents'       => $absence['presents'],
+                    'absences'       => $absence['absences'],
+                    'taux'           => round(($absence['presents'] / $absence['attendus']) * 100, 1),
+                    'dernier_manque' => $absence['dernier_manque'],
+                ];
+            })
+            // Le plus d'absences, puis le taux le plus bas, puis le nom.
+            ->sort(fn ($a, $b) => [$b['absences'], $a['taux'], $a['nom']] <=> [$a['absences'], $b['taux'], $b['nom']])
+            ->values();
+
+        if ($request->query('format') === 'csv') {
+            $fichier = $descripteur->nomFichier(
+                'etudiants_absents',
+                $descripteur->decrire($request, $this->getEtablissementId($request)),
+                'csv'
+            );
+
+            return response()->stream(function () use ($lignes) {
+                $sortie = fopen('php://output', 'w');
+                fputs($sortie, "\xEF\xBB\xBF");
+                fputcsv($sortie, ['Étudiant', 'Matricule', 'Filière', 'Absences', 'Présents', 'Attendus', 'Taux', 'Dernier cours manqué', 'Date']);
+
+                foreach ($lignes as $ligne) {
+                    $dernier = $ligne['dernier_manque'];
+
+                    fputcsv($sortie, [
+                        trim($ligne['nom'] . ' ' . $ligne['prenom']),
+                        $ligne['matricule'],
+                        $ligne['filiere_code'] ?? '',
+                        $ligne['absences'],
+                        $ligne['presents'],
+                        $ligne['attendus'],
+                        $ligne['taux'] . '%',
+                        $dernier['ec'] ?? '',
+                        $dernier ? Carbon::parse($dernier['date'])->format('d/m/Y') : '',
+                    ]);
+                }
+
+                fclose($sortie);
+            }, 200, [
+                'Content-Type'        => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => "attachment; filename={$fichier}",
+            ]);
+        }
+
+        return $this->successResponse([
+            'etudiants_attendus' => $attendance->expectedStudents($perimetre),
+            'etudiants'          => $lignes,
+        ]);
+    }
+
+    /** Filtres communs au rapport filtré et à la liste des absents. */
+    private function validerFiltres(Request $request): void
+    {
+        $request->validate([
+            'filiere_id' => 'nullable|integer',
+            'annee_id'   => 'nullable|integer',
+            'semestre'   => 'nullable|integer|between:1,10',
+            'trimestre'  => 'nullable|integer|between:1,4',
+            'ue_id'      => 'nullable|integer',
+            'ec_id'      => 'nullable|integer',
+            'date_debut' => 'nullable|date',
+            'date_fin'   => 'nullable|date',
+        ]);
+    }
+
+    /**
+     * Export CSV des données de présence (la route garde son nom historique).
+     *
+     * Les critères appliqués sont dans le nom du fichier ; le CSV reste de la
+     * donnée pure. Les colonnes suivent le choix fait à l'écran : les cases de
+     * la page « Export CSV » n'étaient transmises nulle part.
+     *
      * GET /api/admin/reports/excel/export
      */
-    public function excelExport(Request $request): mixed
+    public function excelExport(Request $request, CriteresExport $descripteur): mixed
     {
-        $query = Presence::with(['etudiant.filiere', 'evenement.ec']);
+        $request->validate(['date_debut' => 'nullable|date', 'date_fin' => 'nullable|date']);
 
-        // Scope par établissement via l'étudiant → filière
-        $this->scopeViaRelation($query, $request, 'etudiant.filiere');
+        // Mêmes filtres que la page : filière, année, semestre, UE, EC, période
+        // (date de la séance). Seuls la filière et les dates étaient appliqués :
+        // le fichier ne correspondait pas à ce qui était affiché.
+        $presences = Presence::with(['etudiant.filiere', 'evenement.ec'])
+            ->whereIn('presences.evenement_id', fn ($s) => $s->select('e.id')->from('evenements as e')
+                ->whereNull('e.deleted_at')
+                ->tap($this->perimetreSeances($request, false)))
+            ->orderBy('heure_scan')
+            ->get();
 
-        if ($request->filled('filiere_id')) {
-            $query->whereHas('etudiant', fn($q) => $q->where('filiere_id', $request->filiere_id));
-        }
-        if ($request->filled('date_debut')) {
-            $query->whereDate('heure_scan', '>=', $request->date_debut);
-        }
-        if ($request->filled('date_fin')) {
-            $query->whereDate('heure_scan', '<=', $request->date_fin);
-        }
+        $filename = $descripteur->nomFichier('presences', $descripteur->decrire($request, $this->getEtablissementId($request)), 'csv');
 
-        $presences = $query->orderBy('heure_scan')->get();
-
-        $filename = "export_presences_" . now()->format('Ymd_His') . ".csv";
+        $disponibles = [
+            'name'      => ['Étudiant', fn ($p) => trim(($p->etudiant->nom ?? '') . ' ' . ($p->etudiant->prenom ?? ''))],
+            'matricule' => ['Matricule', fn ($p) => $p->etudiant->matricule ?? 'N/A'],
+            'filiere'   => ['Filière', fn ($p) => $p->etudiant->filiere?->code ?? 'N/A'],
+            'course'    => ['Cours', fn ($p) => $p->evenement->ec?->intitule ?? 'N/A'],
+            'date'      => ['Date', fn ($p) => $p->evenement->date?->format('Y-m-d') ?? 'N/A'],
+            'time'      => ['Heure Scan', fn ($p) => $p->heure_scan?->format('Y-m-d H:i:s') ?? 'N/A'],
+            // Libellé et non valeur brute : « valide » sortait tel quel.
+            'status'    => ['Statut', fn ($p) => Presence::LIBELLES_STATUT[$p->statut] ?? $p->statut],
+            'ip'        => ['IP', fn ($p) => $p->ip_address ?? ''],
+        ];
+        $demandees = array_filter(array_map('trim', explode(',', (string) $request->query('colonnes', ''))));
+        $colonnes = array_intersect_key($disponibles, array_flip($demandees)) ?: $disponibles;
 
         $headers = [
             'Content-Type'              => 'text/csv; charset=UTF-8',
             'Content-Disposition'       => "attachment; filename={$filename}",
         ];
 
-        $callback = function () use ($presences) {
+        $callback = function () use ($presences, $colonnes) {
             $output = fopen('php://output', 'w');
             fputs($output, "\xEF\xBB\xBF");
 
-            fputcsv($output, ['Étudiant', 'Matricule', 'Filière', 'Cours', 'Date', 'Heure Scan', 'Statut', 'IP']);
+            fputcsv($output, array_column($colonnes, 0));
 
             foreach ($presences as $p) {
-                fputcsv($output, [
-                    ($p->etudiant->nom ?? '') . ' ' . ($p->etudiant->prenom ?? ''),
-                    $p->etudiant->matricule ?? 'N/A',
-                    $p->etudiant->filiere?->code ?? 'N/A',
-                    $p->evenement->ec?->intitule ?? 'N/A',
-                    $p->evenement->date?->format('Y-m-d') ?? 'N/A',
-                    $p->heure_scan?->format('Y-m-d H:i:s') ?? 'N/A',
-                    $p->statut,
-                    $p->ip_address ?? '',
-                ]);
+                fputcsv($output, array_map(fn ($colonne) => $colonne[1]($p), array_values($colonnes)));
             }
 
             fclose($output);
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Séances d'une filière : celles des cours qu'elle suit, cours communs
+     * compris. Et, quand la requête porte sur des étudiants (alias « s » des
+     * requêtes d'AttendanceRateService), ses seuls étudiants : une séance
+     * commune compte pour chaque filière avec les siens.
+     */
+    private function filtrerFiliere($q, int $filiereId): void
+    {
+        $q->whereIn('e.ec_id', fn ($c) => $c->select('ecs.id')->from('ecs')
+            ->join('ue_filiere as ufl', 'ufl.ue_id', '=', 'ecs.ue_id')
+            ->where('ufl.filiere_id', $filiereId));
+
+        if (collect($q->joins ?? [])->contains(fn ($jointure) => $jointure->table === 'etudiants as s')) {
+            $q->where('s.filiere_id', $filiereId);
+        }
     }
 }
