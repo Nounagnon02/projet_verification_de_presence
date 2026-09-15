@@ -13,6 +13,8 @@ describe('Button', () => {
     render(<Button>Primary</Button>)
     const btn = screen.getByRole('button')
     expect(btn.className).toContain('bg-primary')
+    // Texte lisible sur le fond bleu nuit : text-primary-font n'existait pas dans le thème.
+    expect(btn.className).toContain('text-on-primary')
   })
 
   it('applies outline variant', () => {

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { FiX } from 'react-icons/fi';
 
 export default function Modal({ isOpen, onClose, title, children, size = 'md', 'aria-describedby': ariaDescribedBy }) {
@@ -34,11 +35,14 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', '
     }
   }, []); // Dépendances vides — onCloseRef est stable
 
+  // L'application est masquée aux lecteurs d'écran pendant l'ouverture, pas
+  // <body> : la modale y est rendue, et masquer <body> la masquait elle aussi.
   useEffect(() => {
+    const application = document.getElementById('root');
     if (isOpen) {
       previousActiveElement.current = document.activeElement;
       document.body.style.overflow = 'hidden';
-      document.body.setAttribute('aria-hidden', 'true');
+      application?.setAttribute('aria-hidden', 'true');
 
       // Focus the modal content
       setTimeout(() => {
@@ -48,12 +52,12 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', '
       document.addEventListener('keydown', handleKeyDown);
     } else {
       document.body.style.overflow = '';
-      document.body.removeAttribute('aria-hidden');
+      application?.removeAttribute('aria-hidden');
       previousActiveElement.current?.focus();
     }
     return () => {
       document.body.style.overflow = '';
-      document.body.removeAttribute('aria-hidden');
+      application?.removeAttribute('aria-hidden');
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, handleKeyDown]);
@@ -62,7 +66,9 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', '
 
   const sizes = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' };
 
-  return (
+  // Rendue dans <body> : placée dans la page, la modale héritait de la marge de
+  // son conteneur (space-y) et son voile laissait une bande découverte en haut.
+  return createPortal(
     <div
       ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
@@ -89,6 +95,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', '
         </div>
         <div className="p-6 max-h-[70vh] overflow-y-auto">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

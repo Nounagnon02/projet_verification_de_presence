@@ -2,97 +2,109 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Couleurs du thème en canaux RGB (« 0 51 102 ») et non en hexadécimal :
+   Tailwind peut alors appliquer une opacité (bg-primary/10, border-outline-variant/20…).
+   En hexadécimal, ces classes ne produisaient rien. Tout usage direct s'écrit
+   rgb(var(--jeton)). */
 :root {
-  --background: #F4F7F9;
-  --foreground: #1E293B;
+  --background: 244 247 249;
+  --foreground: 30 41 59;
   
-  --primary: #003366;
-  --on-primary: #ffffff;
-  --primary-container: #1A4B82;
-  --on-primary-container: #ffffff;
+  --primary: 0 51 102;
+  --on-primary: 255 255 255;
+  --primary-container: 26 75 130;
+  --on-primary-container: 255 255 255;
   
-  --secondary: #008751;
-  --on-secondary: #ffffff;
-  --secondary-container: #e6f6ef;
-  --on-secondary-container: #002b19;
+  --secondary: 0 135 81;
+  --on-secondary: 255 255 255;
+  --secondary-container: 230 246 239;
+  --on-secondary-container: 0 43 25;
   
-  --warning: #FCD116;
-  --on-warning: #4a3c00;
-  --warning-container: #fff4ce;
+  --warning: 252 209 22;
+  --on-warning: 74 60 0;
+  --warning-container: 255 244 206;
   
-  --tertiary: #FCD116;
-  --on-tertiary: #4a3c00;
-  --tertiary-container: #fff4ce;
-  --on-tertiary-container: #261f00;
+  --tertiary: 252 209 22;
+  --on-tertiary: 74 60 0;
+  --tertiary-container: 255 244 206;
+  --on-tertiary-container: 38 31 0;
   
-  --error: #E8112D;
-  --on-error: #ffffff;
-  --error-container: #ffdad6;
-  --on-error-container: #93000a;
+  --error: 232 17 45;
+  --on-error: 255 255 255;
+  --error-container: 255 218 214;
+  --on-error-container: 147 0 10;
   
-  --surface: #F4F7F9;
-  --on-surface: #1E293B;
-  --surface-variant: #e2e8f0;
-  --on-surface-variant: #475569;
+  --surface: 244 247 249;
+  --on-surface: 30 41 59;
+  --surface-variant: 226 232 240;
+  --on-surface-variant: 71 85 105;
   
-  --surface-dim: #cbd5e1;
-  --surface-bright: #F4F7F9;
-  --surface-container-lowest: #ffffff;
-  --surface-container-low: #f8fafc;
-  --surface-container: #f1f5f9;
-  --surface-container-high: #e2e8f0;
-  --surface-container-highest: #cbd5e1;
-  --surface-tint: #1A4B82;
+  --surface-dim: 203 213 225;
+  --surface-bright: 244 247 249;
+  --surface-container-lowest: 255 255 255;
+  --surface-container-low: 248 250 252;
+  --surface-container: 241 245 249;
+  --surface-container-high: 226 232 240;
+  --surface-container-highest: 203 213 225;
+  --surface-tint: 26 75 130;
+
+  /* Traits et contours. Utilisés par ~250 classes (border-outline-variant/10…),
+     ils n'étaient définis nulle part : ces classes ne produisaient rien. */
+  --outline: 148 163 184;
+  --outline-variant: 203 213 225;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0f172a;
-    --foreground: #f8fafc;
+    --background: 15 23 42;
+    --foreground: 248 250 252;
     
-    --primary: #3b82f6;
-    --on-primary: #001e40;
-    --primary-container: #003366;
-    --on-primary-container: #93c5fd;
+    --primary: 59 130 246;
+    --on-primary: 0 30 64;
+    --primary-container: 0 51 102;
+    --on-primary-container: 147 197 253;
     
-    --secondary: #10b981;
-    --on-secondary: #003820;
-    --secondary-container: #005c36;
-    --on-secondary-container: #34d399;
+    --secondary: 16 185 129;
+    --on-secondary: 0 56 32;
+    --secondary-container: 0 92 54;
+    --on-secondary-container: 52 211 153;
     
-    --warning: #fbbf24;
-    --on-warning: #382c00;
-    --warning-container: #5c4900;
+    --warning: 251 191 36;
+    --on-warning: 56 44 0;
+    --warning-container: 92 73 0;
     
-    --tertiary: #fbbf24;
-    --on-tertiary: #382c00;
-    --tertiary-container: #5c4900;
-    --on-tertiary-container: #fde68a;
+    --tertiary: 251 191 36;
+    --on-tertiary: 56 44 0;
+    --tertiary-container: 92 73 0;
+    --on-tertiary-container: 253 230 138;
     
-    --error: #f87171;
-    --on-error: #4c000b;
-    --error-container: #7a0013;
-    --on-error-container: #fca5a5;
+    --error: 248 113 113;
+    --on-error: 76 0 11;
+    --error-container: 122 0 19;
+    --on-error-container: 252 165 165;
     
-    --surface: #1e293b;
-    --on-surface: #f1f5f9;
-    --surface-variant: #334155;
-    --on-surface-variant: #94a3b8;
+    --surface: 30 41 59;
+    --on-surface: 241 245 249;
+    --surface-variant: 51 65 85;
+    --on-surface-variant: 148 163 184;
     
-    --surface-dim: #0f172a;
-    --surface-bright: #1e293b;
-    --surface-container-lowest: #020617;
-    --surface-container-low: #0f172a;
-    --surface-container: #1e293b;
-    --surface-container-high: #334155;
-    --surface-container-highest: #475569;
-    --surface-tint: #3b82f6;
+    --surface-dim: 15 23 42;
+    --surface-bright: 30 41 59;
+    --surface-container-lowest: 2 6 23;
+    --surface-container-low: 15 23 42;
+    --surface-container: 30 41 59;
+    --surface-container-high: 51 65 85;
+    --surface-container-highest: 71 85 105;
+    --surface-tint: 59 130 246;
+
+    --outline: 100 116 139;
+    --outline-variant: 71 85 105;
   }
 }
 
 body {
-  color: var(--foreground);
-  /* background: var(--background); */
+  color: rgb(var(--foreground));
+  /* background: rgb(var(--background)); */
   font-family: 'Inter', sans-serif;
 }
 
@@ -111,8 +123,8 @@ body {
 @layer base {
   *::-webkit-scrollbar { width: 6px; height: 6px; }
   *::-webkit-scrollbar-track { background: transparent; }
-  *::-webkit-scrollbar-thumb { background: var(--surface-container-high); border-radius: 9999px; }
-  *::-webkit-scrollbar-thumb:hover { background: var(--surface-variant); }
+  *::-webkit-scrollbar-thumb { background: rgb(var(--surface-container-high)); border-radius: 9999px; }
+  *::-webkit-scrollbar-thumb:hover { background: rgb(var(--surface-variant)); }
 
   ::selection { background: rgba(1, 21, 73, 0.15); }
 
@@ -121,14 +133,14 @@ body {
   button:focus-visible,
   summary:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--primary);
+    box-shadow: 0 0 0 2px rgb(var(--surface)), 0 0 0 4px rgb(var(--primary));
   }
 
   /* Inputs gardent le comportement natif du navigateur */
   input:focus-visible,
   textarea:focus-visible,
   select:focus-visible {
-    outline: 2px solid var(--primary);
+    outline: 2px solid rgb(var(--primary));
     outline-offset: -2px;
   }
 
@@ -139,8 +151,8 @@ body {
     left: 50%;
     transform: translateX(-50%);
     padding: 12px 24px;
-    background: var(--primary);
-    color: var(--on-primary);
+    background: rgb(var(--primary));
+    color: rgb(var(--on-primary));
     font-weight: 600;
     border-radius: 8px;
     z-index: 10000;
@@ -166,11 +178,11 @@ body {
   /* High contrast mode support */
   @media (prefers-contrast: high) {
     :root {
-      --primary: #000080;
-      --secondary: #005000;
-      --error: #800000;
-      --surface-container-highest: #c0c0c0;
-      --on-surface-variant: #000;
+      --primary: 0 0 128;
+      --secondary: 0 80 0;
+      --error: 128 0 0;
+      --surface-container-highest: 192 192 192;
+      --on-surface-variant: 0 0 0;
     }
   }
 }
@@ -197,8 +209,8 @@ body {
   overflow: visible;
   clip: auto;
   white-space: normal;
-  background: var(--primary);
-  color: var(--on-primary);
+  background: rgb(var(--primary));
+  color: rgb(var(--on-primary));
   font-weight: 600;
   border-radius: 8px;
   z-index: 10000;

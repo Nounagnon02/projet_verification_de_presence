@@ -5,7 +5,9 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // « coverage » est produit par vitest --coverage : du code instrumenté, dont
+  // les directives eslint-disable font du bruit dans le rapport de lint.
+  globalIgnores(['dist', 'coverage']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

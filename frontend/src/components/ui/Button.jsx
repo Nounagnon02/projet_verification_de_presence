@@ -20,7 +20,9 @@ const Button = forwardRef(({
   const baseClasses = 'flex items-center justify-center gap-2 font-medium rounded-lg transition-all disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-surface';
 
   const variantClasses = {
-    primary: 'bg-primary text-primary-font hover:bg-primary/90 active:bg-primary focus-visible:ring-primary/30',
+    // text-on-primary : la classe text-primary-font n'existe pas dans le thème. Le
+    // texte gardait la couleur héritée, foncée, sur le fond bleu nuit du bouton.
+    primary: 'bg-primary text-on-primary hover:bg-primary/90 active:bg-primary focus-visible:ring-primary/30',
     secondary: 'bg-secondary text-on-secondary hover:bg-secondary/90 active:bg-secondary focus-visible:ring-secondary/30',
     destructive: 'bg-error text-on-error hover:bg-error/90 active:bg-error focus-visible:ring-error/30',
     outline: 'border border-outline-variant/20 hover:bg-surface-container-low active:bg-surface-container focus-visible:ring-outline-variant/30',

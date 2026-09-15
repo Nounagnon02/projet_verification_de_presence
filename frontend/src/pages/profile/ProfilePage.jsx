@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { FiUser, FiSave, FiMail, FiRefreshCw, FiAlertTriangle } from 'react-icons/fi';
 import api from '../../api/axios';
+import SecuriteCompte from '../../components/profile/SecuriteCompte';
+import { libelleRole } from '../../utils/roles';
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState(null);
@@ -86,7 +88,7 @@ export default function ProfilePage() {
       {/* En-tête */}
       <div>
         <h1 className="text-2xl font-bold text-primary font-headline">Profil</h1>
-        <p className="text-sm text-on-surface-variant">Gérez vos informations personnelles</p>
+        <p className="text-sm text-on-surface-variant">Vos informations personnelles et la sécurité de votre compte</p>
       </div>
 
       {/* Alertes */}
@@ -156,6 +158,13 @@ export default function ProfilePage() {
         </form>
       </div>
 
+      {/* Sécurité du compte : elle vivait dans Paramètres, qui configure
+          l'établissement ; elle concerne la personne connectée. */}
+      <SecuriteCompte
+        deuxFacteursActive={Boolean(profile?.two_factor_enabled)}
+        onDeuxFacteursChange={(actif) => setProfile((prev) => ({ ...prev, two_factor_enabled: actif }))}
+      />
+
       {/* Métadonnées compte */}
       {profile?.created_at && (
         <div className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10">
@@ -166,7 +175,7 @@ export default function ProfilePage() {
             <div>
               <h2 className="text-lg font-bold text-on-surface">Compte</h2>
               <p className="text-xs text-on-surface-variant mt-0.5">
-                Rôle : <span className="font-semibold text-primary">{profile?.role || 'Administrateur'}</span>
+                Rôle : <span className="font-semibold text-primary">{libelleRole(profile?.role)}</span>
                 {' · '}Membre depuis le {new Date(profile.created_at).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
             </div>

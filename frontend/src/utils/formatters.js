@@ -29,3 +29,17 @@ export function formatNumber(value) {
   if (value == null) return '—';
   return value.toLocaleString('fr-FR');
 }
+
+/**
+ * Date du jour en heure LOCALE, au format AAAA-MM-JJ attendu par
+ * <input type="date">.
+ *
+ * Pas `new Date().toISOString().slice(0, 10)` : cela donne la date UTC, soit
+ * la veille entre minuit et 1 h à Cotonou — le sélecteur aurait alors laissé
+ * choisir hier.
+ */
+export function aujourdhuiIso() {
+  const d = new Date();
+  const deux = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${deux(d.getMonth() + 1)}-${deux(d.getDate())}`;
+}

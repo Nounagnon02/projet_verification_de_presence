@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { FiX } from 'react-icons/fi';
 
 export default function Drawer({ isOpen, onClose, title, children, side = 'right', size = 'md' }) {
@@ -19,7 +20,9 @@ export default function Drawer({ isOpen, onClose, title, children, side = 'right
   const sizes = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-xl' };
   const sideClasses = side === 'right' ? 'right-0 translate-x-0' : 'left-0 -translate-x-0';
 
-  return (
+  // Rendu dans <body>, comme Modal : dans la page, le voile héritait de la marge
+  // de son conteneur et ne couvrait pas tout l'écran.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className={`absolute top-0 h-full w-full ${sizes[size]} bg-surface shadow-[0_12px_32px_rgba(25,28,31,0.06)] animate-in ${side === 'right' ? 'slide-in-from-right' : 'slide-in-from-left'} duration-200 ${sideClasses}`}>
@@ -31,6 +34,7 @@ export default function Drawer({ isOpen, onClose, title, children, side = 'right
         </div>
         <div className="p-6 overflow-y-auto h-[calc(100%-60px)]">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

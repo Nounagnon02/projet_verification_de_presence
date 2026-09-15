@@ -1,3 +1,14 @@
+/* eslint-disable react-refresh/only-export-components --
+ * Le hook d'accès au contexte est exporté depuis le même fichier que son
+ * fournisseur. C'est l'idiome React le plus répandu, et le plus lisible : on
+ * trouve le contexte, son fournisseur et son accesseur au même endroit.
+ *
+ * La règle demande de les séparer pour que le rechargement à chaud préserve
+ * l'état des composants pendant le développement. Le bénéfice est réel mais
+ * strictement ergonomique — aucun effet à l'exécution — alors que la séparation
+ * imposerait de modifier les imports de 13 fichiers et les doublures de test.
+ * Écart assumé : le coût dépasse le gain.
+ */
 import { createContext, useContext, useState } from 'react';
 import api, { TOKEN_KEY } from '../api/axios';
 import { invalidateApiCache } from '../api/cache';

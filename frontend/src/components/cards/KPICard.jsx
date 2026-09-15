@@ -1,6 +1,8 @@
 
 const KPICard = ({ label, value, change, icon, trend = 'neutral' }) => {
-  const trendClass = trend === 'up' ? 'text-primary' : trend === 'down' ? 'text-error' : 'text-surface-variant';
+  // « neutre » : une information, pas une tendance. text-surface-variant, pâle
+  // sur le fond de la pastille, la rendait illisible.
+  const trendClass = trend === 'up' ? 'text-primary' : trend === 'down' ? 'text-error' : 'text-on-surface-variant';
   const trendIcon = trend === 'up' ? '↗' : trend === 'down' ? '↘' : '';
 
   return (

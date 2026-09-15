@@ -1,4 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+// Modales rendues dans <body> : placées dans la page, elles héritaient de la
+// marge de son conteneur (space-y) et laissaient une bande découverte en haut.
+import { createPortal } from 'react-dom';
 import { FiShield, FiLock, FiCheck, FiX, FiCopy, FiAlertTriangle, FiEye, FiEyeOff } from 'react-icons/fi';
 import api from '../../api/axios';
 import { useToastCtx } from '../../context/ToastContext';
@@ -15,6 +18,8 @@ const PwInput = ({ value, onChange, placeholder, show, onToggle, autoComplete })
   <div className="relative">
     <input
       type={show ? 'text' : 'password'}
+      // Le texte d'exemple disparaît à la saisie : il ne nomme pas le champ.
+      aria-label={placeholder}
       placeholder={placeholder}
       autoComplete={autoComplete}
       className="w-full px-3 py-2.5 pr-10 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all"
@@ -23,15 +28,21 @@ const PwInput = ({ value, onChange, placeholder, show, onToggle, autoComplete })
       required
       minLength={8}
     />
-    <button type="button" onClick={onToggle} className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors">
+    <button type="button" onClick={onToggle} aria-label={show ? `Masquer « ${placeholder} »` : `Afficher « ${placeholder} »`} className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors">
       {show ? <FiEyeOff size={16} /> : <FiEye size={16} />}
     </button>
   </div>
 );
 
-export default function SecurityPage() {
-  const [profile, setProfile] = useState(null);
-  const { addToast } = useToastCtx();
+/**
+ * Sécurité du compte connecté : mot de passe et double authentification.
+ *
+ * Elle vivait dans Paramètres, qui configure l'établissement ; elle concerne la
+ * personne connectée et s'affiche donc dans Profil, qui lui fournit l'état de la
+ * double authentification.
+ */
+export default function SecuriteCompte({ deuxFacteursActive = false, onDeuxFacteursChange }) {
+  const { addToast } = useToastCtx() ?? {};
 
   // Mot de passe
   const [passwordForm, setPasswordForm] = useState({ current_password: '', password: '', password_confirmation: '' });
@@ -54,16 +65,6 @@ export default function SecurityPage() {
   const [showDisableConfirm, setShowDisableConfirm] = useState(false);
   const [disablePassword, setDisablePassword] = useState('');
   const [disableError, setDisableError] = useState('');
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const { data: p } = await api.get('/admin/profile');
-        setProfile(p.data || p);
-      } catch { /* ignore */ }
-    };
-    fetchProfile();
-  }, []);
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
@@ -118,7 +119,7 @@ export default function SecurityPage() {
       const { data } = await api.post('/admin/profile/2fa/confirm', { code: twoFACode });
       setRecoveryCodes(data.data.recovery_codes);
       setTwoFAStep('done');
-      setProfile(prev => ({ ...prev, two_factor_enabled: true }));
+      onDeuxFacteursChange?.(true);
       addToast?.('Authentification à deux facteurs activée !', 'success');
     } catch (err) {
       setTwoFAError(err.response?.data?.message || 'Code invalide. Veuillez réessayer.');
@@ -153,7 +154,7 @@ export default function SecurityPage() {
     setDisableError('');
     try {
       await api.post('/admin/profile/2fa/disable', { current_password: disablePassword });
-      setProfile(prev => ({ ...prev, two_factor_enabled: false }));
+      onDeuxFacteursChange?.(false);
       setShowDisableConfirm(false);
       setDisablePassword('');
       addToast?.('Authentification à deux facteurs désactivée.', 'success');
@@ -168,20 +169,16 @@ export default function SecurityPage() {
 
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold font-headline text-primary">Sécurité</h1>
-        <p className="text-sm text-on-surface-variant">Protégez votre compte</p>
-      </div>
+    <section aria-label="Sécurité du compte" className="space-y-8">
 
       {/* Mot de passe */}
-      <div className="bg-surface-container-lowest rounded-xxl p-6 shadow-sm border border-outline-variant/5">
+      <div className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2.5 bg-primary/5 rounded-xl">
             <FiLock className="text-primary" size={20} />
           </div>
           <div>
-            <h2 className="text-base font-bold font-headline text-primary">Mot de passe</h2>
+            <h2 className="text-lg font-bold text-on-surface">Mot de passe</h2>
             <p className="text-xs text-on-surface-variant">Modifiez votre mot de passe</p>
           </div>
         </div>
@@ -230,20 +227,20 @@ export default function SecurityPage() {
       </div>
 
       {/* 2FA */}
-      <div className="bg-surface-container-lowest rounded-xxl p-6 shadow-sm border border-outline-variant/5">
+      <div className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10">
         <div className="flex items-center gap-3">
-          <div className={`p-2.5 rounded-xl ${profile?.two_factor_enabled ? 'bg-secondary/10' : 'bg-primary/5'}`}>
-            <FiShield className={profile?.two_factor_enabled ? 'text-secondary' : 'text-primary'} size={20} />
+          <div className={`p-2.5 rounded-xl ${deuxFacteursActive ? 'bg-secondary/10' : 'bg-primary/5'}`}>
+            <FiShield className={deuxFacteursActive ? 'text-secondary' : 'text-primary'} size={20} />
           </div>
           <div className="flex-1">
-            <h2 className="text-base font-bold font-headline text-primary">Authentification à deux facteurs</h2>
+            <h2 className="text-lg font-bold text-on-surface">Authentification à deux facteurs</h2>
             <p className="text-xs text-on-surface-variant mt-0.5">
-              {profile?.two_factor_enabled
+              {deuxFacteursActive
                 ? "Votre compte est sécurisé par une application d'authentification."
                 : "Ajoutez une couche de sécurité supplémentaire à votre compte."}
             </p>
           </div>
-          {profile?.two_factor_enabled ? (
+          {deuxFacteursActive ? (
             <button
               onClick={() => setShowDisableConfirm(true)}
               className="px-4 py-2 bg-error/10 text-error rounded-xl text-sm font-semibold hover:bg-error/20 transition-colors"
@@ -263,7 +260,7 @@ export default function SecurityPage() {
       </div>
 
       {/* Modal 2FA — Activation */}
-      {show2FAModal && (
+      {show2FAModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={handleCloseModal}>
           <div className="bg-surface-container-lowest rounded-2xl shadow-2xl max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
@@ -364,11 +361,12 @@ export default function SecurityPage() {
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* Modal désactiver 2FA */}
-      {showDisableConfirm && (
+      {showDisableConfirm && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setShowDisableConfirm(false)}>
           <div className="bg-surface-container-lowest rounded-2xl shadow-2xl max-w-md w-full p-6 relative" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3 mb-6">
@@ -414,8 +412,9 @@ export default function SecurityPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
-    </div>
+    </section>
   );
 }

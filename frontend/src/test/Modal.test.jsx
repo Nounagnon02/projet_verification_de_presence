@@ -41,4 +41,21 @@ describe('Modal', () => {
     await user.keyboard('{Escape}')
     expect(closed).toBe(true)
   })
+
+  it('masque l\'application aux lecteurs d\'écran, jamais la modale elle-même', () => {
+    const racine = document.createElement('div')
+    racine.id = 'root'
+    document.body.appendChild(racine)
+
+    const { unmount } = render(<Modal isOpen={true} onClose={() => {}} title="Titre">Contenu</Modal>, { container: racine })
+
+    expect(racine).toHaveAttribute('aria-hidden', 'true')
+    expect(document.body).not.toHaveAttribute('aria-hidden')
+    // Accessible sans l'option « hidden » : elle n'est plus sous un aria-hidden.
+    expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true')
+
+    unmount()
+    expect(racine).not.toHaveAttribute('aria-hidden')
+    racine.remove()
+  })
 })
