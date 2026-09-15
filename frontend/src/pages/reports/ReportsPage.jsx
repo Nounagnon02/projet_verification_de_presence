@@ -1,241 +1,398 @@
-import { useState, useEffect, useCallback, useMemo, memo } from 'react';
-import { FiFilter, FiLoader, FiRefreshCw, FiBarChart2, FiCalendar, FiUsers, FiCheckCircle, FiAlertTriangle, FiDownload, FiFileText, FiChevronDown, FiChevronUp, FiSearch, FiArrowUp, FiArrowDown } from 'react-icons/fi';
+import { Fragment, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import { FiLoader, FiRefreshCw, FiDownload, FiChevronDown, FiSearch, FiArrowUp, FiArrowDown } from 'react-icons/fi';
 import api from '../../api/axios';
-import BarChart from '../../components/charts/BarChart';
-import GaugeChart from '../../components/charts/GaugeChart';
+import { enregistrer, nomFichierServeur } from '../../utils/telechargement';
+import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 import useDebounce from '../../hooks/useDebounce';
+import TauxHebdomadaireChart from '../../components/charts/TauxHebdomadaireChart';
+import BarreTaux from '../../components/charts/BarreTaux';
+import { couleurTaux, libelleTaux } from '../../utils/taux';
+import ComparaisonsRapport from './ComparaisonsRapport';
 
-const SEMESTRES = Array.from({ length: 10 }, (_, i) => ({ value: i + 1, label: `S${i + 1}` }));
+/** « 2026-09-14 » à partir d'une date locale. */
+const iso = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-const SortIcon = ({ col, ueSort }) => {
-  if (ueSort.col !== col) return <span className="opacity-20 ml-1">↕</span>;
-  return ueSort.dir === 'asc' ? <FiArrowUp className="inline ml-1" size={10} /> : <FiArrowDown className="inline ml-1" size={10} />;
+/** Période par défaut : les 30 derniers jours, aujourd'hui compris. */
+const periodeParDefaut = () => {
+  const fin = new Date();
+  const debut = new Date(fin);
+  debut.setDate(fin.getDate() - 29);
+  return { debut: iso(debut), fin: iso(fin) };
 };
 
-const UeTable = memo(({ statsParUe, ueSemFilter, setUeSemFilter, ueFiliereFilter, setUeFiliereFilter, ueSearch, setUeSearch, debouncedUeSearch, uePage, setUePage, ueSort, handleUeSort, exportUeCSV, persistFilter, UE_PER_PAGE }) => {
+const formaterDate = (valeur) => (valeur ? valeur.split('-').reverse().join('/') : '…');
+const jourMois = (valeur) => (valeur ? `${valeur.slice(8, 10)}/${valeur.slice(5, 7)}` : '');
 
-  const semestresDispos = useMemo(() => [...new Set(statsParUe.map(u => u.semestre))].sort((a, b) => a - b), [statsParUe]);
-  const filieresDispos = useMemo(() => [...new Map(statsParUe.filter(u => u.filiere_code).map(u => [u.filiere_code, { code: u.filiere_code, intitule: u.filiere_intitule || u.filiere_code }])).values()], [statsParUe]);
+const ABSENTS_VISIBLES = 6;
+const UES_FAIBLES = 5;
+const UE_PAR_PAGE = 10;
 
-  const filtered = useMemo(() => {
-    let rows = statsParUe;
-    if (ueSemFilter) rows = rows.filter(u => String(u.semestre) === ueSemFilter);
-    if (ueFiliereFilter) rows = rows.filter(u => u.filiere_code === ueFiliereFilter);
-    if (debouncedUeSearch) {
-      const q = debouncedUeSearch.toLowerCase();
-      rows = rows.filter(u => (u.code || '').toLowerCase().includes(q) || (u.intitule || '').toLowerCase().includes(q));
-    }
-    return [...rows].sort((a, b) => {
-      const dir = ueSort.dir === 'asc' ? 1 : -1;
-      const col = ueSort.col;
-      if (col === 'taux' || col === 'total_evenements' || col === 'total_presences' || col === 'semestre' || col === 'total_etudiants')
-        return ((a[col] ?? 0) - (b[col] ?? 0)) * dir;
-      return ((a[col] || '').localeCompare(b[col] || '')) * dir;
-    });
-  }, [statsParUe, ueSemFilter, ueFiliereFilter, debouncedUeSearch, ueSort]);
+const CARTE = 'bg-surface-container-lowest rounded-2xl border border-outline-variant/10';
+const ETIQUETTE = 'text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant';
+const CHAMP = 'w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface disabled:opacity-40';
 
-  const totaux = useMemo(() => ({
-    seances: filtered.reduce((s, u) => s + (u.total_evenements || 0), 0),
-    presences: filtered.reduce((s, u) => s + (u.total_presences || 0), 0),
-    etudiants: filtered.reduce((s, u) => s + (u.total_etudiants || 0), 0),
-    taux: filtered.length ? Math.round(filtered.reduce((s, u) => s + (u.taux || 0), 0) / filtered.length) : 0,
-  }), [filtered]);
-
-  const totalPages = Math.ceil(filtered.length / UE_PER_PAGE);
-  const paginated = filtered.slice((uePage - 1) * UE_PER_PAGE, uePage * UE_PER_PAGE);
-
+const PastilleTaux = ({ taux }) => {
+  const couleur = couleurTaux(taux);
 
   return (
-    <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 overflow-hidden mb-6">
-      {/* En-tête avec filtres */}
-      <div className="p-4 border-b border-outline-variant/10 space-y-3">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <h2 className="text-sm font-bold font-headline text-primary">Détail par UE</h2>
-          <button onClick={() => exportUeCSV(filtered)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-xs font-semibold hover:bg-primary/20 transition-all">
-            <FiDownload size={12} /> Exporter CSV ({filtered.length})
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {/* Recherche */}
-          <div className="relative flex-1 min-w-[160px]">
-            <FiSearch className="absolute left-2 top-1/2 -translate-y-1/2 text-on-surface-variant" size={12} />
-            <input value={ueSearch} onChange={e => setUeSearch(e.target.value)}
-              placeholder="Rechercher code ou intitulé..."
-              className="w-full pl-7 pr-2 py-1.5 bg-surface-container-high rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary/30 text-on-surface" />
-          </div>
-          {/* Filtre semestre */}
-          <select value={ueSemFilter} onChange={e => { setUeSemFilter(e.target.value); persistFilter('ue_sem', e.target.value); setUePage(1); }}
-            className="px-2 py-1.5 bg-surface-container-high rounded-lg text-xs focus:outline-none text-on-surface">
-            <option value="">Tous semestres</option>
-            {semestresDispos.map(s => <option key={s} value={s}>S{s}</option>)}
-          </select>
-          {/* Filtre filière */}
-          {filieresDispos.length > 0 && (
-            <select value={ueFiliereFilter} onChange={e => { setUeFiliereFilter(e.target.value); persistFilter('ue_fil', e.target.value); setUePage(1); }}
-              className="px-2 py-1.5 bg-surface-container-high rounded-lg text-xs focus:outline-none text-on-surface">
-              <option value="">Toutes filières</option>
-              {filieresDispos.map(f => <option key={f.code} value={f.code}>{f.code}</option>)}
-            </select>
-          )}
-        </div>
-      </div>
+    <span
+      className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold tabular-nums"
+      style={couleur ? { color: couleur, backgroundColor: `${couleur}1f` } : undefined}
+    >
+      {libelleTaux(taux)}
+    </span>
+  );
+};
 
-      {/* Tableau */}
-      <div className="overflow-x-auto">
+/** Carte chiffrée. Le libellé réserve deux lignes : les valeurs restent alignées quand l'un d'eux passe à la ligne. */
+const Chiffre = ({ libelle, valeur, detail, action, couleur, className = '' }) => (
+  <div className={`${CARTE} p-4 flex flex-col gap-1 min-w-0 ${className}`}>
+    <p className={`${ETIQUETTE} leading-tight min-h-[2.5em]`}>{libelle}</p>
+    <p className="text-2xl font-bold font-headline tabular-nums text-primary" style={couleur ? { color: couleur } : undefined}>{valeur}</p>
+    {detail && <p className="text-[11px] text-on-surface-variant">{detail}</p>}
+    {action && <div className="mt-auto pt-1 text-xs font-semibold">{action}</div>}
+  </div>
+);
+
+const CHOIX_EXPORT = [
+  { id: 'presences-csv', titre: 'Liste des présences', detail: 'CSV · tous les filtres, rappelés dans le nom du fichier' },
+  { id: 'absents-csv', titre: 'Étudiants les plus absents', detail: 'CSV · la liste entière' },
+  { id: 'ue-csv', titre: 'Détail par UE', detail: 'CSV · séances, attendus, présents et taux' },
+  { id: 'filiere-pdf', titre: 'Rapport de filière', detail: 'PDF · la filière choisie dans les filtres' },
+];
+
+/**
+ * Un seul bouton pour tous les exports. Ils étaient éparpillés entre un bloc
+ * au milieu de la page et l'en-tête du tableau par UE.
+ */
+const MenuExport = ({ onExporter, enCours, filiereChoisie }) => {
+  const [ouvert, setOuvert] = useState(false);
+  const racine = useRef(null);
+
+  useEffect(() => {
+    if (!ouvert) return undefined;
+
+    const clicExterieur = (e) => { if (!racine.current?.contains(e.target)) setOuvert(false); };
+    const echap = (e) => { if (e.key === 'Escape') setOuvert(false); };
+
+    document.addEventListener('mousedown', clicExterieur);
+    document.addEventListener('keydown', echap);
+
+    return () => {
+      document.removeEventListener('mousedown', clicExterieur);
+      document.removeEventListener('keydown', echap);
+    };
+  }, [ouvert]);
+
+  return (
+    <div className="relative" ref={racine}>
+      <button
+        type="button"
+        onClick={() => setOuvert((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={ouvert}
+        disabled={Boolean(enCours)}
+        className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-xl text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-60"
+      >
+        {enCours ? <FiLoader className="animate-spin" aria-hidden="true" /> : <FiDownload aria-hidden="true" />}
+        {enCours ? 'Export…' : 'Exporter'}
+        <FiChevronDown aria-hidden="true" />
+      </button>
+
+      {ouvert && (
+        <div role="menu" aria-label="Exporter" className="absolute right-0 top-full mt-2 z-20 w-80 max-w-[86vw] p-1.5 bg-surface-container-lowest border border-outline-variant/20 rounded-xl shadow-lg">
+          {CHOIX_EXPORT.map((choix) => {
+            const desactive = choix.id === 'filiere-pdf' && !filiereChoisie;
+
+            return (
+              <button
+                key={choix.id}
+                type="button"
+                role="menuitem"
+                disabled={desactive}
+                onClick={() => { setOuvert(false); onExporter(choix.id); }}
+                className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-surface-container-low disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              >
+                <span className="block text-sm font-semibold text-on-surface">{choix.titre}</span>
+                <span className="block text-[11px] text-on-surface-variant">
+                  {desactive ? "PDF · choisissez d'abord une filière dans les filtres" : choix.detail}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/** Étudiants ayant au moins une absence, les plus absents d'abord. */
+const TableAbsents = ({ liste }) => {
+  const [tout, setTout] = useState(false);
+
+  if (!liste) {
+    return <p className="text-sm text-on-surface-variant">La liste n'a pas pu être chargée. Réessayez avec « Actualiser ».</p>;
+  }
+
+  const etudiants = Array.isArray(liste.etudiants) ? liste.etudiants : [];
+  const attendus = liste.etudiants_attendus ?? 0;
+
+  if (attendus === 0) {
+    return <p className="text-sm text-on-surface-variant">Aucun étudiant attendu sur ce périmètre.</p>;
+  }
+
+  if (etudiants.length === 0) {
+    return <p className="text-sm text-on-surface-variant">Aucune absence : tous les étudiants attendus ont été présents.</p>;
+  }
+
+  const visibles = tout ? etudiants : etudiants.slice(0, ABSENTS_VISIBLES);
+
+  return (
+    <>
+      <div className="overflow-x-auto -mx-5 px-5">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-xs text-on-surface-variant uppercase tracking-wider bg-surface-container-low/30">
-              <SortTh col="code" label="Code" onSort={handleUeSort} ueSort={ueSort} />
-              <SortTh col="intitule" label="Intitulé" onSort={handleUeSort} ueSort={ueSort} />
-              <SortTh col="semestre" label="Semestre" right onSort={handleUeSort} ueSort={ueSort} />
-              <SortTh col="total_evenements" label="Séances" right onSort={handleUeSort} ueSort={ueSort} />
-              <SortTh col="total_presences" label="Présences" right onSort={handleUeSort} ueSort={ueSort} />
-              <SortTh col="total_etudiants" label="Étudiants" right onSort={handleUeSort} ueSort={ueSort} />
-              <SortTh col="taux" label="Taux" right onSort={handleUeSort} ueSort={ueSort} />
+            <tr className="text-left text-[10px] text-on-surface-variant uppercase tracking-wider border-b border-outline-variant/20">
+              <th scope="col" className="py-2 pr-3 font-semibold">Étudiant</th>
+              <th scope="col" className="py-2 px-3 font-semibold">Filière</th>
+              <th scope="col" className="py-2 px-3 font-semibold text-right">Absences</th>
+              <th scope="col" className="py-2 px-3 font-semibold text-right whitespace-nowrap">Présents / attendus</th>
+              <th scope="col" className="py-2 px-3 font-semibold text-right">Taux</th>
+              <th scope="col" className="py-2 pl-3 font-semibold whitespace-nowrap">Dernier cours manqué</th>
             </tr>
           </thead>
           <tbody>
-            {paginated.length === 0 ? (
-              <tr><td colSpan={7} className="p-8 text-center text-on-surface-variant text-xs">Aucune UE ne correspond aux filtres</td></tr>
-            ) : paginated.map((ue, i) => (
-              <tr key={i} className="border-b last:border-0 hover:bg-surface-container-low/50 transition-colors">
-                <td className="p-3 font-mono text-xs">{ue.code}</td>
-                <td className="p-3">{ue.intitule}</td>
-                <td className="p-3 text-right text-on-surface-variant">S{ue.semestre}</td>
-                <td className="p-3 text-right">{ue.total_evenements}</td>
-                <td className="p-3 text-right">{ue.total_presences}</td>
-                <td className="p-3 text-right text-on-surface-variant">{ue.total_etudiants ?? '—'}</td>
-                <td className="p-3 text-right font-bold" style={{ color: ue.taux >= 80 ? '#2E7D32' : ue.taux >= 50 ? '#F57F17' : '#C62828' }}>
-                  {ue.taux}%
+            {visibles.map((e) => (
+              <tr key={e.etudiant_id} className="border-b border-outline-variant/10 last:border-0">
+                <td className="py-2.5 pr-3">
+                  <Link to={`/attendance/student-stats/${e.etudiant_id}`} className="font-semibold text-on-surface hover:text-primary hover:underline">
+                    {e.prenom} {e.nom}
+                  </Link>
+                  <span className="block font-mono text-[11px] text-on-surface-variant">{e.matricule}</span>
+                </td>
+                <td className="py-2.5 px-3 font-mono text-xs">{e.filiere_code ?? '—'}</td>
+                <td className="py-2.5 px-3 text-right font-bold tabular-nums">{e.absences}</td>
+                <td className="py-2.5 px-3 text-right text-on-surface-variant tabular-nums">{e.presents} / {e.attendus}</td>
+                <td className="py-2.5 px-3 text-right"><PastilleTaux taux={e.taux} /></td>
+                <td className="py-2.5 pl-3 text-xs text-on-surface-variant">
+                  {e.dernier_manque ? `${e.dernier_manque.ec ?? 'Cours'} · ${jourMois(e.dernier_manque.date)}` : '—'}
                 </td>
               </tr>
             ))}
           </tbody>
-          {/* Ligne totaux */}
-          {filtered.length > 0 && (
+        </table>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
+        <p className="text-xs text-on-surface-variant">
+          {etudiants.length} étudiant{etudiants.length > 1 ? 's' : ''} sur les {attendus} attendus {etudiants.length > 1 ? 'ont' : 'a'} au moins une absence.
+        </p>
+        {etudiants.length > ABSENTS_VISIBLES && (
+          <button
+            type="button"
+            onClick={() => setTout((v) => !v)}
+            aria-expanded={tout}
+            className="px-3 py-1.5 text-xs font-semibold text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-all"
+          >
+            {tout ? 'Réduire' : `Afficher les ${etudiants.length}`}
+          </button>
+        )}
+      </div>
+    </>
+  );
+};
+
+const COLONNES_UE = [
+  { col: 'code', libelle: 'Code' },
+  { col: 'intitule', libelle: 'Intitulé' },
+  { col: 'semestre', libelle: 'Semestre', droite: true },
+  { col: 'total_evenements', libelle: 'Séances', droite: true },
+  { col: 'presences_attendues', libelle: 'Attendus', droite: true },
+  { col: 'total_presences', libelle: 'Présents', droite: true },
+  { col: 'taux', libelle: 'Taux', droite: true },
+];
+
+/**
+ * Détail par UE. Il suit les filtres du haut : ses propres listes « semestre »
+ * et « filière » faisaient doublon, et pouvaient les contredire.
+ */
+const TableUe = ({ lignes }) => {
+  const [recherche, setRecherche] = useState('');
+  const [page, setPage] = useState(1);
+  const [tri, setTri] = useState({ col: 'code', dir: 'asc' });
+  const rechercheDebouncee = useDebounce(recherche, 300);
+
+  const filtrees = useMemo(() => {
+    const q = rechercheDebouncee.trim().toLowerCase();
+    const retenues = q ? lignes.filter((u) => `${u.code} ${u.intitule}`.toLowerCase().includes(q)) : lignes;
+    const sens = tri.dir === 'asc' ? 1 : -1;
+
+    return [...retenues].sort((a, b) => {
+      const va = a[tri.col];
+      const vb = b[tri.col];
+      if (typeof va === 'number' || typeof vb === 'number') return ((va ?? 0) - (vb ?? 0)) * sens;
+      return String(va ?? '').localeCompare(String(vb ?? '')) * sens;
+    });
+  }, [lignes, rechercheDebouncee, tri]);
+
+  // Taux pondéré par les présences attendues : la moyenne des taux donnait le
+  // même poids à une UE de 3 étudiants qu'à une UE de 300.
+  const totaux = useMemo(() => {
+    const attendus = filtrees.reduce((s, u) => s + (u.presences_attendues || 0), 0);
+    const presents = filtrees.reduce((s, u) => s + (u.total_presences || 0), 0);
+
+    return {
+      seances: filtrees.reduce((s, u) => s + (u.total_evenements || 0), 0),
+      attendus,
+      presents,
+      taux: attendus ? Math.round((presents / attendus) * 1000) / 10 : null,
+    };
+  }, [filtrees]);
+
+  const pages = Math.max(1, Math.ceil(filtrees.length / UE_PAR_PAGE));
+  const pageCourante = Math.min(page, pages);
+  const visibles = filtrees.slice((pageCourante - 1) * UE_PAR_PAGE, pageCourante * UE_PAR_PAGE);
+
+  const trier = (col) => setTri((t) => (t.col === col && t.dir === 'asc' ? { col, dir: 'desc' } : { col, dir: 'asc' }));
+
+  return (
+    <section aria-labelledby="titre-detail-ue" className={`${CARTE} overflow-hidden`}>
+      <div className="p-4 flex flex-wrap items-center justify-between gap-3 border-b border-outline-variant/10">
+        <div>
+          <h2 id="titre-detail-ue" className="text-sm font-bold font-headline text-primary">Détail par UE</h2>
+          <p className="text-[11px] text-on-surface-variant mt-0.5">Suit les filtres du haut · {lignes.length} UE</p>
+        </div>
+        <div className="relative w-full sm:w-72">
+          <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant" size={12} aria-hidden="true" />
+          <input
+            id="recherche-ue"
+            type="search"
+            value={recherche}
+            onChange={(e) => { setRecherche(e.target.value); setPage(1); }}
+            placeholder="Rechercher un code ou un intitulé"
+            aria-label="Rechercher une UE"
+            className="w-full pl-7 pr-2 py-1.5 bg-surface-container-high rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary/30 text-on-surface"
+          />
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-[10px] text-on-surface-variant uppercase tracking-wider bg-surface-container-low/30">
+              {COLONNES_UE.map(({ col, libelle, droite }) => (
+                <th
+                  key={col}
+                  scope="col"
+                  aria-sort={tri.col === col ? (tri.dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                  className={`p-3 font-semibold ${droite ? 'text-right' : ''}`}
+                >
+                  <button type="button" onClick={() => trier(col)} className="inline-flex items-center gap-1 uppercase tracking-wider hover:text-primary">
+                    {libelle}
+                    {tri.col === col
+                      ? (tri.dir === 'asc' ? <FiArrowUp size={10} aria-hidden="true" /> : <FiArrowDown size={10} aria-hidden="true" />)
+                      : <span className="opacity-30" aria-hidden="true">↕</span>}
+                  </button>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {visibles.length === 0 ? (
+              <tr><td colSpan={COLONNES_UE.length} className="p-8 text-center text-on-surface-variant text-xs">Aucune UE ne correspond à la recherche</td></tr>
+            ) : visibles.map((ue) => (
+              <tr key={ue.ue_id} className="border-b border-outline-variant/10 last:border-0 hover:bg-surface-container-low/50 transition-colors">
+                <td className="p-3 font-mono text-xs">{ue.code}</td>
+                <td className="p-3">{ue.intitule}</td>
+                <td className="p-3 text-right text-on-surface-variant">S{ue.semestre}</td>
+                <td className="p-3 text-right tabular-nums">{ue.total_evenements}</td>
+                <td className="p-3 text-right tabular-nums text-on-surface-variant">{ue.presences_attendues ?? '—'}</td>
+                <td className="p-3 text-right tabular-nums">{ue.total_presences}</td>
+                <td className="p-3 text-right"><PastilleTaux taux={ue.presences_attendues ? ue.taux : null} /></td>
+              </tr>
+            ))}
+          </tbody>
+          {filtrees.length > 0 && (
             <tfoot>
-              <tr className="border-t-2 border-outline-variant/20 bg-surface-container-low/50 text-xs font-bold text-on-surface-variant uppercase">
-                <td className="p-3" colSpan={2}>{filtered.length} UE</td>
-                <td className="p-3 text-right">—</td>
+              <tr className="border-t-2 border-outline-variant/20 bg-surface-container-low/50 text-xs font-bold text-on-surface-variant tabular-nums">
+                <td className="p-3" colSpan={3}>{filtrees.length} UE</td>
                 <td className="p-3 text-right">{totaux.seances}</td>
-                <td className="p-3 text-right">{totaux.presences}</td>
-                <td className="p-3 text-right">{totaux.etudiants || '—'}</td>
-                <td className="p-3 text-right" style={{ color: totaux.taux >= 80 ? '#2E7D32' : totaux.taux >= 50 ? '#F57F17' : '#C62828' }}>
-                  moy. {totaux.taux}%
-                </td>
+                <td className="p-3 text-right">{totaux.attendus}</td>
+                <td className="p-3 text-right">{totaux.presents}</td>
+                <td className="p-3 text-right" style={{ color: couleurTaux(totaux.taux) }}>{libelleTaux(totaux.taux)}</td>
               </tr>
             </tfoot>
           )}
         </table>
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
+      {pages > 1 && (
         <div className="flex items-center justify-between px-4 py-3 border-t border-outline-variant/10">
-          <span className="text-xs text-on-surface-variant">{filtered.length} UE · page {uePage}/{totalPages}</span>
+          <span className="text-xs text-on-surface-variant">Page {pageCourante} / {pages}</span>
           <div className="flex gap-1">
-            <button onClick={() => setUePage(p => Math.max(1, p - 1))} disabled={uePage === 1}
-              className="px-3 py-1 text-xs rounded-lg bg-surface-container-high hover:bg-surface-container-higher disabled:opacity-40 transition-all">‹ Préc</button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-              <button key={p} onClick={() => setUePage(p)}
-                className={`px-3 py-1 text-xs rounded-lg transition-all ${p === uePage ? 'bg-primary text-on-primary' : 'bg-surface-container-high hover:bg-surface-container-higher'}`}>{p}</button>
-            ))}
-            <button onClick={() => setUePage(p => Math.min(totalPages, p + 1))} disabled={uePage === totalPages}
-              className="px-3 py-1 text-xs rounded-lg bg-surface-container-high hover:bg-surface-container-higher disabled:opacity-40 transition-all">Suiv ›</button>
+            <button type="button" onClick={() => setPage(pageCourante - 1)} disabled={pageCourante === 1}
+              className="px-3 py-1 text-xs rounded-lg bg-surface-container-high hover:bg-surface-container-highest disabled:opacity-40 transition-all">‹ Préc.</button>
+            <button type="button" onClick={() => setPage(pageCourante + 1)} disabled={pageCourante === pages}
+              className="px-3 py-1 text-xs rounded-lg bg-surface-container-high hover:bg-surface-container-highest disabled:opacity-40 transition-all">Suiv. ›</button>
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
-});
-UeTable.displayName = 'UeTable';
+};
 
+/**
+ * Rapports de présence.
+ *
+ * Organisation : ce que l'on regarde (périmètre), une seule barre de filtres
+ * qui vaut pour toute la page et pour les exports, les chiffres clés, puis du
+ * plus synthétique au plus détaillé. Les comparaisons, qui portent sur toute
+ * l'année, ont leur onglet.
+ */
 const ReportsPage = () => {
-  //  FILTRES 
-  const [filieres, setFilieres] = useState([]);
-  const [annees, setAnnees] = useState([]);
+  const [onglet, setOnglet] = useState('ensemble');
+  const surEnsemble = onglet === 'ensemble';
+
+  // Année → filière → semestre en cascade : les options viennent du serveur,
+  // et un filtre enfant se remet à zéro quand son parent change.
+  const filtres = useFiltresAcademiques({ preselectionnerAnneeActive: true });
+  const { annee: anneeId, filiere: filiereId, semestre } = filtres;
+
   const [ues, setUes] = useState([]);
-
-
-  const [filiereId, setFiliereId] = useState('');
-  const [anneeId, setAnneeId] = useState('');
-  const [semestre, setSemestre] = useState('');
   const [ueId, setUeId] = useState('');
   const [ecId, setEcId] = useState('');
-  const [jours, setJours] = useState(30);
-  const [dateDebut, setDateDebut] = useState('');
-  const [dateFin, setDateFin] = useState('');
+  // Une seule période, qui s'applique à tout : compteurs, UE, évolution,
+  // absents et exports.
+  const [dateDebut, setDateDebut] = useState(() => periodeParDefaut().debut);
+  const [dateFin, setDateFin] = useState(() => periodeParDefaut().fin);
 
-  //  DONNEES 
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [exporting, setExporting] = useState(null);
-  const [exportError, setExportError] = useState('');
-
-  //Comparaisons
-  const [semComp, setSemComp] = useState(null);
-  const [filiereStats, setFiliereStats] = useState(null);
-  const [yearStats, setYearStats] = useState(null);
-  const [loadingSem, setLoadingSem] = useState(false);
-  const [loadingFiliere, setLoadingFiliere] = useState(false);
-  const [loadingYear, setLoadingYear] = useState(false);
-
-  //Sélecteurs propres aux sections comparaisons
-  const [semFiliereId, setSemFiliereId] = useState('');
-  const [semAnneeId, setSemAnneeId] = useState('');
-  const [compFiliereAnneeId, setCompFiliereAnneeId] = useState('');
-
-  //Sections repliables
-  const [showSemComp, setShowSemComp] = useState(false);
-  const [showFiliereComp, setShowFiliereComp] = useState(false);
-  const [showYearComp, setShowYearComp] = useState(false);
-
-  //  CHARGEMENT INITIAL 
+  // UEs de l'année et de la filière choisies ; le semestre se filtre ici.
   useEffect(() => {
-    const init = async () => {
-      try {
-        const [filRes, anRes, ueRes] = await Promise.all([
-          api.get('/admin/filieres'),
-          api.get('/admin/annees-academiques'),
-          api.get('/admin/ues'),
-        ]);
-        const filList = filRes.data?.data || filRes.data || [];
-        const anList = anRes.data?.data || anRes.data || [];
-        const ueList = ueRes.data?.data || ueRes.data || [];
-        if (Array.isArray(filList)) setFilieres(filList);
-        if (Array.isArray(anList)) {
-          setAnnees(anList);
-          const active = anList.find(y => y.active);
-          const activeId = active ? String(active.id) : '';
-          setAnneeId(activeId);
-          setSemAnneeId(activeId);
-          setCompFiliereAnneeId(activeId);
-        }
-        if (Array.isArray(ueList)) setUes(ueList);
-      } catch {
-        // silencieux
-      } finally {
-        setInitialLoading(false);
-      }
-    };
-    init();
-  }, []);
+    if (filtres.chargement) return undefined;
 
-  // ECs de l'UE choisie : une valeur calculée, pas un état à synchroniser. La
-  // stocker dans un état et la recopier depuis un effet créait une source de
-  // vérité en double, et un rendu de plus à chaque changement d'UE.
-  const ecs = useMemo(() => {
-    if (!ueId) return [];
-    return ues.find(u => String(u.id) === ueId)?.ecs || [];
-  }, [ueId, ues]);
+    const controleur = new AbortController();
+    const params = {};
+    if (anneeId) params.annee_id = anneeId;
+    if (filiereId) params.filiere_id = filiereId;
 
-  // L'EC sélectionné, lui, est bien un état : il se remet à zéro quand l'UE
-  // change, sinon on conserverait un EC qui n'appartient plus à l'UE affichée.
-  // L'ajustement se fait pendant le rendu — motif documenté par React pour
-  // réagir à un changement de valeur — et non dans un effet, ce qui éviterait
-  // un rendu intermédiaire affichant une combinaison incohérente.
+    api.get('/admin/ues', { params, signal: controleur.signal })
+      .then(({ data }) => setUes(data?.data ?? data ?? []))
+      .catch(() => { /* la liste précédente reste proposée */ });
+
+    return () => controleur.abort();
+  }, [anneeId, filiereId, filtres.chargement]);
+
+  const uesProposees = useMemo(
+    () => (semestre ? ues.filter((u) => String(u.semestre) === String(semestre)) : ues),
+    [ues, semestre],
+  );
+
+  const ecs = useMemo(() => (ueId ? ues.find((u) => String(u.id) === ueId)?.ecs || [] : []), [ueId, ues]);
+
+  // L'EC se remet à zéro quand l'UE change, et l'UE quand elle sort des
+  // options (autre année, filière ou semestre). Ajustements faits pendant le
+  // rendu, comme dans useFiltresAcademiques, plutôt que dans un effet.
   const [ueIdPrecedent, setUeIdPrecedent] = useState(ueId);
 
   if (ueId !== ueIdPrecedent) {
@@ -243,677 +400,375 @@ const ReportsPage = () => {
     setEcId('');
   }
 
-  //  CHARGEMENT STATS FILTREES 
-  // Compteur de rafraîchissement : le bouton « actualiser » l'incrémente, ce qui
-  // relance l'effet de chargement. Il n'y a ainsi qu'un seul endroit où la
-  // requête est émise, au lieu d'une fonction partagée entre l'effet et le
-  // bouton.
-  const [rechargement, setRechargement] = useState(0);
-  const [rechargementSem, setRechargementSem] = useState(0);
-  const [rechargementFiliere, setRechargementFiliere] = useState(0);
-  const rafraichir = useCallback(() => setRechargement((n) => n + 1), []);
+  if (ueId && ues.length > 0 && !uesProposees.some((u) => String(u.id) === ueId)) {
+    setUeId('');
+  }
 
   const construireParams = useCallback(() => {
     const params = {};
-    if (filiereId) params.filiere_id = filiereId;
     if (anneeId) params.annee_id = anneeId;
+    if (filiereId) params.filiere_id = filiereId;
     if (semestre) params.semestre = semestre;
     if (ueId) params.ue_id = ueId;
     if (ecId) params.ec_id = ecId;
-    if (jours) params.jours = jours;
     if (dateDebut) params.date_debut = dateDebut;
     if (dateFin) params.date_fin = dateFin;
     return params;
-  }, [filiereId, anneeId, semestre, ueId, ecId, jours, dateDebut, dateFin]);
+  }, [anneeId, filiereId, semestre, ueId, ecId, dateDebut, dateFin]);
 
-  // Déclarée ici, et non avec les autres filtres du tableau UE plus bas : elle
-  // est utilisée par l'effet de rechargement qui suit, et la déclarer après lui
-  // laissait une lecture avant initialisation — sans conséquence à l'exécution,
-  // l'effet ne s'exécutant qu'après le rendu, mais fragile et signalée comme telle.
-  const [uePage, setUePage] = useState(1);
+  // Une seule valeur débouncée pour tous les filtres : le rapport part 400 ms
+  // après le dernier changement, pas à chaque chiffre tapé dans une date.
+  const parametresCourants = JSON.stringify(construireParams());
+  const parametres = useDebounce(parametresCourants, 400);
+  // Tant que la valeur débouncée retarde sur les filtres, elle porte des
+  // paramètres déjà périmés — à l'ouverture, ceux d'avant la présélection de
+  // l'année active : on attend qu'elle les rattrape.
+  const aJour = parametres === parametresCourants;
 
-  const debouncedFiliereId = useDebounce(filiereId, 400);
-  const debouncedAnneeId = useDebounce(anneeId, 400);
-  const debouncedSemestre = useDebounce(semestre, 400);
-  const debouncedUeId = useDebounce(ueId, 400);
-  const debouncedEcId = useDebounce(ecId, 400);
+  const [rechargement, setRechargement] = useState(0);
+  const [data, setData] = useState(null);
+  const [absents, setAbsents] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Chargement au démarrage puis à chaque changement de filtre (débouncé).
-  //
-  // L'annulation corrige un défaut visible à l'usage : en enchaînant les
-  // filtres, deux requêtes partaient et se résolvaient dans un ordre non
-  // garanti. La réponse de l'ancien filtre pouvait arriver en dernier et
-  // réafficher un rapport que l'utilisateur venait de quitter.
+  // Annulable : en enchaînant les filtres, la réponse d'un filtre quitté
+  // pouvait arriver en dernier et réafficher un rapport périmé.
   useEffect(() => {
-    if (initialLoading) return;
+    if (filtres.chargement || !aJour) return undefined;
 
     let annule = false;
+    const params = JSON.parse(parametres);
 
     (async () => {
       setLoading(true);
-      setUePage(1);
 
-      try {
-        const { data: res } = await api.get('/admin/reports/filtered', { params: construireParams() });
-        if (!annule) setData(res.data || res);
-      } catch {
-        if (!annule) setData(null);
-      } finally {
-        if (!annule) setLoading(false);
-      }
+      // Le rapport et la liste des absents portent sur les mêmes filtres.
+      const [rapport, liste] = await Promise.allSettled([
+        api.get('/admin/reports/filtered', { params }),
+        api.get('/admin/reports/etudiants-absents', { params }),
+      ]);
+
+      if (annule) return;
+
+      setData(rapport.status === 'fulfilled' ? rapport.value.data?.data ?? null : null);
+      setAbsents(liste.status === 'fulfilled' ? liste.value.data?.data ?? null : null);
+      setLoading(false);
     })();
 
     return () => { annule = true; };
-    // construireParams change à chaque frappe ; ce sont les valeurs débouncées
-    // qui doivent déclencher le rechargement, d'où cette liste explicite.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialLoading, rechargement, debouncedFiliereId, debouncedAnneeId, debouncedSemestre, debouncedUeId, debouncedEcId]);
+  }, [parametres, rechargement, filtres.chargement, aJour]);
 
-  //  COMPARAISON SEMESTRES 
+  const statsParUe = useMemo(() => (Array.isArray(data?.stats_par_ue) ? data.stats_par_ue : []), [data]);
+  const evolution = useMemo(() => (Array.isArray(data?.evolution) ? data.evolution : []), [data]);
 
-  //  COMPARAISON FILIERES 
+  // Les UE les plus faibles d'abord : c'est là qu'il faut agir.
+  const uesAvecSeances = useMemo(() => statsParUe.filter((ue) => ue.presences_attendues > 0), [statsParUe]);
+  const uesFaibles = useMemo(() => [...uesAvecSeances].sort((a, b) => a.taux - b.taux).slice(0, UES_FAIBLES), [uesAvecSeances]);
 
-  //  COMPARAISON ANNEES 
-  useEffect(() => {
-    const fetch = async () => {
-      setLoadingYear(true);
-      try {
-        const { data: anRes } = await api.get('/admin/annees-academiques');
-        const anList = anRes.data || anRes;
-        if (!Array.isArray(anList)) { setYearStats([]); setLoadingYear(false); return; }
+  //  EXPORTS
+  const [exportEnCours, setExportEnCours] = useState(null);
+  const [erreurExport, setErreurExport] = useState('');
 
-        const yearData = await Promise.all(
-          anList.map(async (a) => {
-            try {
-              const { data: res } = await api.get(`/admin/reports/semester/${a.id}`);
-              const stats = res.data || res;
-              return {
-                id: a.id,
-                year: a.libelle || 'N/A',
-                rate: stats.taux_presence ?? stats.taux_global ?? 0,
-                students: stats.total_etudiants || 0,
-                presences: stats.total_presences || 0,
-                evenements: stats.total_evenements || 0,
-                active: a.active || false,
-              };
-            } catch {
-              return {
-                id: a.id, year: a.libelle || 'N/A',
-                rate: 0, students: 0, presences: 0, evenements: 0, active: a.active || false,
-              };
-            }
-          })
-        );
-        setYearStats(yearData);
-      } catch {
-        setYearStats([]);
-      } finally {
-        setLoadingYear(false);
+  const exporterUeCsv = () => {
+    const entete = 'Code,Intitulé,Semestre,Séances,Attendus,Présents,Taux';
+    const lignes = statsParUe.map((u) => [
+      u.code,
+      `"${String(u.intitule ?? '').replaceAll('"', '""')}"`,
+      `S${u.semestre}`,
+      u.total_evenements,
+      u.presences_attendues ?? '',
+      u.total_presences,
+      u.presences_attendues ? `${u.taux}%` : '',
+    ].join(','));
+
+    // BOM : sans lui, Excel lit mal les accents.
+    enregistrer(`\uFEFF${entete}\n${lignes.join('\n')}`, `detail_par_ue_du-${dateDebut}_au-${dateFin}.csv`);
+  };
+
+  const exporter = async (type) => {
+    setErreurExport('');
+
+    if (type === 'ue-csv') {
+      if (statsParUe.length === 0) {
+        setErreurExport('Aucune UE à exporter sur ce périmètre.');
+        return;
       }
+      exporterUeCsv();
+      return;
+    }
+
+    // Les filtres affichés, et non ceux du dernier chargement.
+    const params = construireParams();
+    const cibles = {
+      'presences-csv': { url: '/admin/reports/excel/export', params, repli: 'presences.csv' },
+      'absents-csv': { url: '/admin/reports/etudiants-absents', params: { ...params, format: 'csv' }, repli: 'etudiants_absents.csv' },
+      'filiere-pdf': { url: `/admin/reports/department/${filiereId}`, params: { format: 'pdf' }, repli: 'rapport_filiere.pdf' },
     };
-    fetch();
-  }, []);
+    const cible = cibles[type];
 
-  //Chargement des comparaisons à l'ouverture
-  // Comparaison par semestre. Les gardes « pas déjà chargé, pas en cours » ont
-  // disparu : les dépendances étant exactement les entrées du chargement,
-  // l'effet ne se relance que lorsqu'un rechargement est effectivement voulu.
-  // Les boutons, eux, incrémentent le compteur.
-  useEffect(() => {
-    if (!showSemComp || !semFiliereId || !semAnneeId) return;
+    if (!cible || (type === 'filiere-pdf' && !filiereId)) return;
 
-    let annule = false;
+    setExportEnCours(type);
 
-    (async () => {
-      setLoadingSem(true);
-
-      try {
-        const { data: res } = await api.get('/admin/reports/semester-comparison', {
-          params: { filiere_id: semFiliereId, annee_id: semAnneeId },
-        });
-        if (!annule) setSemComp(res.data || res);
-      } catch {
-        if (!annule) setSemComp(null);
-      } finally {
-        if (!annule) setLoadingSem(false);
-      }
-    })();
-
-    return () => { annule = true; };
-  }, [showSemComp, semFiliereId, semAnneeId, rechargementSem]);
-
-  // Comparaison par filière, même principe.
-  useEffect(() => {
-    if (!showFiliereComp || !compFiliereAnneeId) return;
-
-    let annule = false;
-
-    (async () => {
-      setLoadingFiliere(true);
-
-      try {
-        const { data: res } = await api.get('/admin/reports/filiere-stats', {
-          params: { annee_id: compFiliereAnneeId },
-        });
-        const list = res.data || res;
-
-        if (!annule) {
-          setFiliereStats(Array.isArray(list)
-            ? list.sort((a, b) => (b.taux || 0) - (a.taux || 0)).map((f, i) => ({ ...f, rank: i + 1 }))
-            : []);
-        }
-      } catch {
-        if (!annule) setFiliereStats(null);
-      } finally {
-        if (!annule) setLoadingFiliere(false);
-      }
-    })();
-
-    return () => { annule = true; };
-  }, [showFiliereComp, compFiliereAnneeId, rechargementFiliere]);
-
-  //EXPORTS
-  const exportReport = async (type) => {
-    setExporting(type);
-    setExportError('');
     try {
-      let url = '';
-      let params = {};
-      let filename = '';
-
-      switch (type) {
-        case 'presences-csv':
-          url = '/admin/reports/excel/export';
-          // Seuls ces trois filtres sont honores par l'export cote serveur.
-          params = {
-            filiere_id: filiereId || undefined,
-            date_debut: dateDebut || undefined,
-            date_fin: dateFin || undefined,
-          };
-          filename = `presences_${Date.now()}.csv`;
-          break;
-
-        case 'filiere-pdf':
-          // Le repli sur la filiere 1 produisait le rapport d'une filiere
-          // arbitraire ; et sans ?format=pdf l'endpoint renvoie du JSON, qui
-          // etait telecharge sous un nom en .pdf.
-          if (!filiereId) {
-            setExportError('Sélectionnez une filière avant d\'exporter son rapport.');
-            return;
-          }
-          url = `/admin/reports/department/${filiereId}`;
-          params = { format: 'pdf' };
-          filename = `rapport_filiere_${Date.now()}.pdf`;
-          break;
-
-        default:
-          return;
-      }
-
-      const { data: blobData } = await api.get(url, { params, responseType: 'blob' });
-      const blob = new Blob([blobData]);
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = filename;
-      link.click();
-      URL.revokeObjectURL(link.href);
+      const { data: contenu, headers } = await api.get(cible.url, { params: cible.params, responseType: 'blob' });
+      // Le nom donné par le serveur résume les filtres ; le nom local n'est qu'un repli.
+      enregistrer(contenu, nomFichierServeur(headers, cible.repli));
     } catch {
-      setExportError('L\'export a échoué. Réessayez dans un instant.');
+      setErreurExport("L'export a échoué. Réessayez dans un instant.");
     } finally {
-      setExporting(null);
+      setExportEnCours(null);
     }
   };
 
-  // PAGINATION, FILTRES & TRI TABLEAU UE
-  const [ueSemFilter, setUeSemFilter] = useState(() => sessionStorage.getItem('ue_sem') || '');
-  const [ueFiliereFilter, setUeFiliereFilter] = useState(() => sessionStorage.getItem('ue_fil') || '');
-  const [ueSearch, setUeSearch] = useState('');
-  const [ueSort, setUeSort] = useState(() => JSON.parse(sessionStorage.getItem('ue_sort') || '{"col":"semestre","dir":"asc"}'));
-  const UE_PER_PAGE = 10;
-  const debouncedUeSearch = useDebounce(ueSearch, 300);
-
-  const persistFilter = (key, val) => sessionStorage.setItem(key, val);
-  const persistSort = (sort) => sessionStorage.setItem('ue_sort', JSON.stringify(sort));
-
-  const handleUeSort = (col) => {
-    const next = ueSort.col === col && ueSort.dir === 'asc' ? { col, dir: 'desc' } : { col, dir: 'asc' };
-    setUeSort(next); persistSort(next);
+  const reinitialiser = () => {
+    const active = filtres.annees.find((a) => a.active);
+    filtres.setAnnee(active ? String(active.id) : '');
+    filtres.setFiliere('');
+    filtres.setSemestre('');
+    setUeId('');
+    setEcId('');
+    const periode = periodeParDefaut();
+    setDateDebut(periode.debut);
+    setDateFin(periode.fin);
   };
 
-  const exportUeCSV = (rows) => {
-    const header = 'Code,Intitulé,Semestre,Séances,Présences,Étudiants,Taux';
-    const lines = rows.map(u =>
-      `${u.code},"${u.intitule}",S${u.semestre},${u.total_evenements},${u.total_presences},${u.total_etudiants ?? ''},${u.taux}%`
-    );
-    const blob = new Blob([header + '\n' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `detail_ue_${Date.now()}.csv`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-  };
+  const voirAbsents = () => document.getElementById('etudiants-absents')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
 
-  //  HELPERS (mémoïsés)
+  // Ce que l'on regarde, en une ligne : l'écran ne disait nulle part sur quoi
+  // portaient les chiffres.
+  const anneeChoisie = filtres.annees.find((a) => String(a.id) === String(anneeId));
+  const filiereChoisie = filtres.filieres.find((f) => String(f.id) === String(filiereId));
+  const ueChoisie = ues.find((u) => String(u.id) === ueId);
+  const ecChoisi = ecs.find((e) => String(e.id) === ecId);
+
+  const perimetre = [
+    (data?.entite ?? '').split(' — ')[0],
+    anneeChoisie ? `Année ${anneeChoisie.libelle}` : 'Toutes les années',
+    surEnsemble && `du ${formaterDate(dateDebut)} au ${formaterDate(dateFin)}`,
+    filiereChoisie ? filiereChoisie.code : 'toutes filières',
+    surEnsemble && semestre && `S${semestre}`,
+    surEnsemble && ueChoisie?.code,
+    surEnsemble && ecChoisi && (ecChoisi.code || ecChoisi.intitule),
+  ].filter(Boolean);
+
   const d = data || {};
-  const evolution = useMemo(() => Array.isArray(d.evolution) ? d.evolution : [], [d.evolution]);
-  const statsParUe = useMemo(() => Array.isArray(d.stats_par_ue) ? d.stats_par_ue : [], [d.stats_par_ue]);
-
-  const chartData = useMemo(() => evolution.map(e => ({
-    label: typeof e.date === 'string' ? e.date.slice(5, 10) : '',
-    value: e.total || 0,
-  })), [evolution]);
-
-  const ueChartData = useMemo(() => statsParUe.map(ue => ({
-    label: ue.code || '',
-    value: ue.taux || 0,
-    name: ue.intitule || '',
-  })), [statsParUe]);
-
-  const resetFilters = () => {
-    setFiliereId(''); setAnneeId(''); setSemestre('');
-    setUeId(''); setEcId('');
-    setJours(30); setDateDebut(''); setDateFin('');
-  };
-
-  //  RENDU 
-  if (initialLoading) {
-    return <div className="flex justify-center p-16"><FiLoader className="animate-spin text-primary w-8 h-8" /></div>;
-  }
 
   return (
     <div>
-      {/*  EN-TETE  */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-primary font-headline">Rapports de Présence</h1>
-          
+      {/*  EN-TÊTE  */}
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-5">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold text-primary font-headline">Rapports de présence</h1>
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-on-surface-variant">
+            {perimetre.map((morceau, i) => (
+              <Fragment key={`${i}-${morceau}`}>
+                {i > 0 && <span aria-hidden="true" className="text-outline-variant">·</span>}
+                <span className="font-medium text-on-surface">{morceau}</span>
+              </Fragment>
+            ))}
+          </p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={resetFilters}
-            className="px-3 py-2 text-xs font-semibold text-on-surface-variant bg-surface-container-high rounded-xl hover:bg-surface-container-higher transition-all">
-            Réinitialiser
+        <div className="flex gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => setRechargement((n) => n + 1)}
+            disabled={loading}
+            className="flex items-center gap-2 px-3 py-2 bg-surface-container-high text-on-surface rounded-xl text-xs font-semibold hover:bg-surface-container-highest transition-all disabled:opacity-50"
+          >
+            {loading ? <FiLoader className="animate-spin" aria-hidden="true" /> : <FiRefreshCw aria-hidden="true" />}
+            Actualiser
           </button>
-          <button onClick={rafraichir} disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-xl text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-50">
-            {loading ? <FiLoader className="animate-spin" /> : <FiRefreshCw />}
-            Appliquer
-          </button>
+          <MenuExport onExporter={exporter} enCours={exportEnCours} filiereChoisie={Boolean(filiereId)} />
         </div>
+      </header>
+
+      {erreurExport && <p role="alert" className="-mt-2 mb-4 text-xs text-error font-medium">{erreurExport}</p>}
+
+      {/*  ONGLETS  */}
+      <div role="tablist" aria-label="Sections du rapport" className="flex gap-1 border-b border-outline-variant/20 mb-4">
+        {[['ensemble', "Vue d'ensemble"], ['comparaisons', 'Comparaisons']].map(([id, libelle]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            id={`onglet-${id}`}
+            aria-controls={`panneau-${id}`}
+            aria-selected={onglet === id}
+            onClick={() => setOnglet(id)}
+            className={`px-4 py-2.5 -mb-px text-sm font-semibold border-b-2 transition-colors ${onglet === id ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-primary'}`}
+          >
+            {libelle}
+          </button>
+        ))}
       </div>
 
       {/*  FILTRES  */}
-      <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10 mb-4">
-        <div className="flex items-center gap-2 mb-3">
-          <FiFilter className="text-primary" size={16} />
-          <span className="text-sm font-bold text-primary">Filtres</span>
+      <section aria-label="Filtres du rapport" className={`${CARTE} p-4 mb-5`}>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <p className={ETIQUETTE}>
+            {surEnsemble
+              ? "Filtres · ils s'appliquent à toute la page et aux exports"
+              : "Filtres · seules l'année et la filière s'appliquent aux comparaisons"}
+          </p>
+          <button type="button" onClick={reinitialiser} className="text-xs font-semibold text-primary hover:underline">
+            Réinitialiser
+          </button>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
           <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Filière</label>
-            <select value={filiereId} onChange={e => setFiliereId(e.target.value)}
-              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface">
+            <label htmlFor="rapport-annee" className={`${ETIQUETTE} block mb-0.5`}>Année</label>
+            <select id="rapport-annee" value={anneeId} onChange={(e) => filtres.setAnnee(e.target.value)} className={CHAMP}>
               <option value="">Toutes</option>
-              {filieres.map(f => <option key={f.id} value={f.id}>{f.code}</option>)}
+              {filtres.annees.map((a) => <option key={a.id} value={a.id}>{a.libelle}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Année</label>
-            <select value={anneeId} onChange={e => setAnneeId(e.target.value)}
-              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface">
-              <option value="">Toutes</option>
-              {annees.map(a => <option key={a.id} value={a.id}>{a.libelle}</option>)}
+            <label htmlFor="rapport-filiere" className={`${ETIQUETTE} block mb-0.5`}>Filière</label>
+            <select id="rapport-filiere" value={filiereId} onChange={(e) => filtres.setFiliere(e.target.value)}
+              disabled={filtres.anneeVide} className={CHAMP}>
+              <option value="">{filtres.anneeVide ? 'Aucune' : 'Toutes'}</option>
+              {filtres.filieres.map((f) => <option key={f.id} value={f.id}>{f.code}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Semestre</label>
-            <select value={semestre} onChange={e => setSemestre(e.target.value)}
-              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface">
+            <label htmlFor="rapport-semestre" className={`${ETIQUETTE} block mb-0.5`}>Semestre</label>
+            <select id="rapport-semestre" value={semestre} onChange={(e) => filtres.setSemestre(e.target.value)}
+              disabled={!surEnsemble} className={CHAMP}>
               <option value="">Tous</option>
-              {SEMESTRES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              {filtres.semestres.map((s) => <option key={s} value={s}>S{s}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">UE</label>
-            <select value={ueId} onChange={e => setUeId(e.target.value)}
-              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface">
+            <label htmlFor="rapport-ue" className={`${ETIQUETTE} block mb-0.5`}>UE</label>
+            <select id="rapport-ue" value={ueId} onChange={(e) => setUeId(e.target.value)} disabled={!surEnsemble} className={CHAMP}>
               <option value="">Toutes</option>
-              {ues.map(u => <option key={u.id} value={u.id}>{u.code}</option>)}
+              {uesProposees.map((u) => <option key={u.id} value={u.id}>{u.code}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">EC</label>
-            <select value={ecId} onChange={e => setEcId(e.target.value)} disabled={!ueId}
-              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface disabled:opacity-40">
-              <option value="">Tous</option>
-              {ecs.map(e => <option key={e.id} value={e.id}>{e.code || e.intitule}</option>)}
+            <label htmlFor="rapport-ec" className={`${ETIQUETTE} block mb-0.5`}>EC</label>
+            <select id="rapport-ec" value={ecId} onChange={(e) => setEcId(e.target.value)} disabled={!surEnsemble || !ueId} className={CHAMP}>
+              <option value="">{ueId ? 'Tous' : 'Choisissez une UE'}</option>
+              {ecs.map((e) => <option key={e.id} value={e.id}>{e.code || e.intitule}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Jours</label>
-            <input type="number" min="1" max="365" value={jours}
-              onChange={e => setJours(Math.max(1, parseInt(e.target.value) || 30))}
-              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface" />
+            <label htmlFor="rapport-du" className={`${ETIQUETTE} block mb-0.5`}>Du</label>
+            <input id="rapport-du" type="date" value={dateDebut} onChange={(e) => setDateDebut(e.target.value)}
+              disabled={!surEnsemble} className={CHAMP} />
           </div>
           <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Du</label>
-            <input type="date" value={dateDebut} onChange={e => setDateDebut(e.target.value)}
-              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface" />
-          </div>
-          <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Au</label>
-            <input type="date" value={dateFin} onChange={e => setDateFin(e.target.value)}
-              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface" />
+            <label htmlFor="rapport-au" className={`${ETIQUETTE} block mb-0.5`}>Au</label>
+            <input id="rapport-au" type="date" value={dateFin} onChange={(e) => setDateFin(e.target.value)}
+              disabled={!surEnsemble} className={CHAMP} />
           </div>
         </div>
-      </div>
+      </section>
 
-      {/*  CONTENU PRINCIPAL  */}
-      {loading ? (
-        <div className="flex justify-center p-16"><FiLoader className="animate-spin text-primary w-8 h-8" /></div>
-      ) : !data ? (
-        <div className="text-center py-16 text-on-surface-variant bg-surface-container-lowest rounded-2xl border border-outline-variant/10 mb-6">
-          <FiBarChart2 className="mx-auto text-4xl mb-3 opacity-40" />
-          <p>Appliquez des filtres pour voir les données.</p>
+      {surEnsemble ? (
+        <div role="tabpanel" id="panneau-ensemble" aria-labelledby="onglet-ensemble">
+          {!data ? (
+            loading ? (
+              <div className="flex justify-center p-16"><FiLoader className="animate-spin text-primary w-8 h-8" aria-label="Chargement du rapport" /></div>
+            ) : (
+              <div className={`${CARTE} text-center py-16 text-sm text-on-surface-variant`}>
+                Le rapport n'a pas pu être chargé. Réessayez avec « Actualiser ».
+              </div>
+            )
+          ) : (
+            <div className={`space-y-6 transition-opacity ${loading ? 'opacity-60' : ''}`} aria-busy={loading}>
+              {/*  CHIFFRES CLÉS  */}
+              {/* Le taux se calcule comme au tableau de bord : présences valides ÷
+                  présences attendues (inscrits de chaque cours), sur les séances
+                  terminées. */}
+              <section aria-label="Chiffres clés" className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-[1.4fr_repeat(5,minmax(0,1fr))] gap-3">
+                <Chiffre
+                  className="col-span-2 md:col-span-1 shadow-sm"
+                  libelle="Taux de présence"
+                  valeur={d.presences_attendues ? libelleTaux(d.taux_global) : '—'}
+                  couleur={d.presences_attendues ? couleurTaux(d.taux_global) : undefined}
+                  detail={d.presences_attendues ? `${d.presences_valides} présents sur ${d.presences_attendues} attendus` : 'Aucune séance terminée'}
+                />
+                <Chiffre libelle="Séances terminées" valeur={d.total_evenements ?? 0} />
+                <Chiffre libelle="Présents" valeur={d.presences_valides ?? 0} />
+                <Chiffre
+                  libelle="Absences"
+                  valeur={d.absences ?? 0}
+                  action={(d.absences ?? 0) > 0 && (
+                    <button type="button" onClick={voirAbsents} className="text-primary hover:underline">Voir les étudiants ↓</button>
+                  )}
+                />
+                <Chiffre
+                  libelle="Suspects à arbitrer"
+                  valeur={d.presences_suspectes ?? 0}
+                  couleur={(d.presences_suspectes ?? 0) > 0 ? '#F57F17' : undefined}
+                  action={<Link to="/attendance/queue" className="text-primary hover:underline">File d'attente →</Link>}
+                />
+                <Chiffre className="col-span-2 md:col-span-1" libelle="Rejetés" valeur={d.presences_rejetees ?? 0} />
+              </section>
+
+              {/*  TENDANCE ET POINTS FAIBLES  */}
+              <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_1fr] gap-4 items-start">
+                <section aria-labelledby="titre-semaines" className={`${CARTE} p-5`}>
+                  <h2 id="titre-semaines" className="text-sm font-bold font-headline text-primary">Taux de présence par semaine</h2>
+                  <p className="text-[11px] text-on-surface-variant mt-0.5 mb-3">
+                    Du {formaterDate(dateDebut)} au {formaterDate(dateFin)} · une semaine sans séance terminée reste vide
+                  </p>
+                  {evolution.length > 0 ? (
+                    <TauxHebdomadaireChart semaines={evolution} />
+                  ) : (
+                    <div className="h-[180px] flex items-center justify-center text-sm text-on-surface-variant">Aucune séance terminée sur la période</div>
+                  )}
+                </section>
+
+                <section aria-labelledby="titre-ues-faibles" className={`${CARTE} p-5`}>
+                  <h2 id="titre-ues-faibles" className="text-sm font-bold font-headline text-primary">UE les plus faibles</h2>
+                  <p className="text-[11px] text-on-surface-variant mt-0.5 mb-4">
+                    {uesAvecSeances.length} UE {uesAvecSeances.length > 1 ? 'ont' : 'a'} eu des séances sur la période · détail complet plus bas
+                  </p>
+                  {uesFaibles.length > 0 ? (
+                    <ol className="space-y-3.5">
+                      {uesFaibles.map((ue) => (
+                        <li key={ue.ue_id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 items-baseline">
+                          <span className="text-xs text-on-surface min-w-0 truncate" title={`${ue.code} · ${ue.intitule}`}>
+                            <span className="font-mono text-[11px] text-on-surface-variant mr-1.5">{ue.code}</span>
+                            {ue.intitule}
+                          </span>
+                          <span className="text-xs tabular-nums whitespace-nowrap">
+                            <b style={{ color: couleurTaux(ue.taux) }}>{libelleTaux(ue.taux)}</b>
+                            <span className="ml-1.5 text-on-surface-variant">{ue.total_presences} / {ue.presences_attendues}</span>
+                          </span>
+                          <BarreTaux taux={ue.taux} className="col-span-2" />
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <div className="h-[180px] flex items-center justify-center text-sm text-on-surface-variant">Aucune UE avec des étudiants attendus</div>
+                  )}
+                </section>
+              </div>
+
+              {/*  ÉTUDIANTS  */}
+              <section id="etudiants-absents" aria-labelledby="titre-absents" className={`${CARTE} p-5 scroll-mt-4`}>
+                <h2 id="titre-absents" className="text-sm font-bold font-headline text-primary">Étudiants les plus absents</h2>
+                <p className="text-[11px] text-on-surface-variant mt-0.5 mb-3">
+                  Sur la période et les filtres choisis · un nom ouvre la fiche de présence de l'étudiant
+                </p>
+                <TableAbsents key={parametres} liste={absents} />
+              </section>
+
+              {/*  DÉTAIL  */}
+              {statsParUe.length > 0 && <TableUe key={parametres} lignes={statsParUe} />}
+            </div>
+          )}
         </div>
       ) : (
-        <>
-          {/*  KPIS  */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-            <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10">
-              <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider mb-1">Taux Global</p>
-              <p className="text-2xl font-bold font-headline" style={{ color: d.taux_global >= 80 ? '#2E7D32' : d.taux_global >= 50 ? '#F57F17' : '#C62828' }}>
-                {d.taux_global ?? '—'}%
-              </p>
-            </div>
-            <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10">
-              <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider mb-1"><FiUsers className="inline mr-1" />Présences</p>
-              <p className="text-2xl font-bold font-headline text-primary">{d.total_presences ?? '—'}</p>
-            </div>
-            <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10">
-              <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider mb-1"><FiCalendar className="inline mr-1" />Séances</p>
-              <p className="text-2xl font-bold font-headline text-primary">{d.total_evenements ?? '—'}</p>
-            </div>
-            <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10">
-              <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider mb-1"><FiCheckCircle className="inline mr-1" />Valides</p>
-              <p className="text-2xl font-bold font-headline text-success">{d.presences_valides ?? '—'}</p>
-            </div>
-            <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10">
-              <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider mb-1"><FiAlertTriangle className="inline mr-1" />Suspectes</p>
-              <p className="text-2xl font-bold font-headline" style={{ color: (d.presences_suspectes || 0) > 0 ? '#C62828' : '#2E7D32' }}>
-                {d.presences_suspectes ?? 0}
-              </p>
-            </div>
-          </div>
-
-          {/*  EXPORTS  */}
-          <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10 mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <FiDownload className="text-primary" size={16} />
-              <span className="text-sm font-bold text-primary">Exports</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button onClick={() => exportReport('presences-csv')} disabled={exporting}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-success/10 text-success rounded-lg text-xs font-semibold hover:bg-success/20 transition-all disabled:opacity-50">
-                {exporting === 'presences-csv' ? <FiLoader className="animate-spin" size={12} /> : <FiFileText size={12} />} {exporting === 'presences-csv' ? 'Export...' : 'Liste Présences CSV'}
-              </button>
-              <button onClick={() => exportReport('filiere-pdf')} disabled={exporting || !filiereId}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-warning/10 text-warning rounded-lg text-xs font-semibold hover:bg-warning/20 transition-all disabled:opacity-50">
-                {exporting === 'filiere-pdf' ? <FiLoader className="animate-spin" size={12} /> : <FiFileText size={12} />} {exporting === 'filiere-pdf' ? 'Export...' : 'Rapport Filière PDF'}
-              </button>
-              {exportError && (
-                <p className="w-full text-xs text-error font-medium mt-1">{exportError}</p>
-              )}
-            </div>
-          </div>
-
-          {/*  GRAPHIQUES  */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-            <div className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10">
-              <h2 className="text-sm font-bold font-headline text-primary mb-3">Évolution ({jours} jours)</h2>
-              <p className="text-[10px] text-on-surface-variant mb-2">Modifiez le nombre de jours dans les filtres</p>
-              {chartData.length > 0 ? (
-                <BarChart data={chartData.slice(-Math.min(jours, 60))} bars="value" height={180} />
-              ) : (
-                <div className="h-[180px] flex items-center justify-center text-on-surface-variant text-sm">Aucune donnée</div>
-              )}
-            </div>
-            <div className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10">
-              <h2 className="text-sm font-bold font-headline text-primary mb-3">Taux par UE</h2>
-              {ueChartData.length > 0 ? (
-                <BarChart data={ueChartData} bars="value" height={180} />
-              ) : (
-                <div className="h-[180px] flex items-center justify-center text-on-surface-variant text-sm">Aucune UE</div>
-              )}
-            </div>
-          </div>
-
-          {/*  JAUGE  */}
-          {(d.taux_global ?? null) !== null && (
-            <div className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 mb-6 flex flex-col items-center">
-              <h2 className="text-sm font-bold font-headline text-primary mb-3">Taux Global de Présence</h2>
-              <GaugeChart value={d.taux_global} max={100} size={160} label="Présence" />
-            </div>
-          )}
-
-          {/*  TABLEAU UE  */}
-          {statsParUe.length > 0 && (
-            <UeTable
-              statsParUe={statsParUe}
-              filieres={filieres}
-              ueSemFilter={ueSemFilter} setUeSemFilter={setUeSemFilter}
-              ueFiliereFilter={ueFiliereFilter} setUeFiliereFilter={setUeFiliereFilter}
-              ueSearch={ueSearch} setUeSearch={setUeSearch}
-              debouncedUeSearch={debouncedUeSearch}
-              uePage={uePage} setUePage={setUePage}
-              ueSort={ueSort} handleUeSort={handleUeSort}
-              exportUeCSV={exportUeCSV}
-              persistFilter={persistFilter}
-              UE_PER_PAGE={UE_PER_PAGE}
-            />
-          )}
-        </>
+        <div role="tabpanel" id="panneau-comparaisons" aria-labelledby="onglet-comparaisons">
+          <ComparaisonsRapport anneeId={anneeId} anneeLibelle={anneeChoisie?.libelle} filiereId={filiereId} />
+        </div>
       )}
-
-      {/* =*/}
-      {/*  SECTIONS COMPARAISONS  */}
-      {/* =*/}
-
-      <div className="space-y-4 mt-6 border-t border-outline-variant/10 pt-6">
-        <h2 className="text-lg font-bold text-primary font-headline">Comparaisons</h2>
-
-        {/*1. Comparaison Semestrielle*/}
-        <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 overflow-hidden">
-          <button onClick={() => setShowSemComp(!showSemComp)}
-            className="flex items-center justify-between w-full px-5 py-3.5 hover:bg-surface-container-high/50 transition-all">
-            <div className="text-left">
-              <span className="font-bold text-primary text-sm">Comparaison Semestrielle</span>
-              <p className="text-[11px] text-on-surface-variant mt-0.5">Comparez les taux de présence entre semestres</p>
-            </div>
-            {showSemComp ? <FiChevronUp className="text-primary" /> : <FiChevronDown className="text-primary" />}
-          </button>
-
-          {showSemComp && (
-            <div className="px-5 pb-5 border-t border-outline-variant/10 pt-4">
-              {/* Sélecteurs propres à la section */}
-              <div className="flex flex-wrap gap-3 mb-4">
-                <div className="w-48">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Filière</label>
-                  <select value={semFiliereId} onChange={e => setSemFiliereId(e.target.value)}
-                    className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface">
-                    <option value="">Sélectionner</option>
-                    {filieres.map(f => <option key={f.id} value={f.id}>{f.code}</option>)}
-                  </select>
-                </div>
-                <div className="w-48">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Année</label>
-                  <select value={semAnneeId} onChange={e => setSemAnneeId(e.target.value)}
-                    className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface">
-                    <option value="">Sélectionner</option>
-                    {annees.map(a => <option key={a.id} value={a.id}>{a.libelle}</option>)}
-                  </select>
-                </div>
-                <div className="self-end">
-                  <button onClick={() => setRechargementSem((n) => n + 1)} disabled={!semFiliereId || !semAnneeId || loadingSem}
-                    className="px-3 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-40 flex items-center gap-1.5">
-                    {loadingSem ? <FiLoader className="animate-spin" /> : <FiRefreshCw />}
-                    Charger
-                  </button>
-                </div>
-              </div>
-
-              {loadingSem ? (
-                <div className="flex justify-center p-6"><FiLoader className="animate-spin text-primary w-6 h-6" /></div>
-              ) : !semFiliereId || !semAnneeId ? (
-                <p className="text-on-surface-variant text-sm py-4 text-center">Sélectionnez une filière et une année pour voir la comparaison.</p>
-              ) : semComp?.semestres?.length > 0 ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <BarChart data={semComp.semestres.map(s => ({ label: s.label, value: s.taux }))} bars="value" height={200} />
-                  <div className="space-y-2">
-                    {semComp.semestres.map(s => (
-                      <div key={s.semestre} className="flex items-center justify-between p-3 bg-surface-container-high rounded-lg">
-                        <span className="font-bold text-primary text-sm">{s.label}</span>
-                        <span className={`font-bold ${s.taux >= 80 ? 'text-success' : s.taux >= 50 ? 'text-warning' : 'text-error'}`}>
-                          {s.taux}% <span className="text-xs text-on-surface-variant font-normal">({s.total_presences} prés.)</span>
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <p className="text-on-surface-variant text-sm py-4 text-center">Aucune donnée de semestre disponible pour cette sélection.</p>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/*2. Comparaison Filières*/}
-        <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 overflow-hidden">
-          <button onClick={() => setShowFiliereComp(!showFiliereComp)}
-            className="flex items-center justify-between w-full px-5 py-3.5 hover:bg-surface-container-high/50 transition-all">
-            <div className="text-left">
-              <span className="font-bold text-primary text-sm">Comparaison Filières (classement)</span>
-              <p className="text-[11px] text-on-surface-variant mt-0.5">Classement des filières par taux de présence</p>
-            </div>
-            {showFiliereComp ? <FiChevronUp className="text-primary" /> : <FiChevronDown className="text-primary" />}
-          </button>
-
-          {showFiliereComp && (
-            <div className="px-5 pb-5 border-t border-outline-variant/10 pt-4">
-              <div className="flex flex-wrap gap-3 mb-4">
-                <div className="w-48">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Année</label>
-                  <select value={compFiliereAnneeId} onChange={e => setCompFiliereAnneeId(e.target.value)}
-                    className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface">
-                    <option value="">Sélectionner</option>
-                    {annees.map(a => <option key={a.id} value={a.id}>{a.libelle}</option>)}
-                  </select>
-                </div>
-                <div className="self-end">
-                  <button onClick={() => setRechargementFiliere((n) => n + 1)} disabled={!compFiliereAnneeId || loadingFiliere}
-                    className="px-3 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-40 flex items-center gap-1.5">
-                    {loadingFiliere ? <FiLoader className="animate-spin" /> : <FiRefreshCw />}
-                    Charger
-                  </button>
-                </div>
-              </div>
-
-              {loadingFiliere ? (
-                <div className="flex justify-center p-6"><FiLoader className="animate-spin text-primary w-6 h-6" /></div>
-              ) : !compFiliereAnneeId ? (
-                <p className="text-on-surface-variant text-sm py-4 text-center">Sélectionnez une année pour voir le classement.</p>
-              ) : filiereStats?.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-xs text-on-surface-variant uppercase tracking-wider">
-                        <th className="p-2 font-semibold">Rang</th>
-                        <th className="p-2 font-semibold">Filière</th>
-                        <th className="p-2 font-semibold text-right">Niveau</th>
-                        <th className="p-2 font-semibold text-right">Taux</th>
-                        <th className="p-2 font-semibold text-right">Présences</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filiereStats.map((f, i) => (
-                        <tr key={i} className="border-b last:border-0 hover:bg-surface-container-low/50 transition-all">
-                          <td className="p-2">
-                            <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${i === 0 ? 'bg-success/20 text-success' : i < 3 ? 'bg-primary/20 text-primary' : 'bg-surface-container-high text-on-surface-variant'}`}>
-                              #{f.rank}
-                            </span>
-                          </td>
-                          <td className="p-2 font-medium">{f.intitule || f.code}</td>
-                          <td className="p-2 text-right text-on-surface-variant">{f.niveau}</td>
-                          <td className="p-2 text-right font-bold" style={{ color: f.taux >= 80 ? '#2E7D32' : f.taux >= 50 ? '#F57F17' : '#C62828' }}>
-                            {f.taux}%
-                          </td>
-                          <td className="p-2 text-right text-on-surface-variant">{f.total_presences}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-on-surface-variant text-sm py-4 text-center">Aucune donnée disponible.</p>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/*3. Comparaison Années*/}
-        <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 overflow-hidden">
-          <button onClick={() => setShowYearComp(!showYearComp)}
-            className="flex items-center justify-between w-full px-5 py-3.5 hover:bg-surface-container-high/50 transition-all">
-            <div className="text-left">
-              <span className="font-bold text-primary text-sm">Comparaison Années Académiques</span>
-              <p className="text-[11px] text-on-surface-variant mt-0.5">Évolution des présences sur plusieurs années</p>
-            </div>
-            {showYearComp ? <FiChevronUp className="text-primary" /> : <FiChevronDown className="text-primary" />}
-          </button>
-
-          {showYearComp && (
-            <div className="px-5 pb-5 border-t border-outline-variant/10 pt-4">
-              {loadingYear ? (
-                <div className="flex justify-center p-6"><FiLoader className="animate-spin text-primary w-6 h-6" /></div>
-              ) : yearStats?.filter(y => y.rate > 0).length > 0 ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Taux par Année</h3>
-                    <BarChart data={yearStats.filter(y => y.rate > 0).map(y => ({ label: y.year, value: y.rate }))} bars="value" height={200} />
-                  </div>
-                  <div className="space-y-2">
-                    {yearStats.filter(y => y.rate > 0).map((y, i) => (
-                      <div key={i} className="flex items-center justify-between p-3 bg-surface-container-high rounded-lg">
-                        <span className="font-bold text-primary text-sm">{y.year}</span>
-                        <span className={`font-bold ${y.rate >= 80 ? 'text-success' : y.rate >= 50 ? 'text-warning' : 'text-error'}`}>
-                          {y.rate}%
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <p className="text-on-surface-variant text-sm py-4 text-center">Les données de présence ne sont disponibles que pour l'année active.</p>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 };
-
-/**
- * Cellule d'en-tête triable.
- *
- * Au niveau module : définie dans le composant de page, elle était recréée à
- * chaque rendu. Le tri et son sens, qui appartiennent à l'état du parent,
- * arrivent désormais par les props onSort et ueSort.
- */
-const SortTh = ({ col, label, right, onSort, ueSort }) => (
-  <th className={`p-3 font-semibold cursor-pointer select-none hover:text-primary transition-colors ${right ? 'text-right' : ''}`}
-    onClick={() => onSort(col)}>
-    {label}<SortIcon col={col} ueSort={ueSort} />
-  </th>
-);
 
 export default ReportsPage;

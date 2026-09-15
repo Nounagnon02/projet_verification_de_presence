@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { FiDownload, FiRefreshCw, FiChevronDown } from 'react-icons/fi';
+import { FiDownload, FiRefreshCw, FiChevronDown, FiInfo } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
 import { useToastCtx } from '../../context/ToastContext';
 import DataTable from '../../components/ui/DataTable';
 import SearchInput from '../../components/ui/SearchInput';
 import Badge from '../../components/ui/Badge';
 import api from '../../api/axios';
+import { enregistrer, nomFichierServeur } from '../../utils/telechargement';
 import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 
 
@@ -14,6 +16,8 @@ const PresenceHistoryPage = () => {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [page, setPage] = useState(1);
+  // Tri demandé au serveur : il porte sur toute la sélection, pas sur la page.
+  const [tri, setTri] = useState({ champ: 'date', sens: 'desc' });
   const [pagination, setPagination] = useState(null);
   const { addToast } = useToastCtx();
 
@@ -48,6 +52,8 @@ const PresenceHistoryPage = () => {
         if (filtres.semestre) params.semestre = filtres.semestre;
         if (dateDebut) params.date_debut = dateDebut;
         if (dateFin) params.date_fin = dateFin;
+        params.tri = tri.champ;
+        params.sens = tri.sens;
 
         const { data } = await api.get('/admin/presence/history', { params });
         if (data.success) {
@@ -65,7 +71,7 @@ const PresenceHistoryPage = () => {
     })();
 
     return () => { annule = true; };
-  }, [page, search, filter, filtres.annee, filtres.filiere, filtres.niveau, filtres.semestre, dateDebut, dateFin]);
+  }, [page, search, filter, filtres.annee, filtres.filiere, filtres.niveau, filtres.semestre, dateDebut, dateFin, tri.champ, tri.sens]);
 
   const resetFilters = () => {
     // Remettre l'année à zéro suffit : le hook en cascade vide filière,
@@ -104,6 +110,8 @@ const PresenceHistoryPage = () => {
       if (filtres.semestre) params.semestre = filtres.semestre;
       if (dateDebut) params.date_debut = dateDebut;
       if (dateFin) params.date_fin = dateFin;
+      params.tri = tri.champ;
+      params.sens = tri.sens;
       params.format = format;
 
       const { data, headers } = await api.get('/admin/presence/export', {
@@ -111,20 +119,9 @@ const PresenceHistoryPage = () => {
         responseType: 'blob',
       });
 
-      // Créer un lien de téléchargement
       const ext = format === 'pdf' ? 'pdf' : format === 'xlsx' ? 'xlsx' : 'csv';
-      const contentDisposition = headers?.['content-disposition'];
-      const filename = contentDisposition
-        ? contentDisposition.split('filename=')[1]?.replace(/['"]/g, '') || `historique.${ext}`
-        : `historique_presences.${ext}`;
-      const url = window.URL.createObjectURL(new Blob([data]));
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      // Le nom donné par le serveur résume les filtres appliqués.
+      enregistrer(data, nomFichierServeur(headers, `historique_presences.${ext}`));
       addToast?.('Export terminé avec succès', 'success');
     } catch {
       addToast?.("Erreur lors de l'export", 'error');
@@ -133,8 +130,21 @@ const PresenceHistoryPage = () => {
     }
   };
 
-  const badgeVariant = { valide: 'success', absent: 'error', suspect: 'warning', en_retard: 'warning' };
-  const badgeLabel = { valide: 'Présent', absent: 'Absent', suspect: 'Suspect', en_retard: 'Retard' };
+  const badgeVariant = { valide: 'success', suspect: 'warning', rejete: 'error', absent: 'error', en_retard: 'warning' };
+  const badgeLabel = { valide: 'Présent', suspect: 'Suspect', rejete: 'Rejeté', absent: 'Absent', en_retard: 'Retard' };
+
+  // Colonne -> critère de tri accepté par le serveur. Les en-têtes affichaient
+  // une flèche de tri, mais aucun gestionnaire n'était branché.
+  const CRITERES_TRI = { etudiant: 'etudiant', evenement: 'cours', date: 'date' };
+  const colonneTriee = Object.keys(CRITERES_TRI).find((cle) => CRITERES_TRI[cle] === tri.champ);
+  const trier = (cle) => {
+    const champ = CRITERES_TRI[cle];
+    if (!champ) return;
+    setTri((t) => ({ champ, sens: t.champ === champ && t.sens === 'asc' ? 'desc' : 'asc' }));
+    setPage(1);
+  };
+
+  const formaterDate = (iso) => (iso ? iso.split('-').reverse().join('/') : '—');
 
   const columns = [
     {
@@ -146,15 +156,35 @@ const PresenceHistoryPage = () => {
     { key: 'matricule', label: 'Matricule', className: 'hidden md:table-cell',
       render: (_, row) => row.etudiant?.matricule || '—' },
     { key: 'evenement', label: 'Cours', sortable: true,
-      render: (val) => val?.cours || '—' },
+      render: (val) => (
+        <div>
+          <p>{val?.cours || '—'}</p>
+          {val?.heure_debut && val?.heure_fin && (
+            <p className="text-[11px] text-on-surface-variant">Séance {val.heure_debut} – {val.heure_fin}</p>
+          )}
+        </div>
+      ) },
     { key: 'date', label: 'Date', className: 'hidden lg:table-cell', sortable: true,
-      render: (_, row) => row.heure_scan?.split(' ')[0] || row.evenement?.date || '—' },
+      render: (_, row) => formaterDate(row.heure_scan?.split(' ')[0] || row.evenement?.date) },
     { key: 'heure', label: 'Heure', className: 'hidden sm:table-cell',
-      render: (_, row) => row.heure_scan?.split(' ')[1] || '—' },
+      render: (_, row) => row.heure_scan?.split(' ')[1]?.slice(0, 5) || '—' },
     {
       key: 'statut',
       label: 'Statut',
       render: (val) => <Badge variant={badgeVariant[val] || 'neutral'}>{badgeLabel[val] || val || '—'}</Badge>,
+    },
+    {
+      // Scan, décision après examen, saisie manuelle ou rattrapage — et, pour
+      // toute décision de l'administration, qui l'a prise et pourquoi.
+      key: 'origine',
+      label: 'Origine',
+      render: (val) => (
+        <div className="min-w-[140px] max-w-[220px]">
+          <p className="text-xs text-on-surface">{val?.libelle || 'Scan'}</p>
+          {val?.decide_par && <p className="text-[11px] text-on-surface-variant">par {val.decide_par}</p>}
+          {val?.motif && <p className="text-[11px] text-on-surface-variant italic truncate" title={val.motif}>« {val.motif} »</p>}
+        </div>
+      ),
     },
   ];
 
@@ -274,10 +304,10 @@ const PresenceHistoryPage = () => {
       </div>
 
       {/* Barre de recherche et statuts */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
+      <div className="flex flex-col md:flex-row gap-4 mb-2">
         <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Rechercher par nom ou matricule..." className="flex-1 max-w-md" />
         <div className="flex gap-2">
-          {[['all', 'Tous'], ['valide', 'Présents'], ['absent', 'Absents'], ['suspect', 'Suspects']].map(([key, label]) => (
+          {[['all', 'Tous'], ['valide', 'Présents'], ['suspect', 'Suspects'], ['rejete', 'Rejetés']].map(([key, label]) => (
             <button key={key} onClick={() => { setFilter(key); setPage(1); }}
               className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${filter === key ? 'bg-primary text-on-primary shadow-sm' : 'bg-surface-container-high text-on-surface-variant hover:text-primary'}`}>
               {label}
@@ -285,6 +315,12 @@ const PresenceHistoryPage = () => {
           ))}
         </div>
       </div>
+      {/* Le filtre « Absents » ne pouvait rien trouver : un absent n'a pas de ligne ici. */}
+      <p className="flex items-center gap-1.5 text-[11px] text-on-surface-variant mb-6">
+        <FiInfo size={12} aria-hidden="true" />
+        Un absent n'a pas de ligne ici, faute de scan. Les absences se consultent séance par séance dans la{' '}
+        <Link to="/attendance/scan" className="font-semibold text-primary hover:underline">saisie manuelle</Link>.
+      </p>
 
       <div className="bg-surface-container-lowest rounded-xxl shadow-sm border border-outline-variant/10 overflow-hidden">
         <DataTable
@@ -292,6 +328,9 @@ const PresenceHistoryPage = () => {
           data={mappedRecords}
           loading={loading}
           emptyMessage="Aucun enregistrement trouvé"
+          sortField={colonneTriee}
+          sortDirection={tri.sens}
+          onSort={trier}
           pagination={pagination || null}
           onPageChange={setPage}
         />

@@ -17,7 +17,7 @@ use Tests\TestCase;
 /**
  * Suite de tests du contrôleur de rapports (ReportController).
  *
- * Couvre les 7 endpoints :
+ * Couvre les 9 endpoints :
  *   - GET /admin/reports/presence/{evenementId}/pdf   exportPdf
  *   - GET /admin/reports/department/{filiere}          departmentReport
  *   - GET /admin/reports/semester/{anneeAcademique}    semesterReport
@@ -25,6 +25,8 @@ use Tests\TestCase;
  *   - GET /admin/reports/filiere-stats                 filiereStats
  *   - GET /admin/reports/filtered                      filteredStats
  *   - GET /admin/reports/excel/export                  excelExport
+ *   - GET /admin/reports/etudiants-absents             etudiantsAbsents
+ *   - GET /admin/reports/annee-stats                   anneeStats
  *
  * Jeu de données principal : 1 filière (établissement A, niveau L1), 1 UE de
  * semestre 1, 1 EC, 1 événement passé, 4 étudiants inscrits à l'EC et 3
@@ -195,6 +197,32 @@ class ReportControllerTest extends TestCase
         return compact('filiere', 'ue', 'ec', 'evenement', 'etudiants');
     }
 
+    /** Séance supplémentaire de l'EC du jeu principal. */
+    private function creerSeance(string $date, string $statut): Evenement
+    {
+        return Evenement::create([
+            'ec_id'       => $this->ec->id,
+            'filiere_id'  => $this->filiere->id,
+            'annee_id'    => $this->annee->id,
+            'date'        => $date,
+            'heure_debut' => '10:00:00',
+            'heure_fin'   => '12:00:00',
+            'statut'      => $statut,
+        ]);
+    }
+
+    private function creerPresence(Etudiant $etudiant, Evenement $evenement, string $statut): Presence
+    {
+        return Presence::create([
+            'etudiant_id'        => $etudiant->id,
+            'evenement_id'       => $evenement->id,
+            'heure_scan'         => Carbon::parse($evenement->date->format('Y-m-d') . ' 10:05:00'),
+            'device_fingerprint' => 'empreinte-' . Str::random(8),
+            'ip_address'         => '10.0.1.' . random_int(1, 250),
+            'statut'             => $statut,
+        ]);
+    }
+
     /**
      * Filière sans UE, sans événement et sans étudiant : sert aux cas de
      * division par zéro.
@@ -210,7 +238,7 @@ class ReportControllerTest extends TestCase
     }
 
     /**
-     * Liste des 7 URL du contrôleur, pour les tests transverses.
+     * Liste des URL du contrôleur, pour les tests transverses.
      *
      * @return array<int, string>
      */
@@ -224,6 +252,8 @@ class ReportControllerTest extends TestCase
             '/api/admin/reports/filiere-stats?annee_id=' . $this->annee->id,
             '/api/admin/reports/filtered',
             '/api/admin/reports/excel/export',
+            '/api/admin/reports/etudiants-absents',
+            '/api/admin/reports/annee-stats',
         ];
     }
 
@@ -349,21 +379,13 @@ class ReportControllerTest extends TestCase
         $reponse->assertStatus(200)->assertHeader('Content-Type', 'application/pdf');
     }
 
-    public function test_la_comparaison_semestrielle_n_est_pas_cloisonnee(): void
+    public function test_la_comparaison_semestrielle_est_cloisonnee(): void
     {
-        // DÉFAUT CONSTATÉ — ReportController.php:229 : semesterComparison
-        // fait un Filiere::findOrFail($filiereId) sur un identifiant fourni
-        // par le client, sans contrôle d'établissement.
-        // Comportement attendu après correction : 404.
-        $reponse = $this->withToken($this->jetonB)->getJson(
+        // La filière vient du client : un autre établissement ne lit pas ses taux.
+        $this->withToken($this->jetonB)->getJson(
             '/api/admin/reports/semester-comparison?annee_id=' . $this->annee->id
             . '&filiere_id=' . $this->filiere->id
-        );
-
-        $reponse->assertStatus(200)
-            ->assertJsonPath('data.filiere.code', $this->filiere->code);
-
-        $this->assertSame(75.0, $this->nombre($reponse, 'data.semestres.0.taux'));
+        )->assertStatus(404);
     }
 
     // ─── exportPdf ────────────────────────────────────────────────
@@ -626,6 +648,28 @@ class ReportControllerTest extends TestCase
         $this->assertSame(0.0, $this->nombre($reponse, 'data.semestres.1.taux'));
     }
 
+    public function test_comparaison_semestrielle_donne_le_taux_du_reste_des_rapports(): void
+    {
+        // Une seconde séance terminée sans scan, et une séance à venir : seule
+        // la première compte, comme au classement des filières.
+        $this->creerSeance('2026-03-11', 'termine');
+        $this->creerSeance('2026-03-20', 'planifie');
+
+        $semestres = $this->withToken($this->jetonA)->getJson(
+            '/api/admin/reports/semester-comparison?annee_id=' . $this->annee->id . '&filiere_id=' . $this->filiere->id
+        )->assertStatus(200)
+            ->assertJsonPath('data.semestres.0.presences_attendues', 8)
+            ->assertJsonPath('data.semestres.0.total_evenements', 2);
+
+        $classement = $this->withToken($this->jetonA)
+            ->getJson('/api/admin/reports/filiere-stats?annee_id=' . $this->annee->id)
+            ->assertStatus(200);
+
+        // 3 présents sur 2 séances × 4 inscrits.
+        $this->assertSame(37.5, $this->nombre($semestres, 'data.semestres.0.taux'));
+        $this->assertSame($this->nombre($classement, 'data.0.taux'), $this->nombre($semestres, 'data.semestres.0.taux'));
+    }
+
     // ─── filiereStats ─────────────────────────────────────────────
 
     public function test_stats_par_filiere_calculent_le_taux_attendu(): void
@@ -713,8 +757,12 @@ class ReportControllerTest extends TestCase
             ->assertJsonPath('data.total_etudiants', 4)
             ->assertJsonPath('data.presences_valides', 3)
             ->assertJsonPath('data.presences_suspectes', 0)
+            ->assertJsonPath('data.presences_attendues', 4)
+            ->assertJsonPath('data.absences', 1)
+            // Évolution hebdomadaire : la semaine du 10/03 commence le lundi 09/03.
             ->assertJsonCount(1, 'data.evolution')
-            ->assertJsonPath('data.evolution.0.date', self::DATE_EVENEMENT)
+            ->assertJsonPath('data.evolution.0.semaine', '2026-03-09')
+            ->assertJsonPath('data.evolution.0.attendus', 4)
             ->assertJsonCount(1, 'data.stats_par_ue')
             ->assertJsonPath('data.stats_par_ue.0.ue_id', $this->ue->id)
             ->assertJsonPath('data.stats_par_ue.0.code', $this->ue->code)
@@ -733,7 +781,7 @@ class ReportControllerTest extends TestCase
                 'ec_id'      => null,
             ]);
 
-        $this->assertSame(3, (int) $reponse->json('data.evolution.0.total'));
+        $this->assertSame(3, (int) $reponse->json('data.evolution.0.presents'));
         $this->assertSame(75.0, $this->nombre($reponse, 'data.taux_global'));
         $this->assertSame(75.0, $this->nombre($reponse, 'data.stats_par_ue.0.taux'));
     }
@@ -844,14 +892,10 @@ class ReportControllerTest extends TestCase
 
         $this->assertSame(0.0, $this->nombre($dehors, 'data.taux_global'));
 
-        // DÉFAUT CONSTATÉ — ReportController.php:454-500 et 404-451 :
-        // date_debut / date_fin ne sont appliqués ni au bloc stats_par_ue ni au
-        // bloc evolution. Les graphiques restent donc peuplés alors que les
-        // totaux sont à zéro. Après correction, ces deux tableaux doivent être
-        // vides.
-        $dehors->assertJsonCount(1, 'data.stats_par_ue')
-            ->assertJsonPath('data.stats_par_ue.0.total_presences', 3);
-        $this->assertCount(1, $dehors->json('data.evolution'));
+        // Les UE et l'évolution suivent la période, comme les compteurs : elles
+        // l'ignoraient et restaient peuplées quand les totaux tombaient à zéro.
+        $dehors->assertJsonPath('data.stats_par_ue', [])
+            ->assertJsonPath('data.evolution', []);
     }
 
     public function test_rapport_filtre_par_trimestre(): void
@@ -955,47 +999,186 @@ class ReportControllerTest extends TestCase
             ->assertJsonPath('data.presences_valides', 3)
             ->assertJsonPath('data.presences_suspectes', 1);
 
-        // DÉFAUT CONSTATÉ — ReportController.php:516-518 : taux_global compte
-        // toutes les présences, y compris les scans suspects, alors que
-        // AttendanceRateService (utilisé par les autres rapports) ne retient
-        // que le statut « valide ». Le même jeu de données affiche donc 100 %
-        // ici et 75 % dans /reports/department. Valeur attendue après
-        // harmonisation : 75.
-        $this->assertSame(100.0, $this->nombre($reponse, 'data.taux_global'));
+        // Seules les présences valides comptent, comme dans les autres rapports
+        // et au tableau de bord : le scan suspect ne fait pas monter le taux.
+        $this->assertSame(75.0, $this->nombre($reponse, 'data.taux_global'));
     }
 
-    public function test_rapport_filtre_accepte_une_fenetre_d_evolution_personnalisee(): void
+    public function test_l_evolution_donne_le_taux_de_chaque_semaine_de_la_periode(): void
     {
-        // La présence date du 10/03, « maintenant » est le 15/03 : une fenêtre
-        // d'un jour l'exclut, une fenêtre de 30 jours l'inclut.
-        $courte = $this->withToken($this->jetonA)->getJson('/api/admin/reports/filtered?jours=1');
+        // Mars 2026 : de la semaine du 1er mars (lundi 23/02) au lundi 30/03.
+        $reponse = $this->withToken($this->jetonA)
+            ->getJson('/api/admin/reports/filtered?date_debut=2026-03-01&date_fin=2026-03-31')
+            ->assertStatus(200);
 
-        $courte->assertStatus(200)
-            ->assertJsonPath('data.evolution', [])
-            ->assertJsonPath('data.total_presences', 3);
+        $semaines = collect($reponse->json('data.evolution'));
 
-        $longue = $this->withToken($this->jetonA)->getJson('/api/admin/reports/filtered?jours=30');
-
-        $longue->assertStatus(200)->assertJsonCount(1, 'data.evolution');
-    }
-
-    public function test_rapport_filtre_ne_casse_pas_sur_des_parametres_non_numeriques(): void
-    {
-        // DÉFAUT CONSTATÉ — ReportController.php:314 : filteredStats ne valide
-        // aucun paramètre. Une valeur non numérique est silencieusement
-        // convertie en 0 par Request::integer() au lieu de produire un 422.
-        // Le test vérifie au moins l'absence de 500.
-        $reponse = $this->withToken($this->jetonA)->getJson(
-            '/api/admin/reports/filtered?filiere_id=abc&semestre=xyz&trimestre=99&ue_id=%20'
+        $this->assertSame(
+            ['2026-02-23', '2026-03-02', '2026-03-09', '2026-03-16', '2026-03-23', '2026-03-30'],
+            $semaines->pluck('semaine')->all()
         );
+        // La semaine du cours : 3 présents sur 4 attendus. Les autres, sans
+        // séance, n'ont pas de taux plutôt qu'un 0 % trompeur.
+        $this->assertSame(75.0, (float) $semaines->firstWhere('semaine', '2026-03-09')['taux']);
+        $this->assertSame([null], $semaines->where('semaine', '!=', '2026-03-09')->pluck('taux')->unique()->values()->all());
+    }
 
-        $reponse->assertStatus(200)
-            ->assertJsonPath('data.total_presences', 0)
-            ->assertJsonPath('data.total_etudiants', 0)
-            ->assertJsonPath('data.stats_par_ue', [])
-            ->assertJsonPath('data.evolution', []);
+    public function test_rapport_filtre_refuse_des_parametres_non_numeriques(): void
+    {
+        // Une valeur non numérique était convertie en 0 en silence.
+        $this->withToken($this->jetonA)
+            ->getJson('/api/admin/reports/filtered?filiere_id=abc&semestre=xyz&trimestre=99&ue_id=%20')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['filiere_id', 'semestre', 'trimestre']);
+    }
 
-        $this->assertSame(0.0, $this->nombre($reponse, 'data.taux_global'));
+    public function test_le_taux_compte_les_seances_sans_scan_et_ignore_les_non_inscrits(): void
+    {
+        // Une seconde séance terminée où personne n'a scanné, et une annulée.
+        foreach (['2026-03-11' => 'termine', '2026-03-12' => 'annule'] as $date => $statut) {
+            Evenement::create([
+                'ec_id' => $this->ec->id, 'filiere_id' => $this->filiere->id, 'annee_id' => $this->annee->id,
+                'date' => $date, 'heure_debut' => '08:00:00', 'heure_fin' => '10:00:00', 'statut' => $statut,
+            ]);
+        }
+        // Un étudiant de la filière, inscrit à aucun cours : jamais attendu.
+        Etudiant::create([
+            'nom' => 'HORS', 'prenom' => 'Cours', 'matricule' => 'HORS-' . Str::random(5),
+            'filiere_id' => $this->filiere->id, 'annee_id' => $this->annee->id,
+            'email' => strtolower('hors-' . Str::random(5) . '@example.test'), 'identifiant_unique' => 'HORS_' . Str::random(5),
+        ]);
+
+        $reponse = $this->withToken($this->jetonA)
+            ->getJson('/api/admin/reports/filtered?filiere_id=' . $this->filiere->id)
+            ->assertStatus(200)
+            // 2 séances terminées × 4 inscrits ; l'annulée ne compte pas.
+            ->assertJsonPath('data.total_evenements', 2)
+            ->assertJsonPath('data.presences_attendues', 8)
+            ->assertJsonPath('data.presences_valides', 3)
+            ->assertJsonPath('data.absences', 5);
+
+        $this->assertSame(37.5, $this->nombre($reponse, 'data.taux_global'));
+    }
+
+    public function test_le_rapport_et_le_tableau_de_bord_donnent_le_meme_taux(): void
+    {
+        $rapport = $this->withToken($this->jetonA)->getJson('/api/admin/reports/filtered')->assertStatus(200);
+        $tableau = $this->withToken($this->jetonA)->getJson('/api/admin/dashboard')->assertStatus(200);
+
+        $this->assertSame(
+            $this->nombre($tableau, 'data.taux_presence_global'),
+            $this->nombre($rapport, 'data.taux_global')
+        );
+    }
+
+    public function test_le_rapport_filtre_nomme_l_entite(): void
+    {
+        $code = DB::table('etablissements')->where('id', $this->etabA)->value('code');
+
+        $reponse = $this->withToken($this->jetonA)->getJson('/api/admin/reports/filtered')->assertStatus(200);
+
+        $this->assertStringContainsString($code, $reponse->json('data.entite'));
+    }
+
+    // ─── anneeStats ───────────────────────────────────────────────
+
+    public function test_stats_par_annee_portent_sur_les_seances_terminees(): void
+    {
+        // Une séance à venir ne compte pas encore comme une absence.
+        $this->creerSeance('2026-03-20', 'planifie');
+
+        $reponse = $this->withToken($this->jetonA)->getJson('/api/admin/reports/annee-stats')->assertStatus(200);
+
+        $ligne = collect($reponse->json('data'))->firstWhere('id', $this->annee->id);
+
+        $this->assertNotNull($ligne, "L'année du jeu de données doit figurer dans la liste.");
+        $this->assertSame(4, $ligne['presences_attendues']);
+        $this->assertSame(3, $ligne['total_presences']);
+        $this->assertSame(1, $ligne['total_evenements']);
+        $this->assertEqualsWithDelta(75.0, (float) $ligne['taux'], 0.001);
+    }
+
+    public function test_stats_par_annee_sont_cloisonnees(): void
+    {
+        $reponse = $this->withToken($this->jetonB)->getJson('/api/admin/reports/annee-stats')->assertStatus(200);
+
+        $ligne = collect($reponse->json('data'))->firstWhere('id', $this->annee->id);
+
+        $this->assertSame(0, $ligne['presences_attendues']);
+        // Aucune séance : pas de taux, plutôt qu'un 0 %.
+        $this->assertNull($ligne['taux']);
+    }
+
+    // ─── etudiantsAbsents ─────────────────────────────────────────
+
+    public function test_la_liste_des_absents_classe_les_plus_absents_d_abord(): void
+    {
+        // Seconde séance terminée, où seul le premier étudiant scanne.
+        $seconde = $this->creerSeance('2026-03-12', 'termine');
+        $this->creerPresence($this->etudiants[0], $seconde, 'valide');
+        // Un scan rejeté n'efface pas l'absence.
+        $this->creerPresence($this->etudiants[3], $this->evenement, 'rejete');
+
+        $reponse = $this->withToken($this->jetonA)->getJson('/api/admin/reports/etudiants-absents')
+            ->assertStatus(200)
+            ->assertJsonPath('data.etudiants_attendus', 4)
+            ->assertJsonCount(3, 'data.etudiants');
+
+        $lignes = collect($reponse->json('data.etudiants'));
+
+        // Le quatrième étudiant a manqué les deux séances ; les deuxième et
+        // troisième, la seconde ; le premier n'en a manqué aucune.
+        $this->assertSame($this->etudiants[3]->id, $lignes[0]['etudiant_id']);
+        $this->assertSame(2, $lignes[0]['absences']);
+        $this->assertSame(0, $lignes[0]['presents']);
+        $this->assertSame(2, $lignes[0]['attendus']);
+        $this->assertEqualsWithDelta(0.0, (float) $lignes[0]['taux'], 0.001);
+        $this->assertSame('2026-03-12', $lignes[0]['dernier_manque']['date']);
+        $this->assertSame($this->ec->intitule, $lignes[0]['dernier_manque']['ec']);
+        $this->assertSame([1, 1], $lignes->slice(1)->pluck('absences')->values()->all());
+        $this->assertNotContains($this->etudiants[0]->id, $lignes->pluck('etudiant_id')->all());
+    }
+
+    public function test_la_liste_des_absents_suit_les_filtres_et_l_etablissement(): void
+    {
+        $this->withToken($this->jetonA)->getJson('/api/admin/reports/etudiants-absents?semestre=2')
+            ->assertStatus(200)
+            ->assertJsonPath('data.etudiants', [])
+            ->assertJsonPath('data.etudiants_attendus', 0);
+
+        // Le garde garde en mémoire l'utilisateur de la requête précédente.
+        $this->app['auth']->forgetGuards();
+
+        $this->withToken($this->jetonB)->getJson('/api/admin/reports/etudiants-absents')
+            ->assertStatus(200)
+            ->assertJsonPath('data.etudiants', []);
+
+        $this->app['auth']->forgetGuards();
+
+        $this->withToken($this->jetonA)->getJson('/api/admin/reports/etudiants-absents?semestre=abc')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['semestre']);
+    }
+
+    public function test_la_liste_des_absents_s_exporte_en_csv(): void
+    {
+        $reponse = $this->withToken($this->jetonA)
+            ->get('/api/admin/reports/etudiants-absents?format=csv&filiere_id=' . $this->filiere->id);
+
+        $reponse->assertStatus(200)->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        $disposition = $reponse->headers->get('Content-Disposition');
+        $this->assertStringContainsString('filename=etudiants_absents_', $disposition);
+        $this->assertStringContainsString('_export-2026-03-15.csv', $disposition);
+
+        $contenu = $reponse->streamedContent();
+
+        $this->assertStringStartsWith("\xEF\xBB\xBF", $contenu);
+        $this->assertStringContainsString('Étudiant,Matricule,Filière,Absences,Présents,Attendus,Taux', $contenu);
+        $this->assertStringContainsString($this->etudiants[3]->matricule, $contenu);
+        $this->assertStringContainsString('10/03/2026', $contenu);
+        // 1 en-tête + le seul étudiant absent.
+        $this->assertCount(2, array_filter(explode("\n", trim($contenu))));
     }
 
     // ─── excelExport ──────────────────────────────────────────────
@@ -1008,7 +1191,8 @@ class ReportControllerTest extends TestCase
             ->assertHeader('Content-Type', 'text/csv; charset=UTF-8')
             ->assertHeader(
                 'Content-Disposition',
-                'attachment; filename=export_presences_' . self::HORODATAGE . '.csv'
+                // Le nom résume les filtres ; sans filtre, il le dit.
+                'attachment; filename=presences_complet_export-2026-03-15.csv'
             );
 
         $contenu = $reponse->streamedContent();
@@ -1027,7 +1211,9 @@ class ReportControllerTest extends TestCase
         $this->assertStringContainsString($this->filiere->code, $contenu);
         $this->assertStringContainsString($this->ec->intitule, $contenu);
         $this->assertStringContainsString(self::DATE_EVENEMENT, $contenu);
-        $this->assertStringContainsString('valide', $contenu);
+        // Le statut sort en toutes lettres, plus en valeur brute.
+        $this->assertStringContainsString('Présent', $contenu);
+        $this->assertStringNotContainsString(',valide,', $contenu);
 
         // 1 en-tête + 3 présences.
         $lignes = array_filter(explode("\n", trim($contenu)));

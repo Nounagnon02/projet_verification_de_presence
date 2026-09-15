@@ -3,12 +3,17 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
+use App\Models\Ec;
 use App\Models\Etudiant;
 use App\Models\Presence;
+use App\Models\User;
+use App\Services\CriteresExport;
 use App\Traits\ScopedByEtablissement;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -21,6 +26,15 @@ class PresenceHistoryController extends Controller
 {
     use ScopedByEtablissement;
 
+    private const LIBELLES_ORIGINE = [
+        'scan'                   => 'Scan',
+        'validee_apres_examen'   => 'Validé après examen',
+        'rejetee_apres_examen'   => 'Rejeté après examen',
+        'saisie_manuelle'        => 'Saisie manuelle',
+        'rattrapage_scan_refuse' => "Rattrapage d'un scan refusé",
+        'decision_non_tracee'    => 'Décision non tracée',
+    ];
+
     /**
      * Construit la requête de base avec les filtres (réutilisable par index et export).
      */
@@ -31,12 +45,15 @@ class PresenceHistoryController extends Controller
         // Scope par établissement via l'étudiant → filière
         $this->scopeViaRelation($query, $request, 'etudiant.filiere');
 
-        if ($search = $request->search) {
-            $query->whereHas('etudiant', function ($q) use ($search) {
-                $q->where('nom', 'like', "%{$search}%")
-                  ->orWhere('prenom', 'like', "%{$search}%")
-                  ->orWhere('matricule', 'like', "%{$search}%");
-            });
+        // Insensible à la casse, et « prénom nom » comme à l'écran : avec like,
+        // PostgreSQL distinguait les majuscules et « soton » ne trouvait pas SOTON.
+        if ($request->filled('search')) {
+            $terme = '%' . addcslashes(trim((string) $request->search), '%_\\') . '%';
+            $query->whereHas('etudiant', fn ($q) => $q->where(fn ($q) => $q
+                ->where('nom', 'ilike', $terme)
+                ->orWhere('prenom', 'ilike', $terme)
+                ->orWhere('matricule', 'ilike', $terme)
+                ->orWhereRaw("prenom || ' ' || nom ilike ?", [$terme])));
         }
 
         if ($request->filled('statut')) {
@@ -70,12 +87,90 @@ class PresenceHistoryController extends Controller
         return $query;
     }
 
+    /**
+     * Tri demandé : date (par défaut, plus récente d'abord), étudiant ou cours.
+     * Il porte sur toute la sélection : trié dans le navigateur, il ne
+     * rangeait que la page affichée — et il n'était d'ailleurs pas branché.
+     */
+    private function appliquerTri($query, Request $request)
+    {
+        $sens = $request->query('sens') === 'asc' ? 'asc' : 'desc';
+
+        match ($request->query('tri')) {
+            'etudiant' => $query
+                ->orderBy(Etudiant::select('nom')->whereColumn('etudiants.id', 'presences.etudiant_id'), $sens)
+                ->orderBy(Etudiant::select('prenom')->whereColumn('etudiants.id', 'presences.etudiant_id'), $sens),
+            'cours'    => $query->orderBy(
+                Ec::select('ecs.intitule')
+                    ->join('evenements', 'evenements.ec_id', '=', 'ecs.id')
+                    ->whereColumn('evenements.id', 'presences.evenement_id'),
+                $sens
+            ),
+            default    => $query->orderBy('heure_scan', $sens),
+        };
+
+        // Départage stable : à valeur égale, le plus récent d'abord.
+        return $query->orderByDesc('heure_scan')->orderByDesc('id');
+    }
+
+    /**
+     * Origine de chaque présence, et qui en a décidé.
+     *
+     * Un scan, une présence validée ou rejetée après examen, une saisie
+     * manuelle et un rattrapage de scan refusé se présentaient à l'identique.
+     * L'action est lue au journal d'audit (la plus récente) ; à défaut, dans
+     * les champs d'arbitrage de la présence.
+     *
+     * @return array<int, array{origine: string, libelle: string, decide_par: ?string, motif: ?string}>
+     */
+    private function origines(Collection $presences): array
+    {
+        // Triées par identifiant : keyBy garde la dernière action de chaque présence.
+        $actions = AuditLog::where('model_type', Presence::class)
+            ->whereIn('model_id', $presences->pluck('id'))
+            ->where('action', 'like', 'presence.%')
+            ->orderBy('id')
+            ->get(['model_id', 'action', 'user_id'])
+            ->keyBy('model_id');
+
+        $auteurs = User::whereIn('id', $actions->pluck('user_id')->merge($presences->pluck('validated_by'))->filter()->unique()->values())
+            ->pluck('name', 'id');
+
+        return $presences->mapWithKeys(function (Presence $p) use ($actions, $auteurs) {
+            $action = $actions->get($p->id);
+
+            $origine = match ($action?->action) {
+                'presence.validate_manual'       => 'validee_apres_examen',
+                'presence.reject_manual'         => 'rejetee_apres_examen',
+                'presence.saisie_manuelle'       => 'saisie_manuelle',
+                'presence.enregistrement_manuel' => 'rattrapage_scan_refuse',
+                default => match (true) {
+                    $p->validated_by !== null && $p->statut === 'rejete' => 'rejetee_apres_examen',
+                    $p->validated_by !== null                            => 'validee_apres_examen',
+                    // Rejetée sans trace de qui l'a décidé : données anciennes.
+                    $p->statut === 'rejete'                              => 'decision_non_tracee',
+                    default                                              => 'scan',
+                },
+            };
+
+            $decision = $origine !== 'scan';
+
+            return [$p->id => [
+                'origine'    => $origine,
+                'libelle'    => self::LIBELLES_ORIGINE[$origine],
+                'decide_par' => $decision ? ($auteurs[$action?->user_id ?? $p->validated_by] ?? null) : null,
+                'motif'      => $decision ? $p->validation_motif : null,
+            ]];
+        })->all();
+    }
+
     public function index(Request $request): JsonResponse
     {
         $query = $this->buildFilteredQuery($request);
 
         $perPage = min((int) $request->per_page, 100);
-        $presences = $query->latest('heure_scan')->paginate($perPage ?: 15);
+        $presences = $this->appliquerTri($query, $request)->paginate($perPage ?: 15);
+        $origines = $this->origines($presences->getCollection());
 
         return $this->paginatedResponse(
             $presences->through(fn($p) => [
@@ -88,12 +183,15 @@ class PresenceHistoryController extends Controller
                     'filiere'   => $p->etudiant->filiere?->code,
                 ],
                 'evenement'  => [
-                    'id'    => $p->evenement->id,
-                    'cours' => $p->evenement->ec?->intitule ?? 'N/A',
-                    'date'  => $p->evenement->date?->format('Y-m-d'),
+                    'id'          => $p->evenement->id,
+                    'cours'       => $p->evenement->ec?->intitule ?? 'N/A',
+                    'date'        => $p->evenement->date?->format('Y-m-d'),
+                    'heure_debut' => substr((string) $p->evenement->heure_debut, 0, 5),
+                    'heure_fin'   => substr((string) $p->evenement->heure_fin, 0, 5),
                 ],
                 'heure_scan' => $p->heure_scan->format('Y-m-d H:i:s'),
                 'statut'     => $p->statut,
+                'origine'    => $origines[$p->id],
                 'ip_address' => $p->ip_address,
             ])
         );
@@ -104,7 +202,7 @@ class PresenceHistoryController extends Controller
      *
      * GET /api/admin/presence/export?format=csv|pdf|xlsx
      */
-    public function export(Request $request): mixed
+    public function export(Request $request, CriteresExport $descripteur): mixed
     {
         $format = $request->query('format', 'csv');
         if (!in_array($format, ['csv', 'pdf', 'xlsx'])) {
@@ -112,30 +210,43 @@ class PresenceHistoryController extends Controller
         }
 
         $query = $this->buildFilteredQuery($request);
-        $presences = $query->orderBy('heure_scan')->get();
-        $dateLabel = now()->format('Y-m-d_Hi');
+        // Le tri choisi à l'écran s'il y en a un ; sinon l'ordre chronologique.
+        $presences = ($request->filled('tri') ? $this->appliquerTri($query, $request) : $query->orderBy('heure_scan'))->get();
+        $origines = $this->origines($presences);
+
+        // Critères : le fichier doit dire sur quoi il porte, et quels semestres
+        // couvrent les présences exportées.
+        $presences->loadMissing('evenement.ec.ue:id,semestre');
+        $semestres = $presences->map(fn ($p) => $p->evenement?->ec?->ue?->semestre);
+        $criteres = $descripteur->decrire($request, $this->getEtablissementId($request), $semestres);
+        $contexte = [
+            'criteres'   => $criteres,
+            'exporte_le' => now()->format('d/m/Y à H:i'),
+        ];
+        $nom = fn (string $extension) => $descripteur->nomFichier('historique', $criteres, $extension);
 
         return match ($format) {
-            'pdf'  => $this->exportPdf($presences, $dateLabel),
-            'xlsx' => $this->exportXlsx($presences, $dateLabel),
-            default => $this->exportCsv($presences, $dateLabel),
+            'pdf'  => $this->exportPdf($presences, $origines, $contexte, $nom('pdf')),
+            'xlsx' => $this->exportXlsx($presences, $origines, $contexte, $nom('xlsx')),
+            // Le CSV reste de la donnée pure : ses critères sont dans son nom.
+            default => $this->exportCsv($presences, $origines, $nom('csv')),
         };
     }
 
-    private function exportCsv($presences, string $dateLabel): mixed
+    private function exportCsv($presences, array $origines, string $nomFichier): mixed
     {
-        $filename = "historique_presences_{$dateLabel}.csv";
+        $filename = $nomFichier;
 
         $headers = [
             'Content-Type'              => 'text/csv; charset=UTF-8',
             'Content-Disposition'       => "attachment; filename={$filename}",
         ];
 
-        $callback = function () use ($presences) {
+        $callback = function () use ($presences, $origines) {
             $output = fopen('php://output', 'w');
             fputs($output, "\xEF\xBB\xBF"); // BOM UTF-8
 
-            fputcsv($output, ['Étudiant', 'Prénom', 'Nom', 'Matricule', 'Filière', 'Cours', 'Date', 'Heure Scan', 'Statut', 'IP']);
+            fputcsv($output, ['Étudiant', 'Prénom', 'Nom', 'Matricule', 'Filière', 'Cours', 'Date', 'Heure Scan', 'Statut', 'Origine', 'Décidé par', 'Motif', 'IP']);
 
             foreach ($presences as $p) {
                 fputcsv($output, [
@@ -147,13 +258,10 @@ class PresenceHistoryController extends Controller
                     $p->evenement->ec?->intitule ?? 'N/A',
                     $p->evenement->date?->format('Y-m-d') ?? 'N/A',
                     $p->heure_scan?->format('Y-m-d H:i:s') ?? 'N/A',
-                    match ($p->statut) {
-                        'valide'  => 'Présent',
-                        'absent'  => 'Absent',
-                        'suspect' => 'Suspect',
-                        'en_retard' => 'En retard',
-                        default   => $p->statut,
-                    },
+                    Presence::LIBELLES_STATUT[$p->statut] ?? $p->statut,
+                    $origines[$p->id]['libelle'],
+                    $origines[$p->id]['decide_par'] ?? '',
+                    $origines[$p->id]['motif'] ?? '',
                     $p->ip_address ?? '',
                 ]);
             }
@@ -164,30 +272,53 @@ class PresenceHistoryController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
-    private function exportPdf($presences, string $dateLabel): mixed
+    private function exportPdf($presences, array $origines, array $contexte, string $nomFichier): mixed
     {
-        $data = [
-            'presences' => $presences,
-            'date'      => now()->format('d/m/Y H:i'),
-            'title'     => 'Historique des Présences',
-            'total'     => $presences->count(),
-        ];
+        $pdf = Pdf::loadView('reports.history', [
+            'presences'      => $presences,
+            'origines'       => $origines,
+            'libellesStatut' => Presence::LIBELLES_STATUT,
+            'contexte'       => $contexte,
+            'date'           => now()->format('d/m/Y H:i'),
+            'title'          => 'Historique des Présences',
+            'total'          => $presences->count(),
+        ]);
 
-        $pdf = Pdf::loadView('reports.history', $data);
-        return $pdf->download("historique_presences_{$dateLabel}.pdf");
+        return $pdf->download($nomFichier);
     }
 
-    private function exportXlsx($presences, string $dateLabel): mixed
+    private function exportXlsx($presences, array $origines, array $contexte, string $nomFichier): mixed
     {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Présences');
 
-        // En-têtes
-        $headers = ['Étudiant', 'Prénom', 'Nom', 'Matricule', 'Filière', 'Cours', 'Date', 'Heure Scan', 'Statut', 'IP'];
-        $colLetters = range('A', 'J');
+        // Critères en tête : le tableau seul ne disait pas sur quoi il portait.
+        $ligne = 1;
+        $sheet->setCellValue("A{$ligne}", 'Historique des présences');
+        $sheet->getStyle("A{$ligne}")->getFont()->setBold(true)->setSize(14);
+        $ligne++;
+        $sheet->setCellValue("A{$ligne}", "Exporté le {$contexte['exporte_le']} — {$presences->count()} présence(s)");
+        $ligne++;
 
-        // Style des en-têtes
+        $criteres = array_merge(
+            [['Entité', $contexte['criteres']['entite']]],
+            $contexte['criteres']['semestres'] ? [['Semestre(s)', $contexte['criteres']['semestres']]] : [],
+            $contexte['criteres']['lignes'],
+            $contexte['criteres']['filtre'] ? [] : [['Filtres', 'Aucun filtre']],
+        );
+        foreach ($criteres as $critere) {
+            $sheet->setCellValue("A{$ligne}", $critere[0]);
+            $sheet->setCellValue("B{$ligne}", $critere[1]);
+            $sheet->getStyle("A{$ligne}")->getFont()->setBold(true);
+            $ligne++;
+        }
+
+        $entete = $ligne + 1; // une ligne vide avant le tableau
+
+        $headers = ['Étudiant', 'Prénom', 'Nom', 'Matricule', 'Filière', 'Cours', 'Date', 'Heure Scan', 'Statut', 'Origine', 'Décidé par', 'Motif', 'IP'];
+        $colLetters = range('A', 'M');
+
         $headerStyle = [
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF1E40AF']],
@@ -196,13 +327,11 @@ class PresenceHistoryController extends Controller
         ];
 
         foreach ($colLetters as $i => $col) {
-            $sheet->setCellValue($col . '1', $headers[$i]);
-            $sheet->getStyle($col . '1')->applyFromArray($headerStyle);
-            $sheet->getColumnDimension($col)->setAutoSize(true);
+            $sheet->setCellValue($col . $entete, $headers[$i]);
+            $sheet->getStyle($col . $entete)->applyFromArray($headerStyle);
         }
 
-        // Données
-        $row = 2;
+        $row = $entete + 1;
         foreach ($presences as $p) {
             $sheet->setCellValue('A' . $row, ($p->etudiant->prenom ?? '') . ' ' . ($p->etudiant->nom ?? ''));
             $sheet->setCellValue('B' . $row, $p->etudiant->prenom ?? '');
@@ -212,20 +341,15 @@ class PresenceHistoryController extends Controller
             $sheet->setCellValue('F' . $row, $p->evenement->ec?->intitule ?? 'N/A');
             $sheet->setCellValue('G' . $row, $p->evenement->date?->format('Y-m-d') ?? 'N/A');
             $sheet->setCellValue('H' . $row, $p->heure_scan?->format('Y-m-d H:i:s') ?? 'N/A');
-
-            $statutLabel = match ($p->statut) {
-                'valide'  => 'Présent',
-                'absent'  => 'Absent',
-                'suspect' => 'Suspect',
-                'en_retard' => 'En retard',
-                default   => $p->statut,
-            };
-            $sheet->setCellValue('I' . $row, $statutLabel);
-            $sheet->setCellValue('J' . $row, $p->ip_address ?? '');
+            $sheet->setCellValue('I' . $row, Presence::LIBELLES_STATUT[$p->statut] ?? $p->statut);
+            $sheet->setCellValue('J' . $row, $origines[$p->id]['libelle']);
+            $sheet->setCellValue('K' . $row, $origines[$p->id]['decide_par'] ?? '');
+            $sheet->setCellValue('L' . $row, $origines[$p->id]['motif'] ?? '');
+            $sheet->setCellValue('M' . $row, $p->ip_address ?? '');
 
             // Alternance de couleurs pour les lignes
             if ($row % 2 === 0) {
-                $sheet->getStyle('A' . $row . ':J' . $row)
+                $sheet->getStyle('A' . $row . ':M' . $row)
                     ->getFill()->setFillType(Fill::FILL_SOLID)
                     ->setStartColor(new Color('FFF3F4F6'));
             }
@@ -233,17 +357,22 @@ class PresenceHistoryController extends Controller
             $row++;
         }
 
-        // Ajuster la largeur des colonnes après avoir rempli
-        foreach ($colLetters as $col) {
+        // Filtres du tableur sur le tableau, et en-tête figé au défilement.
+        $sheet->setAutoFilter("A{$entete}:M" . max($entete, $row - 1));
+        $sheet->freezePane('A' . ($entete + 1));
+
+        // Colonne A à largeur fixe : le titre et la ligne d'export, qui y
+        // débordent, l'élargiraient démesurément.
+        $sheet->getColumnDimension('A')->setWidth(30);
+        foreach (array_slice($colLetters, 1) as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
         $writer = new Xlsx($spreadsheet);
-        $filename = "historique_presences_{$dateLabel}.xlsx";
 
         $headers = [
             'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition' => "attachment; filename={$filename}",
+            'Content-Disposition' => "attachment; filename={$nomFichier}",
         ];
 
         ob_start();

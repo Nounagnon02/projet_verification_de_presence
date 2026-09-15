@@ -39,7 +39,9 @@ return [
         'X-XSRF-TOKEN',
     ],
 
-    'exposed_headers' => [],
+    // Le nom de fichier d'un export (qui en résume les filtres) passe par cet
+    // en-tête : sans l'exposer, le navigateur ne peut pas le lire en production.
+    'exposed_headers' => ['Content-Disposition'],
 
     // Met en cache le pre-flight OPTIONS 24 h pour éviter un aller-retour
     // supplémentaire avant chaque requête cross-origin.

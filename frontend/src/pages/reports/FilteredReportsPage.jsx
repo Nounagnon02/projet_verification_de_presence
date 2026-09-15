@@ -5,6 +5,7 @@ import {
   FiChevronLeft, FiChevronRight
 } from 'react-icons/fi';
 import api from '../../api/axios';
+import { enregistrer, nomFichierServeur } from '../../utils/telechargement';
 import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 import BarChart from '../../components/charts/BarChart';
 import GaugeChart from '../../components/charts/GaugeChart';
@@ -326,13 +327,9 @@ export default function FilteredReportsPage() {
           return;
       }
 
-      const { data: blobData } = await api.get(url, { params, responseType: 'blob' });
-      const blob = new Blob([blobData]);
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = filename;
-      link.click();
-      URL.revokeObjectURL(link.href);
+      const { data: blobData, headers } = await api.get(url, { params, responseType: 'blob' });
+      // Le nom donné par le serveur résume les filtres ; le nom local n'est qu'un repli.
+      enregistrer(blobData, nomFichierServeur(headers, filename));
     } catch {
       setExportError('L\'export a échoué. Réessayez dans un instant.');
     } finally {
@@ -349,9 +346,10 @@ export default function FilteredReportsPage() {
   const ueTotalPages = Math.max(1, Math.ceil(statsParUe.length / UE_PER_PAGE));
   const uePaginated = statsParUe.slice((uePage - 1) * UE_PER_PAGE, uePage * UE_PER_PAGE);
 
-  const chartData = evolution.map(e => ({
-    label: typeof e.date === 'string' ? e.date.slice(5, 10) : '',
-    value: e.total || 0,
+  // Évolution hebdomadaire du taux (voir ReportController::filteredStats).
+  const chartData = evolution.map(s => ({
+    label: typeof s.semaine === 'string' ? `${s.semaine.slice(8, 10)}/${s.semaine.slice(5, 7)}` : '',
+    value: s.taux ?? 0,
   }));
 
   const ueChartData = statsParUe.map(ue => ({

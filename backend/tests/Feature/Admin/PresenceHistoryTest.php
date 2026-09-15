@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\AnneeAcademique;
+use App\Models\AuditLog;
 use App\Models\Ec;
 use App\Models\Etudiant;
 use App\Models\Evenement;
@@ -201,7 +202,87 @@ class PresenceHistoryTest extends TestCase
             ->assertJsonCount(1, 'data');
     }
 
+    public function test_la_recherche_ignore_la_casse_et_accepte_prenom_nom(): void
+    {
+        $this->createPresence('valide');
+
+        // Avec like, PostgreSQL distinguait les majuscules : « dupont » ne trouvait rien.
+        foreach (['dupont', 'Dupont', 'Jean DUPONT', 'hist-001'] as $terme) {
+            $this->withToken($this->bearerToken)
+                ->getJson('/api/admin/presence/history?search=' . urlencode($terme))
+                ->assertOk()
+                ->assertJsonCount(1, 'data');
+        }
+    }
+
+    public function test_le_tri_porte_sur_toute_la_selection(): void
+    {
+        $this->createPresence('valide');
+        $martin = Etudiant::create([
+            'id' => (string) Str::uuid(), 'nom' => 'MARTIN', 'prenom' => 'Sophie', 'matricule' => 'HIST-003',
+            'filiere_id' => $this->filiere->id, 'annee_id' => $this->annee->id,
+            'email' => 'sophie.tri@test.com', 'identifiant_unique' => 'MARTIN_SOPHIE_HIST-003_MIAGE_M1',
+        ]);
+        Presence::create(['etudiant_id' => $martin->id, 'evenement_id' => $this->evenement->id, 'statut' => 'valide', 'heure_scan' => Carbon::now()]);
+
+        // Une ligne par page : le premier nom dit si le tri porte sur toute la sélection.
+        $premier = fn (string $sens) => $this->withToken($this->bearerToken)
+            ->getJson("/api/admin/presence/history?tri=etudiant&sens={$sens}&per_page=1&filiere_id={$this->filiere->id}")
+            ->assertOk()
+            ->json('data.0.etudiant.nom');
+
+        $this->assertSame('DUPONT', $premier('asc'));
+        $this->assertSame('MARTIN', $premier('desc'));
+    }
+
+    public function test_chaque_presence_dit_son_origine_et_qui_en_a_decide(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'name' => 'Admin Histoire', 'email' => 'hist-sa-' . Str::random(5) . '@test.com']);
+        $jeton = $admin->createToken('t')->plainTextToken;
+
+        $scan = $this->createPresence('valide');
+        $examinee = $this->createPresence('suspect');
+        $this->withToken($jeton)
+            ->patchJson("/api/admin/presence/{$examinee->id}/validate", ['action' => 'rejeter', 'motif' => 'Téléphone prêté'])
+            ->assertOk();
+        // Trace laissée par le service de saisie manuelle.
+        $saisie = $this->createPresence('valide');
+        $saisie->update(['validated_by' => $admin->id, 'validation_motif' => 'Téléphone déchargé']);
+        AuditLog::create([
+            'action' => 'presence.saisie_manuelle', 'model_type' => Presence::class, 'model_id' => $saisie->id,
+            'user_id' => $admin->id, 'new_values' => ['statut' => 'valide'],
+        ]);
+
+        $lignes = collect($this->withToken($jeton)->getJson('/api/admin/presence/history?per_page=100')->assertOk()->json('data'))->keyBy('id');
+
+        $this->assertSame('scan', $lignes[$scan->id]['origine']['origine']);
+        $this->assertNull($lignes[$scan->id]['origine']['decide_par']);
+        $this->assertSame('rejetee_apres_examen', $lignes[$examinee->id]['origine']['origine']);
+        $this->assertSame('Admin Histoire', $lignes[$examinee->id]['origine']['decide_par']);
+        $this->assertSame('Téléphone prêté', $lignes[$examinee->id]['origine']['motif']);
+        $this->assertSame('saisie_manuelle', $lignes[$saisie->id]['origine']['origine']);
+        $this->assertSame('Téléphone déchargé', $lignes[$saisie->id]['origine']['motif']);
+    }
+
     // ── EXPORT ────────────────────────────────────────────────────
+
+    public function test_les_exports_nomment_chaque_statut_et_l_origine(): void
+    {
+        $this->createPresence('rejete');
+
+        $contenu = $this->withToken($this->bearerToken)
+            ->get('/api/admin/presence/export?format=csv')
+            ->assertOk()
+            ->streamedContent();
+
+        $this->assertStringContainsString('Origine', $contenu);
+        $this->assertStringContainsString('Rejeté', $contenu);
+        $this->assertStringNotContainsString(',rejete,', $contenu);
+
+        $this->withToken($this->bearerToken)->get('/api/admin/presence/export?format=pdf')->assertOk();
+        $this->withToken($this->bearerToken)->get('/api/admin/presence/export?format=xlsx')->assertOk();
+    }
+
 
     public function test_export_csv(): void
     {

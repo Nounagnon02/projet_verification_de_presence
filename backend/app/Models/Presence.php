@@ -11,6 +11,15 @@ class Presence extends Model
 {
     use HasFactory, SoftDeletes;
 
+    /** Libellés des statuts, communs aux écrans et aux exports. */
+    public const LIBELLES_STATUT = [
+        'valide'    => 'Présent',
+        'suspect'   => 'Suspect',
+        'rejete'    => 'Rejeté',
+        'absent'    => 'Absent',
+        'en_retard' => 'En retard',
+    ];
+
     protected $fillable = [
         'etudiant_id',
         'evenement_id',
