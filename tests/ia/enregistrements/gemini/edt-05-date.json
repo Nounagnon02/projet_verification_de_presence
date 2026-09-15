@@ -1,65 +1,8 @@
 {
-    "status": "completed",
-    "data": {
-        "events": [
-            {
-                "ec": "Algorithmique avancée",
-                "date": "2026-03-09",
-                "heure_debut": "08:00",
-                "heure_fin": "10:00",
-                "salle": "A-101"
-            },
-            {
-                "ec": "Bases de données",
-                "date": "2026-03-09",
-                "heure_debut": "10:15",
-                "heure_fin": "12:15",
-                "salle": "A-101"
-            },
-            {
-                "ec": "Réseaux informatiques",
-                "date": "2026-03-10",
-                "heure_debut": "14:00",
-                "heure_fin": "16:00",
-                "salle": "B-204"
-            },
-            {
-                "ec": "Génie logiciel",
-                "date": "2026-03-11",
-                "heure_debut": "08:00",
-                "heure_fin": "11:00",
-                "salle": "Amphi C"
-            }
-        ],
-        "courses": [
-            {
-                "code": "ALGORITHMI",
-                "intitule": "Algorithmique avancée",
-                "semestre": "S1",
-                "credits": "4"
-            },
-            {
-                "code": "BASESDEDON",
-                "intitule": "Bases de données",
-                "semestre": "S1",
-                "credits": "4"
-            },
-            {
-                "code": "RSEAUXINFO",
-                "intitule": "Réseaux informatiques",
-                "semestre": "S1",
-                "credits": "4"
-            },
-            {
-                "code": "GNIELOGICI",
-                "intitule": "Génie logiciel",
-                "semestre": "S1",
-                "credits": "4"
-            }
-        ]
-    },
-    "confidence": 1,
+    "status": "failed",
+    "data": null,
+    "confidence": null,
     "warning": null,
-    "error_message": null,
-    "duree_ms": 16895
+    "error_message": "Quota API Gemini dépassé.",
+    "duree_ms": 27790
 }

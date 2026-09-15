@@ -1,11 +1,56 @@
 {
     "status": "completed",
     "data": {
-        "events": [],
-        "courses": []
+        "events": [
+            {
+                "ec_libelle": "Anatomie fonctionnelle",
+                "ec_code": "STA101",
+                "jour_semaine": 6,
+                "date": null,
+                "heure_debut": "08:00",
+                "heure_fin": "10:00",
+                "salle": "Gymnase",
+                "enseignants": [],
+                "filiere": "STAPS L1",
+                "type_seance": null
+            }
+        ],
+        "courses": [],
+        "diagnostic": {
+            "statut": "valide",
+            "message": "1 créneau(x) extrait(s) et cohérent(s) avec le modèle académique.",
+            "retenus": [
+                {
+                    "ec_libelle": "Anatomie fonctionnelle",
+                    "ec_code": "STA101",
+                    "jour_semaine": 6,
+                    "date": null,
+                    "heure_debut": "08:00",
+                    "heure_fin": "10:00",
+                    "salle": "Gymnase",
+                    "enseignants": [],
+                    "filiere": "STAPS L1",
+                    "type_seance": null
+                }
+            ],
+            "ecartes": [],
+            "remarques": [],
+            "indices": {
+                "document_lisible": true,
+                "longueur_texte": 300,
+                "jours_detectes": [
+                    "samedi"
+                ],
+                "dates_detectees": 0,
+                "plages_horaires": 2,
+                "titre_edt": true,
+                "entetes_tableau": 5,
+                "outil_disponible": true
+            }
+        }
     },
-    "confidence": 0,
-    "warning": "Le score de confiance est inférieur à 70%. Vérification manuelle requise.",
+    "confidence": 1,
+    "warning": null,
     "error_message": null,
-    "duree_ms": 15060
+    "duree_ms": 21696
 }

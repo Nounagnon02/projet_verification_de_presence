@@ -2,54 +2,54 @@
     "provider": "gemini",
     "mode": "reel",
     "documents": 9,
-    "tec_moyen": 0.5333,
-    "tfp_moyen": 0,
-    "scm": 0.4278,
-    "echecs_analyse": 0,
+    "tec_moyen": 0.4444,
+    "tfp_moyen": 0.4444,
+    "scm": 0.8563,
+    "echecs_analyse": 1,
     "par_document": [
         {
             "id": "edt-01-simple",
             "type": "schedule",
             "difficulte": "facile",
             "tec": 0,
-            "tfp": 0,
-            "confiance": 0,
+            "tfp": 1,
+            "confiance": 1,
             "statut": "completed",
-            "detail": "0\/20 champs, 0 invention(s) sur 0 produit(s)",
-            "duree_ms": 30762
+            "detail": "0\/20 champs, 3 invention(s) sur 3 produit(s)",
+            "duree_ms": 16071
         },
         {
             "id": "edt-02-abreviations",
             "type": "schedule",
             "difficulte": "moyenne",
             "tec": 0,
-            "tfp": 0,
-            "confiance": 0,
+            "tfp": 1,
+            "confiance": 1,
             "statut": "completed",
-            "detail": "0\/15 champs, 0 invention(s) sur 0 produit(s)",
-            "duree_ms": 17853
+            "detail": "0\/15 champs, 3 invention(s) sur 3 produit(s)",
+            "duree_ms": 17171
         },
         {
             "id": "edt-03-seances-longues",
             "type": "schedule",
             "difficulte": "moyenne",
             "tec": 0,
-            "tfp": 0,
-            "confiance": 0,
+            "tfp": 1,
+            "confiance": 1,
             "statut": "completed",
-            "detail": "0\/10 champs, 0 invention(s) sur 0 produit(s)",
-            "duree_ms": 14962
+            "detail": "0\/10 champs, 2 invention(s) sur 2 produit(s)",
+            "duree_ms": 21610
         },
         {
             "id": "edt-04-creneau-unique",
             "type": "schedule",
             "difficulte": "facile",
             "tec": 0,
-            "tfp": 0,
-            "confiance": 0,
+            "tfp": 1,
+            "confiance": 1,
             "statut": "completed",
-            "detail": "0\/5 champs, 0 invention(s) sur 0 produit(s)",
-            "duree_ms": 15060
+            "detail": "0\/5 champs, 1 invention(s) sur 1 produit(s)",
+            "duree_ms": 21696
         },
         {
             "id": "maq-01-simple",
@@ -60,7 +60,7 @@
             "confiance": 0.95,
             "statut": "completed",
             "detail": "12\/12 champs, 0 invention(s) sur 4 produit(s)",
-            "duree_ms": 17203
+            "duree_ms": 17731
         },
         {
             "id": "maq-02-volumes-incoherents",
@@ -71,7 +71,7 @@
             "confiance": 0.95,
             "statut": "completed",
             "detail": "6\/6 champs, 0 invention(s) sur 2 produit(s)",
-            "duree_ms": 9440
+            "duree_ms": 17583
         },
         {
             "id": "maq-03-nombreux-ec",
@@ -82,7 +82,7 @@
             "confiance": 0.95,
             "statut": "completed",
             "detail": "18\/18 champs, 0 invention(s) sur 6 produit(s)",
-            "duree_ms": 21173
+            "duree_ms": 17979
         },
         {
             "id": "hors-01-note-de-service",
@@ -93,18 +93,18 @@
             "confiance": 0,
             "statut": "completed",
             "detail": "refus correct",
-            "duree_ms": 73626
+            "duree_ms": 11828
         },
         {
             "id": "edt-05-date",
             "type": "schedule",
             "difficulte": "facile",
-            "tec": 0.8,
+            "tec": 0,
             "tfp": 0,
-            "confiance": 1,
-            "statut": "completed",
-            "detail": "16\/20 champs, 0 invention(s) sur 4 produit(s)",
-            "duree_ms": 16895
+            "confiance": null,
+            "statut": "failed",
+            "detail": "0\/20 champs, 0 invention(s) sur 0 produit(s)",
+            "duree_ms": 27790
         }
     ]
 }

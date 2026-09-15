@@ -2,10 +2,29 @@
     "status": "completed",
     "data": {
         "events": [],
-        "courses": []
+        "courses": [],
+        "diagnostic": {
+            "statut": "vide",
+            "message": "Aucun créneau de cours dans ce document. S'il s'agit bien d'un emploi du temps, sa structure n'a pas été reconnue : vérifiez que le fichier n'est pas un scan sans couche texte.",
+            "retenus": [],
+            "ecartes": [],
+            "remarques": [],
+            "indices": {
+                "document_lisible": true,
+                "longueur_texte": 471,
+                "jours_detectes": [
+                    "vendredi"
+                ],
+                "dates_detectees": 0,
+                "plages_horaires": 0,
+                "titre_edt": false,
+                "entetes_tableau": 1,
+                "outil_disponible": true
+            }
+        }
     },
     "confidence": 0,
-    "warning": "Le score de confiance est inférieur à 70%. Vérification manuelle requise.",
+    "warning": "Aucun créneau de cours dans ce document. S'il s'agit bien d'un emploi du temps, sa structure n'a pas été reconnue : vérifiez que le fichier n'est pas un scan sans couche texte.",
     "error_message": null,
-    "duree_ms": 73626
+    "duree_ms": 11828
 }

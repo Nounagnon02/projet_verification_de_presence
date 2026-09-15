@@ -1,11 +1,81 @@
 {
     "status": "completed",
     "data": {
-        "events": [],
-        "courses": []
+        "events": [
+            {
+                "ec_libelle": "Comptabilité générale",
+                "ec_code": "SEG301",
+                "jour_semaine": 1,
+                "date": null,
+                "heure_debut": "10:00",
+                "heure_fin": "14:00",
+                "salle": "D-01",
+                "enseignants": [],
+                "filiere": null,
+                "type_seance": null
+            },
+            {
+                "ec_libelle": "Droit des affaires",
+                "ec_code": "SEG302",
+                "jour_semaine": 5,
+                "date": null,
+                "heure_debut": "12:00",
+                "heure_fin": "16:00",
+                "salle": "D-02",
+                "enseignants": [],
+                "filiere": null,
+                "type_seance": null
+            }
+        ],
+        "courses": [],
+        "diagnostic": {
+            "statut": "valide",
+            "message": "2 créneau(x) extrait(s) et cohérent(s) avec le modèle académique.",
+            "retenus": [
+                {
+                    "ec_libelle": "Comptabilité générale",
+                    "ec_code": "SEG301",
+                    "jour_semaine": 1,
+                    "date": null,
+                    "heure_debut": "10:00",
+                    "heure_fin": "14:00",
+                    "salle": "D-01",
+                    "enseignants": [],
+                    "filiere": null,
+                    "type_seance": null
+                },
+                {
+                    "ec_libelle": "Droit des affaires",
+                    "ec_code": "SEG302",
+                    "jour_semaine": 5,
+                    "date": null,
+                    "heure_debut": "12:00",
+                    "heure_fin": "16:00",
+                    "salle": "D-02",
+                    "enseignants": [],
+                    "filiere": null,
+                    "type_seance": null
+                }
+            ],
+            "ecartes": [],
+            "remarques": [],
+            "indices": {
+                "document_lisible": true,
+                "longueur_texte": 414,
+                "jours_detectes": [
+                    "lundi",
+                    "vendredi"
+                ],
+                "dates_detectees": 0,
+                "plages_horaires": 4,
+                "titre_edt": true,
+                "entetes_tableau": 5,
+                "outil_disponible": true
+            }
+        }
     },
-    "confidence": 0,
-    "warning": "Le score de confiance est inférieur à 70%. Vérification manuelle requise.",
+    "confidence": 1,
+    "warning": null,
     "error_message": null,
-    "duree_ms": 14962
+    "duree_ms": 21610
 }

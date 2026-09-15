@@ -1,11 +1,130 @@
 {
     "status": "completed",
     "data": {
-        "events": [],
-        "courses": []
+        "events": [
+            {
+                "ec_libelle": "Algorithmique avancée",
+                "ec_code": "GLT501",
+                "jour_semaine": 1,
+                "date": null,
+                "heure_debut": "08:00",
+                "heure_fin": "10:00",
+                "salle": "A-101",
+                "enseignants": [],
+                "filiere": null,
+                "type_seance": null
+            },
+            {
+                "ec_libelle": "Bases de données",
+                "ec_code": "GLT502",
+                "jour_semaine": 1,
+                "date": null,
+                "heure_debut": "10:15",
+                "heure_fin": "12:15",
+                "salle": "A-101",
+                "enseignants": [],
+                "filiere": null,
+                "type_seance": null
+            },
+            {
+                "ec_libelle": "Réseaux informatiques",
+                "ec_code": "GLT503",
+                "jour_semaine": 2,
+                "date": null,
+                "heure_debut": "14:00",
+                "heure_fin": "16:00",
+                "salle": "B-204",
+                "enseignants": [],
+                "filiere": null,
+                "type_seance": null
+            },
+            {
+                "ec_libelle": "Génie logiciel",
+                "ec_code": "GLT504",
+                "jour_semaine": 3,
+                "date": null,
+                "heure_debut": "08:00",
+                "heure_fin": "11:00",
+                "salle": "Amphi C",
+                "enseignants": [],
+                "filiere": null,
+                "type_seance": null
+            }
+        ],
+        "courses": [],
+        "diagnostic": {
+            "statut": "valide",
+            "message": "4 créneau(x) extrait(s) et cohérent(s) avec le modèle académique.",
+            "retenus": [
+                {
+                    "ec_libelle": "Algorithmique avancée",
+                    "ec_code": "GLT501",
+                    "jour_semaine": 1,
+                    "date": null,
+                    "heure_debut": "08:00",
+                    "heure_fin": "10:00",
+                    "salle": "A-101",
+                    "enseignants": [],
+                    "filiere": null,
+                    "type_seance": null
+                },
+                {
+                    "ec_libelle": "Bases de données",
+                    "ec_code": "GLT502",
+                    "jour_semaine": 1,
+                    "date": null,
+                    "heure_debut": "10:15",
+                    "heure_fin": "12:15",
+                    "salle": "A-101",
+                    "enseignants": [],
+                    "filiere": null,
+                    "type_seance": null
+                },
+                {
+                    "ec_libelle": "Réseaux informatiques",
+                    "ec_code": "GLT503",
+                    "jour_semaine": 2,
+                    "date": null,
+                    "heure_debut": "14:00",
+                    "heure_fin": "16:00",
+                    "salle": "B-204",
+                    "enseignants": [],
+                    "filiere": null,
+                    "type_seance": null
+                },
+                {
+                    "ec_libelle": "Génie logiciel",
+                    "ec_code": "GLT504",
+                    "jour_semaine": 3,
+                    "date": null,
+                    "heure_debut": "08:00",
+                    "heure_fin": "11:00",
+                    "salle": "Amphi C",
+                    "enseignants": [],
+                    "filiere": null,
+                    "type_seance": null
+                }
+            ],
+            "ecartes": [],
+            "remarques": [],
+            "indices": {
+                "document_lisible": true,
+                "longueur_texte": 613,
+                "jours_detectes": [
+                    "lundi",
+                    "mardi",
+                    "mercredi"
+                ],
+                "dates_detectees": 0,
+                "plages_horaires": 8,
+                "titre_edt": true,
+                "entetes_tableau": 5,
+                "outil_disponible": true
+            }
+        }
     },
-    "confidence": 0,
-    "warning": "Le score de confiance est inférieur à 70%. Vérification manuelle requise.",
+    "confidence": 1,
+    "warning": null,
     "error_message": null,
-    "duree_ms": 30762
+    "duree_ms": 16071
 }
