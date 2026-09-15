@@ -52,7 +52,7 @@ class StudentQrCodeController extends Controller
         }
 
         // Fenêtre élargie d'un jour en amont pour les séances à cheval sur minuit.
-        $evenement = Evenement::with(['ec', 'salleRef'])
+        $enSeance = Evenement::with(['ec', 'salleRef', 'groupe'])
             ->whereIn('ec_id', $ecIds)
             ->whereIn('statut', ['planifie', 'en_cours'])
             ->whereBetween('date', [
@@ -61,13 +61,28 @@ class StudentQrCodeController extends Controller
             ])
             ->orderBy('heure_debut')
             ->get()
-            ->first(function (Evenement $evenement) use ($maintenant, $visibleAvantFin) {
+            ->filter(function (Evenement $evenement) use ($maintenant, $visibleAvantFin) {
                 $ouverture = $evenement->finCours()->subMinutes($visibleAvantFin);
 
                 return $maintenant->betweenIncluded($ouverture, $evenement->fermetureScan());
             });
 
+        // Le délégué n'affiche que le QR d'une séance qu'il suit lui-même : un TD
+        // vise un groupe, et les étudiants d'un autre groupe seraient refusés au
+        // scan de ce code. La règle est celle du scan (Etudiant::peutAssisterA).
+        $evenement = $enSeance->first(fn (Evenement $evenement) => $etudiant->peutAssisterA($evenement));
+
         if (!$evenement) {
+            $autreGroupe = $enSeance->first(fn (Evenement $evenement) => $evenement->groupe_id !== null);
+
+            if ($autreGroupe) {
+                return $this->notFoundResponse(sprintf(
+                    "Le %s en séance est réservé au groupe %s, dont vous n'êtes pas membre. Son QR Code revient à un responsable de ce groupe.",
+                    \App\Support\TypeCours::LIBELLES[$autreGroupe->type_cours] ?? 'cours',
+                    $autreGroupe->groupe?->libelle ?? '?'
+                ));
+            }
+
             return $this->notFoundResponse(sprintf(
                 "Aucun cours en cours de validation. Le QR Code apparaît %d minutes avant la fin de la séance.",
                 $visibleAvantFin

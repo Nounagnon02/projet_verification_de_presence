@@ -549,7 +549,7 @@ const StudentManagementPage = () => {
                         déclarées en var(), le badge serait invisible. */}
                     {s.est_responsable && (
                       <span
-                        title="Responsable de la promotion — accède au QR Code du cours en séance"
+                        title="Responsable de la promotion — affiche le QR Code des séances qu'il suit"
                         className="shrink-0 rounded-full bg-secondary-container px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-on-secondary-container">
                         Responsable
                       </span>
@@ -692,7 +692,9 @@ const StudentManagementPage = () => {
                 <span className="block text-sm font-semibold text-on-surface">Responsable de la promotion</span>
                 <span className="block text-xs text-on-surface-variant">
                   Donne accès, dans l'application mobile, à l'onglet affichant le QR Code du cours en
-                  séance. Le responsable peut le présenter et le partager, jamais le générer.
+                  séance. Le responsable peut le présenter et le partager, jamais le générer. Il n'affiche
+                  que les séances qu'il suit : avec des groupes de TD ou de TP, désignez un responsable
+                  par groupe.
                 </span>
               </span>
             </label>

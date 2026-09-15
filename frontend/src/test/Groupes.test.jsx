@@ -12,8 +12,8 @@ import GroupesPromotion from '../components/students/GroupesPromotion'
 const ok = (data, message) => Promise.resolve({ data: { success: true, data, message } })
 
 const GROUPES_TD = [
-  { id: 5, libelle: 'G1', type: 'td', etudiants_count: 20, filiere: { id: 32, code: 'IM-L2' } },
-  { id: 6, libelle: 'G2', type: 'td', etudiants_count: 19, filiere: { id: 32, code: 'IM-L2' } },
+  { id: 5, libelle: 'G1', type: 'td', etudiants_count: 20, responsables_count: 1, filiere: { id: 32, code: 'IM-L2' } },
+  { id: 6, libelle: 'G2', type: 'td', etudiants_count: 19, responsables_count: 0, filiere: { id: 32, code: 'IM-L2' } },
 ]
 
 /** Un formulaire de séance réduit au type et au groupe. */
@@ -87,6 +87,15 @@ describe('Étudiants — groupes d\'une promotion', () => {
     await waitFor(() => expect(api.post).toHaveBeenCalledWith('/admin/groupes/repartir', { filiere_id: 32, annee_id: 3, type: 'td', nombre: 3 }))
     expect(await screen.findByText(message)).toBeInTheDocument()
     expect(onModifie).toHaveBeenCalled()
+  })
+
+  // Un délégué n'affiche que le QR des séances qu'il suit : un groupe sans
+  // responsable n'a personne pour présenter le sien.
+  it('signale un groupe sans responsable', async () => {
+    render(<GroupesPromotion isOpen onClose={() => {}} annees={[ANNEE]} filieres={FILIERES} filiereInitiale="32" anneeInitiale="3" />)
+
+    expect(await screen.findByText(/Aucun responsable : personne n'affichera le QR Code/)).toBeInTheDocument()
+    expect(screen.getAllByText(/Aucun responsable/)).toHaveLength(1)
   })
 
   it("se consulte seulement quand l'année est close", async () => {

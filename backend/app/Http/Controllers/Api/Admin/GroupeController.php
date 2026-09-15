@@ -29,7 +29,12 @@ class GroupeController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Groupe::with('filiere:id,code')->withCount('etudiants')->orderBy('type')->orderBy('libelle');
+        // Le nombre de responsables dit si quelqu'un pourra afficher le QR Code
+        // des séances du groupe : un délégué ne voit que celles qu'il suit.
+        $query = Groupe::with('filiere:id,code')
+            ->withCount(['etudiants', 'etudiants as responsables_count' => fn ($q) => $q->where('est_responsable', true)])
+            ->orderBy('type')
+            ->orderBy('libelle');
         $this->scopeViaRelation($query, $request, 'filiere');
 
         if ($request->filled('ec_id')) {

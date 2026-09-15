@@ -149,6 +149,11 @@ export default function GroupesPromotion({ isOpen, onClose, annees, filieres, fi
                             <span>
                               <span className="font-semibold">{g.libelle}</span>{' '}
                               <span className="text-xs text-on-surface-variant tabular-nums">{g.etudiants_count} étudiant{g.etudiants_count > 1 ? 's' : ''}</span>
+                              {g.responsables_count === 0 && g.etudiants_count > 0 && (
+                                <span className="block text-[11px] text-on-surface-variant">
+                                  Aucun responsable : personne n'affichera le QR Code de ses séances.
+                                </span>
+                              )}
                             </span>
                             <button type="button" onClick={() => supprimer(g)} disabled={verrouille}
                               aria-label={`Supprimer le groupe de ${t.label} ${g.libelle}`}
