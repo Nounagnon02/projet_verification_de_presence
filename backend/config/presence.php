@@ -60,4 +60,24 @@ return [
         'visible_delegue_avant_fin' => (int) env('PRESENCE_QR_DELEGUE_AVANT_FIN', 10),
     ],
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Durée d'une séance
+    |--------------------------------------------------------------------------
+    |
+    | Plafond de durée d'un créneau unique. Il est distinct du volume horaire de
+    | l'EC : ce dernier borne le TOTAL des séances, celui-ci borne CHACUNE. Sans
+    | lui, un cours disposant de dix-huit heures restantes acceptait un créneau
+    | de huit heures à vingt-trois heures — conforme au volume, absurde en salle.
+    |
+    | Plusieurs séances d'un même cours dans une journée restent possibles : le
+    | plafond porte sur la durée d'un créneau, pas sur leur nombre.
+    |
+    */
+
+    'seance' => [
+        'duree_max_heures' => (float) env('PRESENCE_SEANCE_DUREE_MAX', 5),
+    ],
+
 ];
