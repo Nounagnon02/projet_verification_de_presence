@@ -56,7 +56,7 @@ tags:
   - name: Admin Imports
     description: Import IA (Gemini) planning PDF + catalogue cours
   - name: Admin Alerts
-    description: Gestion des alertes/anomalies
+    description: Scans refusés par le serveur (lecture seule)
   - name: Admin Tickets
     description: Support tickets
   - name: Admin Chat
@@ -412,7 +412,8 @@ paths:
       summary: Statistiques tableau de bord admin
       description: |
         KPIs principaux : taux de présence global, aujourd'hui, cette semaine,
-        alertes non résolues, événements à venir.
+        scans suspects à arbitrer (scans_a_arbitrer), scans refusés du jour
+        (scans_refuses_du_jour), événements à venir.
       security:
         - sanctum: []
       responses:
@@ -905,24 +906,39 @@ paths:
         '200':
           description: Liste années
 
-    post:
-      tags: [Admin Courses]
-      summary: Créer année académique
-      security:
-        - sanctum: []
-      responses:
-        '201':
-          description: Année créée
-
   /admin/annees-academiques/{id}/activate:
     patch:
       tags: [Admin Courses]
-      summary: Activer une année (désactive les autres)
+      summary: Choisir l'année sur laquelle travaille l'établissement
       security:
         - sanctum: []
       responses:
         '200':
           description: Année activée
+
+  /admin/annees-academiques/{id}/preparation:
+    get:
+      tags: [Admin Courses]
+      summary: Aperçu de la préparation d'une année (filières, UE, EC, créneaux copiables)
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Filières de l'année source et ce que la cible contient déjà
+        '422':
+          description: Super administrateur, ou source qui ne précède pas la cible
+
+  /admin/annees-academiques/{id}/preparer:
+    post:
+      tags: [Admin Courses]
+      summary: Copier filières, maquette UE/EC et emploi du temps vers cette année
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Bilan par filière
+        '422':
+          description: Filière hors périmètre, super administrateur, ou source invalide
 
   # ========================================================================
   # ADMIN PRESENCE (Historique, Validation manuelle, Exports)
@@ -1021,10 +1037,12 @@ paths:
   /admin/presence/{id}/validate:
     patch:
       tags: [Admin Presence]
-      summary: Valider manuellement une présence
+      summary: Valider ou rejeter manuellement une présence
       description: |
-        Action admin (enseignant, chef département, scolarité).
-        Change statut vers 'valide' + log audit.
+        Action admin (enseignant, chef département, scolarité), seul lieu de
+        décision sur un scan suspect : action « valider » ou « rejeter » (motif
+        obligatoire pour un rejet). Journal d'audit avec le statut de départ ;
+        l'alerte d'appareil partagé de la présence est fermée.
       security:
         - sanctum: []
       parameters:
@@ -1046,31 +1064,58 @@ paths:
         '409':
           description: Déjà validée
 
-  /admin/presence/{id}/reject:
-    patch:
+  /admin/presence/manuelle/{evenement}/etudiants:
+    get:
       tags: [Admin Presence]
-      summary: Rejeter manuellement une présence
+      summary: Étudiants attendus à une séance, avec leur présence
       description: |
-        Action admin avec motif obligatoire.
-        Change statut vers 'rejete' + log audit.
+        Inscrits à l'EC de la séance (ou, sans aucune inscription, rattachés à
+        sa filière), chacun avec sa présence éventuelle. Sert à la saisie
+        manuelle d'un étudiant qui n'a pas pu scanner.
       security:
         - sanctum: []
       parameters:
-        - name: id
+        - name: evenement
           in: path
           required: true
           schema: { type: integer }
+      responses:
+        '200':
+          description: Séance et liste des étudiants attendus
+        '404':
+          description: Séance introuvable (ou d'un autre établissement)
+
+  /admin/presence/manuelle:
+    post:
+      tags: [Admin Presence]
+      summary: Enregistrer la présence d'un étudiant qui n'a pas pu scanner
+      description: |
+        Séance commencée et non annulée, étudiant inscrit au cours, aucune
+        présence déjà enregistrée. Pendant la séance, l'heure retenue est celle
+        de la saisie ; après, son heure de fin. Motif obligatoire, opération
+        tracée au journal d'audit.
+      security:
+        - sanctum: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RejectPresenceRequest'
+              type: object
+              required: [evenement_id, etudiant_id, motif]
+              properties:
+                evenement_id: { type: integer }
+                etudiant_id: { type: string, format: uuid }
+                motif: { type: string, maxLength: 500 }
       responses:
-        '200':
-          description: Présence rejetée
+        '201':
+          description: Présence enregistrée (statut valide)
+        '404':
+          description: Séance ou étudiant introuvable (ou d'un autre établissement)
         '409':
-          description: Déjà rejetée
+          description: L'étudiant a déjà une présence à cette séance
+        '422':
+          description: Motif manquant, séance annulée ou pas commencée, étudiant non inscrit
 
   # Exports / Rapports
   /admin/reports/presence/{evenementId}/pdf:
@@ -1139,6 +1184,326 @@ paths:
       responses:
         '200':
           description: Stats filières
+
+  /super-admin/jours-feries:
+    get:
+      tags: [Super Admin]
+      summary: Jours fériés de l'université
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Liste
+    post:
+      tags: [Super Admin]
+      summary: Déclarer un jour férié pour toute l'université (apercu=true pour le seul décompte)
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Aperçu des séances retirées
+        '201':
+          description: Jour férié déclaré
+
+  /super-admin/jours-feries/{id}:
+    delete:
+      tags: [Super Admin]
+      summary: Retirer un jour férié
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Jour férié retiré
+
+  /super-admin/annees-academiques:
+    get:
+      tags: [Super Admin]
+      summary: Années de l'université, avec les établissements qui travaillent sur chacune
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Liste des années
+    post:
+      tags: [Super Admin]
+      summary: Créer une année (libellé AAAA-AAAA, dates cohérentes, sans chevauchement)
+      security:
+        - sanctum: []
+      responses:
+        '201':
+          description: Année créée
+        '422':
+          description: Libellé, dates ou chevauchement invalides
+
+  /super-admin/annees-academiques/{id}:
+    put:
+      tags: [Super Admin]
+      summary: Modifier une année
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Année mise à jour
+    delete:
+      tags: [Super Admin]
+      summary: Supprimer une année vide, ni en cours ni active pour un établissement
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Année supprimée
+        '409':
+          description: Année en cours, active pour un établissement, ou non vide
+
+  /super-admin/annees-academiques/{id}/en-cours:
+    patch:
+      tags: [Super Admin]
+      summary: Désigner l'année en cours de l'université
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Année en cours changée
+
+  /admin/programmes/{id}:
+    put:
+      tags: [Admin Courses]
+      summary: Renommer un programme (intitulé seulement), et au besoin ses filières au motif dérivé
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Programme renommé, avec les filières renommées
+        '404':
+          description: Programme d'un autre établissement
+
+  /admin/calendrier:
+    get:
+      tags: [Admin Courses]
+      summary: Périodes des semestres, fermetures et semestres sans période
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Calendrier de l'année
+
+  /admin/calendrier/periodes:
+    put:
+      tags: [Admin Courses]
+      summary: Déclarer ou modifier la période des semestres impairs ou pairs
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Période enregistrée
+        '422':
+          description: Hors de l'année, ou chevauche l'autre parité
+
+  /admin/calendrier/periodes/{id}:
+    delete:
+      tags: [Admin Courses]
+      summary: Retirer une période de semestre
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Période retirée
+
+  /admin/calendrier/fermetures:
+    post:
+      tags: [Admin Courses]
+      summary: Déclarer des vacances, des examens ou une autre fermeture (apercu=true pour le seul décompte)
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Aperçu des séances retirées
+        '201':
+          description: Fermeture déclarée
+
+  /admin/calendrier/fermetures/{id}:
+    delete:
+      tags: [Admin Courses]
+      summary: Retirer une fermeture de l'établissement
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Fermeture retirée
+        '403':
+          description: Jour férié de l'université
+
+  /admin/emploi-du-temps:
+    get:
+      tags: [Admin Courses]
+      summary: Créneaux hebdomadaires de l'année (filtre filière, cours communs compris, et semestre), avec leurs conflits
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Créneaux
+    post:
+      tags: [Admin Courses]
+      summary: Ajouter un créneau (mêmes règles que les imports)
+      security:
+        - sanctum: []
+      responses:
+        '201':
+          description: Créneau ajouté
+        '422':
+          description: Conflit, doublon, groupe ou validité refusés
+
+  /admin/emploi-du-temps/conflits:
+    get:
+      tags: [Admin Courses]
+      summary: Conflits existants entre créneaux et entre séances de l'année
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Paires en conflit
+
+  /admin/emploi-du-temps/{id}:
+    put:
+      tags: [Admin Courses]
+      summary: Modifier un créneau, ses séances à venir de l'ancienne version sont retirées
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Créneau modifié
+        '422':
+          description: Refusé
+    delete:
+      tags: [Admin Courses]
+      summary: Supprimer un créneau et ses séances à venir
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Créneau supprimé
+
+  /admin/groupes:
+    get:
+      tags: [Admin Students]
+      summary: Groupes de TD et de TP (par promotion, ou proposés pour une séance d'un EC)
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Groupes avec leur effectif
+    post:
+      tags: [Admin Students]
+      summary: Créer un groupe dans une promotion
+      security:
+        - sanctum: []
+      responses:
+        '201':
+          description: Groupe créé
+
+  /admin/groupes/repartir:
+    post:
+      tags: [Admin Students]
+      summary: Répartir la promotion en N groupes de même taille, par matricule
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Effectif de chaque groupe
+
+  /admin/groupes/{id}:
+    delete:
+      tags: [Admin Students]
+      summary: Supprimer un groupe sans séance ni créneau
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Groupe supprimé
+        '409':
+          description: Le groupe porte des séances ou des créneaux
+
+  /admin/students/{id}/groupes:
+    put:
+      tags: [Admin Students]
+      summary: Groupe de TD et groupe de TP d'un étudiant pour son année
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Groupes de l'étudiant
+
+  /admin/niveaux:
+    get:
+      tags: [Admin Courses]
+      summary: Niveaux officiels (L1…M2) et leurs semestres
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Liste ordonnée des niveaux, avec libellé et semestres
+
+  /admin/programmes:
+    get:
+      tags: [Admin Courses]
+      summary: Programmes de l'établissement, avec leur nombre de filières
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Liste des programmes
+
+  /admin/salles/reconnaitre:
+    post:
+      tags: [Admin Presence]
+      summary: Reconnaît les salles nommées dans un document d'import
+      description: Recherche sans casse, accents ni ponctuation, limitée à l'établissement de la filière.
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Pour chaque nom, la salle active reconnue ou null
+
+  /admin/salles/depuis-nom:
+    post:
+      tags: [Admin Presence]
+      summary: Crée une salle « QR seul » à partir d'un nom lu dans un import
+      description: Idempotent — rend la salle existante si elle porte déjà ce nom.
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: La salle existait déjà
+        '201':
+          description: Salle créée, sans GPS ni Wi-Fi
+
+  /admin/reports/annee-stats:
+    get:
+      tags: [Admin Presence]
+      summary: Taux de présence par année académique, sur les séances terminées
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: Taux, présences attendues et séances terminées de chaque année
+
+  /admin/reports/etudiants-absents:
+    get:
+      tags: [Admin Presence]
+      summary: Étudiants ayant au moins une absence, les plus absents d'abord
+      description: Mêmes filtres que /admin/reports/filtered.
+      security:
+        - sanctum: []
+      parameters:
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [csv]
+      responses:
+        '200':
+          description: Liste JSON, ou fichier CSV avec format=csv
 
   /admin/reports/filtered:
     get:
@@ -1371,22 +1736,54 @@ paths:
   /admin/alerts:
     get:
       tags: [Admin Alerts]
-      summary: Lister alertes/anomalies
+      summary: Lister les scans refusés
+      description: |
+        Tentatives rejetées par le serveur : hors zone GPS ou Wi-Fi, défi de
+        sécurité invalide, second scan depuis un autre téléphone. Lecture
+        seule : aucune présence n'a été créée. Les scans suspects se
+        tranchent dans la file de validation (/admin/presence/pending).
+        Filtres : search, filiere_id, date_from, date_to, page, per_page.
       security:
         - sanctum: []
       responses:
         '200':
-          description: Liste alertes
+          description: Scans refusés paginés, avec la séance visée quand elle est connue
 
-  /admin/alerts/{id}/resolve:
+  /admin/alerts/{id}/presence:
     post:
       tags: [Admin Alerts]
-      summary: Résoudre une alerte
+      summary: Enregistrer la présence d'un étudiant refusé à tort
+      description: |
+        Rattrape un étudiant présent en salle dont le scan a été refusé (GPS
+        imprécis, Wi-Fi mal capté). L'étudiant et la séance viennent du refus ;
+        l'heure retenue est celle de la tentative. Motif obligatoire, opération
+        tracée au journal d'audit. Refusé si l'étudiant a déjà une présence à
+        cette séance (elle se tranche dans la file de validation).
       security:
         - sanctum: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motif]
+              properties:
+                motif: { type: string, maxLength: 500 }
       responses:
-        '200':
-          description: Alerte résolue
+        '201':
+          description: Présence enregistrée (statut valide)
+        '404':
+          description: Scan refusé introuvable (ou d'un autre établissement)
+        '409':
+          description: L'étudiant a déjà une présence à cette séance
+        '422':
+          description: Motif manquant, séance inconnue ou annulée, étudiant non inscrit
 
   # ========================================================================
   # ADMIN TICKETS

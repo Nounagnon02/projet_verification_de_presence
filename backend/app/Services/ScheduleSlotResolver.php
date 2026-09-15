@@ -40,6 +40,8 @@ class ScheduleSlotResolver
         return EmploiDuTemps::with('salle')
             ->where('ec_id', $ecId)
             ->where('jour_semaine', $this->jourSemaine($date))
+            ->where(fn ($q) => $q->whereNull('valide_du')->orWhereDate('valide_du', '<=', $date->toDateString()))
+            ->where(fn ($q) => $q->whereNull('valide_au')->orWhereDate('valide_au', '>=', $date->toDateString()))
             ->orderBy('heure_debut')
             ->get();
     }
@@ -54,7 +56,26 @@ class ScheduleSlotResolver
      */
     public function filtrerPourDate(Collection $creneaux, Carbon $date): Collection
     {
-        return $creneaux->where('jour_semaine', $this->jourSemaine($date));
+        // Le jour de la semaine, et la version de l'emploi du temps qui vaut ce jour-là.
+        return $creneaux->where('jour_semaine', $this->jourSemaine($date))
+            ->filter(fn (EmploiDuTemps $c) => $c->valableLe($date));
+    }
+
+    /**
+     * Séances à venir générées depuis ce créneau, jamais ouvertes et sans
+     * présence : celles qu'une modification ou une suppression du créneau rend
+     * caduques. Celles d'aujourd'hui peuvent être en cours : on n'y touche pas.
+     */
+    public function seancesAVenir(EmploiDuTemps $creneau): \Illuminate\Database\Eloquent\Builder
+    {
+        return \App\Models\Evenement::query()
+            ->where('ec_id', $creneau->ec_id)
+            ->where('statut', 'planifie')
+            ->whereDate('date', '>', today())
+            ->whereRaw('extract(isodow from date) = ?', [(int) $creneau->jour_semaine])
+            ->where('heure_debut', $creneau->heure_debut)
+            ->when($creneau->groupe_id, fn ($q) => $q->where('groupe_id', $creneau->groupe_id), fn ($q) => $q->whereNull('groupe_id'))
+            ->whereDoesntHave('presences');
     }
 
     /**
@@ -73,8 +94,12 @@ class ScheduleSlotResolver
             'date'        => $date->format('Y-m-d'),
             'heure_debut' => $creneau->heure_debut,
             'heure_fin'   => $creneau->heure_fin,
-            'salle'       => $creneau->salle_libelle,
+            // Le nom de la salle configurée : un créneau importé par l'IA n'avait
+            // pas de salle_libelle, et ses séances s'affichaient sans salle.
+            'salle'       => $creneau->salle?->nom ?? $creneau->salle_libelle,
             'salle_id'    => $creneau->salle_id,
+            'type_cours'  => \App\Support\TypeCours::normaliser($creneau->type_cours),
+            'groupe_id'   => $creneau->groupe_id,
             'statut'      => 'planifie',
         ];
     }

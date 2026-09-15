@@ -104,13 +104,17 @@ class ImportSecuriseTest extends TestCase
             ]);
     }
 
-    /** Un créneau hebdomadaire tel que l'extraction le rend désormais. */
+    /**
+     * Un créneau hebdomadaire tel que l'écran de validation l'envoie : le nom
+     * lu par l'extraction, et la salle choisie par son identifiant.
+     */
     private function creneauValide(array $surcharges = []): array
     {
         return array_merge([
             'ec' => 'Algorithmique avancée', 'jour' => 'Lundi',
             'heure_debut' => '8h', 'heure_fin' => '10h',
             'salle' => $this->salle->code,
+            'salle_id' => $this->salle->id,
         ], $surcharges);
     }
 
@@ -282,6 +286,57 @@ class ImportSecuriseTest extends TestCase
         $this->assertDatabaseMissing('emploi_du_temps', ['ec_id' => $this->ec1->id]);
     }
 
+    // ── Salle : un identifiant, jamais un nom ───────────────────────────
+
+    public function test_la_salle_choisie_est_enregistree_par_son_identifiant(): void
+    {
+        $this->confirmer([$this->creneauValide()])->assertCreated();
+
+        $this->assertDatabaseHas('emploi_du_temps', [
+            'ec_id' => $this->ec1->id, 'salle_id' => $this->salle->id, 'salle_libelle' => $this->salle->nom,
+        ]);
+    }
+
+    /**
+     * L'IA peut mal lire un nom (« Amhpi C ») : le serveur n'enregistre jamais
+     * une salle désignée par son seul nom, même reconnaissable.
+     */
+    public function test_une_confirmation_qui_n_envoie_qu_un_nom_de_salle_est_refusee(): void
+    {
+        $reponse = $this->confirmer([$this->creneauValide(['salle_id' => null])])->assertStatus(422);
+
+        $this->assertSame('ambigu', $reponse->json('data.lignes.0.statut'));
+        $this->assertStringContainsString('à choisir', implode(' ', $reponse->json('data.lignes.0.motifs')));
+        $this->assertDatabaseMissing('emploi_du_temps', ['ec_id' => $this->ec1->id]);
+    }
+
+    public function test_aucune_salle_qr_seul_est_un_choix_legitime(): void
+    {
+        $this->confirmer([$this->creneauValide(['salle' => 'Zone Master A2', 'salle_id' => null, 'sans_salle' => true])])
+            ->assertCreated();
+
+        $this->assertDatabaseHas('emploi_du_temps', [
+            'ec_id' => $this->ec1->id, 'salle_id' => null, 'salle_libelle' => null,
+        ]);
+    }
+
+    public function test_une_salle_d_un_autre_etablissement_est_refusee(): void
+    {
+        $ailleurs = DB::table('etablissements')->insertGetId([
+            'code' => 'AX' . $this->sfx, 'nom' => 'Ailleurs ' . $this->sfx,
+            'email' => 'ax-' . $this->sfx . '@example.test', 'actif' => true,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $salleAilleurs = Salle::create([
+            'code' => 'SX' . $this->sfx, 'nom' => 'Salle ailleurs ' . $this->sfx,
+            'actif' => true, 'etablissement_id' => $ailleurs,
+        ]);
+
+        $this->verifier([$this->creneauValide(['salle_id' => $salleAilleurs->id])])
+            ->assertOk()
+            ->assertJsonPath('data.lignes.0.statut', 'invalide');
+    }
+
     // ── Conflits internes au document ───────────────────────────────────
 
     public function test_un_document_qui_se_contredit_est_refuse(): void
@@ -291,7 +346,7 @@ class ImportSecuriseTest extends TestCase
             // Même promotion, créneau chevauchant, cours différent.
             $this->creneauValide([
                 'ec' => 'Bases de données', 'heure_debut' => '9h', 'heure_fin' => '11h',
-                'salle' => null,
+                'salle' => null, 'salle_id' => null,
             ]),
         ])->assertStatus(422);
 
@@ -331,7 +386,7 @@ class ImportSecuriseTest extends TestCase
             foreach ([['08:00', '10:00'], ['10:15', '12:15'], ['14:00', '16:00'], ['16:15', '18:15']] as [$d, $f]) {
                 $creneaux[] = [
                     'ec' => 'Algorithmique avancée', 'jour' => $jours[$j],
-                    'heure_debut' => $d, 'heure_fin' => $f, 'salle' => $this->salle->code,
+                    'heure_debut' => $d, 'heure_fin' => $f, 'salle_id' => $this->salle->id,
                 ];
             }
         }

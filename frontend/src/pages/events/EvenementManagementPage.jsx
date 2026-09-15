@@ -1,10 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
+// Modales rendues dans <body> : placées dans la page, elles héritaient de la
+// marge de son conteneur (space-y) et laissaient une bande découverte en haut.
+import { createPortal } from 'react-dom';
+import { aujourdhuiIso } from '../../utils/formatters';
 import { FiPlus, FiEdit2, FiTrash2, FiSave, FiX, FiRefreshCw, FiCalendar, FiClock, FiMapPin, FiAlertTriangle, FiCheckCircle, FiGrid, FiCopy, FiSmartphone } from 'react-icons/fi';
 import api from '../../api/axios';
+import SelecteurHeure from '../../components/ui/SelecteurHeure';
+import SelecteurSalle from '../../components/ui/SelecteurSalle';
+import { FIN_JOURNEE, enHeure, enMinutes, finApresNouveauDebut } from '../../utils/heures';
+import { TYPES_SEANCE, restantesPour } from '../../utils/typesSeance';
+import SelecteurGroupe from '../../components/ui/SelecteurGroupe';
 
 const INITIAL_EVENT = {
   ec_id: '', filiere_id: '', annee_id: '',
-  date: '', heure_debut: '', heure_fin: '', salle: '', salle_id: '', statut: 'planifie',
+  date: '', heure_debut: '', heure_fin: '', salle: '', salle_id: '', statut: 'planifie', type_cours: 'cm', groupe_id: '',
 };
 
 const STATUTS = [
@@ -201,15 +210,49 @@ export default function EvenementManagementPage() {
     setCreneaux({ loading: false, options: [] });
     setModal({
       open: true, editing: true,
+      // Date d'origine : une date inchangée reste valable même si elle est
+      // passée ; seule une date déplacée doit tomber aujourd'hui ou après.
+      dateOrigine: ev.date,
+      // Durée déjà réservée par cette séance (sauf si elle est annulée) : elle
+      // est comptée dans le volume consommé, il faut la rendre disponible pour
+      // qu'on puisse la rallonger.
+      dureeOrigine: ev.statut === 'annule'
+        ? 0
+        : Math.max(0, (enMinutes(ev.heure_fin) ?? 0) - (enMinutes(ev.heure_debut) ?? 0)),
       data: {
         id: ev.id,
         ec_id: ev.ec?.id || '', filiere_id: ev.filiere?.id || '', annee_id: ev.annee_id || '',
-        date: ev.date, heure_debut: ev.heure_debut, heure_fin: ev.heure_fin,
-        salle: ev.salle || '', salle_id: ev.salle_id || '', statut: ev.statut,
+        // L'API renvoie les heures à la seconde (« 08:00:00 », colonnes time de
+        // PostgreSQL) mais n'accepte en écriture que « 08:00 ». Les renvoyer
+        // telles quelles faisait échouer TOUTE modification d'événement.
+        date: ev.date,
+        heure_debut: String(ev.heure_debut ?? '').slice(0, 5),
+        heure_fin: String(ev.heure_fin ?? '').slice(0, 5),
+        salle: ev.salle || '', salle_id: ev.salle_id || '', statut: ev.statut, type_cours: ev.type_cours || 'cm', groupe_id: ev.groupe_id || '',
       },
       saving: false,
     });
   };
+
+  // Limite de durée pour la fin : plafond d'une séance et volume restant de
+  // l'EC, la plus contraignante des deux. En modification, la durée déjà
+  // réservée par la séance elle-même est rendue au volume.
+  const ecModal = ecs.find((e) => String(e.id) === String(modal.data.ec_id));
+  const plafondMinutes = Number(ecModal?.duree_max_seance ?? 0) * 60 || null;
+  // Le reste du TYPE de séance choisi : un TD ne consomme pas les heures de CM.
+  const restantesType = ecModal ? restantesPour(ecModal, modal.data.type_cours) : null;
+  const restantMinutes = restantesType !== null
+    ? Math.round(restantesType * 60) + (modal.editing ? (modal.dureeOrigine ?? 0) : 0)
+    : null;
+  const limiteMinutes = [plafondMinutes, restantMinutes].filter((v) => v !== null).reduce(
+    (a, b) => (a === null ? b : Math.min(a, b)), null,
+  );
+  const debutMinutes = enMinutes(modal.data.heure_debut);
+  const finAuPlusTard = limiteMinutes !== null && debutMinutes !== null
+    ? enHeure(Math.min(debutMinutes + limiteMinutes, FIN_JOURNEE))
+    : null;
+
+  const choisirGroupe = useCallback((groupe_id) => setModal((prev) => ({ ...prev, data: { ...prev.data, groupe_id } })), []);
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -227,8 +270,16 @@ export default function EvenementManagementPage() {
       setModal({ open: false, editing: false, data: INITIAL_EVENT, saving: false });
       rafraichir();
     } catch (err) {
-      const msg = err.response?.data?.message
-        || (err.response?.data?.errors ? Object.values(err.response.data.errors).flat().join(', ') : null)
+      // Le détail par champ d'abord : le message racine d'une erreur de
+      // validation n'est que « Erreur de validation. », qui ne dit pas quoi
+      // corriger. Les clés restées non traduites (« validation.date_format »)
+      // sont écartées : le backend n'a pas de traduction française des règles
+      // intégrées, seuls les messages personnalisés sont lisibles.
+      const lisibles = Object.values(err.response?.data?.errors ?? {})
+        .flat()
+        .filter((m) => typeof m === 'string' && !/^validation\.[\w.]+$/.test(m));
+      const msg = (lisibles.length ? lisibles.join(' ') : null)
+        || err.response?.data?.message
         || 'Erreur lors de la sauvegarde.';
       setError(msg);
       setModal(prev => ({ ...prev, saving: false }));
@@ -246,17 +297,23 @@ export default function EvenementManagementPage() {
 
   const getEcsForFiliere = () => {
     const filiereId = filters.filiere_id || modal.data.filiere_id;
-    let filtered = filiereId ? ecs.filter(ec => ec.ue?.filiere_id == filiereId || ec.ue?.filiere?.id == filiereId) : ecs;
-    // Filtrer les ECs terminés (volume horaire atteint) — ils ne peuvent plus être sélectionnés
-    return filtered.filter(ec => ec.statut !== 'termine');
+    // Les cours que suit la filière, cours communs compris.
+    let filtered = filiereId ? ecs.filter(ec => ec.ue?.filiere_id == filiereId || ec.ue?.filiere?.id == filiereId || (ec.ue?.filieres || []).some((f) => f.id == filiereId)) : ecs;
+    // Un EC terminé reste proposé : une évaluation, qui ne consomme pas de
+    // volume, se programme après le cours. Le serveur refuse le reste.
+    return filtered;
   };
+
+  // Année close pour l'établissement : consultation seulement (le serveur
+  // refuse en 409). Chaque ligne suit l'année de sa propre ressource.
+  const anneeFermee = (id) => Boolean(annees.find((a) => String(a.id) === String(id))?.close);
 
   return (
     <div className="space-y-6">
       {/* En-tête */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-primary font-headline">Événements</h1>
+          <h1 className="text-2xl font-bold text-primary font-headline">Séances</h1>
           <p className="text-sm text-on-surface-variant">Gestion des séances de cours et codes QR</p>
         </div>
         <button onClick={openCreate}
@@ -375,7 +432,13 @@ export default function EvenementManagementPage() {
                 <div className="flex items-center gap-4 mt-1 text-[11px] text-on-surface-variant flex-wrap">
                   <span className="flex items-center gap-1"><FiClock size={12} />{ev.heure_debut} - {ev.heure_fin}</span>
                   {ev.salle_ref ? (
-                    <span className="flex items-center gap-1 text-secondary"><FiMapPin size={12} />{ev.salle_ref.nom} <span className="text-[9px] text-secondary/70">(GPS+WiFi)</span></span>
+                    <span className="flex items-center gap-1 text-secondary"><FiMapPin size={12} />{ev.salle_ref.nom}{' '}
+                      {/* Le niveau réel de la salle, pas une promesse : la plupart des
+                          salles n'ont encore ni GPS ni Wi-Fi configuré. */}
+                      <span className="text-[9px] text-secondary/70">
+                        ({[ev.salle_ref.verifie_gps && 'GPS', ev.salle_ref.verifie_wifi && 'Wi-Fi'].filter(Boolean).join(' + ') || 'QR seul'})
+                      </span>
+                    </span>
                   ) : ev.salle ? (
                     <span className="flex items-center gap-1"><FiMapPin size={12} />{ev.salle}</span>
                   ) : null}
@@ -411,12 +474,12 @@ export default function EvenementManagementPage() {
 
               {/* Actions */}
               <div className="flex items-center gap-1 flex-shrink-0">
-                <button onClick={() => openEdit(ev)}
-                  className="p-2 text-outline hover:text-primary hover:bg-primary/10 rounded-lg transition-all" title="Modifier">
+                <button onClick={() => openEdit(ev)} disabled={anneeFermee(ev.annee_id)}
+                  className="p-2 disabled:opacity-30 disabled:cursor-not-allowed text-outline hover:text-primary hover:bg-primary/10 rounded-lg transition-all" title="Modifier">
                   <FiEdit2 size={14} />
                 </button>
-                <button onClick={() => handleDelete(ev)}
-                  className="p-2 text-outline hover:text-error hover:bg-error/10 rounded-lg transition-all" title="Supprimer">
+                <button onClick={() => handleDelete(ev)} disabled={anneeFermee(ev.annee_id)}
+                  className="p-2 disabled:opacity-30 disabled:cursor-not-allowed text-outline hover:text-error hover:bg-error/10 rounded-lg transition-all" title="Supprimer">
                   <FiTrash2 size={14} />
                 </button>
               </div>
@@ -426,7 +489,7 @@ export default function EvenementManagementPage() {
       )}
 
       {/* ─── Modal QR Code ─────────────────────────────── */}
-      {qrModal.open && (
+      {qrModal.open && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           onClick={() => setQrModal(prev => ({ ...prev, open: false }))}>
           <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-sm shadow-xl"
@@ -498,11 +561,12 @@ export default function EvenementManagementPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* ─── Modal événement ────────────────────────────── */}
-      {modal.open && (
+      {modal.open && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           onClick={() => setModal(prev => ({ ...prev, open: false }))}>
           <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg shadow-xl"
@@ -538,15 +602,23 @@ export default function EvenementManagementPage() {
                     const filiereCode = ec.ue?.filiere?.code || ec.ue?.filiere_code;
                     return (
                       <option key={ec.id} value={ec.id}>
-                        {ec.code} — {ec.intitule}{filiereCode ? ` (${filiereCode})` : ''}
+                        {ec.code} — {ec.intitule}{filiereCode ? ` (${filiereCode})` : ''}{ec.statut === 'termine' ? ' — terminé, évaluation seulement' : ''}
                       </option>
                     );
                   })}
-                  {ecs.filter(ec => ec.statut === 'termine').length > 0 && (
-                    <option disabled className="text-gray-400">─ ECs terminés (indisponibles) ─</option>
-                  )}
                 </select>
               </div>
+              <div>
+                <label htmlFor="type-evenement" className="block text-xs font-semibold text-on-surface mb-1">Type de séance</label>
+                <select id="type-evenement" value={modal.data.type_cours} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, type_cours: e.target.value } }))}
+                  className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                  {TYPES_SEANCE.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+              <SelecteurGroupe id="groupe-evenement" ecId={modal.data.ec_id} type={modal.data.type_cours} value={modal.data.groupe_id}
+                onChange={choisirGroupe}
+                labelClassName="block text-xs font-semibold text-on-surface mb-1"
+                className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
               <div>
                 <label className="block text-xs font-semibold text-on-surface mb-1">Date *</label>
                 <input type="date" value={modal.data.date} onChange={(e) => {
@@ -554,7 +626,16 @@ export default function EvenementManagementPage() {
                   setModal(prev => ({ ...prev, data: { ...prev.data, date } }));
                   if (!modal.editing) chargerCreneaux(modal.data.ec_id, date);
                 }}
+                  // Aujourd'hui au plus tôt : le sélecteur grise les jours passés.
+                  // En modification, la date d'origine laissée telle quelle reste
+                  // acceptée, pour pouvoir clore ou annuler un cours d'hier.
+                  min={modal.editing && modal.data.date === modal.dateOrigine ? undefined : aujourdhuiIso()}
                   required className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                {modal.editing && modal.dateOrigine && modal.dateOrigine < aujourdhuiIso() && (
+                  <p className="text-xs pt-1 text-on-surface-variant">
+                    Cet événement est passé : sa date peut être conservée, ou reportée à aujourd'hui ou plus tard.
+                  </p>
+                )}
               </div>
               {/* Suggestions issues de l'emploi du temps — création seulement */}
               {!modal.editing && modal.data.ec_id && modal.data.date && (
@@ -606,37 +687,61 @@ export default function EvenementManagementPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-on-surface mb-1">Début *</label>
-                  <input type="time" value={modal.data.heure_debut} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, heure_debut: e.target.value } }))}
-                    required className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                  <SelecteurHeure required value={modal.data.heure_debut}
+                    // La fin suit le début en gardant la durée choisie, dans la limite permise.
+                    onChange={(v) => setModal(prev => ({
+                      ...prev,
+                      data: {
+                        ...prev.data,
+                        heure_debut: v,
+                        heure_fin: finApresNouveauDebut({
+                          ancienDebut: prev.data.heure_debut,
+                          ancienneFin: prev.data.heure_fin,
+                          nouveauDebut: v,
+                          limiteMinutes,
+                        }),
+                      },
+                    }))}
+                    className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-on-surface mb-1">Fin *</label>
-                  <input type="time" value={modal.data.heure_fin} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, heure_fin: e.target.value } }))}
-                    required className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-on-surface mb-1">Salle (nom)</label>
-                  <input type="text" value={modal.data.salle} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, salle: e.target.value } }))}
-                    maxLength={100} className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Ex: Amphi 200" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-on-surface mb-1">Salle configurée (GPS/WiFi)</label>
-                  <select value={modal.data.salle_id} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, salle_id: e.target.value } }))}
-                    className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                    <option value="">Aucune (QR seul)</option>
-                    {salles.map(s => <option key={s.id} value={s.id}>{s.nom} ({s.code})</option>)}
-                  </select>
+                  <SelecteurHeure required value={modal.data.heure_fin}
+                    apres={modal.data.heure_debut || null}
+                    jusqua={finAuPlusTard}
+                    onChange={(v) => setModal(prev => ({ ...prev, data: { ...prev.data, heure_fin: v } }))}
+                    className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                  {finAuPlusTard && limiteMinutes !== null && (
+                    <p className="text-xs pt-1 text-on-surface-variant">
+                      Au plus tard {finAuPlusTard}
+                      {plafondMinutes !== null && limiteMinutes === plafondMinutes
+                        ? ` — une séance dure ${plafondMinutes / 60} h au maximum.`
+                        : ' — limite du volume horaire restant.'}
+                    </p>
+                  )}
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-on-surface mb-1">Statut</label>
-                <select value={modal.data.statut} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, statut: e.target.value } }))}
-                  className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                  {STATUTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
+                <label htmlFor="salle-evenement" className="block text-xs font-semibold text-on-surface mb-1">Salle</label>
+                {/* Salles configurées uniquement : un nom saisi à la main ne permet
+                    ni le contrôle GPS/Wi-Fi ni la détection de double réservation. */}
+                <SelecteurSalle id="salle-evenement" salles={salles} value={modal.data.salle_id}
+                  nomActuel={modal.data.salle_id ? '' : modal.data.salle}
+                  onChange={(id) => setModal(prev => ({ ...prev, data: { ...prev.data, salle_id: id } }))}
+                  className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
               </div>
+              {/* Le statut ne se choisit qu'en modification : un événement naît
+                  planifié, puis la séance le fait passer « En cours » et
+                  « Terminé ». Seule une annulation reste une décision. */}
+              {modal.editing && (
+                <div>
+                  <label htmlFor="statut-evenement" className="block text-xs font-semibold text-on-surface mb-1">Statut</label>
+                  <select id="statut-evenement" value={modal.data.statut} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, statut: e.target.value } }))}
+                    className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                    {STATUTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                  </select>
+                </div>
+              )}
               <div className="flex gap-3 pt-2">
                 <button type="submit" disabled={modal.saving}
                   className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50">
@@ -650,7 +755,8 @@ export default function EvenementManagementPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

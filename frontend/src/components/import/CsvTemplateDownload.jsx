@@ -13,12 +13,12 @@ const MODELES = [
   {
     type: 'ue-ec',
     libelle: 'Modèle Cours (UE/EC)',
-    colonnes: 'code_ue, intitule_ue, filiere_code, niveau, annee_libelle, semestre, volume_horaire_ue, code_ec, intitule_ec, volume_horaire_ec',
+    colonnes: 'code_ue, intitule_ue, filiere_code, niveau, annee_libelle, semestre, credits_ue, code_ec, intitule_ec, volume_cm, volume_td, volume_tp, volume_td_tp',
   },
   {
     type: 'edt',
     libelle: 'Modèle Emploi du temps',
-    colonnes: 'filiere_code, niveau, annee_libelle, semestre, ue_code, ec_code, jour, heure_debut, heure_fin, salle_code, type_cours',
+    colonnes: 'filiere_code, niveau, annee_libelle, semestre, ue_code, ec_code, jour, heure_debut, heure_fin, salle_code, type_cours, groupe, enseignant, valide_du, valide_au',
   },
 ];
 

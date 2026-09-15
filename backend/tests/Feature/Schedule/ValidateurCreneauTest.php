@@ -37,6 +37,7 @@ class ValidateurCreneauTest extends TestCase
     private Ec $autreEc;
     private Ec $ecAutreFiliere;
     private Salle $salle;
+    private int $etablissementId;
     private string $sfx;
 
     protected function setUp(): void
@@ -51,12 +52,22 @@ class ValidateurCreneauTest extends TestCase
             'date_fin' => '2089-07-31', 'active' => false,
         ]);
 
+        // Les salles ne sont cherchées que dans l'établissement de la filière :
+        // filières et salle partagent donc le même.
+        $this->etablissementId = DB::table('etablissements')->insertGetId([
+            'code' => 'ET' . $this->sfx, 'nom' => 'Etablissement ' . $this->sfx,
+            'email' => 'etab-' . $this->sfx . '@example.test', 'actif' => true,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
         // Filière de L2 : ses UE doivent être en S3 ou S4.
         $this->filiere = Filiere::create([
             'code' => 'VAL' . $this->sfx, 'intitule' => 'Filière validée', 'niveau' => 'L2',
+            'etablissement_id' => $this->etablissementId,
         ]);
         $this->autreFiliere = Filiere::create([
             'code' => 'AUT' . $this->sfx, 'intitule' => 'Autre filière', 'niveau' => 'L2',
+            'etablissement_id' => $this->etablissementId,
         ]);
 
         $ue = $this->ue($this->filiere, 3, 'UE1');
@@ -66,17 +77,9 @@ class ValidateurCreneauTest extends TestCase
         $ueAutre = $this->ue($this->autreFiliere, 3, 'UEX');
         $this->ecAutreFiliere = $this->creerEc($ueAutre, 'ECX', 'Cours étranger');
 
-        // salles.etablissement_id est obligatoire : on rattache la salle au meme
-        // etablissement que la filiere pour rester coherent avec le cloisonnement.
-        $etablissementId = DB::table('etablissements')->insertGetId([
-            'code' => 'ET' . $this->sfx, 'nom' => 'Etablissement ' . $this->sfx,
-            'email' => 'etab-' . $this->sfx . '@example.test', 'actif' => true,
-            'created_at' => now(), 'updated_at' => now(),
-        ]);
-
         $this->salle = Salle::create([
             'code' => 'S' . $this->sfx, 'nom' => 'Amphi Test ' . $this->sfx,
-            'capacite' => 100, 'actif' => true, 'etablissement_id' => $etablissementId,
+            'capacite' => 100, 'actif' => true, 'etablissement_id' => $this->etablissementId,
         ]);
 
         $this->assertTrue($this->v->preparer($this->filiere->id, $this->annee->id)['ok']);
@@ -109,7 +112,10 @@ class ValidateurCreneauTest extends TestCase
             'date'         => null,
             'heure_debut'  => '08:00',
             'heure_fin'    => '10:00',
-            'salle'        => $this->salle->code,
+            // La salle choisie sur l'écran de validation, par son identifiant.
+            'salle'        => null,
+            'salle_id'     => $this->salle->id,
+            'sans_salle'   => false,
             'enseignants'  => [],
             'filiere'      => null,
             'type_seance'  => null,
@@ -204,27 +210,68 @@ class ValidateurCreneauTest extends TestCase
 
     // ── Salle ───────────────────────────────────────────────────────────
 
-    public function test_une_salle_du_referentiel_est_rattachee(): void
+    public function test_une_salle_choisie_par_son_identifiant_est_rattachee(): void
     {
         $r = $this->v->valider($this->creneau());
 
+        $this->assertSame(ValidateurCreneau::VALIDE, $r['statut'], implode(' ', $r['motifs']));
         $this->assertSame($this->salle->id, $r['creneau']['salle_id']);
-        $this->assertNull($r['creneau']['salle_libelle']);
+        // Le nom recopié est celui de la salle configurée, jamais un nom lu :
+        // les séances générées l'affichent.
+        $this->assertSame($this->salle->nom, $r['creneau']['salle_libelle']);
     }
 
     /**
-     * « Zone Master A2 » du fichier réel de l'IFRI n'est pas une salle au sens du
-     * référentiel. On la conserve en texte plutôt que de perdre l'information,
-     * mais on avertit que le conflit de salle devient indétectable.
+     * « Zone Master A2 » du fichier réel de l'IFRI : un nom lu par l'IA n'est
+     * plus conservé en texte libre. Le créneau attend que l'administrateur
+     * choisisse une salle, la crée, ou choisisse « Aucune — QR seul ».
      */
-    public function test_une_salle_hors_referentiel_est_conservee_en_texte_et_signalee(): void
+    public function test_un_nom_de_salle_sans_choix_laisse_le_creneau_a_completer(): void
     {
-        $r = $this->v->valider($this->creneau(['salle' => 'Zone Master A2']));
+        $r = $this->v->valider($this->creneau(['salle' => 'Zone Master A2', 'salle_id' => null]));
 
         $this->assertSame(ValidateurCreneau::AMBIGU, $r['statut']);
         $this->assertNull($r['creneau']['salle_id']);
-        $this->assertSame('Zone Master A2', $r['creneau']['salle_libelle']);
-        $this->assertStringContainsString('conflits de salle ne', implode(' ', $r['motifs']));
+        $this->assertNull($r['creneau']['salle_libelle']);
+        $this->assertStringContainsString('Salle « Zone Master A2 » à choisir', implode(' ', $r['motifs']));
+    }
+
+    /** Un nom reconnu est proposé, mais seul l'identifiant engage. */
+    public function test_un_nom_reconnu_est_suggere_sans_etre_retenu(): void
+    {
+        $r = $this->v->valider($this->creneau(['salle' => strtolower($this->salle->code), 'salle_id' => null]));
+
+        $this->assertSame(ValidateurCreneau::AMBIGU, $r['statut']);
+        $this->assertNull($r['creneau']['salle_id']);
+        $this->assertStringContainsString("correspond à « {$this->salle->nom} »", implode(' ', $r['motifs']));
+    }
+
+    public function test_aucune_salle_est_un_choix_legitime(): void
+    {
+        $r = $this->v->valider($this->creneau(['salle' => 'Zone Master A2', 'salle_id' => null, 'sans_salle' => true]));
+
+        $this->assertSame(ValidateurCreneau::VALIDE, $r['statut'], implode(' ', $r['motifs']));
+        $this->assertNull($r['creneau']['salle_id']);
+    }
+
+    /** Les salles étaient cherchées dans tout le système, toutes facultés confondues. */
+    public function test_une_salle_d_un_autre_etablissement_est_refusee(): void
+    {
+        $ailleurs = DB::table('etablissements')->insertGetId([
+            'code' => 'EX' . $this->sfx, 'nom' => 'Ailleurs ' . $this->sfx,
+            'email' => 'ailleurs-' . $this->sfx . '@example.test', 'actif' => true,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $salleAilleurs = Salle::create([
+            'code' => 'X' . $this->sfx, 'nom' => 'Salle ailleurs', 'actif' => true, 'etablissement_id' => $ailleurs,
+        ]);
+
+        $this->v->preparer($this->filiere->id, $this->annee->id);
+
+        $r = $this->v->valider($this->creneau(['salle_id' => $salleAilleurs->id]));
+
+        $this->assertSame(ValidateurCreneau::INVALIDE, $r['statut']);
+        $this->assertStringContainsString("n'existe pas dans l'établissement", $r['motifs'][0]);
     }
 
     // ── Doublons ────────────────────────────────────────────────────────
@@ -270,7 +317,7 @@ class ValidateurCreneauTest extends TestCase
         $this->v->valider($this->creneau());
 
         $r = $this->v->valider($this->creneau([
-            'ec_libelle' => 'Bases de données', 'salle' => null,
+            'ec_libelle' => 'Bases de données', 'salle_id' => null,
             'heure_debut' => '09:00', 'heure_fin' => '11:00',
         ]));
 
@@ -303,7 +350,7 @@ class ValidateurCreneauTest extends TestCase
         $this->v->valider($this->creneau(['enseignants' => ['Ratheil HOUNDJI']]));
 
         $r = $this->v->valider($this->creneau([
-            'ec_libelle' => 'Bases de données', 'salle' => null,
+            'ec_libelle' => 'Bases de données', 'salle_id' => null,
             'heure_debut' => '09:00', 'heure_fin' => '11:00',
             'enseignants' => ['M. Ratheil HOUNDJI'],
         ]));
@@ -345,8 +392,9 @@ class ValidateurCreneauTest extends TestCase
             'Travaux pratiques' => 'tp',
             'TD groupe A'       => 'td',
             "Evaluation par l'enseignant" => 'evaluation',
-            'Cours magistral'   => 'cours',
-            null                => 'cours',
+            // Une seule écriture pour le cours magistral, celle de TypeCours.
+            'Cours magistral'   => 'cm',
+            null                => 'cm',
         ] as $brut => $attendu) {
             $this->v->preparer($this->filiere->id, $this->annee->id);
 

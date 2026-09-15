@@ -8,8 +8,11 @@ use App\Models\Analyse;
 use App\Models\AnneeAcademique;
 use App\Models\Etudiant;
 use App\Models\Filiere;
+use App\Models\Ec;
+use App\Models\Salle;
 use App\Services\AiAnalysisService;
 use App\Services\IdentifiantService;
+use App\Services\RegleSeanceService;
 use App\Traits\ScopedByEtablissement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -75,6 +78,8 @@ class ImportController extends Controller
             'annee' => 'annee_libelle',
             'email' => 'email',
             'telephone' => 'telephone',
+            'groupe td' => 'groupe_td', 'groupe_td' => 'groupe_td',
+            'groupe tp' => 'groupe_tp', 'groupe_tp' => 'groupe_tp',
         ];
 
         $mapped = [];
@@ -110,8 +115,34 @@ class ImportController extends Controller
                 continue;
             }
 
-            $filiere = Filiere::where('code', $data['filiere_code'])->first();
+            // Le code n'est unique que dans un établissement : celui de l'admin
+            // tranche. Sans ce filtre, un admin de faculté inscrivait des
+            // étudiants dans la filière homonyme d'une autre faculté.
+            $etablissementId = $this->getEtablissementId($request);
+            $homonymes = Filiere::where('code', $data['filiere_code'])->get();
+            $filiere = $etablissementId
+                ? $homonymes->firstWhere('etablissement_id', $etablissementId)
+                : ($homonymes->count() === 1 ? $homonymes->first() : null);
+
+            if (!$filiere) {
+                $results['errors'][] = [
+                    'row'    => $data['matricule'] ?? 'N/A',
+                    'errors' => [$etablissementId
+                        ? "Filière '{$data['filiere_code']}' non autorisée pour votre établissement."
+                        : "Filière '{$data['filiere_code']}' présente dans plusieurs établissements : importez depuis un compte de faculté."],
+                ];
+                continue;
+            }
+
             $annee   = AnneeAcademique::where('libelle', $data['annee_libelle'])->first();
+
+            if ($annee->estClosePour($etablissementId)) {
+                $results['errors'][] = [
+                    'row'    => $data['matricule'] ?? 'N/A',
+                    'errors' => ["{$annee->libelle} est close pour votre établissement : ligne ignorée."],
+                ];
+                continue;
+            }
 
             $etudiant = Etudiant::create([
                 'id'                 => (string) Str::uuid(),
@@ -129,6 +160,16 @@ class ImportController extends Controller
 
             // Auto-inscription aux ECs de la filière et année (CDC 7.2.3)
             $etudiant->autoEnroll();
+
+            // Groupes de TD et de TP, créés au besoin dans la promotion.
+            foreach (['td' => 'groupe_td', 'tp' => 'groupe_tp'] as $type => $colonne) {
+                if (trim((string) ($data[$colonne] ?? '')) !== '') {
+                    $groupe = \App\Models\Groupe::firstOrCreate([
+                        'filiere_id' => $filiere->id, 'annee_id' => $annee->id, 'type' => $type, 'libelle' => mb_strtoupper(trim($data[$colonne])),
+                    ]);
+                    app(\App\Services\Groupes\GestionGroupes::class)->affecter($etudiant, $groupe);
+                }
+            }
 
             // Envoi synchrone : il n'y a pas de worker de queue en production,
             // un dispatch() n'aurait jamais été traité. Un échec d'e-mail ne
@@ -257,7 +298,7 @@ class ImportController extends Controller
      *
      * POST /api/admin/import/validate-events
      */
-    public function validateEvents(Request $request): JsonResponse
+    public function validateEvents(Request $request, RegleSeanceService $volumes): JsonResponse
     {
         $validated = $request->validate([
             'events'            => 'required|array|min:1',
@@ -267,8 +308,16 @@ class ImportController extends Controller
             'events.*.date'     => 'required|date',
             'events.*.heure_debut' => 'required|date_format:H:i',
             'events.*.heure_fin' => 'required|date_format:H:i|after:events.*.heure_debut',
-            'events.*.salle'    => 'nullable|string|max:100',
+            // La salle se désigne par son identifiant : un nom seul ne permet ni
+            // le contrôle au scan ni la détection de double réservation.
+            'events.*.salle_id' => 'nullable|integer',
+            'events.*.type_cours' => 'nullable|string|max:40',
+            'events.*.groupe_id'  => 'nullable|integer',
         ]);
+
+        foreach (array_unique(array_column($validated['events'], 'annee_id')) as $anneeId) {
+            $this->refuserSiAnneeClose((int) $anneeId, $request);
+        }
 
         // Vérifier que les filières appartiennent à l'établissement de l'admin
         $etablissementId = $this->getEtablissementId($request);
@@ -289,16 +338,85 @@ class ImportController extends Controller
         }
 
         $created = [];
+        $refuses = [];
+        // Heures retenues au fil de cette validation : la base ne les reflète
+        // pas encore quand on contrôle le créneau suivant du même EC.
+        $consommeesParEc = [];
+
         foreach ($validated['events'] as $eventData) {
             $eventData['statut'] = 'planifie';
-            $event = \App\Models\Evenement::create($eventData);
-            $created[] = $event;
+            $eventData['type_cours'] = \App\Support\TypeCours::normaliser($eventData['type_cours'] ?? null);
+
+            // Une salle active de l'établissement de la filière, et elle seule.
+            if (!empty($eventData['salle_id'])) {
+                $salle = Salle::whereKey($eventData['salle_id'])
+                    ->where('actif', true)
+                    ->where('etablissement_id', Filiere::whereKey($eventData['filiere_id'])->value('etablissement_id'))
+                    ->first();
+
+                if (!$salle) {
+                    $refuses[] = [
+                        'date'  => $eventData['date'] ?? null,
+                        'motif' => "La salle choisie n'existe pas dans l'établissement de la filière, ou elle est désactivée.",
+                    ];
+                    continue;
+                }
+
+                $eventData['salle'] = $salle->nom;
+            }
+
+            // Un créneau qui déborde du volume horaire de son EC est écarté,
+            // et non créé silencieusement : la règle appliquée au formulaire
+            // vaut aussi pour ce que propose l'analyse IA.
+            $ec = isset($eventData['ec_id']) ? Ec::find($eventData['ec_id']) : null;
+            $eventData['groupe_id'] ??= null;
+            if ($ec) {
+                try {
+                    $eventData['groupe_id'] = app(\App\Services\Groupes\GestionGroupes::class)
+                        ->verifierPourSeance($eventData['groupe_id'], $eventData['type_cours'], $ec)?->id;
+                } catch (\Illuminate\Validation\ValidationException $e) {
+                    $refuses[] = ['date' => $eventData['date'] ?? null, 'motif' => collect($e->errors())->flatten()->first()];
+                    continue;
+                }
+
+                // Salle, promotion et groupe : la règle commune aux séances.
+                $conflits = app(\App\Services\Planning\Conflits::class)->pourSeance($ec, $eventData);
+                if ($conflits !== []) {
+                    $refuses[] = ['date' => $eventData['date'] ?? null, 'motif' => implode(' ', $conflits)];
+                    continue;
+                }
+
+                $deja = $consommeesParEc[$ec->id] ?? [];
+                $refus = $volumes->refus(
+                    $ec, $eventData['date'], $eventData['heure_debut'], $eventData['heure_fin'], null, $deja, $eventData['type_cours'], $eventData['groupe_id']
+                );
+                if ($refus) {
+                    $refuses[] = ['date' => $eventData['date'] ?? null, 'motif' => $refus];
+                    continue;
+                }
+            }
+
+            $created[] = \App\Models\Evenement::create($eventData);
+
+            if ($ec) {
+                $consommeesParEc[$ec->id][] = [
+                    'type'      => $eventData['type_cours'],
+                    'groupe_id' => $eventData['groupe_id'],
+                    'heures'    => RegleSeanceService::duree($eventData['heure_debut'], $eventData['heure_fin']),
+                ];
+            }
+        }
+
+        $message = count($created) . ' événements créés avec succès.';
+        if ($refuses !== []) {
+            $message .= ' ' . count($refuses) . ' écarté(s), motif détaillé pour chacun.';
         }
 
         return $this->createdResponse([
             'total' => count($created),
             'events' => $created,
-        ], count($created) . ' événements créés avec succès.');
+            'refuses' => $refuses,
+        ], $message);
     }
 
     /**
@@ -321,12 +439,23 @@ class ImportController extends Controller
             'ues.*.annee_id'   => 'required|exists:annees_academiques,id',
             // 10 et non 6 : le Master occupe les semestres 7 a 10.
             'ues.*.semestre'   => 'required|integer|min:1|max:10',
-            'ues.*.volume_horaire' => 'required|integer|min:1',
+            // Déduit des EC : il n'est plus exigé.
+            'ues.*.volume_horaire' => 'nullable|integer|min:0',
+            'ues.*.credits'    => 'nullable|integer|min:0|max:60',
             'ues.*.ecs'        => 'nullable|array',
             'ues.*.ecs.*.code' => 'required_with:ues.*.ecs|string|max:20',
             'ues.*.ecs.*.intitule' => 'required_with:ues.*.ecs|string|max:255',
-            'ues.*.ecs.*.volume_horaire' => 'required_with:ues.*.ecs|integer|min:1',
+            // Par type (CM, TD, TP, réserve TP/TD) ; à défaut, un total « à ventiler ».
+            'ues.*.ecs.*.volume_horaire' => 'nullable|integer|min:1',
+            'ues.*.ecs.*.volume_cm'    => 'nullable|integer|min:0|max:999',
+            'ues.*.ecs.*.volume_td'    => 'nullable|integer|min:0|max:999',
+            'ues.*.ecs.*.volume_tp'    => 'nullable|integer|min:0|max:999',
+            'ues.*.ecs.*.volume_td_tp' => 'nullable|integer|min:0|max:999',
         ]);
+
+        foreach (array_unique(array_column($validated['ues'], 'annee_id')) as $anneeId) {
+            $this->refuserSiAnneeClose((int) $anneeId, $request);
+        }
 
         // Vérifier que les filières appartiennent à l'établissement de l'admin
         $etablissementId = $this->getEtablissementId($request);
@@ -369,37 +498,82 @@ class ImportController extends Controller
             }
         }
 
-        $created = [];
+        // Les règles du formulaire (RegistreMaquette), vérifiées sur TOUT le lot
+        // avant la moindre écriture : un lot refusé ne laisse rien derrière lui.
+        // On écrivait UE par UE, sans transaction ; une erreur au milieu laissait
+        // un import à moitié fait.
+        $registre = app(\App\Services\Maquette\RegistreMaquette::class);
+        $refus = [];
+        // Volumes d'un EC : par type s'il en a, sinon son total (« à ventiler »).
+        $volumesEc = function (array $ec): array {
+            $parType = array_map('intval', \Illuminate\Support\Arr::only($ec, ['volume_cm', 'volume_td', 'volume_tp', 'volume_td_tp']));
+
+            return array_sum($parType) > 0 ? $parType : ['volume_horaire' => (int) ($ec['volume_horaire'] ?? 0)];
+        };
+        $ueDuLot = [];
+        $ecDuLot = [];
+
         foreach ($validated['ues'] as $ueData) {
-            $ecsData = $ueData['ecs'] ?? [];
-            unset($ueData['ecs']);
+            $filiere = $filieres->get($ueData['filiere_id']);
+            $anneeId = (int) $ueData['annee_id'];
+            $prefixe = ((int) $filiere->etablissement_id) . '|' . $anneeId . '|';
+            $cleUe = $prefixe . mb_strtolower($ueData['code']);
 
-            // Creation ou mise a jour : revalider un import corrige ne doit pas
-            // echouer sur la contrainte d'unicite, ni creer un doublon.
-            $ue = \App\Models\Ue::updateOrCreate(
-                [
-                    'code'       => $ueData['code'],
-                    'filiere_id' => $ueData['filiere_id'],
-                    'annee_id'   => $ueData['annee_id'],
-                ],
-                $ueData
-            );
+            // Le même code pour deux filières du lot : un cours commun s'il garde
+            // le même intitulé, deux UE différentes sous un seul code sinon.
+            $intitule = \App\Services\Maquette\RegistreMaquette::normaliser($ueData['intitule']);
+            if (isset($ueDuLot[$cleUe]) && $ueDuLot[$cleUe] !== $intitule) {
+                $refus[] = "Le code {$ueData['code']} désigne deux UE différentes dans ce lot : une UE ne porte qu'un code par année.";
+            }
+            $ueDuLot[$cleUe] ??= $intitule;
 
-            $ecs = [];
-            foreach ($ecsData as $ecData) {
-                $ec = \App\Models\Ec::updateOrCreate(
-                    ['code' => $ecData['code'], 'ue_id' => $ue->id],
-                    $ecData + ['ue_id' => $ue->id]
-                );
-                $ecs[] = $ec;
+            if ($motif = $registre->conflitUe($ueData['code'], $filiere, $anneeId, $ueData['intitule'])) {
+                $refus[] = $motif;
             }
 
-            $ue->load('ecs');
-            $created[] = [
-                'ue' => $ue,
-                'ecs' => $ecs,
-            ];
+            foreach ($ueData['ecs'] ?? [] as $ecData) {
+                $cleEc = $prefixe . mb_strtolower($ecData['code']);
+
+                if (isset($ecDuLot[$cleEc]) && $ecDuLot[$cleEc] !== $cleUe) {
+                    $refus[] = "Le code d'EC {$ecData['code']} apparaît dans deux UE de ce lot.";
+                }
+                $ecDuLot[$cleEc] ??= $cleUe;
+
+                if ($motif = $registre->conflitEc($ecData['code'], $ueData['code'], $filiere, $anneeId)) {
+                    $refus[] = $motif;
+                }
+
+                if (array_sum($volumesEc($ecData)) <= 0) {
+                    $refus[] = "L'EC {$ecData['code']} n'a aucun volume : renseignez ses heures de CM, TD, TP ou TP/TD.";
+                }
+            }
         }
+
+        if ($refus !== []) {
+            return $this->errorResponse(implode(' ', array_values(array_unique($refus))), 422);
+        }
+
+        $created = \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $filieres, $registre, $volumesEc) {
+            $created = [];
+
+            foreach ($validated['ues'] as $ueData) {
+                $ue = $registre->enregistrerUe(
+                    $filieres->get($ueData['filiere_id']),
+                    (int) $ueData['annee_id'],
+                    \Illuminate\Support\Arr::only($ueData, ['code', 'intitule', 'semestre', 'volume_horaire', 'credits'])
+                );
+
+                $ecs = array_map(
+                    fn (array $ecData) => $registre->enregistrerEc($ue, \Illuminate\Support\Arr::only($ecData, ['code', 'intitule']) + $volumesEc($ecData)),
+                    $ueData['ecs'] ?? []
+                );
+
+                $ue->load('ecs');
+                $created[] = ['ue' => $ue, 'ecs' => $ecs];
+            }
+
+            return $created;
+        });
 
         return $this->createdResponse([
             'total_ues' => count($created),

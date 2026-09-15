@@ -55,7 +55,9 @@ class NormalisateurCreneau
         $libelle = $this->texte($brut, ['ec', 'ec_libelle', 'cours', 'matiere', 'intitule']);
         $code    = $this->texte($brut, ['ec_code', 'code_ec', 'code']);
 
-        if ($libelle === null && $code === null) {
+        $ecId = isset($brut['ec_id']) && is_numeric($brut['ec_id']) ? (int) $brut['ec_id'] : null;
+
+        if ($libelle === null && $code === null && $ecId === null) {
             return ['ok' => false, 'champ' => 'ec', 'motif' => "Aucun nom ni code de cours : le créneau ne désigne aucun enseignement."];
         }
 
@@ -93,6 +95,7 @@ class NormalisateurCreneau
         return [
             'ok'      => true,
             'creneau' => [
+                'ec_id'        => $ecId,
                 'ec_libelle'   => $libelle,
                 'ec_code'      => $code,
                 'jour_semaine' => $jour,
@@ -102,9 +105,19 @@ class NormalisateurCreneau
                 'heure_debut'  => $debut,
                 'heure_fin'    => $fin,
                 'salle'        => $this->texte($brut, ['salle', 'salle_libelle', 'salle_code', 'local', 'lieu']),
+                // Choix fait sur l'écran de validation : une salle configurée, ou
+                // aucune. Seul l'identifiant désigne une salle ; le nom lu ne sert
+                // qu'à le proposer.
+                'salle_id'     => isset($brut['salle_id']) && is_numeric($brut['salle_id']) ? (int) $brut['salle_id'] : null,
+                'sans_salle'   => filter_var($brut['sans_salle'] ?? false, FILTER_VALIDATE_BOOLEAN),
                 'enseignants'  => $this->enseignants($brut),
-                'filiere'      => $this->texte($brut, ['filiere', 'filiere_code', 'classe', 'groupe']),
+                'filiere'      => $this->texte($brut, ['filiere', 'filiere_code', 'classe']),
                 'type_seance'  => $this->texte($brut, ['type_cours', 'type_seance', 'type', 'nature']),
+                // Groupe de TD ou de TP, par son libellé (« G1 ») ; version de
+                // l'emploi du temps (« à partir du 15 juin »).
+                'groupe'       => $this->texte($brut, ['groupe', 'groupe_td', 'groupe_tp']),
+                'valide_du'    => $this->date($brut, ['valide_du', 'valable_du', 'a_partir_du'])?->toDateString(),
+                'valide_au'    => $this->date($brut, ['valide_au', 'valable_au', 'jusqu_au'])?->toDateString(),
             ],
         ];
     }
@@ -175,9 +188,9 @@ class NormalisateurCreneau
         return null;
     }
 
-    private function date(array $brut): ?Carbon
+    private function date(array $brut, array $cles = ['date', 'jour', 'date_seance']): ?Carbon
     {
-        foreach (['date', 'jour', 'date_seance'] as $cle) {
+        foreach ($cles as $cle) {
             if (empty($brut[$cle]) || !is_string($brut[$cle])) {
                 continue;
             }

@@ -108,7 +108,7 @@ class CsvImportControllerTest extends TestCase
         $this->ue = Ue::create([
             'code' => 'EDTUE' . $this->sfx, 'intitule' => 'UE emploi du temps',
             'filiere_id' => $this->filiereA->id, 'annee_id' => $this->annee->id,
-            'semestre' => 1, 'volume_horaire' => 60,
+            'semestre' => 7, 'volume_horaire' => 60,
         ]);
         $this->ec1 = Ec::create([
             'ue_id' => $this->ue->id, 'code' => 'EDTEC1' . $this->sfx,
@@ -119,8 +119,7 @@ class CsvImportControllerTest extends TestCase
             'intitule' => 'EC deux', 'volume_horaire' => 30,
         ]);
 
-        // `ues.code` est unique au niveau de la table : ce code, déjà pris par une
-        // autre filière, provoque une violation d'unicité s'il est réimporté.
+        // Code déjà pris par la filière B, d'un autre établissement que la A.
         $this->codeUeDejaPris = 'DUP' . $this->sfx;
         Ue::create([
             'code' => $this->codeUeDejaPris, 'intitule' => 'UE autre filière',
@@ -160,7 +159,7 @@ class CsvImportControllerTest extends TestCase
     private function ligneEdt(string $codeEc, string $jour, string $debut, string $fin, string $salle = '', string $type = 'CM'): string
     {
         return implode(',', [
-            $this->filiereA->code, 'M1', $this->annee->libelle, '1',
+            $this->filiereA->code, 'M1', $this->annee->libelle, '7',
             $this->ue->code, $codeEc, $jour, $debut, $fin, $salle, $type,
         ]);
     }
@@ -347,7 +346,9 @@ class CsvImportControllerTest extends TestCase
             self::ENTETE_UE_EC . "\n"
             . "T1{$this->sfx},Un,{$this->filiereA->code},M1,{$this->annee->libelle},7,60,T1EC{$this->sfx},EC un,30\n"
             . "T2{$this->sfx},Deux,{$this->filiereA->code},M1,{$this->annee->libelle},7,40,T2EC{$this->sfx},EC deux,20\n"
-            . "T3{$this->sfx},Trois,{$this->filiereA->code},M1,{$this->annee->libelle},7,0,T3EC{$this->sfx},EC trois,10\n"
+            // Invalide : un semestre de L2 dans une filière de M1 (le volume de
+            // l'UE, déduit de ses EC, n'est plus une cause de refus).
+            . "T3{$this->sfx},Trois,{$this->filiereA->code},M1,{$this->annee->libelle},3,40,T3EC{$this->sfx},EC trois,10\n"
         );
 
         // COMPORTEMENT RÉEL : l'import n'est pas atomique malgré le
@@ -360,7 +361,7 @@ class CsvImportControllerTest extends TestCase
             ->assertJsonPath('data.errors.0.line', 4);
 
         $this->assertStringContainsString(
-            'volume_horaire_ue invalide',
+            'Semestre S3 incompatible',
             $reponse->json('data.errors.0.error')
         );
 
@@ -376,9 +377,9 @@ class CsvImportControllerTest extends TestCase
      * d'unicité, remontée brute au client en 500 — et le rollback emportait au
      * passage les lignes valides du même fichier.
      *
-     * Le modèle métier dit l'inverse : un code de tronc commun peut être partagé
-     * par deux filières, et une maquette se reconduit d'une année sur l'autre.
-     * La contrainte porte désormais sur le triplet.
+     * Ici les deux filières sont de deux établissements : chacun porte ses
+     * codes. Dans un même établissement, un code n'est porté qu'une fois par
+     * année (RegistreMaquette, CodesMaquetteTest).
      */
     public function test_import_ue_ec_accepte_un_code_deja_pris_par_une_autre_filiere(): void
     {
@@ -397,7 +398,7 @@ class CsvImportControllerTest extends TestCase
         $this->assertSame(
             2,
             Ue::where('code', $this->codeUeDejaPris)->count(),
-            'Le meme code doit pouvoir exister dans deux filieres.'
+            'Le même code doit pouvoir exister dans deux établissements.'
         );
     }
 
@@ -506,14 +507,14 @@ class CsvImportControllerTest extends TestCase
             'heure_fin'     => '10:00',
             'salle_id'      => $this->salle->id,
             'salle_libelle' => $this->salle->nom,
-            'type_cours'    => 'CM',
+            'type_cours'    => 'cm',
         ]);
 
         $this->assertDatabaseHas('emploi_du_temps', [
             'ec_id'        => $this->ec2->id,
             'jour_semaine' => 2,
             'heure_debut'  => '10:00',
-            'type_cours'   => 'TD',
+            'type_cours'   => 'td',
         ]);
     }
 
@@ -563,7 +564,7 @@ class CsvImportControllerTest extends TestCase
         $this->assertSame(1, EmploiDuTemps::where('ec_id', $this->ec1->id)->count());
     }
 
-    public function test_import_edt_refuse_a_tort_deux_creneaux_consecutifs(): void
+    public function test_import_edt_accepte_deux_creneaux_consecutifs(): void
     {
         EmploiDuTemps::create([
             'ec_id' => $this->ec2->id, 'filiere_id' => $this->filiereA->id,
@@ -578,39 +579,75 @@ class CsvImportControllerTest extends TestCase
             . $this->ligneEdt($this->ec1->code, 'Lundi', '10:00', '12:00', $this->salle->code, 'TD') . "\n"
         );
 
-        // DÉFAUT (CsvImportController.php:383-389) : les bornes du whereBetween
-        // sont inclusives, donc un créneau qui commence à l'heure exacte où le
-        // précédent finit est vu comme un chevauchement. RoomConflictTest établit
-        // pourtant l'inverse pour les événements (10:00-12:00 après 08:00-10:00
-        // est autorisé) : les deux modules se contredisent.
+        // Un créneau qui commence à l'heure exacte où le précédent finit ne
+        // chevauche rien. L'import le refusait pourtant : ses bornes étaient
+        // inclusives (whereBetween), alors que RoomConflictTest établit l'inverse
+        // pour les événements. Les deux modules partagent désormais la même
+        // condition stricte, RegleSeanceService::filtreChevauchement().
         $reponse->assertStatus(200)
-            ->assertJsonPath('data.success', 0);
+            ->assertJsonPath('data.success', 1);
 
-        $this->assertStringContainsString('Conflit de salle', $reponse->json('data.errors.0.error'));
-        $this->assertSame(0, EmploiDuTemps::where('ec_id', $this->ec1->id)->count());
+        $this->assertSame([], $reponse->json('data.errors'));
+        $this->assertSame(1, EmploiDuTemps::where('ec_id', $this->ec1->id)->count());
     }
 
-    public function test_import_edt_avertit_quand_la_salle_est_introuvable(): void
+    /**
+     * Une salle inconnue n'est plus gardée en simple texte : elle est créée,
+     * une seule fois même si le fichier la nomme sur plusieurs lignes, et le
+     * compte-rendu le dit, car elle ne vérifie que le QR code.
+     */
+    public function test_import_edt_cree_une_seule_fois_la_salle_inconnue_et_le_signale(): void
     {
         $reponse = $this->importerEdt(
             self::ENTETE_EDT . "\n"
-            . $this->ligneEdt($this->ec1->code, 'Jeudi', '14:00', '16:00', 'SALLE-INEXISTANTE') . "\n"
+            . $this->ligneEdt($this->ec1->code, 'Jeudi', '14:00', '16:00', "Labo Neuf {$this->sfx}") . "\n"
+            . $this->ligneEdt($this->ec2->code, 'Vendredi', '14:00', '16:00', "  labo   NEUF {$this->sfx} ") . "\n"
+        );
+
+        $reponse->assertStatus(200)
+            ->assertJsonPath('data.success', 2)
+            ->assertJsonPath('data.errors', [])
+            ->assertJsonPath('data.salles_creees', ["Labo Neuf {$this->sfx}"]);
+
+        $this->assertStringContainsString('Salles créées', $reponse->json('message'));
+        $this->assertStringContainsString('GPS et Wi-Fi à configurer', $reponse->json('message'));
+
+        $salles = Salle::where('etablissement_id', $this->etabA)->where('nom', "Labo Neuf {$this->sfx}")->get();
+        $this->assertCount(1, $salles);
+        $this->assertFalse($salles->first()->verifieGps());
+        $this->assertFalse($salles->first()->verifieWifi());
+
+        $this->assertSame(2, EmploiDuTemps::where('salle_id', $salles->first()->id)->count());
+    }
+
+    /** « amphi c » ne trouvait pas « Amphi C » : un nom seul était enregistré à sa place. */
+    public function test_import_edt_reconnait_la_salle_malgre_la_casse(): void
+    {
+        $reponse = $this->importerEdt(
+            self::ENTETE_EDT . "\n"
+            . $this->ligneEdt($this->ec1->code, 'Jeudi', '14:00', '16:00', strtolower($this->salle->code)) . "\n"
         );
 
         $reponse->assertStatus(200)
             ->assertJsonPath('data.success', 1)
-            ->assertJsonPath('data.errors', [])
-            ->assertJsonPath('data.warnings.0.line', 2);
+            ->assertJsonPath('data.salles_creees', []);
 
-        $this->assertStringContainsString('introuvable', $reponse->json('data.warnings.0.warning'));
+        $this->assertDatabaseHas('emploi_du_temps', ['ec_id' => $this->ec1->id, 'salle_id' => $this->salle->id]);
+    }
 
-        // Le créneau est tout de même créé, avec le libellé libre.
-        $this->assertDatabaseHas('emploi_du_temps', [
-            'ec_id'         => $this->ec1->id,
-            'jour_semaine'  => 4,
-            'salle_id'      => null,
-            'salle_libelle' => 'SALLE-INEXISTANTE',
-        ]);
+    public function test_import_edt_refuse_une_salle_desactivee(): void
+    {
+        $this->salle->update(['actif' => false]);
+
+        $reponse = $this->importerEdt(
+            self::ENTETE_EDT . "\n"
+            . $this->ligneEdt($this->ec1->code, 'Jeudi', '14:00', '16:00', $this->salle->code) . "\n"
+        );
+
+        $reponse->assertStatus(200)->assertJsonPath('data.success', 0);
+        $this->assertStringContainsString('désactivée', $reponse->json('data.errors.0.error'));
+        // Pas de doublon créé à côté de la salle désactivée.
+        $this->assertSame(1, Salle::where('etablissement_id', $this->etabA)->where('code', $this->salle->code)->count());
     }
 
     public function test_import_edt_refuse_un_jour_et_des_heures_invalides(): void
@@ -640,7 +677,7 @@ class CsvImportControllerTest extends TestCase
         $reponse = $this->importerEdt(
             self::ENTETE_EDT . "\n"
             . implode(',', [
-                $this->filiereA->code, 'M1', $this->annee->libelle, '1',
+                $this->filiereA->code, 'M1', $this->annee->libelle, '7',
                 'UE-INEXISTANTE', $this->ec1->code, 'Lundi', '08:00', '10:00', '', 'CM',
             ]) . "\n"
             . $this->ligneEdt('EC-INEXISTANT', 'Mardi', '08:00', '10:00') . "\n"
@@ -676,12 +713,14 @@ class CsvImportControllerTest extends TestCase
         $contenu = $reponse->streamedContent();
 
         $this->assertNotSame('', trim($contenu));
+        // Heures par type (CM, TD, TP, réserve TP/TD) et crédits : les colonnes
+        // de la maquette, jamais le TPE ni le CTT.
         $this->assertStringContainsString(
-            'code_ue,intitule_ue,filiere_code,niveau,annee_libelle,semestre,volume_horaire_ue,code_ec,intitule_ec,volume_horaire_ec',
+            'code_ue,intitule_ue,filiere_code,niveau,annee_libelle,semestre,credits_ue,code_ec,intitule_ec,volume_cm,volume_td,volume_tp,volume_td_tp',
             $contenu
         );
-        // Le modèle est accompagné de lignes d'exemple exploitables.
-        $this->assertStringContainsString('UE-INFO-1', $contenu);
+        // Le modèle est accompagné de lignes d'exemple exploitables : la maquette réelle de l'IFRI.
+        $this->assertStringContainsString('INF1322', $contenu);
         $this->assertGreaterThanOrEqual(4, count(array_filter(explode("\n", trim($contenu)))));
     }
 
@@ -823,7 +862,12 @@ class CsvImportControllerTest extends TestCase
         $this->assertSame(0, EmploiDuTemps::where('ec_id', $this->ec1->id)->count());
     }
 
-    public function test_une_salle_dune_autre_faculte_est_acceptee(): void
+    /**
+     * La salle était cherchée dans tous les établissements : un admin de
+     * faculté rattachait ses créneaux à la salle homonyme d'une autre faculté.
+     * Elle n'est plus cherchée que dans celle de la filière.
+     */
+    public function test_une_salle_dune_autre_faculte_nest_jamais_prise(): void
     {
         $salleAutreFaculte = Salle::create([
             'nom' => 'Salle B ' . $this->sfx, 'code' => 'SB' . $this->sfx,
@@ -840,14 +884,38 @@ class CsvImportControllerTest extends TestCase
             $jeton
         );
 
-        // DÉFAUT (CsvImportController.php:366) : la salle est résolue sans filtre
-        // d'établissement. Un admin de faculté peut donc rattacher ses créneaux à
-        // une salle qui ne lui appartient pas, alors que la filière, elle, est bien
-        // cloisonnée.
         $reponse->assertStatus(200)->assertJsonPath('data.success', 1);
-        $this->assertDatabaseHas('emploi_du_temps', [
-            'ec_id'    => $this->ec1->id,
-            'salle_id' => $salleAutreFaculte->id,
-        ]);
+
+        $creneau = EmploiDuTemps::where('ec_id', $this->ec1->id)->firstOrFail();
+        $this->assertNotSame($salleAutreFaculte->id, $creneau->salle_id);
+        $this->assertSame($this->etabA, Salle::findOrFail($creneau->salle_id)->etablissement_id);
     }
+
+    /**
+     * Le code d'une filière n'est plus unique que dans son établissement :
+     * l'établissement de l'admin désigne la bonne, et un super admin ne voit
+     * pas son import rattaché au hasard.
+     */
+    public function test_un_code_de_filiere_partage_se_resout_dans_l_etablissement_de_l_admin(): void
+    {
+        $homonyme = Filiere::create([
+            'code' => $this->filiereA->code, 'intitule' => 'Homonyme en faculté B', 'niveau' => 'M1',
+            'etablissement_id' => $this->etabB,
+        ]);
+        $ligne = "HOM{$this->sfx},Homonyme,{$this->filiereA->code},M1,{$this->annee->libelle},7,60,HOMEC{$this->sfx},EC,30\n";
+
+        $jetonB = User::factory()->faculteAdmin($this->etabB)
+            ->create(['email' => 'csv-hom-' . $this->sfx . '@test.local'])
+            ->createToken('test')->plainTextToken;
+
+        $this->importerUeEc(self::ENTETE_UE_EC . "\n" . $ligne, $jetonB)->assertOk()->assertJsonPath('data.success', 1);
+        $this->assertDatabaseHas('ues', ['code' => 'HOM' . $this->sfx, 'filiere_id' => $homonyme->id]);
+
+        // Super admin : le code désigne deux filières, l'import refuse de choisir.
+        $this->app['auth']->forgetGuards();
+        $reponse = $this->importerUeEc(self::ENTETE_UE_EC . "\n" . str_replace('HOM', 'SUP', $ligne));
+        $reponse->assertOk()->assertJsonPath('data.success', 0);
+        $this->assertStringContainsString('plusieurs établissements', $reponse->json('data.errors.0.error'));
+    }
+
 }

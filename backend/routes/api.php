@@ -126,6 +126,13 @@ Route::middleware(['auth:sanctum', 'ability:admin', 'scoped.etablissement', 'pas
     Route::delete('/students/{student}/ecs/{ec}', [EnrollmentController::class, 'destroy']);
     Route::post('/students/{student}/ecs/reset', [EnrollmentController::class, 'reset']);
 
+    // Groupes de TD et de TP par promotion.
+    Route::get('/groupes', [\App\Http\Controllers\Api\Admin\GroupeController::class, 'index']);
+    Route::post('/groupes', [\App\Http\Controllers\Api\Admin\GroupeController::class, 'store']);
+    Route::post('/groupes/repartir', [\App\Http\Controllers\Api\Admin\GroupeController::class, 'repartir']);
+    Route::delete('/groupes/{groupe}', [\App\Http\Controllers\Api\Admin\GroupeController::class, 'destroy']);
+    Route::put('/students/{student}/groupes', [\App\Http\Controllers\Api\Admin\GroupeController::class, 'affecter']);
+
     // Présences / Historique
     Route::get('/presence/history', [PresenceHistoryController::class, 'index']);
     Route::get('/presence/export', [PresenceHistoryController::class, 'export']);
@@ -144,10 +151,17 @@ Route::middleware(['auth:sanctum', 'ability:admin', 'scoped.etablissement', 'pas
 
     // Filières
     Route::post('/filieres/reconduire', [FiliereController::class, 'reconduire']);
+    // Niveaux officiels (L1…M2 et leurs semestres) et programmes de l'établissement.
+    Route::get('/niveaux', [FiliereController::class, 'niveaux']);
+    Route::get('/programmes', [\App\Http\Controllers\Api\Admin\ProgrammeController::class, 'index']);
+    Route::put('/programmes/{programme}', [\App\Http\Controllers\Api\Admin\ProgrammeController::class, 'update']);
     Route::apiResource('filieres', FiliereController::class);
 
     // Salles (configuration géolocalisation + réseau)
     Route::get('/salles/disponibles', [SalleController::class, 'disponibles']);
+    // Import : reconnaître les salles qu'un document nomme, créer celles qui manquent.
+    Route::post('/salles/reconnaitre', [SalleController::class, 'reconnaitre']);
+    Route::post('/salles/depuis-nom', [SalleController::class, 'depuisNom']);
     Route::apiResource('salles', SalleController::class);
 
     // Années académiques
@@ -156,9 +170,29 @@ Route::middleware(['auth:sanctum', 'ability:admin', 'scoped.etablissement', 'pas
     // paramètre $anneeAcademique des méthodes du contrôleur — le model
     // binding échouait alors et injectait un modèle vide (show/update/destroy
     // opéraient dans le vide).
+    // Consultation et bascule seulement : les années sont communes à
+    // l'université et gérées par le super administrateur (/super-admin).
     Route::apiResource('annees-academiques', AnneeAcademiqueController::class)
+        ->only(['index', 'show'])
         ->parameters(['annees-academiques' => 'anneeAcademique']);
     Route::patch('/annees-academiques/{anneeAcademique}/activate', [AnneeAcademiqueController::class, 'activate']);
+    // Préparer l'année suivante : filières, maquette UE/EC, emploi du temps.
+    Route::get('/annees-academiques/{anneeAcademique}/preparation', [AnneeAcademiqueController::class, 'preparation']);
+    Route::post('/annees-academiques/{anneeAcademique}/preparer', [AnneeAcademiqueController::class, 'preparer']);
+
+    // Calendrier : périodes des semestres et fermetures de l'établissement.
+    Route::get('/calendrier', [\App\Http\Controllers\Api\Admin\CalendrierController::class, 'index']);
+    Route::put('/calendrier/periodes', [\App\Http\Controllers\Api\Admin\CalendrierController::class, 'enregistrerPeriode']);
+    Route::delete('/calendrier/periodes/{periode}', [\App\Http\Controllers\Api\Admin\CalendrierController::class, 'supprimerPeriode']);
+    Route::post('/calendrier/fermetures', [\App\Http\Controllers\Api\Admin\CalendrierController::class, 'ajouterFermeture']);
+    Route::delete('/calendrier/fermetures/{fermeture}', [\App\Http\Controllers\Api\Admin\CalendrierController::class, 'supprimerFermeture']);
+
+    // Emploi du temps hebdomadaire : créneaux et conflits.
+    Route::get('/emploi-du-temps', [\App\Http\Controllers\Api\Admin\EmploiDuTempsController::class, 'index']);
+    Route::get('/emploi-du-temps/conflits', [\App\Http\Controllers\Api\Admin\EmploiDuTempsController::class, 'conflits']);
+    Route::post('/emploi-du-temps', [\App\Http\Controllers\Api\Admin\EmploiDuTempsController::class, 'store']);
+    Route::put('/emploi-du-temps/{creneau}', [\App\Http\Controllers\Api\Admin\EmploiDuTempsController::class, 'update']);
+    Route::delete('/emploi-du-temps/{creneau}', [\App\Http\Controllers\Api\Admin\EmploiDuTempsController::class, 'destroy']);
 
     // QR Code
     Route::get('/qrcode/{evenementId}/generate', [QrCodeController::class, 'generate']);
@@ -167,7 +201,9 @@ Route::middleware(['auth:sanctum', 'ability:admin', 'scoped.etablissement', 'pas
     Route::prefix('presence')->group(function () {
         Route::get('/pending', [PresenceController::class, 'pendingValidations'])->name('admin.presence.pending');
         Route::patch('/{presence}/validate', [PresenceController::class, 'validateManual'])->name('admin.presence.validate');
-        Route::patch('/{presence}/reject', [PresenceController::class, 'rejectManual'])->name('admin.presence.reject');
+        // Saisie par l'administration d'un étudiant qui n'a pas pu scanner.
+        Route::get('/manuelle/{evenement}/etudiants', [\App\Http\Controllers\Api\Admin\SaisieManuelleController::class, 'etudiants'])->name('admin.presence.manuelle.etudiants');
+        Route::post('/manuelle', [\App\Http\Controllers\Api\Admin\SaisieManuelleController::class, 'enregistrer'])->name('admin.presence.manuelle');
     });
 
     // Exports / Rapports
@@ -178,6 +214,8 @@ Route::middleware(['auth:sanctum', 'ability:admin', 'scoped.etablissement', 'pas
     Route::get('/reports/filiere-stats', [\App\Http\Controllers\Api\Admin\ReportController::class, 'filiereStats']);
     Route::get('/reports/filtered', [\App\Http\Controllers\Api\Admin\ReportController::class, 'filteredStats']);
     Route::get('/reports/excel/export', [\App\Http\Controllers\Api\Admin\ReportController::class, 'excelExport']);
+    Route::get('/reports/etudiants-absents', [\App\Http\Controllers\Api\Admin\ReportController::class, 'etudiantsAbsents']);
+    Route::get('/reports/annee-stats', [\App\Http\Controllers\Api\Admin\ReportController::class, 'anneeStats']);
 
     // Importations (Gemini / CSV)
     Route::post('/import/students', [ImportController::class, 'students']);
@@ -202,8 +240,11 @@ Route::middleware(['auth:sanctum', 'ability:admin', 'scoped.etablissement', 'pas
     });
 
     // Alertes
+    // Scans refusés, en lecture seule : les décisions se prennent dans la file
+    // de validation (/presence/pending).
     Route::get('/alerts', [\App\Http\Controllers\Api\Admin\AlertController::class, 'index']);
-    Route::post('/alerts/{id}/resolve', [\App\Http\Controllers\Api\Admin\AlertController::class, 'resolve']);
+    // Rattrapage d'un étudiant refusé à tort, depuis le refus lui-même.
+    Route::post('/alerts/{id}/presence', [\App\Http\Controllers\Api\Admin\AlertController::class, 'enregistrerPresence']);
 
     // Tickets de support
     Route::get('/tickets', [TicketController::class, 'index']);
@@ -242,6 +283,18 @@ Route::middleware(['auth:sanctum', 'role:super_admin'])->prefix('super-admin')->
     Route::apiResource('/etablissements', EtablissementController::class);
     Route::post('/etablissements/import', [BulkRegistrationController::class, 'import']);
     Route::get('/etablissements/{etablissement}/stats', [EtablissementController::class, 'stats']);
+
+    // Années académiques de l'université.
+    Route::get('/annees-academiques', [\App\Http\Controllers\Api\SuperAdmin\AnneeUniversitaireController::class, 'index']);
+    Route::post('/annees-academiques', [\App\Http\Controllers\Api\SuperAdmin\AnneeUniversitaireController::class, 'store']);
+    Route::put('/annees-academiques/{annee}', [\App\Http\Controllers\Api\SuperAdmin\AnneeUniversitaireController::class, 'update']);
+    Route::delete('/annees-academiques/{annee}', [\App\Http\Controllers\Api\SuperAdmin\AnneeUniversitaireController::class, 'destroy']);
+    Route::patch('/annees-academiques/{annee}/en-cours', [\App\Http\Controllers\Api\SuperAdmin\AnneeUniversitaireController::class, 'enCours']);
+
+    // Jours fériés de l'université : aucune séance n'est générée ces jours-là.
+    Route::get('/jours-feries', [\App\Http\Controllers\Api\SuperAdmin\JourFerieController::class, 'index']);
+    Route::post('/jours-feries', [\App\Http\Controllers\Api\SuperAdmin\JourFerieController::class, 'store']);
+    Route::delete('/jours-feries/{fermeture}', [\App\Http\Controllers\Api\SuperAdmin\JourFerieController::class, 'destroy']);
     Route::post('/etablissements/{etablissement}/resend-credentials', [EtablissementController::class, 'resendCredentials']);
 });
 

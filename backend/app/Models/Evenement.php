@@ -16,6 +16,8 @@ class Evenement extends Model
 
     protected $fillable = [
         'ec_id',
+        'type_cours',
+        'groupe_id',
         'filiere_id',
         'annee_id',
         'date',
@@ -45,6 +47,12 @@ class Evenement extends Model
     public function anneeAcademique(): BelongsTo
     {
         return $this->belongsTo(AnneeAcademique::class, 'annee_id');
+    }
+
+    /** Groupe de TD ou de TP visé ; sans groupe, toute la promotion. */
+    public function groupe(): BelongsTo
+    {
+        return $this->belongsTo(Groupe::class);
     }
 
     public function presences(): HasMany

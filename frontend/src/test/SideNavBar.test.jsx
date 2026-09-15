@@ -29,7 +29,7 @@ describe('SideNavBar', () => {
     expect(screen.getByText('Étudiants')).toBeInTheDocument()
     expect(screen.getByText('Cours & UE/EC')).toBeInTheDocument()
     expect(screen.getByText('Emploi du temps')).toBeInTheDocument()
-    expect(screen.getByText('Événements')).toBeInTheDocument()
+    expect(screen.getByText('Séances')).toBeInTheDocument()
     expect(screen.getByText('Présences')).toBeInTheDocument()
     expect(screen.getByText('Rapports')).toBeInTheDocument()
     expect(screen.getByText('Paramètres')).toBeInTheDocument()
@@ -67,10 +67,10 @@ describe('SideNavBar', () => {
     ['/attendance/queue',   'Présences'],
     ['/attendance/alerts',  'Présences'],
     ['/settings/salles',    'Paramètres'],
-    ['/settings/security',  'Paramètres'],
+    ['/settings/academic-years', 'Paramètres'],
     ['/courses/ues',        'Cours & UE/EC'],
     ['/reports/filtered',   'Rapports'],
-    ['/schedules/events',   'Événements'],
+    ['/schedules/events',   'Séances'],
     ['/dashboard',          'Dashboard'],
   ])('sur %s, l\'entree « %s » est mise en evidence', (chemin, attendu) => {
     expect(entreesActives(chemin)).toEqual([attendu])

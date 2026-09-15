@@ -55,7 +55,7 @@ class ScheduleImportController extends Controller
             return $validated;
         }
 
-        $rapport = $this->examiner($validated['creneaux'], $validated['filiere_id'], $validated['annee_id']);
+        $rapport = $this->examiner($validated);
 
         return $this->successResponse($rapport, $this->resume($rapport));
     }
@@ -73,10 +73,12 @@ class ScheduleImportController extends Controller
             return $validated;
         }
 
+        $this->refuserSiAnneeClose((int) $validated['annee_id'], $request);
+
         // On REVALIDE : le rapport rendu au client n'est pas une autorisation.
         // Entre la vérification et la confirmation, la base a pu changer — un
         // autre administrateur peut avoir occupé la salle.
-        $rapport = $this->examiner($validated['creneaux'], $validated['filiere_id'], $validated['annee_id']);
+        $rapport = $this->examiner($validated);
 
         $refuses = array_values(array_filter(
             $rapport['lignes'],
@@ -126,6 +128,10 @@ class ScheduleImportController extends Controller
                     'salle_id'      => $c['salle_id'],
                     'salle_libelle' => $c['salle_libelle'],
                     'type_cours'    => $c['type_cours'],
+                    'groupe_id'     => $c['groupe_id'],
+                    'enseignant'    => $c['enseignant'],
+                    'valide_du'     => $c['valide_du'],
+                    'valide_au'     => $c['valide_au'],
                 ])->id;
             }
 
@@ -151,7 +157,7 @@ class ScheduleImportController extends Controller
     /**
      * Validation de la requête et du cloisonnement par établissement.
      *
-     * @return array{creneaux: list<array<string, mixed>>, filiere_id: int, annee_id: int}|JsonResponse
+     * @return array{creneaux: list<array<string, mixed>>, filiere_id: int, annee_id: int, valide_du: ?string, valide_au: ?string}|JsonResponse
      */
     private function validerLaRequete(Request $request): array|JsonResponse
     {
@@ -160,6 +166,9 @@ class ScheduleImportController extends Controller
             'creneaux.*' => 'array',
             'filiere_id' => 'required|integer|exists:filieres,id',
             'annee_id'   => 'required|integer|exists:annees_academiques,id',
+            // Version du document : « emploi du temps à partir du 15 juin ».
+            'valide_du'  => 'nullable|date_format:Y-m-d',
+            'valide_au'  => 'nullable|date_format:Y-m-d|after_or_equal:valide_du',
         ]);
 
         $etablissementId = $this->getEtablissementId($request);
@@ -179,18 +188,26 @@ class ScheduleImportController extends Controller
             'creneaux'   => $validated['creneaux'],
             'filiere_id' => (int) $validated['filiere_id'],
             'annee_id'   => (int) $validated['annee_id'],
+            'valide_du'  => $validated['valide_du'] ?? null,
+            'valide_au'  => $validated['valide_au'] ?? null,
         ];
     }
 
     /**
      * Normalise puis valide chaque créneau. Aucun effet de bord.
      *
-     * @param  list<array<string, mixed>> $bruts
+     * La validité du document vaut pour chaque créneau qui n'en porte pas.
+     *
+     * @param  array{creneaux: list<array<string, mixed>>, filiere_id: int, annee_id: int, valide_du: ?string, valide_au: ?string} $validated
      * @return array<string, mixed>
      */
-    private function examiner(array $bruts, int $filiereId, int $anneeId): array
+    private function examiner(array $validated): array
     {
-        $preparation = $this->validateur->preparer($filiereId, $anneeId);
+        $bruts = array_map(
+            fn ($brut) => is_array($brut) ? $brut + array_filter(['valide_du' => $validated['valide_du'], 'valide_au' => $validated['valide_au']]) : $brut,
+            $validated['creneaux']
+        );
+        $preparation = $this->validateur->preparer($validated['filiere_id'], $validated['annee_id']);
 
         if (!$preparation['ok']) {
             return ['lignes' => [], 'compteurs' => [], 'erreur' => $preparation['motif']];
