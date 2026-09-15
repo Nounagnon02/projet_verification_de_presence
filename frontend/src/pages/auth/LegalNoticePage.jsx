@@ -11,10 +11,8 @@ export default function LegalNoticePage() {
       <div className="sticky top-0 z-10 bg-surface/80 backdrop-blur-lg border-b border-outline-variant/10">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white">
-              <MdAccountBalance size={20} />
-            </div>
-            <span className="text-lg font-bold text-primary font-headline">Présence</span>
+            <img src="/images/logo-couleur-compact.png" alt="UAC Présences"
+              className="h-7 w-auto" />
           </div>
           <button onClick={() => navigate('/login')}
             className="inline-flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-primary transition-colors">

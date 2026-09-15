@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FiLock, FiMail, FiArrowLeft, FiCheckCircle, FiAlertTriangle, FiLoader } from 'react-icons/fi';
-import { MdAccountBalance } from 'react-icons/md';
 import api from '../../api/axios';
 import { assets } from '../../utils/assets';
 
@@ -55,13 +54,9 @@ export default function ResetPasswordPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-[#011549]/90 via-[#011549]/75 to-[#0a1a3a]/90"></div>
         <div className="relative flex flex-col justify-between p-12 w-full">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white/15 backdrop-blur rounded-xl flex items-center justify-center">
-              <MdAccountBalance size={26} className="text-white" />
-            </div>
-            <div>
-              <span className="text-xl font-bold tracking-tight text-white font-headline">Présence</span>
-              <p className="text-[10px] font-medium text-white/50 uppercase tracking-[0.2em]">Portail Académique</p>
-            </div>
+            <img src="/images/logo-blanc.png" alt="UAC Présences"
+                className="h-9 w-auto" />
+            <div><p className="text-[10px] font-medium text-white/50 uppercase tracking-[0.2em]">Portail Académique</p></div>
           </div>
           <div>
             <h2 className="text-3xl font-bold text-white font-headline leading-tight">Réinitialisation</h2>
@@ -74,10 +69,8 @@ export default function ResetPasswordPage() {
       {/* Partie droite */}
       <div className="flex-1 flex flex-col">
         <div className="lg:hidden w-full px-6 py-5 flex items-center gap-3 border-b border-outline-variant/10">
-          <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white">
-            <MdAccountBalance size={20} />
-          </div>
-          <span className="text-lg font-bold text-primary font-headline">Présence</span>
+          <img src="/images/logo-couleur-compact.png" alt="UAC Présences"
+              className="h-7 w-auto" />
         </div>
 
         <main className="flex-1 flex items-center justify-center px-6 py-8">

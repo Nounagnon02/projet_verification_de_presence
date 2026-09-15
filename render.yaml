@@ -83,7 +83,7 @@ cronJobs:
       - key: MAIL_FROM_ADDRESS
         value: onboarding@resend.dev
       - key: MAIL_FROM_NAME
-        value: "Présence UAC - Validation de présence"
+        value: "UAC Présences - Validation de présence"
 
 services:
   - type: worker
@@ -146,7 +146,7 @@ services:
       - key: MAIL_FROM_ADDRESS
         value: onboarding@resend.dev
       - key: MAIL_FROM_NAME
-        value: "Présence UAC - Validation de présence"
+        value: "UAC Présences - Validation de présence"
 
   - type: web
     name: presence-uac-backend
@@ -156,7 +156,7 @@ services:
     plan: free
     envVars:
       - key: APP_NAME
-        value: "Présence UAC"
+        value: "UAC Présences"
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
@@ -223,7 +223,7 @@ services:
       - key: MAIL_FROM_ADDRESS
         value: onboarding@resend.dev
       - key: MAIL_FROM_NAME
-        value: "Présence UAC - Validation de présence"
+        value: "UAC Présences - Validation de présence"
 
       # Gemini IA — clé à définir manuellement dans le dashboard Render
       - key: GEMINI_API_KEY

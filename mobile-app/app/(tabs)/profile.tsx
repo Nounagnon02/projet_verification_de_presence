@@ -63,7 +63,7 @@ export default function ProfileTab() {
       </Button>
 
       <Text className="mt-6 mb-8 text-center text-xs text-on-surface-variant">
-        Présence UAC v1.0.0{'\n'}
+        UAC Présences v1.0.0{'\n'}
         UAC — Université d'Abomey-Calavi
       </Text>
     </ScrollView>

@@ -17,7 +17,7 @@ const ALL_FEATURES = [
 const STEPS = [
   { num: '1', icon: MdAccountBalance, title: 'Créez votre structure', desc: 'Configurez vos filières, années académiques et UEs dans le panneau d\'administration.' },
   { num: '2', icon: MdCalendarMonth, title: 'Importez les cours', desc: 'Importez votre emploi du temps via PDF — l\'IA Gemini extrait automatiquement tous les événements.' },
-  { num: '3', icon: MdQrCodeScanner, title: 'Générez les QR codes', desc: 'Pour chaque cours, un QR code unique est généré. Les étudiants le scannent à l\'entrée en cours.' },
+  { num: '3', icon: MdQrCodeScanner, title: 'Scan en fin de séance', desc: 'Un QR code unique s\'affiche en fin de cours et se renouvelle chaque minute. Les étudiants le scannent avant de sortir.' },
   { num: '4', icon: MdCloudDone, title: 'Suivez en temps réel', desc: 'Visualisez les présences en direct et recevez des alertes en cas d\'anomalie ou de fraude suspectée.' },
 ];
 
@@ -69,16 +69,14 @@ function Navbar() {
           : 'bg-white'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+      <div className="w-full px-5 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* ── Coin supérieur gauche ── */}
           <Link to="/" className="flex items-center gap-3 group shrink-0">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-container rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/15">
-              <MdAccountBalance size={22} />
-            </div>
             <div>
-              <span className="text-lg font-bold tracking-tight text-primary font-headline">Présence</span>
-              <p className="text-[10px] font-medium text-on-surface-variant uppercase tracking-[0.2em]">Academic Portal</p>
+              <img src="/images/logo-couleur-compact.png" alt="UAC Présences"
+                className="h-7 w-auto" />
+              <p className="text-[10px] font-medium text-on-surface-variant uppercase tracking-[0.2em] mt-0.5">Academic Portal</p>
             </div>
           </Link>
 
@@ -123,15 +121,14 @@ function Footer() {
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-12">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
-              <MdAccountBalance size={22} className="text-white" />
-            </div>
             <div>
-              <span className="text-lg font-bold tracking-tight font-headline">Présence</span>
+              {/* Variante détourée sur fond clair : le pied de page est marine. */}
+              <img src="/images/logo-blanc.png" alt="UAC Présences"
+                className="h-7 w-auto" />
               <p className="text-[10px] font-medium text-white/60 uppercase tracking-[0.2em]">Academic Portal</p>
             </div>
           </div>
-          <p className="text-sm text-white/60">© {new Date().getFullYear()} Présence. Tous droits réservés.</p>
+          <p className="text-sm text-white/60">© {new Date().getFullYear()} UAC Présences. Tous droits réservés.</p>
         </div>
       </div>
     </footer>
@@ -182,7 +179,17 @@ export default function LandingPage() {
             alt="Campus universitaire"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/75 via-primary/60 to-primary/80"></div>
+          {/* Voile en hexadécimal et non « from-primary/75 » : Tailwind ne sait
+              pas appliquer d'opacité à une couleur déclarée en var(), si bien que
+              l'ancien calque ne produisait aucun CSS — le titre blanc se perdait
+              alors sur le ciel clair de la photo. */}
+          {/* Deux calques plutôt qu'un seul voile uniforme : à l'opacité qu'exige
+              la lisibilité du titre blanc, un voile plein écrase les tons clairs de
+              la photo — ciel et façade — et le campus disparaît en aplat marine.
+              Le premier calque unifie légèrement, le second concentre
+              l'assombrissement sur la bande centrale où se trouve le texte. */}
+          <div className="absolute inset-0 bg-[#011549]/40"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#011549]/60 to-[#011549]/70"></div>
           <div className="absolute inset-0 shadow-[inset_0_0_120px_rgba(0,0,0,0.4)] pointer-events-none"></div>
         </div>
 

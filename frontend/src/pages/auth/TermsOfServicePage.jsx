@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
-import { MdAccountBalance } from 'react-icons/md';
 
 export default function TermsOfServicePage() {
   const navigate = useNavigate();
@@ -11,10 +10,8 @@ export default function TermsOfServicePage() {
       <div className="sticky top-0 z-10 bg-surface/80 backdrop-blur-lg border-b border-outline-variant/10">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white">
-              <MdAccountBalance size={20} />
-            </div>
-            <span className="text-lg font-bold text-primary font-headline">Présence</span>
+            <img src="/images/logo-couleur-compact.png" alt="UAC Présences"
+              className="h-7 w-auto" />
           </div>
           <button onClick={() => navigate('/login')}
             className="inline-flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-primary transition-colors">
@@ -32,7 +29,7 @@ export default function TermsOfServicePage() {
             <h2 className="text-xl font-bold text-primary mb-3">1. Objet</h2>
             <p>
               Les présentes Conditions Générales d'Utilisation (ci-après « CGU ») régissent l'accès et l'utilisation
-              de la plateforme <strong>Présence</strong>, un service de gestion des présences académiques
+              de la plateforme <strong>UAC Présences</strong>, un service de gestion des présences académiques
               proposé par l'<strong>Université d'Abomey-Calavi</strong> (ci-après « l'UAC »).
             </p>
             <p className="mt-3">
@@ -45,7 +42,7 @@ export default function TermsOfServicePage() {
             <h2 className="text-xl font-bold text-primary mb-3">2. Définitions</h2>
             <ul className="list-disc pl-6 space-y-2">
               <li><strong>Utilisateur :</strong> toute personne physique disposant d'un compte sur la plateforme (enseignant, personnel administratif, administrateur).</li>
-              <li><strong>Plateforme :</strong> l'application web Présence accessible depuis le navigateur.</li>
+              <li><strong>Plateforme :</strong> l'application web UAC Présences accessible depuis le navigateur.</li>
               <li><strong>Données personnelles :</strong> toute information se rapportant à une personne physique identifiée ou identifiable.</li>
               <li><strong>Session :</strong> période d'utilisation continue de la plateforme par un utilisateur connecté.</li>
             </ul>

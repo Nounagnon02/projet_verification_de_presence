@@ -26,7 +26,8 @@ const TopNavBar = () => {
   return (
     <header className="md:hidden fixed top-0 left-0 right-0 z-40 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/10 px-4 py-3 flex items-center justify-between">
       <div>
-        <h1 className="text-base font-bold text-primary font-headline">Présence</h1>
+        <img src="/images/logo-couleur-compact.png" alt="UAC Présences"
+            className="h-5 w-auto" />
         <p className="text-[10px] text-on-surface-variant">{user?.name || 'Administrateur'}</p>
       </div>
       <div className="flex items-center gap-2">

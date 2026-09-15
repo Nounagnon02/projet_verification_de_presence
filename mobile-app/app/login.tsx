@@ -56,7 +56,7 @@ export default function LoginScreen() {
           <View className="mb-4 h-16 w-16 items-center justify-center rounded-xxl bg-primary">
             <LogIn size={32} color="#ffffff" />
           </View>
-          <Text className="font-headline text-2xl text-primary">Présence UAC</Text>
+          <Text className="font-headline text-2xl text-primary">UAC Présences</Text>
           <Text className="mt-1 text-base text-on-surface-variant">
             Validation de présence étudiante
           </Text>

@@ -15,13 +15,13 @@ vi.mock('../api/axios', () => ({
 import TopNavBar from '../components/layout/navigation/TopNavBar'
 
 describe('TopNavBar', () => {
-  it('renders app title', () => {
+  it('affiche le logo', () => {
     render(
       <BrowserRouter>
         <TopNavBar />
       </BrowserRouter>
     )
-    expect(screen.getByText('Présence')).toBeInTheDocument()
+    expect(screen.getByAltText('UAC Présences')).toBeInTheDocument()
   })
 
   it('renders username', () => {

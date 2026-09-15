@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiMail, FiLock, FiAlertTriangle, FiLoader, FiArrowLeft } from 'react-icons/fi';
-import { MdAccountBalance, MdQrCodeScanner, MdAutoAwesome, MdGroups } from 'react-icons/md';
+import { MdQrCodeScanner, MdAutoAwesome, MdGroups } from 'react-icons/md';
 import { useAuth } from '../../context/AuthContext';
 import { assets } from '../../utils/assets';
 
@@ -76,13 +76,9 @@ function LoginPage() {
         <div className="relative flex flex-col justify-between p-12 w-full">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white/15 backdrop-blur rounded-xl flex items-center justify-center">
-              <MdAccountBalance size={26} className="text-white" />
-            </div>
-            <div>
-              <span className="text-xl font-bold tracking-tight text-white font-headline">Présence</span>
-              <p className="text-[10px] font-medium text-white/50 uppercase tracking-[0.2em]">Portail Académique</p>
-            </div>
+            <img src="/images/logo-blanc.png" alt="UAC Présences"
+                className="h-9 w-auto" />
+            <div><p className="text-[10px] font-medium text-white/50 uppercase tracking-[0.2em]">Portail Académique</p></div>
           </div>
 
           {/* Texte central */}
@@ -121,10 +117,8 @@ function LoginPage() {
         {/* Header mobile/tablette */}
         <div className="lg:hidden w-full px-6 py-5 flex items-center justify-between border-b border-outline-variant/10">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white">
-              <MdAccountBalance size={20} />
-            </div>
-            <span className="text-lg font-bold text-primary font-headline">Présence</span>
+            <img src="/images/logo-couleur-compact.png" alt="UAC Présences"
+              className="h-7 w-auto" />
           </div>
           <span className="text-xs text-on-surface-variant">Academic Portal</span>
         </div>

@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiShield, FiEye, FiLock, FiDatabase, FiUsers, FiMail } from 'react-icons/fi';
-import { MdAccountBalance } from 'react-icons/md';
 
 const sections = [
   {
@@ -85,10 +84,8 @@ export default function PrivacyPolicyPage() {
       <div className="sticky top-0 z-10 bg-surface/80 backdrop-blur-lg border-b border-outline-variant/10">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white">
-              <MdAccountBalance size={20} />
-            </div>
-            <span className="text-lg font-bold text-primary font-headline">Présence</span>
+            <img src="/images/logo-couleur-compact.png" alt="UAC Présences"
+              className="h-7 w-auto" />
           </div>
           <button onClick={() => navigate('/login')}
             className="inline-flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-primary transition-colors">
@@ -112,7 +109,7 @@ export default function PrivacyPolicyPage() {
           L'<strong>Université d'Abomey-Calavi</strong> attache une grande importance à la protection
           et à la confidentialité des données personnelles de ses utilisateurs. La présente politique
           de confidentialité vous informe de la manière dont vos données sont collectées, traitées et
-          protégées dans le cadre de l'utilisation de la plateforme <strong>Présence</strong>,
+          protégées dans le cadre de l'utilisation de la plateforme <strong>UAC Présences</strong>,
           conformément à la Loi n° 2017-20 du 20 avril 2017 portant protection des données à caractère
           personnel en République du Bénin et au Règlement Général sur la Protection des Données (RGPD)
           de l'Union Européenne.
