@@ -229,8 +229,10 @@ class GeminiService
                       "Analyse ce PDF de catalogue de cours / offre de formation et extrait TOUTES les " .
                       "Unités d'Enseignement (UE) avec leurs Éléments Constitutifs (EC). " .
                       "Réponds avec un JSON structuré contenant un tableau 'ues'. " .
-                      "Chaque UE a : code, intitule, semestre (numéro), credits (nombre), " .
-                      "et un tableau 'ecs'. Chaque EC a : code, intitule, volume_horaire (en heures). " .
+                      "Chaque UE a : code, intitule, semestre (numéro), credits (nombre, colonne CECT ou crédits), " .
+                      "et un tableau 'ecs'. Chaque EC a : code, intitule, et ses heures en présentiel : " .
+                      "cm (colonne « Cours » ou CM), td, tp, et td_tp quand le document regroupe TP et TD dans une seule colonne « TP/TD ». " .
+                      "Ne compte JAMAIS le TPE (travail personnel) ni le CTT (charge totale) dans ces heures ; mets 0 pour une colonne vide ou absente. " .
                       "Réponds UNIQUEMENT avec le JSON valide.";
 
             $payload = [

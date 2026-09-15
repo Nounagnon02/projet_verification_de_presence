@@ -94,7 +94,7 @@ class DemoPresenceSeeder extends Seeder
             foreach ($ecList as [$ecCode, $ecIntitule]) {
                 $ecs[$ecCode] = Ec::firstOrCreate(
                     ['code' => $ecCode],
-                    ['ue_id' => $ue->id, 'intitule' => $ecIntitule, 'volume_horaire' => 30, 'statut' => 'en_cours']
+                    ['ue_id' => $ue->id, 'intitule' => $ecIntitule, 'volume_horaire' => 30]
                 );
             }
         }

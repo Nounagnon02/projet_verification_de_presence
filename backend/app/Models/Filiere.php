@@ -12,11 +12,17 @@ class Filiere extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['code', 'intitule', 'niveau', 'etablissement_id'];
+    protected $fillable = ['code', 'intitule', 'niveau', 'etablissement_id', 'programme_id'];
 
     public function etablissement(): BelongsTo
     {
         return $this->belongsTo(Etablissement::class);
+    }
+
+    /** Programme dont cette filière est un niveau (IM pour IM-L2). */
+    public function programme(): BelongsTo
+    {
+        return $this->belongsTo(Programme::class);
     }
 
     public function etudiants(): HasMany
@@ -24,9 +30,10 @@ class Filiere extends Model
         return $this->hasMany(Etudiant::class);
     }
 
-    public function ues(): HasMany
+    /** UE que suit la filière : les siennes, et les cours communs. */
+    public function ues(): BelongsToMany
     {
-        return $this->hasMany(Ue::class);
+        return $this->belongsToMany(Ue::class, 'ue_filiere')->withTimestamps();
     }
 
     public function evenements(): HasMany

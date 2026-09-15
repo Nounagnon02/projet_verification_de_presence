@@ -1,12 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+// Modales rendues dans <body> : placées dans la page, elles héritaient de la
+// marge de son conteneur (space-y) et laissaient une bande découverte en haut.
+import { createPortal } from 'react-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FiPlus, FiEdit2, FiTrash2, FiSave, FiX, FiRefreshCw, FiBook, FiBookOpen, FiChevronDown, FiChevronRight, FiAlertTriangle, FiSearch, FiUpload, FiFileText, FiLoader } from 'react-icons/fi';
 import api from '../../api/axios';
 import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
+import BandeauAnneeClose from '../../components/ui/BandeauAnneeClose';
+import useNiveaux, { semestresDuNiveau } from '../../hooks/useNiveaux';
 import CsvTemplateDownload from '../../components/import/CsvTemplateDownload';
+import { VOLUMES, libelleVolumes } from '../../utils/typesSeance';
 
-const INITIAL_UE = { code: '', intitule: '', filiere_id: '', annee_id: '', semestre: 1, volume_horaire: 30 };
-const INITIAL_EC = { code: '', intitule: '', volume_horaire: 15 };
+const INITIAL_UE = { code: '', intitule: '', filiere_id: '', annee_id: '', semestre: 1, credits: '', filiere_ids: [] };
+const INITIAL_EC = { code: '', intitule: '', volume_cm: 0, volume_td: 0, volume_tp: 0, volume_td_tp: 0 };
 
 export default function UEManagementPage() {
   const navigate = useNavigate();
@@ -18,7 +24,9 @@ export default function UEManagementPage() {
   const [search, setSearch] = useState('');
 
   // Modal UE
-  const [ueModal, setUeModal] = useState({ open: false, editing: false, data: INITIAL_UE, saving: false });
+  // « id » : l'UE modifiée. On la retrouvait par son code, qui n'est unique que
+  // dans sa filière et son année — et qu'on peut justement modifier.
+  const [ueModal, setUeModal] = useState({ open: false, editing: false, id: null, data: INITIAL_UE, saving: false });
   // Modal EC
   const [ecModal, setEcModal] = useState({ open: false, editing: false, ueId: null, data: INITIAL_EC, saving: false });
   // Expanded UEs
@@ -40,8 +48,11 @@ export default function UEManagementPage() {
   // Filtres
   // Filtres en cascade : l'année restreint les filières, qui déterminent le
   // niveau. Les formulaires, eux, gardent la liste complète.
-  const filtres = useFiltresAcademiques();
+  // La grille des filières mène ici avec ?filiere=…&annee=… : les filtres s'y ouvrent.
+  const [parametres] = useSearchParams();
+  const filtres = useFiltresAcademiques({ initial: { annee: parametres.get('annee'), filiere: parametres.get('filiere') } });
   const { annees, filieres, filieresToutes } = filtres;
+  const niveaux = useNiveaux();
 
   const handleImportDrop = (e) => {
     e.preventDefault();
@@ -184,12 +195,43 @@ export default function UEManagementPage() {
 
   // ─── UE CRUD ────────────────────────────────────────────
 
-  const openCreateUe = () => setUeModal({ open: true, editing: false, data: { ...INITIAL_UE, filiere_id: filieres[0]?.id || '', annee_id: annees[0]?.id || '' }, saving: false });
+  // Semestres permis par le niveau de la filière : S1-S2 en L1… S9-S10 en M2.
+  // Le formulaire proposait « Semestre 1 à 6 » pour toutes : le Master était
+  // impossible à saisir, et un S3 pouvait atterrir dans une filière de L1.
+  const semestresPour = (filiereId) =>
+    semestresDuNiveau(niveaux, filieresToutes.find((f) => String(f.id) === String(filiereId))?.niveau);
+
+  const openCreateUe = () => {
+    const filiereId = filtres.filiere || filieres[0]?.id || '';
+    setUeModal({
+      open: true, editing: false, id: null,
+      data: {
+        ...INITIAL_UE,
+        filiere_id: filiereId,
+        annee_id: filtres.annee || annees.find((a) => a.active)?.id || annees[0]?.id || '',
+        semestre: semestresPour(filiereId)[0] ?? 1,
+      },
+      saving: false,
+    });
+  };
   const openEditUe = (ue) => setUeModal({
-    open: true, editing: true,
-    data: { code: ue.code, intitule: ue.intitule, filiere_id: ue.filiere?.id || ue.filiere_id || '', annee_id: ue.annee?.id || ue.annee_id || '', semestre: ue.semestre, volume_horaire: ue.volume_horaire },
+    open: true, editing: true, id: ue.id,
+    data: { code: ue.code, intitule: ue.intitule, filiere_id: ue.filiere?.id || ue.filiere_id || '', annee_id: ue.annee?.id || ue.annee_id || '', semestre: ue.semestre, credits: ue.credits ?? '', filiere_ids: (ue.filieres || []).map((f) => String(f.id)).filter((id) => id !== String(ue.filiere?.id || ue.filiere_id)) },
     saving: false,
   });
+
+  // Une UE ancienne peut porter un semestre hors du niveau : il reste affiché,
+  // signalé, plutôt que remplacé en silence par le premier semestre permis.
+  const semestresPermis = semestresPour(ueModal.data.filiere_id);
+  const semestresProposes = semestresPermis.includes(Number(ueModal.data.semestre))
+    ? semestresPermis
+    : [...semestresPermis, Number(ueModal.data.semestre)];
+
+  // Cours commun : les autres filières du même niveau peuvent suivre l'UE.
+  const porteuseModal = filieresToutes.find((f) => String(f.id) === String(ueModal.data.filiere_id));
+  const autresFilieres = porteuseModal
+    ? filieresToutes.filter((f) => f.niveau === porteuseModal.niveau && String(f.id) !== String(porteuseModal.id))
+    : [];
 
   const handleSaveUe = async (e) => {
     e.preventDefault();
@@ -198,13 +240,13 @@ export default function UEManagementPage() {
     setSuccess('');
     try {
       if (ueModal.editing) {
-        await api.put(`/admin/ues/${ues.find(u => u.code === ueModal.data.code)?.id}`, ueModal.data);
+        await api.put(`/admin/ues/${ueModal.id}`, ueModal.data);
         setSuccess('UE mise à jour avec succès.');
       } else {
         await api.post('/admin/ues', ueModal.data);
         setSuccess('UE créée avec succès.');
       }
-      setUeModal({ open: false, editing: false, data: INITIAL_UE, saving: false });
+      setUeModal({ open: false, editing: false, id: null, data: INITIAL_UE, saving: false });
       rafraichir();
     } catch (err) {
       const msg = err.response?.data?.message || (err.response?.data?.errors ? Object.values(err.response.data.errors).flat().join(', ') : null) || 'Erreur lors de la sauvegarde.';
@@ -227,7 +269,7 @@ export default function UEManagementPage() {
   // ─── EC CRUD ────────────────────────────────────────────
 
   const openCreateEc = (ueId) => setEcModal({ open: true, editing: false, ueId, data: { ...INITIAL_EC }, saving: false });
-  const openEditEc = (ec, ueId) => setEcModal({ open: true, editing: true, ueId, data: { code: ec.code, intitule: ec.intitule, volume_horaire: ec.volume_horaire }, saving: false });
+  const openEditEc = (ec, ueId) => setEcModal({ open: true, editing: true, ueId, id: ec.id, data: { code: ec.code, intitule: ec.intitule, volume_cm: ec.volume_cm ?? 0, volume_td: ec.volume_td ?? 0, volume_tp: ec.volume_tp ?? 0, volume_td_tp: ec.volume_td_tp ?? 0, volume_horaire: ec.volume_horaire, aVentiler: Boolean(ec.volume_a_ventiler) }, saving: false });
 
   const handleSaveEc = async (e) => {
     e.preventDefault();
@@ -237,9 +279,9 @@ export default function UEManagementPage() {
     try {
       const payload = { ...ecModal.data, ue_id: ecModal.ueId };
       if (ecModal.editing) {
-        const ue = ues.find(u => u.id === ecModal.ueId);
-        const ec = ue?.ecs?.find(ec => ec.code === ecModal.data.code);
-        if (ec) await api.put(`/admin/ecs/${ec.id}`, payload);
+        // Par son identifiant : retrouvé par son code, un EC dont on changeait
+        // le code n'était pas modifié, et l'écran annonçait pourtant un succès.
+        await api.put(`/admin/ecs/${ecModal.id}`, payload);
         setSuccess('EC mis à jour avec succès.');
       } else {
         await api.post('/admin/ecs', payload);
@@ -289,6 +331,10 @@ export default function UEManagementPage() {
 
   // ─── RENDER ────────────────────────────────────────────
 
+  // Année close pour l'établissement : consultation seulement (le serveur
+  // refuse en 409). Chaque ligne suit l'année de sa propre ressource.
+  const anneeFermee = (id) => Boolean(annees.find((a) => String(a.id) === String(id))?.close);
+
   return (
     <div className="space-y-6">
       {/* En-tête */}
@@ -298,12 +344,12 @@ export default function UEManagementPage() {
           <p className="text-sm text-on-surface-variant">Unités d'Enseignement et Éléments Constitutifs</p>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={() => setShowImportModal(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-surface-container-high text-on-surface rounded-xl font-bold text-sm border border-outline-variant/20 hover:bg-surface-container-low transition-all">
+          <button onClick={() => setShowImportModal(true)} disabled={filtres.anneeClose}
+            className="flex items-center gap-2 px-5 py-2.5 bg-surface-container-high text-on-surface rounded-xl font-bold text-sm border border-outline-variant/20 hover:bg-surface-container-low transition-all disabled:opacity-30 disabled:cursor-not-allowed">
             <FiUpload size={16} /> Import en masse
           </button>
-          <button onClick={openCreateUe}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-primary to-primary-container text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-primary/20 active:scale-[0.99] transition-all">
+          <button onClick={openCreateUe} disabled={filtres.anneeClose}
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-primary to-primary-container text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-primary/20 active:scale-[0.99] transition-all disabled:opacity-30 disabled:cursor-not-allowed">
             <FiPlus size={16} /> Nouvelle UE
           </button>
         </div>
@@ -338,6 +384,8 @@ export default function UEManagementPage() {
           </div>
         </div>
       </div>
+
+      {filtres.anneeClose && <BandeauAnneeClose annee={filtres.anneeChoisie} />}
 
       {/* Alertes */}
       {error && (
@@ -402,6 +450,9 @@ export default function UEManagementPage() {
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-[10px] text-on-surface-variant">
                     <span>{getFiliere(ue.filiere?.id || ue.filiere_id)}</span>
+                    {ue.filieres?.length > 1 && (
+                      <span className="font-semibold text-secondary">Commune à {ue.filieres.map((f) => f.code).join(', ')}</span>
+                    )}
                     <span>Semestre {ue.semestre}</span>
                     <span>{ue.volume_horaire}h</span>
                     <StatutBadge statut={ue.statut} />
@@ -409,16 +460,16 @@ export default function UEManagementPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <button onClick={(e) => { e.stopPropagation(); openCreateEc(ue.id); }}
-                    className="p-2 text-outline hover:text-secondary hover:bg-secondary/10 rounded-lg transition-all" title="Ajouter un EC">
+                  <button onClick={(e) => { e.stopPropagation(); openCreateEc(ue.id); }} disabled={anneeFermee(ue.annee_id)}
+                    className="p-2 disabled:opacity-30 disabled:cursor-not-allowed text-outline hover:text-secondary hover:bg-secondary/10 rounded-lg transition-all" title="Ajouter un EC">
                     <FiPlus size={14} />
                   </button>
-                  <button onClick={(e) => { e.stopPropagation(); openEditUe(ue); }}
-                    className="p-2 text-outline hover:text-primary hover:bg-primary/10 rounded-lg transition-all" title="Modifier l'UE">
+                  <button onClick={(e) => { e.stopPropagation(); openEditUe(ue); }} disabled={anneeFermee(ue.annee_id)}
+                    className="p-2 disabled:opacity-30 disabled:cursor-not-allowed text-outline hover:text-primary hover:bg-primary/10 rounded-lg transition-all" title="Modifier l'UE">
                     <FiEdit2 size={14} />
                   </button>
-                  <button onClick={(e) => { e.stopPropagation(); handleDeleteUe(ue); }}
-                    className="p-2 text-outline hover:text-error hover:bg-error/10 rounded-lg transition-all" title="Supprimer l'UE">
+                  <button onClick={(e) => { e.stopPropagation(); handleDeleteUe(ue); }} disabled={anneeFermee(ue.annee_id)}
+                    className="p-2 disabled:opacity-30 disabled:cursor-not-allowed text-outline hover:text-error hover:bg-error/10 rounded-lg transition-all" title="Supprimer l'UE">
                     <FiTrash2 size={14} />
                   </button>
                 </div>
@@ -430,7 +481,9 @@ export default function UEManagementPage() {
                   {(!ue.ecs || ue.ecs.length === 0) ? (
                     <p className="text-xs text-on-surface-variant text-center py-4">
                       Aucun EC pour cette UE.
-                      <button onClick={() => openCreateEc(ue.id)} className="ml-1 text-primary font-semibold hover:underline">Ajouter un EC</button>
+                      {!anneeFermee(ue.annee_id) && (
+                        <button onClick={() => openCreateEc(ue.id)} className="ml-1 text-primary font-semibold hover:underline">Ajouter un EC</button>
+                      )}
                     </p>
                   ) : (
                     ue.ecs.map((ec) => (
@@ -441,16 +494,16 @@ export default function UEManagementPage() {
                             <span className="text-xs font-mono font-bold text-secondary">{ec.code}</span>
                             <span className="text-sm text-on-surface truncate">{ec.intitule}</span>
                           </div>
-                          <p className="text-[10px] text-on-surface-variant">{ec.volume_horaire}h</p>
+                          <p className="text-[10px] text-on-surface-variant">{libelleVolumes(ec)}</p>
                           <StatutBadge statut={ec.statut} size="xs" />
                         </div>
                         <div className="flex items-center gap-1">
-                          <button onClick={() => openEditEc(ec, ue.id)}
-                            className="p-1.5 text-outline hover:text-primary hover:bg-primary/10 rounded-lg transition-all" title="Modifier">
+                          <button onClick={() => openEditEc(ec, ue.id)} disabled={anneeFermee(ue.annee_id)}
+                            className="p-1.5 disabled:opacity-30 disabled:cursor-not-allowed text-outline hover:text-primary hover:bg-primary/10 rounded-lg transition-all" title="Modifier">
                             <FiEdit2 size={12} />
                           </button>
-                          <button onClick={() => handleDeleteEc(ec, ue.id)}
-                            className="p-1.5 text-outline hover:text-error hover:bg-error/10 rounded-lg transition-all" title="Supprimer">
+                          <button onClick={() => handleDeleteEc(ec, ue.id)} disabled={anneeFermee(ue.annee_id)}
+                            className="p-1.5 disabled:opacity-30 disabled:cursor-not-allowed text-outline hover:text-error hover:bg-error/10 rounded-lg transition-all" title="Supprimer">
                             <FiTrash2 size={12} />
                           </button>
                         </div>
@@ -465,7 +518,7 @@ export default function UEManagementPage() {
       )}
 
       {/* ─── Modal UE ─────────────────────────────────── */}
-      {ueModal.open && (
+      {ueModal.open && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           onClick={() => setUeModal(prev => ({ ...prev, open: false }))}>
           <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg shadow-xl"
@@ -479,15 +532,17 @@ export default function UEManagementPage() {
             <form onSubmit={handleSaveUe} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-on-surface mb-1">Code *</label>
-                  <input type="text" value={ueModal.data.code} onChange={(e) => setUeModal(prev => ({ ...prev, data: { ...prev.data, code: e.target.value } }))}
+                  <label htmlFor="ue-code" className="block text-xs font-semibold text-on-surface mb-1">Code *</label>
+                  <input id="ue-code" type="text" value={ueModal.data.code} onChange={(e) => setUeModal(prev => ({ ...prev, data: { ...prev.data, code: e.target.value } }))}
                     required maxLength={20} className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="EX: UE-MIAGE-101" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-on-surface mb-1">Semestre *</label>
-                  <select value={ueModal.data.semestre} onChange={(e) => setUeModal(prev => ({ ...prev, data: { ...prev.data, semestre: parseInt(e.target.value) } }))}
+                  <label htmlFor="ue-semestre" className="block text-xs font-semibold text-on-surface mb-1">Semestre *</label>
+                  <select id="ue-semestre" value={ueModal.data.semestre} onChange={(e) => setUeModal(prev => ({ ...prev, data: { ...prev.data, semestre: parseInt(e.target.value) } }))}
                     className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                    {[1,2,3,4,5,6].map(s => <option key={s} value={s}>Semestre {s}</option>)}
+                    {semestresProposes.map(s => (
+                      <option key={s} value={s}>Semestre {s}{semestresPermis.includes(s) ? '' : ' (hors niveau de la filière)'}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -498,8 +553,13 @@ export default function UEManagementPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-on-surface mb-1">Filière *</label>
-                  <select value={ueModal.data.filiere_id} onChange={(e) => setUeModal(prev => ({ ...prev, data: { ...prev.data, filiere_id: e.target.value } }))}
+                  <label htmlFor="ue-filiere" className="block text-xs font-semibold text-on-surface mb-1">Filière *</label>
+                  <select id="ue-filiere" value={ueModal.data.filiere_id} onChange={(e) => {
+                    // Changer de filière ramène le semestre dans ceux de son niveau.
+                    const filiereId = e.target.value;
+                    const permis = semestresPour(filiereId);
+                    setUeModal(prev => ({ ...prev, data: { ...prev.data, filiere_id: filiereId, filiere_ids: [], semestre: permis.includes(Number(prev.data.semestre)) ? prev.data.semestre : (permis[0] ?? prev.data.semestre) } }));
+                  }}
                     required className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                     <option value="">Sélectionner...</option>
                     {filieresToutes.map(f => <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>)}
@@ -510,14 +570,40 @@ export default function UEManagementPage() {
                   <select value={ueModal.data.annee_id} onChange={(e) => setUeModal(prev => ({ ...prev, data: { ...prev.data, annee_id: e.target.value } }))}
                     required className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                     <option value="">Sélectionner...</option>
-                    {annees.map(a => <option key={a.id} value={a.id}>{a.libelle}{a.active ? ' (Active)' : ''}</option>)}
+                    {annees.map(a => <option key={a.id} value={a.id} disabled={a.close}>{a.libelle}{a.active ? ' (Active)' : ''}{a.close ? ' (close)' : ''}</option>)}
                   </select>
                 </div>
               </div>
+              {autresFilieres.length > 0 && (
+                <fieldset>
+                  <legend className="block text-xs font-semibold text-on-surface mb-1">Aussi suivie par</legend>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1">
+                    {autresFilieres.map((f) => (
+                      <label key={f.id} htmlFor={`ue-commune-${f.id}`} className="flex items-center gap-1.5 text-sm">
+                        <input
+                          id={`ue-commune-${f.id}`}
+                          type="checkbox"
+                          checked={(ueModal.data.filiere_ids || []).map(String).includes(String(f.id))}
+                          onChange={(e) => setUeModal(prev => {
+                            const autres = (prev.data.filiere_ids || []).map(String).filter((id) => id !== String(f.id));
+                            return { ...prev, data: { ...prev.data, filiere_ids: e.target.checked ? [...autres, String(f.id)] : autres } };
+                          })}
+                        />
+                        {f.code}
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-on-surface-variant mt-1">
+                    Un cours commun est une seule UE : séances communes, chaque filière comptant ses propres étudiants.
+                  </p>
+                </fieldset>
+              )}
               <div>
-                <label className="block text-xs font-semibold text-on-surface mb-1">Volume horaire (heures) *</label>
-                <input type="number" value={ueModal.data.volume_horaire} onChange={(e) => setUeModal(prev => ({ ...prev, data: { ...prev.data, volume_horaire: parseInt(e.target.value) || 0 } }))}
-                  required min={1} className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                <label htmlFor="ue-credits" className="block text-xs font-semibold text-on-surface mb-1">Crédits</label>
+                <input id="ue-credits" type="number" value={ueModal.data.credits} onChange={(e) => setUeModal(prev => ({ ...prev, data: { ...prev.data, credits: e.target.value } }))}
+                  min={0} max={60} className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                {/* Le volume d'une UE est la somme de ses EC : il n'est plus saisi. */}
+                <p className="text-xs text-on-surface-variant mt-1">Le volume horaire de l'UE est la somme de ses EC.</p>
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="submit" disabled={ueModal.saving}
@@ -532,11 +618,12 @@ export default function UEManagementPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* ─── Modal EC ─────────────────────────────────── */}
-      {ecModal.open && (
+      {ecModal.open && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           onClick={() => setEcModal(prev => ({ ...prev, open: false }))}>
           <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-md shadow-xl"
@@ -558,11 +645,23 @@ export default function UEManagementPage() {
                 <input type="text" value={ecModal.data.intitule} onChange={(e) => setEcModal(prev => ({ ...prev, data: { ...prev.data, intitule: e.target.value } }))}
                   required maxLength={255} className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Ex: Développement Frontend" />
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-on-surface mb-1">Volume horaire (heures) *</label>
-                <input type="number" value={ecModal.data.volume_horaire} onChange={(e) => setEcModal(prev => ({ ...prev, data: { ...prev.data, volume_horaire: parseInt(e.target.value) || 0 } }))}
-                  required min={1} className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-              </div>
+              <fieldset>
+                <legend className="block text-xs font-semibold text-on-surface mb-1">Heures en présentiel *</legend>
+                <div className="grid grid-cols-4 gap-2">
+                  {VOLUMES.map(([champ, libelle]) => (
+                    <div key={champ}>
+                      <label htmlFor={`ec-${champ}`} className="block text-[11px] text-on-surface-variant mb-0.5">{libelle}</label>
+                      <input id={`ec-${champ}`} type="number" min={0} max={999} value={ecModal.data[champ] ?? 0}
+                        onChange={(e) => setEcModal(prev => ({ ...prev, data: { ...prev.data, [champ]: parseInt(e.target.value) || 0 } }))}
+                        className="w-full px-2 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-on-surface-variant mt-1">
+                  Le TPE n'y figure pas. TP/TD : quand la maquette ne sépare pas les deux, les séances de TD comme de TP y puisent.
+                  {ecModal.data.aVentiler && ` Volume actuel : ${ecModal.data.volume_horaire}h, à répartir entre ces colonnes.`}
+                </p>
+              </fieldset>
               <div className="flex gap-3 pt-2">
                 <button type="submit" disabled={ecModal.saving}
                   className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50">
@@ -576,11 +675,12 @@ export default function UEManagementPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* ─── Modal Import PDF UE/EC ────────────────────────── */}
-      {showImportModal && (
+      {showImportModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           onClick={() => { if (!importUploading) { setShowImportModal(false); resetImport(); } }}>
           <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto"
@@ -718,7 +818,7 @@ export default function UEManagementPage() {
                 <>
                   <p className="text-[11px] text-on-surface-variant font-mono">
                     code_ue, intitule_ue, filiere_code, niveau, annee_libelle, semestre,
-                    volume_horaire_ue, code_ec, intitule_ec, volume_horaire_ec
+                    credits_ue, code_ec, intitule_ec, volume_cm, volume_td, volume_tp, volume_td_tp
                   </p>
                   <p className="text-[11px] text-on-surface-variant mt-2">
                     Une UE avec plusieurs EC occupe plusieurs lignes, une par EC.
@@ -730,7 +830,8 @@ export default function UEManagementPage() {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
