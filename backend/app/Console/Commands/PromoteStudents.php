@@ -20,6 +20,7 @@ class PromoteStudents extends Command
                             {fromFiliere : Code de la filière source (ex: IM-L1)}
                             {toFiliere : Code de la filière destination (ex: IM-L2)}
                             {--toAnnee= : Libellé de l\'année académique destination (ex: 2026-2027)}
+                            {--etablissement= : Code de l\'établissement, si le code de filière existe dans plusieurs}
                             {--dry-run : Simuler la promotion sans modifier les données}';
 
     protected $description = 'Promouvoir les étudiants d\'une filière à une autre avec recalcul des inscriptions aux ECs';
@@ -30,17 +31,16 @@ class PromoteStudents extends Command
         $toCode   = $this->argument('toFiliere');
         $dryRun   = $this->option('dry-run');
 
-        // Résoudre les filières
-        $fromFiliere = Filiere::where('code', $fromCode)->first();
-        $toFiliere   = Filiere::where('code', $toCode)->first();
+        // Résoudre les filières. Le code n'est unique que dans un établissement.
+        $fromFiliere = $this->filiere($fromCode, 'source');
+        $toFiliere   = $fromFiliere ? $this->filiere($toCode, 'destination') : null;
 
-        if (!$fromFiliere) {
-            $this->error("Filière source « {$fromCode} » introuvable.");
+        if (!$fromFiliere || !$toFiliere) {
             return Command::FAILURE;
         }
 
-        if (!$toFiliere) {
-            $this->error("Filière destination « {$toCode} » introuvable.");
+        if ((int) $fromFiliere->etablissement_id !== (int) $toFiliere->etablissement_id) {
+            $this->error("« {$fromCode} » et « {$toCode} » relèvent de deux établissements différents.");
             return Command::FAILURE;
         }
 
@@ -103,4 +103,25 @@ class PromoteStudents extends Command
 
         return Command::SUCCESS;
     }
+
+    /** Filière désignée par son code, dans l'établissement donné s'il y a homonymie. */
+    private function filiere(string $code, string $role): ?Filiere
+    {
+        $candidates = Filiere::where('code', $code)
+            ->when($this->option('etablissement'), fn ($q, $etab) => $q->whereHas('etablissement', fn ($e) => $e->where('code', $etab)))
+            ->get();
+
+        if ($candidates->isEmpty()) {
+            $this->error("Filière {$role} « {$code} » introuvable.");
+            return null;
+        }
+
+        if ($candidates->count() > 1) {
+            $this->error("Le code « {$code} » existe dans plusieurs établissements : précisez --etablissement.");
+            return null;
+        }
+
+        return $candidates->first();
+    }
+
 }

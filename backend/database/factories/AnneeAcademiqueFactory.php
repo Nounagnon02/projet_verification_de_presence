@@ -3,7 +3,6 @@
 namespace Database\Factories;
 
 use App\Models\AnneeAcademique;
-use App\Models\Etablissement;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -30,7 +29,8 @@ class AnneeAcademiqueFactory extends Factory
             // Volontairement inactive par defaut : une seule annee doit etre
             // active a la fois, et c'est au test de designer laquelle.
             'active'           => false,
-            'etablissement_id' => Etablissement::factory(),
+            // Les années sont communes à l'université : aucun établissement.
+            'etablissement_id' => null,
         ];
     }
 

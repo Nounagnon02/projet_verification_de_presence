@@ -25,16 +25,19 @@ import api from '../api/axios';
  * rendu intermédiaire incohérent qu'un effet produirait — ici, un appel réseau
  * parti avec un couple (année, filière) impossible.
  *
- * @param {{ onChangement?: () => void, preselectionnerAnneeActive?: boolean }} options
+ * @param {{ onChangement?: () => void, preselectionnerAnneeActive?: boolean, initial?: { annee?: string|null, filiere?: string|null } }} options
  *   onChangement est appelé à chaque modification d'un filtre. Les écrans
  *   paginés y remettent la pagination à la première page.
  *   preselectionnerAnneeActive ouvre l'écran sur l'année en cours plutôt que
  *   sur « toutes les années » : ce que l'on veut d'un tableau de bord, qui
  *   doit montrer l'exercice courant sans qu'on ait à le désigner.
+ *   initial ouvre l'écran sur une année et une filière données : la grille des
+ *   filières mène aux UE ou aux étudiants d'une filière (?filiere=…&annee=…).
+ *   Une année initiale l'emporte sur la présélection de l'année active.
  */
-export function useFiltresAcademiques({ onChangement, preselectionnerAnneeActive = false } = {}) {
-  const [annee, setAnneeBrut] = useState('');
-  const [filiere, setFiliereBrut] = useState('');
+export function useFiltresAcademiques({ onChangement, preselectionnerAnneeActive = false, initial = {} } = {}) {
+  const [annee, setAnneeBrut] = useState(() => (initial.annee ? String(initial.annee) : ''));
+  const [filiere, setFiliereBrut] = useState(() => (initial.filiere ? String(initial.filiere) : ''));
   const [niveau, setNiveauBrut] = useState('');
   const [semestre, setSemestreBrut] = useState('');
 
@@ -63,7 +66,7 @@ export function useFiltresAcademiques({ onChangement, preselectionnerAnneeActive
         const liste = data?.data ?? data ?? [];
         setAnnees(liste);
 
-        if (preselectionnerAnneeActive) {
+        if (preselectionnerAnneeActive && !initial.annee) {
           const active = liste.find((a) => a.active);
           if (active) setAnneeBrut(String(active.id));
         }
@@ -205,6 +208,10 @@ export function useFiltresAcademiques({ onChangement, preselectionnerAnneeActive
     // Vrai quand l'année choisie ne contient rien : l'écran doit le dire plutôt
     // que d'afficher un tableau vide sans explication.
     anneeVide: Boolean(annee) && !chargement && filieresAffichees.length === 0,
+    // Année choisie, et si elle est close pour l'établissement (antérieure à
+    // son année active) : les écrans passent alors en consultation.
+    anneeChoisie: annees.find((a) => String(a.id) === String(annee)) ?? null,
+    anneeClose: Boolean(annees.find((a) => String(a.id) === String(annee))?.close),
   };
 }
 

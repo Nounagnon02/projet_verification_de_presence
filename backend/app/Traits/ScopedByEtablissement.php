@@ -105,6 +105,20 @@ trait ScopedByEtablissement
     }
 
     /**
+     * Refuse d'écrire dans une année close pour l'établissement de
+     * l'utilisateur (antérieure à son année active) : 409. Les présences n'y
+     * passent pas, elles restent corrigeables.
+     */
+    protected function refuserSiAnneeClose(int|\App\Models\AnneeAcademique|null $annee, Request $request): void
+    {
+        $annee = $annee instanceof \App\Models\AnneeAcademique ? $annee : ($annee ? \App\Models\AnneeAcademique::find($annee) : null);
+
+        if ($annee?->estClosePour($this->getEtablissementId($request))) {
+            abort(409, "{$annee->libelle} est close pour votre établissement : consultation seulement. Pour y corriger quelque chose, repassez temporairement sur cette année.");
+        }
+    }
+
+    /**
      * Applique un filtre via une relation (ex: filiere.etablissement_id).
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query

@@ -26,6 +26,15 @@ return Application::configure(basePath: dirname(__DIR__))
             'abilities'          => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
         ]);
 
+        // Le rôle avant la recherche de la ressource. Sinon la liaison de modèle
+        // passe la première : un compte sans le rôle requis recevait 404 pour un
+        // identifiant inconnu et 403 pour un identifiant existant, et pouvait
+        // ainsi sonder ce qui existe.
+        $middleware->prependToPriorityList(
+            before: \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            prepend: \App\Http\Middleware\CheckRole::class,
+        );
+
         // SPA stateful auth (cookies httpOnly Sanctum) + Security headers
         //
         // ForceHttps etait ecrit mais n'etait enregistre NULLE PART : une requete
