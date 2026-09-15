@@ -79,7 +79,6 @@ class EvenementCrudTest extends TestCase
             'code'           => 'EC-EVT-TERM',
             'intitule'       => 'EC Terminé',
             'volume_horaire' => 10,
-            'statut'         => 'termine',
         ]);
     }
 
@@ -201,20 +200,33 @@ class EvenementCrudTest extends TestCase
         $this->assertSoftDeleted('evenements', ['id' => $evenement->id]);
     }
 
+    /**
+     * Un EC dont le volume est fait ne reçoit plus de cours ; une évaluation, qui
+     * ne consomme rien, se programme encore. Le statut n'est plus une colonne
+     * qu'une commande nocturne tenait à jour : il suit les séances terminées.
+     */
     public function test_creation_evenement_rejetee_si_ec_termine(): void
     {
-        $response = $this->withToken($this->bearerToken)
-            ->postJson('/api/admin/evenements', [
-                'ec_id'       => $this->ecTermine->id,
-                'filiere_id'  => $this->filiere->id,
-                'annee_id'    => $this->annee->id,
-                'date'        => today()->format('Y-m-d'),
-                'heure_debut' => '08:00',
-                'heure_fin'   => '10:00',
-                'salle'       => 'Salle Test',
-            ]);
+        $this->ecTermine->evenements()->create([
+            'filiere_id' => $this->filiere->id, 'annee_id' => $this->annee->id,
+            'date' => today()->subDays(3)->toDateString(), 'heure_debut' => '08:00:00', 'heure_fin' => '18:00:00',
+            'salle' => 'Salle Test', 'statut' => 'termine',
+        ]);
+        $this->assertSame('termine', $this->ecTermine->fresh()->statut);
 
-        $response->assertStatus(422)
+        $seance = [
+            'ec_id'       => $this->ecTermine->id,
+            'date'        => today()->format('Y-m-d'),
+            'heure_debut' => '08:00',
+            'heure_fin'   => '10:00',
+            'salle'       => 'Salle Test',
+        ];
+
+        $this->withToken($this->bearerToken)->postJson('/api/admin/evenements', $seance)
+            ->assertStatus(422)
             ->assertJsonPath('success', false);
+
+        $this->withToken($this->bearerToken)->postJson('/api/admin/evenements', ['type_cours' => 'evaluation'] + $seance)
+            ->assertStatus(201);
     }
 }

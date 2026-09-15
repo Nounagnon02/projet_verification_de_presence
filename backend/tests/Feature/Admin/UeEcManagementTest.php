@@ -57,7 +57,9 @@ class UeEcManagementTest extends TestCase
             'intitule'       => 'Unité Test 01',
             'filiere_id'     => $this->filiere->id,
             'annee_id'       => $this->annee->id,
-            'semestre'       => 1,
+            // Filière de M1 : ses UE sont en S7 ou S8. Le semestre 1 était
+            // accepté, alors qu'il contredit le niveau.
+            'semestre'       => 7,
             'volume_horaire' => 30,
         ];
 
@@ -286,10 +288,7 @@ class UeEcManagementTest extends TestCase
             'volume_horaire' => 10,
         ]);
 
-        // Simuler le statut 'termine' via la commande de synchronisation
-        $this->artisan('ecs:sync-statut', ['--ec-id' => $ec->id])
-            ->assertSuccessful();
-
+        // Calculé à la lecture : aucune commande à lancer.
         $ec->refresh();
         $this->assertEquals('non_demarre', $ec->statut);
 
@@ -303,10 +302,6 @@ class UeEcManagementTest extends TestCase
             'salle'       => 'Salle Test',
             'statut'      => 'termine',
         ]);
-
-        // Re-synchroniser
-        $this->artisan('ecs:sync-statut', ['--ec-id' => $ec->id])
-            ->assertSuccessful();
 
         $ec->refresh();
         $this->assertEquals('termine', $ec->statut);
@@ -347,9 +342,6 @@ class UeEcManagementTest extends TestCase
             ]);
             $jour = date('Y-m-d', strtotime($jour . ' +1 day'));
         }
-
-        $this->artisan('ecs:sync-statut')
-            ->assertSuccessful();
 
         $ec->refresh();
         $ue->refresh();
@@ -403,10 +395,6 @@ class UeEcManagementTest extends TestCase
             'salle'       => 'Salle Test',
             'statut'      => 'termine',
         ]);
-
-        // Synchroniser les statuts
-        $this->artisan('ecs:sync-statut')
-            ->assertSuccessful();
 
         $ue->refresh();
         $this->assertEquals('en_cours', $ue->statut);

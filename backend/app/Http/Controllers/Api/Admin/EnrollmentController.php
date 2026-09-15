@@ -23,6 +23,7 @@ class EnrollmentController extends Controller
         $this->authorizeEtablissement($student, $request, 'filiere');
 
         $ecs = $student->ecs()->with(['ue'])->get();
+        app(\App\Services\AvancementCours::class)->appliquer($ecs);
 
         return $this->successResponse($ecs, 'Liste des ECs de l\'étudiant.');
     }
@@ -39,6 +40,7 @@ class EnrollmentController extends Controller
         $enrolledIds = $student->ecs()->pluck('ecs.id')->toArray();
 
         $available = $allEcs->filter(fn ($ec) => !in_array($ec->id, $enrolledIds))->values();
+        app(\App\Services\AvancementCours::class)->appliquer($available);
 
         return $this->successResponse($available, 'ECs disponibles pour inscription.');
     }
@@ -50,6 +52,7 @@ class EnrollmentController extends Controller
     public function store(Request $request, Etudiant $student): JsonResponse
     {
         $this->authorizeEtablissement($student, $request, 'filiere');
+        $this->refuserSiAnneeClose((int) $student->annee_id, $request);
 
         $validator = Validator::make($request->all(), [
             'ec_ids'   => 'required|array|min:1',
@@ -65,8 +68,8 @@ class EnrollmentController extends Controller
             // Vérifier que l'EC appartient bien à la filière/année de l'étudiant
             $ec = Ec::where('id', $ecId)
                 ->whereHas('ue', function ($q) use ($student) {
-                    $q->where('filiere_id', $student->filiere_id)
-                      ->where('annee_id', $student->annee_id);
+                    $q->where('annee_id', $student->annee_id)
+                      ->whereHas('filieres', fn ($f) => $f->where('filieres.id', $student->filiere_id));
                 })->first();
 
             if (!$ec) continue;
@@ -90,6 +93,7 @@ class EnrollmentController extends Controller
     public function destroy(Request $request, Etudiant $student, Ec $ec): JsonResponse
     {
         $this->authorizeEtablissement($student, $request, 'filiere');
+        $this->refuserSiAnneeClose((int) $student->annee_id, $request);
 
         $student->ecs()->detach($ec->id);
 
@@ -103,12 +107,11 @@ class EnrollmentController extends Controller
     public function reset(Request $request, Etudiant $student): JsonResponse
     {
         $this->authorizeEtablissement($student, $request, 'filiere');
+        $this->refuserSiAnneeClose((int) $student->annee_id, $request);
 
-        // Supprimer les inscriptions existantes
-        $student->ecs()->detach();
-
-        // Ré-inscrire à tous les ECs de la filière/année
-        $student->autoEnroll();
+        // Ré-inscrit aux ECs de la filière et de l'année courantes. Les
+        // inscriptions des années passées restent : leurs taux en dépendent.
+        $student->recalculateEnrollments();
 
         $count = $student->ecs()->count();
 

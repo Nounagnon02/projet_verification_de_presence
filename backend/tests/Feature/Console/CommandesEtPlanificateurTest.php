@@ -28,7 +28,7 @@ class CommandesEtPlanificateurTest extends TestCase
     private const COMMANDES_ATTENDUES = [
         'qr:clean-expired',
         'qrcode:auto-generate',
-        'ecs:sync-statut',
+        'events:close-finished',
         'events:generate-from-schedule',
         'students:promote',
         'app:enroll-existing-students',
@@ -77,7 +77,7 @@ class CommandesEtPlanificateurTest extends TestCase
             ->map(fn ($evenement) => $evenement->command . ' ' . $evenement->expression)
             ->implode("\n");
 
-        foreach (['qr:clean-expired', 'ecs:sync-statut', 'queue:work'] as $attendue) {
+        foreach (['qr:clean-expired', 'queue:work', 'events:close-finished'] as $attendue) {
             $this->assertStringContainsString(
                 $attendue,
                 $planifiees,
@@ -138,10 +138,6 @@ class CommandesEtPlanificateurTest extends TestCase
         $this->assertDatabaseHas('qrcodes', ['id' => $qr->id]);
     }
 
-    public function test_la_synchronisation_des_statuts_ec_s_execute(): void
-    {
-        $this->artisan('ecs:sync-statut')->assertSuccessful();
-    }
 
     /**
      * Un evenement passe minimal, rattache a l'annee active.
