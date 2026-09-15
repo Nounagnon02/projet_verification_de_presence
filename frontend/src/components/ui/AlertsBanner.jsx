@@ -2,7 +2,8 @@ import { FiAlertTriangle, FiArrowRight } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 
 /**
- * Bandeau des anomalies ouvertes, affiché en tête du tableau de bord.
+ * Bandeau d'alerte affiché en tête du tableau de bord : les scans suspects
+ * qui attendent une décision dans la file d'attente.
  *
  * « Voir la liste » était un <button> sans gestionnaire : il ne menait nulle
  * part. C'est un lien de navigation, pas une action — un <Link> lui rend le
@@ -11,12 +12,14 @@ import { Link } from 'react-router-dom';
  * @param {Array<{title: string, message: string}>} alerts
  * @param {string} [to] Destination de la liste complète.
  */
-const AlertsBanner = ({ alerts, to = '/attendance/alerts' }) => {
+const AlertsBanner = ({ alerts, to = '/attendance/queue' }) => {
   const premiere = alerts[0];
   const autres = Math.max(alerts.length - 1, 0);
 
   return (
-    <div className="mb-8 bg-error-container/40 rounded-xl p-4 flex items-center justify-between gap-4 border-l-4 border-error">
+    <div className="mb-8 bg-error-container rounded-xl p-4 flex items-center justify-between gap-4 border-l-4 border-error">
+      {/* Fond plein : translucide, il laissait voir le fond de page blanc en thème
+          sombre, et le texte rouge clair devenait illisible sur du rose. */}
       <div className="flex items-center gap-4 min-w-0">
         <div className="bg-error text-white p-2 rounded-lg shrink-0">
           <FiAlertTriangle />

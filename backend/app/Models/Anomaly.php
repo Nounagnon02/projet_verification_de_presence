@@ -7,6 +7,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Anomaly extends Model
 {
+    /**
+     * Anomalies qui accompagnent un scan refusé : aucune présence n'a été
+     * créée, il n'y a rien à arbitrer. « appareil_partage » accompagne au
+     * contraire un scan enregistré mais suspect, qui se tranche dans la file
+     * de validation.
+     */
+    public const TYPES_SCAN_REFUSE = ['verification_echouee', 'invalid_scan_challenge', 'double_scan_device_mismatch'];
+
     protected $fillable = [
         'member_id',
         'etudiant_id',

@@ -1,30 +1,19 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import {
   FiAlertTriangle, FiCheckCircle, FiClock, FiMapPin,
   FiRefreshCw, FiSmartphone, FiXCircle,
 } from 'react-icons/fi';
 import api from '../../api/axios';
+import useDebounce from '../../hooks/useDebounce';
 import { useToastCtx } from '../../context/ToastContext';
-import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import DataTable from '../../components/ui/DataTable';
 import Modal from '../../components/ui/Modal';
 import SearchInput from '../../components/ui/SearchInput';
 
-// Statuts réellement retournés par GET /admin/presence/pending : le contrôleur
-// restreint la file à ces trois valeurs (whereIn statut).
-const STATUTS = {
-  suspect: { libelle: 'Suspect', variante: 'warning' },
-  en_attente: { libelle: 'En attente', variante: 'info' },
-  invalide: { libelle: 'Invalide', variante: 'error' },
-};
-
-const ONGLETS_STATUT = [
-  ['', 'Tous'],
-  ['suspect', 'Suspects'],
-  ['en_attente', 'En attente'],
-  ['invalide', 'Invalides'],
-];
+// La file ne contient que des scans « suspect » : c'est le seul statut à
+// arbitrer que le scan produise. Les onglets « En attente » et « Invalides »
+// filtraient des statuts qui n'existent nulle part.
 
 const PAR_PAGE = 20;
 const MOTIF_MAX = 500;
@@ -52,26 +41,47 @@ const formaterDateHeure = (valeur) => {
   });
 };
 
+/** Heure « 14:46 » d'un horodatage ISO ; chaîne vide si inexploitable. */
+const heureCourte = (valeur) => {
+  const date = valeur ? new Date(valeur) : null;
+  return date && !Number.isNaN(date.getTime())
+    ? date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    : '';
+};
+
+const ETATS_VOISIN = { valide: 'validé', rejete: 'rejeté' };
+
+/** « Valérie AHOUANDJINOU (14:46, rejeté) » pour un autre scan du même téléphone. */
+const decrireVoisin = (voisin) => {
+  const precisions = [heureCourte(voisin.heure_scan), ETATS_VOISIN[voisin.statut]].filter(Boolean);
+  return `${nomComplet(voisin.etudiant)}${precisions.length ? ` (${precisions.join(', ')})` : ''}`;
+};
+
 /**
- * Indices d'anomalie affichés pour une présence.
+ * Raison de la suspicion et indices complémentaires.
  *
- * Le backend ne renvoie aucun score d'anomalie sur cet endpoint : la table
- * « anomalies » n'est pas rattachée aux présences et pendingValidations ne la
- * charge pas. Les indices sont donc déduits des champs effectivement présents
- * dans la réponse (statut, GPS, empreinte d'appareil, horodatage du scan).
+ * Un scan n'est suspect que pour une raison : son téléphone a servi à d'autres
+ * étudiants pendant la même séance. L'API les renvoie dans « meme_appareil » :
+ * c'est ce qu'il faut voir pour trancher, et le seul « scan marqué suspect »
+ * affiché jusqu'ici ne le permettait pas.
  */
 const indicesAnomalie = (presence) => {
   const indices = [];
+  const voisins = Array.isArray(presence.meme_appareil) ? presence.meme_appareil : [];
 
-  if (presence.statut === 'suspect') {
-    indices.push({ cle: 'suspect', libelle: 'Scan marqué suspect', Icone: FiAlertTriangle });
+  if (voisins.length > 0) {
+    indices.push({
+      cle: 'appareil-partage',
+      libelle: 'Même téléphone que :',
+      details: voisins.map(decrireVoisin),
+      Icone: FiSmartphone,
+    });
+  } else if (presence.statut === 'suspect') {
+    indices.push({ cle: 'suspect', libelle: 'Suspect, sans autre scan de ce téléphone', Icone: FiAlertTriangle });
   }
   if (presence.latitude === null || presence.latitude === undefined
     || presence.longitude === null || presence.longitude === undefined) {
     indices.push({ cle: 'gps', libelle: 'Position GPS absente', Icone: FiMapPin });
-  }
-  if (!presence.device_fingerprint) {
-    indices.push({ cle: 'appareil', libelle: 'Appareil non identifié', Icone: FiSmartphone });
   }
   if (!presence.heure_scan) {
     indices.push({ cle: 'scan', libelle: 'Aucun scan enregistré', Icone: FiClock });
@@ -99,10 +109,10 @@ export default function PresenceQueuePage() {
   const [dateFin, setDateFin] = useState('');
   const [rechargement, setRechargement] = useState(0);
 
-  // Affinage local : l'endpoint n'accepte ni « statut » ni « search », ces deux
-  // filtres ne portent donc que sur les lignes de la page affichée.
-  const [filtreStatut, setFiltreStatut] = useState('');
+  // Recherche envoyée au serveur après une courte pause de frappe : elle porte
+  // sur toute la file, et non plus sur la seule page affichée.
   const [recherche, setRecherche] = useState('');
+  const rechercheServeur = useDebounce(recherche.trim(), 300);
 
   const [filieres, setFilieres] = useState([]);
   const [cible, setCible] = useState(null);
@@ -158,6 +168,7 @@ export default function PresenceQueuePage() {
         if (filtreFiliere) params.filiere_id = filtreFiliere;
         if (dateDebut) params.date_from = dateDebut;
         if (dateFin) params.date_to = dateFin;
+        if (rechercheServeur) params.search = rechercheServeur;
 
         const { data } = await api.get('/admin/presence/pending', {
           params,
@@ -188,23 +199,10 @@ export default function PresenceQueuePage() {
       annule = true;
       controleur.abort();
     };
-  }, [page, filtreFiliere, dateDebut, dateFin, rechargement]);
-
-  const lignesAffichees = useMemo(() => {
-    const terme = recherche.trim().toLowerCase();
-
-    return presences.filter((presence) => {
-      if (filtreStatut && presence.statut !== filtreStatut) return false;
-      if (!terme) return true;
-
-      const etudiant = presence.etudiant || {};
-      return [etudiant.nom, etudiant.prenom, etudiant.matricule]
-        .some((valeur) => (valeur || '').toLowerCase().includes(terme));
-    });
-  }, [presences, filtreStatut, recherche]);
+  }, [page, filtreFiliere, dateDebut, dateFin, rechercheServeur, rechargement]);
 
   const filtresServeurActifs = Boolean(filtreFiliere || dateDebut || dateFin);
-  const affinageActif = Boolean(filtreStatut || recherche.trim());
+  const rechercheActive = Boolean(rechercheServeur);
 
   const reinitialiserFiltres = () => {
     setFiltreFiliere('');
@@ -213,9 +211,9 @@ export default function PresenceQueuePage() {
     setPage(1);
   };
 
-  const reinitialiserAffinage = () => {
-    setFiltreStatut('');
+  const effacerRecherche = () => {
     setRecherche('');
+    setPage(1);
   };
 
   const fermerModale = () => {
@@ -347,7 +345,7 @@ export default function PresenceQueuePage() {
       render: (_, ligne) => {
         const horodatage = formaterDateHeure(ligne.heure_scan);
         const creneau = ligne.evenement?.heure_debut && ligne.evenement?.heure_fin
-          ? `Séance ${ligne.evenement.heure_debut} – ${ligne.evenement.heure_fin}`
+          ? `Séance ${String(ligne.evenement.heure_debut).slice(0, 5)} – ${String(ligne.evenement.heure_fin).slice(0, 5)}`
           : null;
 
         return (
@@ -368,26 +366,21 @@ export default function PresenceQueuePage() {
         }
 
         return (
-          <div className="flex flex-col gap-1 min-w-[160px]">
-            {indices.map(({ cle, libelle, Icone }) => (
-              <span key={cle} className="inline-flex items-center gap-1.5 text-[11px] font-medium text-on-surface-variant">
-                <Icone size={12} className="text-warning shrink-0" aria-hidden="true" />
-                {libelle}
-              </span>
+          <div className="flex flex-col gap-1 min-w-[180px]">
+            {indices.map(({ cle, libelle, details, Icone }) => (
+              <div key={cle} className="text-[11px] font-medium text-on-surface-variant">
+                <span className="inline-flex items-center gap-1.5">
+                  <Icone size={12} className="text-warning shrink-0" aria-hidden="true" />
+                  {libelle}
+                </span>
+                {details && (
+                  <ul className="mt-0.5 pl-[18px] space-y-0.5 text-on-surface">
+                    {details.map((detail, i) => <li key={`${cle}-${i}`}>{detail}</li>)}
+                  </ul>
+                )}
+              </div>
             ))}
           </div>
-        );
-      },
-    },
-    {
-      key: 'statut',
-      label: 'Statut',
-      render: (valeur) => {
-        const config = STATUTS[valeur];
-        return (
-          <Badge variant={config?.variante || 'neutral'}>
-            {config?.libelle || valeur || 'Inconnu'}
-          </Badge>
         );
       },
     },
@@ -424,7 +417,7 @@ export default function PresenceQueuePage() {
         <div>
           <h1 className="text-2xl font-bold text-primary font-headline">Validation manuelle des présences</h1>
           <p className="text-sm text-on-surface-variant">
-            Arbitrez les présences suspectes, en attente ou invalides signalées par le système.
+            Arbitrez les scans suspects : un même téléphone a servi à plusieurs étudiants pendant une séance.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -493,36 +486,13 @@ export default function PresenceQueuePage() {
         </div>
       </div>
 
-      {/* Affinage local */}
-      <div className="flex flex-col md:flex-row gap-4 md:items-center">
-        <SearchInput
-          value={recherche}
-          onChange={setRecherche}
-          placeholder="Filtrer par nom ou matricule..."
-          className="flex-1 max-w-md"
-        />
-        <div className="flex flex-wrap gap-2">
-          {ONGLETS_STATUT.map(([cle, libelle]) => (
-            <button
-              key={cle || 'tous'}
-              type="button"
-              onClick={() => setFiltreStatut(cle)}
-              aria-pressed={filtreStatut === cle}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-colors ${
-                filtreStatut === cle
-                  ? 'bg-primary text-on-primary shadow-sm'
-                  : 'bg-surface-container-high text-on-surface-variant hover:text-primary'
-              }`}
-            >
-              {libelle}
-            </button>
-          ))}
-        </div>
-      </div>
-      <p className="text-[11px] text-on-surface-variant">
-        La recherche et le filtre de statut s'appliquent aux lignes de la page affichée :
-        l'API de la file ne prend pas ces deux critères en charge.
-      </p>
+      {/* Recherche (côté serveur) */}
+      <SearchInput
+        value={recherche}
+        onChange={(valeur) => { setRecherche(valeur); setPage(1); }}
+        placeholder="Rechercher un étudiant (nom ou matricule)..."
+        className="max-w-md"
+      />
 
       {/* Contenu : erreur réseau, ou tableau (chargement et vide gérés par DataTable) */}
       {erreur ? (
@@ -538,23 +508,18 @@ export default function PresenceQueuePage() {
         </div>
       ) : (
         <div className="bg-surface-container-lowest rounded-xxl shadow-sm border border-outline-variant/10 overflow-hidden">
-          {affinageActif && !chargement && (
-            <p className="px-4 pt-4 text-[11px] text-on-surface-variant">
-              {lignesAffichees.length} ligne(s) affichée(s) sur les {presences.length} de cette page.
-            </p>
-          )}
           <DataTable
             columns={colonnes}
-            data={lignesAffichees}
+            data={presences}
             loading={chargement}
             aria-label="Présences en attente de validation manuelle"
-            caption="File des présences suspectes, en attente ou invalides à valider ou rejeter"
-            emptyMessage={affinageActif
-              ? 'Aucune ligne de cette page ne correspond à ces critères.'
-              : "Aucune présence n'attend de validation. Les scans suspects, en attente ou invalides apparaîtront ici dès qu'ils seront enregistrés."}
-            emptyAction={affinageActif ? (
-              <Button variant="outline" size="sm" onClick={reinitialiserAffinage}>
-                Effacer les critères
+            caption="File des scans suspects à valider ou rejeter"
+            emptyMessage={rechercheActive
+              ? 'Aucun scan suspect ne correspond à cette recherche.'
+              : "Aucune présence n'attend de validation. Les scans suspects apparaîtront ici dès qu'ils seront enregistrés."}
+            emptyAction={rechercheActive ? (
+              <Button variant="outline" size="sm" onClick={effacerRecherche}>
+                Effacer la recherche
               </Button>
             ) : (
               <Button variant="outline" size="sm" onClick={rafraichir}>

@@ -6,9 +6,13 @@ import { NavLink, Outlet } from 'react-router-dom';
 // pour un smartphone : elle s'affichait mal ici et n'avait de toute facon rien
 // a faire derriere une authentification. Elle est remplacee par la saisie
 // manuelle, qui existait deja sur /attendance/scan sans etre atteignable.
+//
+// Cette saisie etait elle-meme un formulaire de scan exigeant un QR en cours :
+// ouverte depuis ce menu, elle n'aboutissait jamais. Elle enregistre
+// desormais un etudiant qui n'a pas pu scanner, seance par seance.
 const tabs = [
   { to: '/attendance/queue', label: "File d'attente" },
-  { to: '/attendance/alerts', label: 'Anomalies' },
+  { to: '/attendance/alerts', label: 'Scans refusés' },
   { to: '/attendance/history', label: 'Historique' },
   { to: '/attendance/scan', label: 'Saisie manuelle' },
 ];

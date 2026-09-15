@@ -110,11 +110,12 @@ class DashboardControllerTest extends TestCase
         $this->creerPresence($this->etudiantsA[1], $this->coursJ5, today()->subDays(5)->setTime(9, 0), 'valide');
         $this->creerPresence($this->etudiantsA[1], $this->coursJ40, today()->subDays(40)->setTime(9, 0), 'valide');
 
-        // Deux anomalies ouvertes (dates distinctes pour un tri déterministe)
-        // et une déjà résolue, qui ne doit jamais être comptée.
-        $this->creerAnomalie($this->etudiantsA[1], 'Anomalie ancienne A', now()->subHours(3));
-        $this->creerAnomalie($this->etudiantsA[2], 'Anomalie récente A', now()->subMinutes(5));
-        $this->creerAnomalie($this->etudiantsA[3], 'Anomalie résolue A', now()->subMinute(), true);
+        // Deux scans refusés aujourd'hui, un hier (hors du compte du jour), et
+        // une alerte d'appareil partagé, qui n'est jamais un refus.
+        $this->creerAnomalie($this->etudiantsA[1], 'Refus A ce matin', today()->setTime(7, 0));
+        $this->creerAnomalie($this->etudiantsA[2], 'Refus A plus tard', today()->setTime(7, 30));
+        $this->creerAnomalie($this->etudiantsA[3], 'Refus A hier', today()->subDay()->setTime(9, 0));
+        $this->creerAnomalie($this->etudiantsA[3], 'Appareil partagé A', today()->setTime(7, 15), 'appareil_partage');
 
         // ── Établissement B : chiffres volontairement tous différents ─────
         [$filiereB, $ecB] = $this->creerCursus($etabB, 'B');
@@ -129,7 +130,7 @@ class DashboardControllerTest extends TestCase
         // 1 présent sur 5 inscrits (taux de 20 %), un jour où A n'a aucune présence.
         $this->creerPresence($this->etudiantsB[1], $coursJ3B, today()->subDays(3)->setTime(9, 0), 'valide');
 
-        $this->creerAnomalie($this->etudiantsB[1], 'Anomalie de B', now()->subMinutes(2));
+        $this->creerAnomalie($this->etudiantsB[1], 'Refus de B', today()->setTime(7, 0));
     }
 
     // ── GET /admin/dashboard ──────────────────────────────────────────────
@@ -144,17 +145,12 @@ class DashboardControllerTest extends TestCase
             ->assertJsonPath('data.presences_aujourd_hui', 3)
             ->assertJsonPath('data.presences_valides', 2)
             ->assertJsonPath('data.presences_suspectes', 1)
-            ->assertJsonPath('data.fraudes_suspectees', 2);
+            // La présence suspecte du jour attend une décision dans la file.
+            ->assertJsonPath('data.scans_a_arbitrer', 1)
+            ->assertJsonPath('data.scans_refuses_du_jour', 2);
 
         // 2 présences valides pour 3 inscrits au seul cours terminé.
         $this->assertSame(66.7, (float) $reponse->json('data.taux_presence_global'));
-
-        // Anomalies ouvertes, la plus récente en tête ; la résolue est exclue.
-        $anomalies = $reponse->json('data.dernieres_anomalies');
-        $this->assertCount(2, $anomalies);
-        $this->assertSame('Anomalie récente A', $anomalies[0]['description']);
-        $this->assertSame('Anomalie ancienne A', $anomalies[1]['description']);
-        $this->assertSame('high', $anomalies[0]['severite']);
 
         // Heatmap du jour : 2 scans à 8 h, 1 à 9 h, heures croissantes.
         $heatmap = $reponse->json('data.heatmap');
@@ -172,8 +168,8 @@ class DashboardControllerTest extends TestCase
             ->assertJsonPath('data.presences_aujourd_hui', 0)
             ->assertJsonPath('data.presences_valides', 0)
             ->assertJsonPath('data.presences_suspectes', 0)
-            ->assertJsonPath('data.fraudes_suspectees', 0)
-            ->assertJsonPath('data.dernieres_anomalies', [])
+            ->assertJsonPath('data.scans_a_arbitrer', 0)
+            ->assertJsonPath('data.scans_refuses_du_jour', 0)
             ->assertJsonPath('data.heatmap', []);
 
         // Aucune division par zéro : le taux reste un nombre fini valant 0.
@@ -201,15 +197,12 @@ class DashboardControllerTest extends TestCase
             ->assertJsonPath('data.presences_aujourd_hui', 0)
             ->assertJsonPath('data.presences_valides', 0)
             ->assertJsonPath('data.presences_suspectes', 0)
-            ->assertJsonPath('data.fraudes_suspectees', 1)
+            ->assertJsonPath('data.scans_a_arbitrer', 0)
+            ->assertJsonPath('data.scans_refuses_du_jour', 1)
             ->assertJsonPath('data.heatmap', []);
 
         // 1 présent sur 5 inscrits : le taux de A (66,7 %) ne fuit pas ici.
         $this->assertSame(20.0, (float) $reponse->json('data.taux_presence_global'));
-
-        $anomalies = $reponse->json('data.dernieres_anomalies');
-        $this->assertCount(1, $anomalies);
-        $this->assertSame('Anomalie de B', $anomalies[0]['description']);
     }
 
     // ── GET /admin/dashboard/attendance-trend ─────────────────────────────
@@ -497,17 +490,16 @@ class DashboardControllerTest extends TestCase
         ]);
     }
 
-    private function creerAnomalie(Etudiant $etudiant, string $description, Carbon $creeeLe, bool $resolue = false): Anomaly
+    private function creerAnomalie(Etudiant $etudiant, string $description, Carbon $creeeLe, string $type = 'verification_echouee'): Anomaly
     {
         $anomalie = Anomaly::create([
             'etudiant_id' => $etudiant->id,
-            'type'        => 'appareil_partage',
+            'type'        => $type,
             'description' => $description,
-            'severity'    => 'high',
-            'resolved'    => $resolue,
+            'severity'    => 'medium',
         ]);
 
-        // created_at imposé : `latest()` doit trier sur des dates distinctes.
+        // created_at imposé : le compte du jour dépend de la date du refus.
         $anomalie->created_at = $creeeLe;
         $anomalie->save();
 

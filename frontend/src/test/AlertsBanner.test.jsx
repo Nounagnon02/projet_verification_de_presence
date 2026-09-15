@@ -23,10 +23,10 @@ describe('AlertsBanner', () => {
     expect(screen.getByText('GPS hors zone')).toBeInTheDocument()
   })
 
-  it('« Voir la liste » est un lien qui mene aux anomalies', () => {
+  it('« Voir la liste » est un lien qui mene a la file d\'attente', () => {
     monter(UNE)
     const lien = screen.getByRole('link', { name: /voir la liste/i })
-    expect(lien).toHaveAttribute('href', '/attendance/alerts')
+    expect(lien).toHaveAttribute('href', '/attendance/queue')
   })
 
   it('la destination est surchargeable', () => {

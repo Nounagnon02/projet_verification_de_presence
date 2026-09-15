@@ -22,7 +22,8 @@ vi.mock('../context/ToastContext', () => ({
   ToastProvider: ({ children }) => children,
 }))
 
-import AnomaliesListPage from '../pages/alerts/AnomaliesListPage'
+import ScansRefusesPage from '../pages/attendance/ScansRefusesPage'
+import SaisieManuellePage from '../pages/attendance/SaisieManuellePage'
 import PresenceHistoryPage from '../pages/attendance/PresenceHistoryPage'
 import PresenceValidationPage from '../pages/attendance/PresenceValidationPage'
 import UEManagementPage from '../pages/courses/UEManagementPage'
@@ -54,7 +55,8 @@ const vide = () => Promise.resolve({ data: { success: true, data: [] } })
  * Les pages dont le comportement mérite d'être vérifié ont leur propre fichier.
  */
 const PAGES = [
-  ['AnomaliesListPage', AnomaliesListPage],
+  ['ScansRefusesPage', ScansRefusesPage],
+  ['SaisieManuellePage', SaisieManuellePage],
   ['PresenceHistoryPage', PresenceHistoryPage],
   ['PresenceValidationPage', PresenceValidationPage],
   ['UEManagementPage', UEManagementPage],

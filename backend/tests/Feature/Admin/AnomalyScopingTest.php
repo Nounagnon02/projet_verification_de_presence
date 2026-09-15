@@ -12,8 +12,8 @@ use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * Les anomalies (alertes de fraude) doivent être cloisonnées par
- * établissement : un admin de faculté ne voit ni ne résout celles des autres.
+ * Les scans refusés doivent être cloisonnés par établissement : un admin de
+ * faculté ne voit pas ceux des étudiants des autres facultés.
  */
 class AnomalyScopingTest extends TestCase
 {
@@ -39,7 +39,7 @@ class AnomalyScopingTest extends TestCase
             'email' => "etu-b-$sfx@x.test", 'identifiant_unique' => "B_$sfx",
         ]);
         $this->anomalieB = Anomaly::create([
-            'etudiant_id' => $etudiantB->id, 'type' => 'appareil_partage',
+            'etudiant_id' => $etudiantB->id, 'type' => 'verification_echouee',
             'description' => 'secret faculté B', 'severity' => 'high', 'resolved' => false,
         ]);
     }
@@ -48,15 +48,7 @@ class AnomalyScopingTest extends TestCase
     {
         $r = $this->withHeader('Authorization', 'Bearer ' . $this->tokenA)->getJson('/api/admin/alerts');
         $r->assertStatus(200);
-        $ids = collect($r->json('data'))->pluck('id')->all();
+        $ids = collect($r->json('data.data'))->pluck('id')->all();
         $this->assertNotContains($this->anomalieB->id, $ids);
-    }
-
-    public function test_admin_a_ne_peut_pas_resoudre_une_anomalie_de_b(): void
-    {
-        $this->withHeader('Authorization', 'Bearer ' . $this->tokenA)
-            ->postJson('/api/admin/alerts/' . $this->anomalieB->id . '/resolve', ['status' => 'valide'])
-            ->assertStatus(404);
-        $this->assertFalse((bool) $this->anomalieB->fresh()->resolved);
     }
 }

@@ -43,6 +43,19 @@ export interface ScanPayload {
 export interface ScanResponse {
   success: boolean;
   message: string;
+  /**
+   * Charge utile renvoyée par POST /presence/scan en cas de succès. Le serveur
+   * la place sous `data` (createdResponse) : c'est là que se trouve l'heure
+   * effective d'enregistrement, seule source fiable pour l'afficher.
+   */
+  data?: {
+    etudiant?: string;
+    matricule?: string;
+    /** Format H:i:s, horodaté par le serveur. */
+    heure?: string;
+    cours?: string;
+    verification?: Record<string, unknown>;
+  };
   presence?: Presence;
   double_scan_detected?: boolean;
   challenge?: string;

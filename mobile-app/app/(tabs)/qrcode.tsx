@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, Share, RefreshControl } from 'react-native';
 import { SvgXml } from 'react-native-svg';
-import { QrCode as QrCodeIcon, Clock, MapPin, RefreshCw } from 'lucide-react-native';
+import { QrCode as QrCodeIcon, Clock, MapPin, RefreshCw, CheckCircle2 } from 'lucide-react-native';
 import { Card } from '../../src/components/ui/Card';
 import { Button } from '../../src/components/ui/Button';
 import { LoadingSpinner } from '../../src/components/ui/LoadingSpinner';
 import apiClient from '../../src/api/client';
+import { useScan } from '../../src/hooks/useScan';
 import { showToast } from '../../src/utils/toast-config';
 
 /**
@@ -43,6 +44,17 @@ export default function QrCodeTab() {
   const [rafraichissement, setRafraichissement] = useState(false);
   const [secondes, setSecondes] = useState(0);
   const monte = useRef(true);
+
+  // Le délégué ne peut pas scanner l'écran qu'il présente lui-même. Il détient
+  // déjà le token : sa présence s'enregistre par le même chemin que celui d'un
+  // scan (mêmes contrôles GPS, Wi-Fi, empreinte et challenge côté serveur), la
+  // caméra n'étant qu'un moyen de transporter le token.
+  const { submitScan, scanning } = useScan();
+
+  // Rattaché à l'identifiant de la séance : la confirmation ne doit pas survivre
+  // au passage au cours suivant, que le rafraîchissement périodique amène.
+  const [valideePourEvenement, setValideePourEvenement] = useState<number | null>(null);
+  const [heureEnregistrement, setHeureEnregistrement] = useState<string | null>(null);
 
   const charger = useCallback(async () => {
     try {
@@ -91,6 +103,35 @@ export default function QrCodeTab() {
 
     return () => clearInterval(tic);
   }, [creneau]);
+
+  async function validerMaPresence() {
+    if (!creneau) return;
+
+    try {
+      const resultat = await submitScan(creneau.token);
+      if (!monte.current) return;
+
+      setValideePourEvenement(creneau.evenement.id);
+      // Heure du serveur, pas celle de l'appareil : c'est elle qui figure dans
+      // le registre de présence.
+      setHeureEnregistrement(resultat.data?.heure?.slice(0, 5) ?? null);
+
+      // Un scan réussi fait tourner le token côté serveur (CDC 9.2.1) : sans ce
+      // rechargement, le délégué continuerait de présenter un code périmé aux
+      // étudiants qui n'ont pas encore scanné.
+      charger();
+    } catch (error: any) {
+      if (!monte.current) return;
+
+      // 409 : la présence était déjà enregistrée. Pour le délégué, l'objectif
+      // est atteint — on bascule sur la confirmation au lieu de laisser un
+      // bouton qui semble échouer. useScan a déjà informé l'utilisateur.
+      if (error?.response?.status === 409) {
+        setValideePourEvenement(creneau.evenement.id);
+        setHeureEnregistrement(null);
+      }
+    }
+  }
 
   async function partager() {
     if (!creneau) return;
@@ -186,7 +227,27 @@ export default function QrCodeTab() {
             </Text>
           </Card>
 
-          <Button onPress={partager} className="mb-8">
+          {valideePourEvenement === creneau.evenement.id ? (
+            <Card className="mb-4 flex-row items-center gap-x-3">
+              <CheckCircle2 size={22} color="#008751" />
+              <View className="flex-1">
+                <Text className="font-headline text-sm text-on-surface">
+                  Votre présence est enregistrée
+                </Text>
+                <Text className="mt-0.5 text-xs text-on-surface-variant">
+                  {heureEnregistrement
+                    ? `à ${heureEnregistrement} — ${creneau.evenement.cours ?? 'ce cours'}`
+                    : `pour ${creneau.evenement.cours ?? 'ce cours'}`}
+                </Text>
+              </View>
+            </Card>
+          ) : (
+            <Button onPress={validerMaPresence} loading={scanning} className="mb-4">
+              Valider ma présence
+            </Button>
+          )}
+
+          <Button onPress={partager} variant="outline" className="mb-8">
             Partager le lien de présence
           </Button>
         </>

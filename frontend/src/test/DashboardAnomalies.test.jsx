@@ -2,16 +2,12 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 
-// Types tels que le backend les stocke dans anomalies.type.
-const ANOMALIES = [
-  { type: 'verification_echouee', description: 'GPS hors zone' },
-  { type: 'invalid_scan_challenge', description: 'Defi refuse' },
-]
+const { etat, appels } = vi.hoisted(() => ({ etat: { dashboard: {} }, appels: [] }))
 
 vi.mock('../hooks/useApi', () => ({
   default: (url) => {
-    if (url === '/admin/dashboard') return { data: { total_etudiants: 1, taux_presence_global: 0 }, loading: false }
-    if (url === '/admin/alerts') return { data: ANOMALIES }
+    appels.push(url)
+    if (url === '/admin/dashboard') return { data: etat.dashboard, loading: false }
     return { data: [], loading: false }
   },
 }))
@@ -22,43 +18,41 @@ vi.mock('../components/charts/BarChart', () => ({
 
 import DashboardPage from '../pages/dashboard/DashboardPage'
 
-const afficher = () => render(<BrowserRouter><DashboardPage /></BrowserRouter>)
+const afficher = (dashboard) => {
+  etat.dashboard = dashboard
+  return render(<BrowserRouter><DashboardPage /></BrowserRouter>)
+}
 
-describe('Anomalies du tableau de bord', () => {
-  // Regression : le titre de l'alerte reprenait la valeur brute de la colonne
-  // « type ». L'administrateur lisait « verification_echouee », et
-  // « invalid_scan_challenge » — en anglais, dans une application francaise.
-  it('ne montre aucun identifiant technique', () => {
-    afficher()
+/**
+ * Le bandeau reprenait toutes les anomalies ouvertes, scans refusés compris :
+ * ils ne demandent aucune décision et ne se fermaient jamais. Il ne signale
+ * plus que les scans suspects, qui attendent une décision dans la file.
+ */
+describe('Alertes du tableau de bord', () => {
+  it('signale les scans suspects et mène à la file d\'attente', () => {
+    afficher({ total_etudiants: 1, scans_a_arbitrer: 3, scans_refuses_du_jour: 2 })
 
-    expect(screen.queryByText(/verification_echouee/)).not.toBeInTheDocument()
-    expect(screen.queryByText(/invalid_scan_challenge/)).not.toBeInTheDocument()
+    expect(screen.getByText('3 scans suspects à arbitrer')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /voir la liste/i })).toHaveAttribute('href', '/attendance/queue')
   })
 
-  it('traduit le type en libelle lisible', () => {
-    afficher()
+  it('n\'affiche aucun bandeau quand rien n\'est à arbitrer', () => {
+    afficher({ total_etudiants: 1, scans_a_arbitrer: 0, scans_refuses_du_jour: 4 })
 
-    // Le bandeau ne montre que la premiere anomalie, plus un decompte.
-    expect(screen.getByText(/Vérification de présence échouée/)).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /voir la liste/i })).not.toBeInTheDocument()
   })
-})
 
-describe('Anomalie de type inconnu', () => {
-  it('nomme la categorie plutot que de laisser passer l identifiant', async () => {
-    vi.resetModules()
-    vi.doMock('../hooks/useApi', () => ({
-      default: (url) => {
-        if (url === '/admin/dashboard') return { data: { total_etudiants: 1 }, loading: false }
-        if (url === '/admin/alerts') return { data: [{ type: 'type_ajoute_plus_tard', description: 'x' }] }
-        return { data: [], loading: false }
-      },
-    }))
-    vi.doMock('../components/charts/BarChart', () => ({ default: () => <div /> }))
+  it('donne les refus du jour pour information', () => {
+    afficher({ scans_a_arbitrer: 0, scans_refuses_du_jour: 4 })
 
-    const { default: Page } = await import('../pages/dashboard/DashboardPage')
-    render(<BrowserRouter><Page /></BrowserRouter>)
+    expect(screen.getByText('Scans à arbitrer')).toBeInTheDocument()
+    expect(screen.getByText(/4 refus aujourd'hui/)).toBeInTheDocument()
+  })
 
-    expect(screen.queryByText(/type_ajoute_plus_tard/)).not.toBeInTheDocument()
-    expect(screen.getByText(/Anomalie de présence/)).toBeInTheDocument()
+  it('ne consulte plus la liste des anomalies', () => {
+    appels.length = 0
+    afficher({ scans_a_arbitrer: 0 })
+
+    expect(appels).not.toContain('/admin/alerts')
   })
 })
