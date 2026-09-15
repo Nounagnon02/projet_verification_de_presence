@@ -3,8 +3,6 @@
 namespace App\Services;
 
 use App\Models\Filiere;
-use App\Models\Ue;
-use Illuminate\Support\Collection;
 
 /**
  * Service de gestion des semestres académiques (CDC 7.1).
@@ -28,6 +26,25 @@ class SemesterService
         'M1' => [7, 8],
         'M2' => [9, 10],
     ];
+
+    /**
+     * Libellés des niveaux, dans l'ordre du cursus. Avec MAPPING, c'est la
+     * seule liste des niveaux : le serveur la valide, les écrans la lisent par
+     * GET /admin/niveaux au lieu de la recopier.
+     */
+    public const LIBELLES = [
+        'L1' => 'Licence 1',
+        'L2' => 'Licence 2',
+        'L3' => 'Licence 3',
+        'M1' => 'Master 1',
+        'M2' => 'Master 2',
+    ];
+
+    /** @return list<string> les niveaux, dans l'ordre du cursus */
+    public function niveaux(): array
+    {
+        return array_keys(self::MAPPING);
+    }
 
     /**
      * Retourne la liste des semestres pour un niveau donné.
@@ -86,51 +103,5 @@ class SemesterService
     public function allSemesters(): array
     {
         return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-    }
-
-    /**
-     * Calcule le taux de présence par semestre pour une année académique et une filière.
-     *
-     * @param int $anneeId
-     * @param int|null $filiereId Optionnel, null = toutes filières
-     * @return Collection [{semestre: int, label: string, taux: float, total_presences: int, total_attendus: int}]
-     */
-    public function tauxParSemestre(int $anneeId, ?int $filiereId = null): Collection
-    {
-        $query = Ue::selectRaw('
-                ues.semestre,
-                COUNT(DISTINCT presences.id) as total_presences,
-                COUNT(DISTINCT evenements.id) as total_evenements,
-                COUNT(DISTINCT etudiant_ec.etudiant_id) as total_etudiants
-            ')
-            ->join('ecs', 'ecs.ue_id', '=', 'ues.id')
-            ->join('evenements', 'evenements.ec_id', '=', 'ecs.id')
-            ->leftJoin('presences', 'presences.evenement_id', '=', 'evenements.id')
-            ->leftJoin('etudiant_ec', function ($join) use ($anneeId) {
-                $join->on('etudiant_ec.ec_id', '=', 'ecs.id')
-                    ->on('etudiant_ec.annee_id', '=', \DB::raw((string) $anneeId));
-            })
-            ->where('ues.annee_id', $anneeId)
-            ->groupBy('ues.semestre')
-            ->orderBy('ues.semestre');
-
-        if ($filiereId) {
-            $query->where('ues.filiere_id', $filiereId);
-        }
-
-        $results = $query->get();
-
-        return $results->map(function ($row) {
-            $totalAttendus = ($row->total_evenements ?? 0) * ($row->total_etudiants ?? 0);
-            return [
-                'semestre'         => (int) $row->semestre,
-                'label'            => $this->semesterLabel((int) $row->semestre),
-                'taux'             => $totalAttendus > 0 ? round(($row->total_presences / $totalAttendus) * 100, 1) : 0,
-                'total_presences'  => (int) $row->total_presences,
-                'total_attendus'   => $totalAttendus,
-                'total_evenements' => (int) $row->total_evenements,
-                'total_etudiants'  => (int) $row->total_etudiants,
-            ];
-        });
     }
 }
