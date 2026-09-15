@@ -1,17 +1,85 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiMapPin, FiWifi, FiAlertTriangle, FiCheck, FiX, FiSearch, FiLoader } from 'react-icons/fi';
+// Modales rendues dans <body> : placées dans la page, elles héritaient de la
+// marge de son conteneur (space-y) et laissaient une bande découverte en haut.
+import { createPortal } from 'react-dom';
+import { useSearchParams } from 'react-router-dom';
+import { FiPlus, FiEdit2, FiTrash2, FiMapPin, FiWifi, FiAlertTriangle, FiX, FiSearch, FiLoader, FiCrosshair, FiCalendar } from 'react-icons/fi';
 import api from '../../api/axios';
 import { useToastCtx } from '../../context/ToastContext';
 
+// La plage IP a quitté le formulaire : enregistrée et comparée au scan, elle
+// n'y refusait jamais rien. Le champ promettait un contrôle qui n'existait pas.
 const EMPTY_SALLE = {
   nom: '', code: '', etablissement_id: '',
   latitude: '', longitude: '', rayon_geofence_m: 50,
-  ssid_attendu: '', bssid_attendu: '', ip_range: '',
+  ssid_attendu: '', bssid_attendu: '',
   hors_reseau: false, actif: true,
 };
 
+const renseigne = (v) => v !== null && v !== undefined && v !== '';
+
+/**
+ * Ce que la salle vérifie au scan, en plus du QR code. Le serveur le fournit
+ * (verifie_gps, verifie_wifi) ; la règle locale n'est qu'un repli, identique à
+ * Salle::verifieGps() et Salle::verifieWifi().
+ */
+const verifieGps = (s) => s.verifie_gps ?? (renseigne(s.latitude) && renseigne(s.longitude));
+const verifieWifi = (s) => s.verifie_wifi ?? (!s.hors_reseau && Boolean(s.ssid_attendu || s.bssid_attendu));
+const protegee = (s) => verifieGps(s) || verifieWifi(s);
+
+const FILTRES = [
+  { id: 'toutes', libelle: 'Toutes', garde: () => true },
+  { id: 'a-configurer', libelle: 'À configurer', garde: (s) => s.actif && !protegee(s) },
+  { id: 'protegees', libelle: 'Protégées', garde: (s) => s.actif && protegee(s) },
+  { id: 'desactivees', libelle: 'Désactivées', garde: (s) => !s.actif },
+];
+
+const VIDES = {
+  toutes: 'Aucune salle ne correspond à la recherche.',
+  'a-configurer': 'Aucune salle à configurer : chaque salle active contrôle la position ou le réseau.',
+  protegees: 'Aucune salle ne contrôle encore la position ou le réseau.',
+  desactivees: 'Aucune salle désactivée.',
+};
+
+/** Forme de recherche : sans casse ni accents. */
+const cle = (texte) => String(texte ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+// Les salles actives et utilisées d'abord : c'est par elles qu'il faut
+// commencer la configuration.
+const parUsage = (a, b) => (Number(b.actif) - Number(a.actif))
+  || ((b.seances_a_venir ?? 0) - (a.seances_a_venir ?? 0))
+  || ((b.creneaux_count ?? 0) - (a.creneaux_count ?? 0))
+  || String(a.nom).localeCompare(String(b.nom));
+
+const usage = (s) => {
+  const parts = [];
+  if (s.seances_a_venir) parts.push(`${s.seances_a_venir} séance${s.seances_a_venir > 1 ? 's' : ''} à venir`);
+  if (s.creneaux_count) parts.push(`${s.creneaux_count} créneau${s.creneaux_count > 1 ? 'x' : ''} à l'emploi du temps`);
+  return parts.length ? parts.join(' · ') : 'Aucune séance à venir';
+};
+
+/** Ce que la salle vérifie, en une pastille : « QR seul » ne se confond plus avec une salle protégée. */
+function Protection({ salle }) {
+  const base = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap';
+
+  if (!salle.actif) return <span className={`${base} bg-error/10 text-error`}>Désactivée</span>;
+
+  const controles = [verifieGps(salle) && 'GPS', verifieWifi(salle) && 'Wi-Fi'].filter(Boolean);
+
+  return controles.length
+    ? <span className={`${base} bg-secondary/10 text-secondary`}>QR + {controles.join(' + ')}</span>
+    : <span className={`${base} bg-warning-container text-on-surface`}>QR seul</span>;
+}
+
+const Compteur = ({ valeur, libelle, alerte = false }) => (
+  <div className={`rounded-lg p-3 ${alerte && valeur > 0 ? 'bg-warning-container' : 'bg-surface-container-low'}`}>
+    <p className="text-2xl font-bold font-headline tabular-nums text-on-surface">{valeur}</p>
+    <p className="text-xs text-on-surface-variant">{libelle}</p>
+  </div>
+);
+
 export default function SallesPage() {
-  const { addToast } = useToastCtx();
+  const { addToast } = useToastCtx() ?? {};
   const [salles, setSalles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -23,40 +91,45 @@ export default function SallesPage() {
   const [error, setError] = useState('');
   const [showDelete, setShowDelete] = useState(null);
   const [userEntity, setUserEntity] = useState(null);
+  const [localisation, setLocalisation] = useState({ etat: 'repos', message: '' });
+
+  // Le filtre vit dans l'adresse : les imports renvoient directement sur
+  // « À configurer » (/settings/salles?filtre=a-configurer).
+  const [params, setParams] = useSearchParams();
+  const filtre = FILTRES.some((f) => f.id === params.get('filtre')) ? params.get('filtre') : 'toutes';
+  const choisirFiltre = (id) => setParams(id === 'toutes' ? {} : { filtre: id }, { replace: true });
 
   // Chargement en un seul endroit : dans l'effet. Les actions qui doivent
   // rafraîchir la liste incrémentent `rechargement` plutôt que d'appeler une
-  // fonction de fetch, ce qui évite d'avoir deux chemins de chargement à garder
-  // synchronisés — et rend l'annulation systématique.
-  //
-  // Cette annulation n'est pas cosmétique : sans elle, deux recherches
-  // rapprochées se résolvaient dans un ordre non garanti et la réponse la plus
-  // ancienne pouvait écraser la plus récente.
+  // fonction de fetch. L'annulation évite qu'une réponse tardive écrive dans
+  // une page quittée.
   const [rechargement, setRechargement] = useState(0);
   const rafraichir = useCallback(() => setRechargement((n) => n + 1), []);
 
   useEffect(() => {
-    let annule = false;
+    const controleur = new AbortController();
 
-    (async () => {
-      try {
-        const { data } = await api.get('/admin/salles', { params: { search: search || undefined } });
-        if (!annule) setSalles(data.data || data || []);
-      } catch { /* liste laissée en l'état */ }
-      finally { if (!annule) setLoading(false); }
-    })();
+    // Toutes les salles de l'entité, puis recherche et filtres à l'écran : le
+    // bandeau d'état doit compter toutes les salles, pas le résultat d'une
+    // recherche.
+    api.get('/admin/salles', { signal: controleur.signal })
+      .then(({ data }) => {
+        if (controleur.signal.aborted) return;
+        setSalles(Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []));
+      })
+      .catch(() => { /* liste laissée en l'état */ })
+      .finally(() => { if (!controleur.signal.aborted) setLoading(false); });
 
-    return () => { annule = true; };
-  }, [search, rechargement]);
+    return () => controleur.abort();
+  }, [rechargement]);
 
   // Rattachement de l'utilisateur à son entité, pour préremplir le formulaire.
   useEffect(() => {
     let annule = false;
 
-    // L'etablissement de rattachement vient de /user, qui le charge desormais avec
-    // la relation. L'ancienne version interrogeait /admin/etablissements — une route
-    // qui n'existe pas (seule /super-admin/etablissements existe) : l'appel partait
-    // en 404 avale silencieusement et l'entite restait toujours nulle.
+    // L'etablissement de rattachement vient de /user, qui le charge avec la
+    // relation. L'ancienne version interrogeait /admin/etablissements — une
+    // route qui n'existe pas : l'appel partait en 404 avalé en silence.
     api.get('/user').then(({ data: user }) => {
       if (annule) return;
       if (user?.etablissement) setUserEntity(user.etablissement);
@@ -69,6 +142,7 @@ export default function SallesPage() {
     setEditing(null);
     setForm({ ...EMPTY_SALLE, etablissement_id: userEntity?.id || '' });
     setError('');
+    setLocalisation({ etat: 'repos', message: '' });
     setShowModal(true);
   };
 
@@ -83,12 +157,49 @@ export default function SallesPage() {
       rayon_geofence_m: salle.rayon_geofence_m ?? 50,
       ssid_attendu: salle.ssid_attendu || '',
       bssid_attendu: salle.bssid_attendu || '',
-      ip_range: salle.ip_range || '',
       hors_reseau: salle.hors_reseau || false,
       actif: salle.actif ?? true,
     });
     setError('');
+    setLocalisation({ etat: 'repos', message: '' });
     setShowModal(true);
+  };
+
+  /**
+   * Relève la position de l'appareil. Les coordonnées d'une salle ne se
+   * devinent pas : elles se relèvent sur place, et c'est le plus simple depuis
+   * un téléphone, dans la salle même.
+   */
+  const utiliserMaPosition = () => {
+    if (!navigator.geolocation) {
+      setLocalisation({ etat: 'erreur', message: "Ce navigateur ne donne pas accès à la position : saisissez les coordonnées." });
+      return;
+    }
+
+    const rayon = Number(form.rayon_geofence_m) || 50;
+    setLocalisation({ etat: 'encours', message: 'Recherche de la position…' });
+
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setForm((f) => ({ ...f, latitude: coords.latitude.toFixed(6), longitude: coords.longitude.toFixed(6) }));
+        const precision = Math.round(coords.accuracy ?? 0);
+        setLocalisation({
+          etat: 'ok',
+          message: precision > rayon
+            ? `Position relevée à ±${precision} m, moins précise que le rayon de la salle (${rayon} m) : réessayez près d'une fenêtre, ou élargissez le rayon.`
+            : `Position relevée à ±${precision} m. Vérifiez que vous êtes bien dans la salle.`,
+        });
+      },
+      (err) => setLocalisation({
+        etat: 'erreur',
+        message: !window.isSecureContext
+          ? "La position n'est disponible que sur une connexion sécurisée (https) : saisissez les coordonnées."
+          : err?.code === 1
+            ? "Accès à la position refusé : autorisez-le dans le navigateur, ou saisissez les coordonnées."
+            : "Position introuvable : réessayez près d'une fenêtre, ou saisissez les coordonnées.",
+      }),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
   };
 
   const handleSave = async (e) => {
@@ -98,6 +209,8 @@ export default function SallesPage() {
     try {
       const payload = {
         ...form,
+        // Laissé vide à la création, le code est dérivé du nom par le serveur.
+        code: form.code.trim() || undefined,
         etablissement_id: form.etablissement_id ? Number(form.etablissement_id) : undefined,
         latitude: form.latitude !== '' ? Number(form.latitude) : null,
         longitude: form.longitude !== '' ? Number(form.longitude) : null,
@@ -142,6 +255,23 @@ export default function SallesPage() {
     );
   }
 
+  const actives = salles.filter((s) => s.actif);
+  const etat = {
+    gps: actives.filter(verifieGps).length,
+    wifi: actives.filter(verifieWifi).length,
+    qrSeul: actives.filter((s) => !protegee(s)).length,
+    desactivees: salles.length - actives.length,
+  };
+
+  const q = cle(search.trim());
+  const garde = FILTRES.find((f) => f.id === filtre).garde;
+  const visibles = salles
+    .filter(garde)
+    .filter((s) => !q || cle(s.nom).includes(q) || cle(s.code).includes(q))
+    .sort(parUsage);
+
+  const champ = 'w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all';
+
   return (
     <div className="space-y-6">
       {/* En-tête */}
@@ -149,7 +279,7 @@ export default function SallesPage() {
         <div>
           <h1 className="text-2xl font-bold font-headline text-primary">Salles</h1>
           <p className="text-sm text-on-surface-variant mt-1">
-            Configurez les salles avec géolocalisation et réseau WiFi pour la vérification de présence.
+            Ce que chaque salle vérifie au scan, en plus du QR code : la position (GPS) et le réseau (Wi-Fi).
           </p>
         </div>
         <button
@@ -160,87 +290,145 @@ export default function SallesPage() {
         </button>
       </div>
 
-      {/* Barre de recherche */}
-      <div className="relative max-w-md">
-        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
-        <input
-          type="text"
-          placeholder="Rechercher une salle..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 bg-surface-container-high rounded-xl text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all"
-        />
-      </div>
-
-      {/* Liste des salles */}
       {salles.length === 0 ? (
         <div className="text-center py-16 text-on-surface-variant">
           <FiMapPin size={48} className="mx-auto mb-4 opacity-30" />
           <p className="text-lg font-semibold">Aucune salle configurée</p>
-          <p className="text-sm mt-1">Ajoutez des salles pour activer la vérification de présence par géolocalisation et réseau WiFi.</p>
+          <p className="text-sm mt-1">Ajoutez des salles pour activer la vérification de présence par géolocalisation et réseau Wi-Fi.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {salles.map((salle) => (
-            <div
-              key={salle.id}
-              className={`bg-surface-container-lowest rounded-xl p-5 shadow-sm border transition-all ${
-                salle.actif ? 'border-outline-variant/10 hover:border-primary/20' : 'border-error/20 opacity-60'
-              }`}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h3 className="font-bold text-primary">{salle.nom}</h3>
-                  <code className="text-xs text-on-surface-variant font-mono">{salle.code}</code>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => openEdit(salle)} className="p-1.5 hover:bg-surface-container-high rounded-lg transition-colors" title="Modifier">
-                    <FiEdit2 size={14} className="text-on-surface-variant" />
-                  </button>
-                  <button onClick={() => setShowDelete(salle)} className="p-1.5 hover:bg-error/10 rounded-lg transition-colors" title="Supprimer">
-                    <FiTrash2 size={14} className="text-error" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-2 text-xs">
-                {/* GPS */}
-                <div className="flex items-center gap-2">
-                  <FiMapPin size={12} className={salle.latitude ? 'text-secondary' : 'text-on-surface-variant/40'} />
-                  <span className="text-on-surface-variant">
-                    {salle.latitude ? `${salle.latitude}, ${salle.longitude} (∅${salle.rayon_geofence_m}m)` : 'GPS non configuré'}
-                  </span>
-                </div>
-                {/* WiFi */}
-                <div className="flex items-center gap-2">
-                  <FiWifi size={12} className={salle.ssid_attendu ? 'text-secondary' : 'text-on-surface-variant/40'} />
-                  <span className="text-on-surface-variant">
-                    {salle.hors_reseau ? 'Hors réseau (mode dégradé)' : (salle.ssid_attendu || 'WiFi non configuré')}
-                  </span>
-                </div>
-                {/* Statut */}
-                <div className="flex items-center gap-2">
-                  {salle.actif ? (
-                    <span className="flex items-center gap-1 text-secondary"><FiCheck size={12} /> Active</span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-error"><FiX size={12} /> Inactive</span>
-                  )}
-                </div>
-              </div>
+        <>
+          {/* État d'ensemble : les seize salles « GPS non configuré » d'affilée ne
+              disaient pas que la protection au scan était presque absente. */}
+          <section aria-label="État des salles" className="bg-surface-container-lowest rounded-xl p-5 shadow-sm border border-outline-variant/10">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <Compteur valeur={etat.gps} libelle="contrôlent la position (GPS)" />
+              <Compteur valeur={etat.wifi} libelle="contrôlent le réseau (Wi-Fi)" />
+              <Compteur valeur={etat.qrSeul} libelle="ne vérifient que le QR code" alerte />
+              <Compteur valeur={etat.desactivees} libelle="désactivées" />
             </div>
-          ))}
-        </div>
+            {etat.qrSeul > 0 && (
+              <p className="flex items-start gap-2 text-xs text-on-surface-variant mt-4">
+                <FiAlertTriangle size={14} className="text-error shrink-0 mt-0.5" aria-hidden="true" />
+                <span>
+                  Dans une salle « QR seul », le scan ne vérifie pas que l'étudiant est dans la salle : un QR code relayé
+                  à distance peut suffire. Commencez par les salles qui ont des séances à venir, placées en tête de liste.
+                </span>
+              </p>
+            )}
+          </section>
+
+          {/* Filtres et recherche */}
+          <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filtrer les salles">
+              {FILTRES.map((f) => {
+                const actif = filtre === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    aria-pressed={actif}
+                    onClick={() => choisirFiltre(f.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      actif ? 'bg-primary text-white shadow-sm' : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container'
+                    }`}
+                  >
+                    {f.libelle} <span className="opacity-70 tabular-nums">({salles.filter(f.garde).length})</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="relative lg:ml-auto w-full lg:max-w-xs">
+              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} aria-hidden="true" />
+              <input
+                type="search"
+                aria-label="Rechercher une salle"
+                placeholder="Rechercher une salle..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-surface-container-high rounded-xl text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Liste des salles */}
+          {visibles.length === 0 ? (
+            <p className="text-center py-12 text-sm text-on-surface-variant">{VIDES[filtre]}</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {visibles.map((salle) => (
+                <article
+                  key={salle.id}
+                  className={`bg-surface-container-lowest rounded-xl p-5 shadow-sm border transition-all flex flex-col ${
+                    salle.actif ? 'border-outline-variant/10 hover:border-primary/20' : 'border-error/20 opacity-70'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-primary">{salle.nom}</h3>
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <code className="text-xs text-on-surface-variant font-mono">{salle.code}</code>
+                        <Protection salle={salle} />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => openEdit(salle)} className="p-1.5 hover:bg-surface-container-high rounded-lg transition-colors" title="Modifier" aria-label={`Modifier ${salle.nom}`}>
+                        <FiEdit2 size={14} className="text-on-surface-variant" />
+                      </button>
+                      <button onClick={() => setShowDelete(salle)} className="p-1.5 hover:bg-error/10 rounded-lg transition-colors" title="Supprimer" aria-label={`Supprimer ${salle.nom}`}>
+                        <FiTrash2 size={14} className="text-error" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <FiMapPin size={12} className={verifieGps(salle) ? 'text-secondary' : 'text-on-surface-variant/40'} aria-hidden="true" />
+                      <span className="text-on-surface-variant">
+                        {verifieGps(salle)
+                          ? `${Number(salle.latitude).toFixed(5)}, ${Number(salle.longitude).toFixed(5)} · rayon ${salle.rayon_geofence_m} m`
+                          : 'GPS non configuré'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <FiWifi size={12} className={verifieWifi(salle) ? 'text-secondary' : 'text-on-surface-variant/40'} aria-hidden="true" />
+                      <span className="text-on-surface-variant">
+                        {salle.hors_reseau
+                          ? 'Hors réseau : pas de contrôle Wi-Fi'
+                          : (salle.ssid_attendu || salle.bssid_attendu || 'Wi-Fi non configuré')}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <FiCalendar size={12} className="text-on-surface-variant/60" aria-hidden="true" />
+                      <span className="text-on-surface-variant">{usage(salle)}</span>
+                    </div>
+                  </div>
+
+                  {salle.actif && !protegee(salle) && (
+                    <button
+                      type="button"
+                      onClick={() => openEdit(salle)}
+                      className="mt-4 self-start text-xs font-semibold text-primary hover:underline"
+                    >
+                      Configurer le GPS ou le Wi-Fi →
+                    </button>
+                  )}
+                </article>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Modal Création / Édition */}
-      {showModal && (
+      {showModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/40 backdrop-blur-sm overflow-y-auto" onClick={() => setShowModal(false)}>
           <div className="bg-surface-container-lowest rounded-2xl shadow-2xl max-w-2xl w-full p-6 my-8 relative" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-primary font-headline">
                 {editing ? 'Modifier la salle' : 'Nouvelle salle'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-surface-container-high rounded-lg transition-colors">
+              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-surface-container-high rounded-lg transition-colors" aria-label="Fermer">
                 <FiX size={20} className="text-on-surface-variant" />
               </button>
             </div>
@@ -256,14 +444,27 @@ export default function SallesPage() {
               {/* Infos générales */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="sm:col-span-2">
-                  <Field label="Nom de la salle *">
-                    <input type="text" required className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all" value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} />
+                  <Field label="Nom de la salle *" htmlFor="salle-nom">
+                    <input id="salle-nom" type="text" required className={champ} value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} />
                   </Field>
                 </div>
-                <Field label="Code unique *">
-                  <input type="text" required className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all font-mono" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
+                <Field label={editing ? 'Code unique *' : 'Code unique'} htmlFor="salle-code">
+                  <input
+                    id="salle-code"
+                    type="text"
+                    required={Boolean(editing)}
+                    placeholder={editing ? '' : 'Dérivé du nom'}
+                    className={`${champ} font-mono`}
+                    value={form.code}
+                    onChange={(e) => setForm({ ...form, code: e.target.value })}
+                  />
                 </Field>
               </div>
+              {!editing && (
+                <p className="text-[11px] text-on-surface-variant -mt-2">
+                  Laissez le code vide : il sera dérivé du nom (« Labo Info 1 » donne LABO-INFO-1).
+                </p>
+              )}
 
               <Field label="Entité">
                 <div className="flex items-center gap-2 px-3 py-2.5 bg-surface-container-high rounded-lg text-sm text-on-surface-variant">
@@ -276,21 +477,40 @@ export default function SallesPage() {
               <div className="border-t border-outline-variant/20 pt-4">
                 <h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2"><FiMapPin size={16} /> Géolocalisation GPS</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <Field label="Latitude">
-                    <input type="number" step="any" placeholder="Ex: 6.3650" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all font-mono" value={form.latitude} onChange={(e) => setForm({ ...form, latitude: e.target.value })} />
+                  <Field label="Latitude" htmlFor="salle-latitude">
+                    <input id="salle-latitude" type="number" step="any" placeholder="Ex: 6.3650" className={`${champ} font-mono`} value={form.latitude} onChange={(e) => setForm({ ...form, latitude: e.target.value })} />
                   </Field>
-                  <Field label="Longitude">
-                    <input type="number" step="any" placeholder="Ex: 2.4180" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all font-mono" value={form.longitude} onChange={(e) => setForm({ ...form, longitude: e.target.value })} />
+                  <Field label="Longitude" htmlFor="salle-longitude">
+                    <input id="salle-longitude" type="number" step="any" placeholder="Ex: 2.4180" className={`${champ} font-mono`} value={form.longitude} onChange={(e) => setForm({ ...form, longitude: e.target.value })} />
                   </Field>
-                  <Field label="Rayon geofence (mètres)">
-                    <input type="number" min="5" max="500" placeholder="50" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all" value={form.rayon_geofence_m} onChange={(e) => setForm({ ...form, rayon_geofence_m: e.target.value })} />
+                  <Field label="Rayon geofence (mètres)" htmlFor="salle-rayon">
+                    <input id="salle-rayon" type="number" min="5" max="500" placeholder="50" className={champ} value={form.rayon_geofence_m} onChange={(e) => setForm({ ...form, rayon_geofence_m: e.target.value })} />
                   </Field>
                 </div>
+                <div className="flex flex-wrap items-center gap-3 mt-3">
+                  <button
+                    type="button"
+                    onClick={utiliserMaPosition}
+                    disabled={localisation.etat === 'encours'}
+                    className="flex items-center gap-2 px-3 py-2 bg-primary/10 text-primary rounded-lg text-xs font-semibold hover:bg-primary/20 transition-all disabled:opacity-50"
+                  >
+                    {localisation.etat === 'encours' ? <FiLoader className="animate-spin" size={14} /> : <FiCrosshair size={14} />}
+                    Utiliser ma position actuelle
+                  </button>
+                  {localisation.message && (
+                    <p role="status" className={`text-xs ${localisation.etat === 'erreur' ? 'text-error' : 'text-on-surface-variant'}`}>
+                      {localisation.message}
+                    </p>
+                  )}
+                </div>
+                <p className="text-[11px] text-on-surface-variant mt-2">
+                  À faire depuis la salle, avec un téléphone : c'est la position de l'appareil qui est relevée.
+                </p>
               </div>
 
-              {/* Réseau WiFi */}
+              {/* Réseau Wi-Fi */}
               <div className="border-t border-outline-variant/20 pt-4">
-                <h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2"><FiWifi size={16} /> Réseau WiFi</h4>
+                <h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2"><FiWifi size={16} /> Réseau Wi-Fi</h4>
                 {/* Conséquence non évidente, à dire ici : c'est l'administrateur
                     qui la déclenche en remplissant ces champs. */}
                 <p className="text-xs text-on-surface-variant mb-3">
@@ -299,20 +519,17 @@ export default function SallesPage() {
                   un navigateur ne peut pas lire le nom du réseau. Laissez ces champs
                   vides, ou cochez « hors réseau », pour autoriser aussi la page web.
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <Field label="SSID attendu">
-                    <input type="text" placeholder="Ex: IFRI-WiFi" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all" value={form.ssid_attendu} onChange={(e) => setForm({ ...form, ssid_attendu: e.target.value })} />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Field label="SSID attendu" htmlFor="salle-ssid">
+                    <input id="salle-ssid" type="text" placeholder="Ex: IFRI-WiFi" className={champ} value={form.ssid_attendu} onChange={(e) => setForm({ ...form, ssid_attendu: e.target.value })} />
                   </Field>
-                  <Field label="BSSID attendu (MAC)">
-                    <input type="text" placeholder="Ex: 00:11:22:33:44:55" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all font-mono" value={form.bssid_attendu} onChange={(e) => setForm({ ...form, bssid_attendu: e.target.value })} />
-                  </Field>
-                  <Field label="Plage IP (CIDR)">
-                    <input type="text" placeholder="Ex: 192.168.1.0/24" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all font-mono" value={form.ip_range} onChange={(e) => setForm({ ...form, ip_range: e.target.value })} />
+                  <Field label="BSSID attendu (MAC)" htmlFor="salle-bssid">
+                    <input id="salle-bssid" type="text" placeholder="Ex: 00:11:22:33:44:55" className={`${champ} font-mono`} value={form.bssid_attendu} onChange={(e) => setForm({ ...form, bssid_attendu: e.target.value })} />
                   </Field>
                 </div>
                 <label className="flex items-center gap-2 mt-3 cursor-pointer">
                   <input type="checkbox" checked={form.hors_reseau} onChange={(e) => setForm({ ...form, hors_reseau: e.target.checked })} className="rounded border-outline-variant/30 text-primary focus:ring-primary/20" />
-                  <span className="text-xs text-on-surface-variant">Salle hors réseau (pas de vérification WiFi — mode GPS seul)</span>
+                  <span className="text-xs text-on-surface-variant">Salle hors réseau : aucun contrôle Wi-Fi (GPS seul)</span>
                 </label>
               </div>
 
@@ -335,11 +552,12 @@ export default function SallesPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* Modal confirmation suppression */}
-      {showDelete && (
+      {showDelete && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setShowDelete(null)}>
           <div className="bg-surface-container-lowest rounded-2xl shadow-2xl max-w-md w-full p-6 relative" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3 mb-4">
@@ -349,13 +567,13 @@ export default function SallesPage() {
                 <p className="text-xs text-on-surface-variant">{showDelete.nom} ({showDelete.code})</p>
               </div>
             </div>
-            {/* Le texte laissait croire que la suppression aboutirait toujours :
-                le serveur la refuse si des evenements FUTURS utilisent la
-                salle. On enonce la regle avant le clic, plutot que de la faire
-                decouvrir par une erreur. */}
+            {/* La règle est énoncée avant le clic, plutôt que découverte par une
+                erreur : le serveur refuse si des événements à venir utilisent la
+                salle. */}
             <p className="text-sm text-on-surface-variant mb-6">
               Cette action est irréversible. Elle sera refusée si des événements à venir
-              utilisent cette salle ; les événements passés sont conservés.
+              utilisent cette salle ; les événements passés sont conservés. Pour la retirer
+              des listes sans la supprimer, décochez plutôt « Salle active ».
             </p>
             <div className="flex gap-3">
               <button onClick={() => setShowDelete(null)} className="flex-1 px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl text-sm font-semibold hover:bg-surface-container transition-colors">Annuler</button>
@@ -363,15 +581,16 @@ export default function SallesPage() {
                 {deleting && <FiLoader className="animate-spin" />}Supprimer</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
 }
 
-const Field = ({ label, children }) => (
+const Field = ({ label, htmlFor, children }) => (
   <div className="space-y-1">
-    <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">{label}</label>
+    <label htmlFor={htmlFor} className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">{label}</label>
     {children}
   </div>
 );

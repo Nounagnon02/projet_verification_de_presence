@@ -43,6 +43,30 @@ class Salle extends Model
         return $this->hasMany(Evenement::class);
     }
 
+    /** Créneaux hebdomadaires de l'emploi du temps qui occupent la salle. */
+    public function emploisDuTemps(): HasMany
+    {
+        return $this->hasMany(EmploiDuTemps::class);
+    }
+
+    /**
+     * La salle contrôle-t-elle la position au scan ? Il lui faut ses deux
+     * coordonnées : c'est la condition qu'applique le scan de présence.
+     */
+    public function verifieGps(): bool
+    {
+        return $this->latitude !== null && $this->longitude !== null;
+    }
+
+    /**
+     * La salle contrôle-t-elle le réseau au scan ? Il lui faut un SSID ou un
+     * BSSID attendu, et ne pas être déclarée hors réseau.
+     */
+    public function verifieWifi(): bool
+    {
+        return !$this->hors_reseau && (bool) ($this->ssid_attendu || $this->bssid_attendu);
+    }
+
     /**
      * Calcule la distance en mètres entre la salle et une position GPS donnée.
      * Utilise la formule de Haversine.
