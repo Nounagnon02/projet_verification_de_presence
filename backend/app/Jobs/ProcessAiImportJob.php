@@ -15,8 +15,15 @@ class ProcessAiImportJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $tries = 3;
-    public $backoff = [60, 300, 1800];
+    /**
+     * Une seule tentative : les erreurs transitoires (429, 5xx, timeout) sont
+     * déjà relancées PAR le fournisseur, avec un délai qui double
+     * (RelanceLesErreursTransitoires). Relancer le job en plus, jusqu'à 35
+     * minutes plus tard, ne rattrapait que ce cas — et facturait trois appels
+     * pour le même résultat sur les échecs définitifs (clé absente, JSON
+     * invalide, PDF scanné, 4xx).
+     */
+    public $tries = 1;
     public $timeout = 300;
 
     protected Analyse $analyse;
@@ -31,8 +38,16 @@ class ProcessAiImportJob implements ShouldQueue
     {
         $service->analyze($this->analyse);
 
+        // L'échec est déjà porté par l'Analyse (statut « failed » et message),
+        // que l'interface lit par polling : l'administrateur le voit tout de
+        // suite, au lieu d'attendre la fin des relances du job.
         if ($this->analyse->fresh()->status === 'failed') {
-            throw new \Exception($this->analyse->error_message ?? 'Erreur inconnue lors de l\'analyse IA');
+            Log::warning("Import IA échoué via {$service->getProviderName()}", [
+                'analyse_id' => $this->analyse->id,
+                'error'      => $this->analyse->fresh()->error_message,
+            ]);
+
+            return;
         }
 
         Log::info("Import IA terminé avec succès via {$service->getProviderName()}", [

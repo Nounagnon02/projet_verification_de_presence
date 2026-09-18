@@ -3,12 +3,15 @@
 namespace App\Services\Providers;
 
 use App\Contracts\AiProviderInterface;
+use App\Services\Providers\Concerns\RelanceLesErreursTransitoires;
 use App\ValueObjects\AnalysisResult;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class GeminiProvider implements AiProviderInterface
 {
+    use RelanceLesErreursTransitoires;
+
     private string $apiKey;
 
     /**
@@ -19,6 +22,8 @@ class GeminiProvider implements AiProviderInterface
      */
     private string $model;
     private string $baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
+    private int $timeout;
+    private int $maxRetries;
 
     /**
      * Le classificateur remplace l'ancien filtre de sortie, qui ecartait en
@@ -31,6 +36,18 @@ class GeminiProvider implements AiProviderInterface
         $this->classificateur = new \App\Services\Schedule\ClassificateurExtraction();
         $this->apiKey = $apiKey ?? '';
         $this->model  = (string) config('ai.providers.gemini.model', 'gemini-3.6-flash');
+        // 60 s etait le delai le plus court des trois fournisseurs, alors que
+        // Gemini fait le plus gros travail : il recoit le PDF entier et
+        // dechiffre lui-meme les pages scannees, la ou groq et openrouter ne
+        // recoivent que du texte deja extrait.
+        //
+        // Mesure du 2026-08-26 sur une offre de formation scannee de deux
+        // pages : 45 s, soit 75 % du budget. Quatre pages depassaient, et
+        // ProcessAiImportJob reessayait trois fois pour le meme resultat. Le
+        // job dispose de 300 s : 180 s laissent une marge reelle sans jamais
+        // le faire tuer en vol.
+        $this->timeout    = (int) config('ai.providers.gemini.timeout', 180);
+        $this->maxRetries = (int) config('ai.providers.gemini.max_retries', 3);
     }
 
     public function getName(): string
@@ -71,13 +88,19 @@ class GeminiProvider implements AiProviderInterface
                 ],
             ];
 
-            $response = $this->callWithRetry($payload);
+            ['reponse' => $response, 'erreur' => $erreur] = $this->appelerAvecRelance(
+                fn () => Http::timeout($this->timeout)
+                    ->post("{$this->baseUrl}/{$this->model}:generateContent?key={$this->apiKey}", $payload),
+                $this->maxRetries,
+                'Gemini',
+            );
 
-            if (isset($response['status']) && $response['status'] === 'error') {
-                return AnalysisResult::failed($response['message'] ?? 'Erreur API Gemini');
+            if ($erreur !== null) {
+                return AnalysisResult::failed($erreur);
             }
 
-            $text = $response['candidates'][0]['content']['parts'][0]['text'] ?? '';
+            $donnees = $response->json();
+            $text = $donnees['candidates'][0]['content']['parts'][0]['text'] ?? '';
 
             // Nettoyer le JSON
             $text = trim($text);
@@ -99,74 +122,10 @@ class GeminiProvider implements AiProviderInterface
             }
 
             return $this->processCoursesResult($data, $filePath);
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            return AnalysisResult::failed('Timeout de l\'API Gemini.');
         } catch (\Exception $e) {
             Log::error('Gemini : erreur', ['error' => $e->getMessage()]);
             return AnalysisResult::failed('Erreur lors de l\'analyse : ' . $e->getMessage());
         }
-    }
-
-    private function callWithRetry(array $payload, int $maxRetries = 3): array
-    {
-        $attempt = 0;
-        $delay = 1000;
-
-        while ($attempt <= $maxRetries) {
-            try {
-                // 60 s etait le delai le plus court des trois fournisseurs, alors
-                // que gemini fait le plus gros travail : il recoit le PDF entier
-                // et dechiffre lui-meme les pages scannees, la ou groq et
-                // openrouter ne recoivent que du texte deja extrait — avec
-                // 120 s chacun.
-                //
-                // Mesure du 2026-08-26 sur une offre de formation scannee de
-                // deux pages : 45 s, soit 75 % du budget. Quatre pages
-                // depassaient, et ProcessAiImportJob reessayait trois fois pour
-                // le meme resultat. Le job dispose de 300 s : 180 s laissent une
-                // marge reelle sans jamais le faire tuer en vol.
-                $response = Http::timeout(180)
-                    ->post("{$this->baseUrl}/{$this->model}:generateContent?key={$this->apiKey}", $payload);
-
-                if ($response->successful()) {
-                    return $response->json();
-                }
-
-                $status = $response->status();
-
-                if ($status === 429) {
-                    $attempt++;
-                    if ($attempt > $maxRetries) {
-                        return $this->errorResult('Quota API Gemini dépassé.');
-                    }
-                    Log::warning("Gemini : quota dépassé, tentative {$attempt}/{$maxRetries}");
-                    usleep($delay * 1000);
-                    $delay *= 2;
-                    continue;
-                }
-
-                if ($status >= 500) {
-                    $attempt++;
-                    if ($attempt > $maxRetries) {
-                        return $this->errorResult('Erreur serveur Gemini.');
-                    }
-                    usleep($delay * 1000);
-                    $delay *= 2;
-                    continue;
-                }
-
-                return $this->errorResult("Erreur API Gemini ({$status}): " . $response->body());
-            } catch (\Illuminate\Http\Client\ConnectionException $e) {
-                $attempt++;
-                if ($attempt > $maxRetries) {
-                    return $this->errorResult('Timeout API Gemini après ' . $maxRetries . ' tentatives.');
-                }
-                usleep($delay * 1000);
-                $delay *= 2;
-            }
-        }
-
-        return $this->errorResult('Erreur inconnue lors de l\'appel API Gemini.');
     }
 
     private function processScheduleResult(array $data, string $filePath): AnalysisResult
@@ -252,35 +211,17 @@ class GeminiProvider implements AiProviderInterface
 
         return AnalysisResult::completed(
             data: ['ues' => $ues],
-            confidence: 0.95,
+            // Pas de signal fiable par UE/EC pour juger l'extraction d'une
+            // maquette (contrairement au ratio retenus/écartés de l'emploi du
+            // temps, ci-dessus) : sous le seuil de validation humaine (0,70) à
+            // dessein, plutôt qu'un chiffre inventé qui la contournerait.
+            confidence: 0.69,
             metadata: [
                 'total_ues' => count($ues),
                 'total_ecs' => $totalEcs,
                 'filename'  => basename($filePath),
             ],
         );
-    }
-
-    private function calculateConfidence(array $events): float
-    {
-        if (empty($events)) {
-            return 0.0;
-        }
-
-        $totalFields = 0;
-        $presentFields = 0;
-        $expectedKeys = ['ec', 'date', 'heure_debut', 'heure_fin', 'salle'];
-
-        foreach ($events as $event) {
-            foreach ($expectedKeys as $key) {
-                $totalFields++;
-                if (isset($event[$key]) && !empty($event[$key])) {
-                    $presentFields++;
-                }
-            }
-        }
-
-        return $totalFields > 0 ? round($presentFields / $totalFields, 2) : 0;
     }
 
     private function extractUniqueCourses(array $events): array
@@ -362,11 +303,5 @@ class GeminiProvider implements AiProviderInterface
     {
         // Une seule consigne pour tous les fournisseurs : les heures par type.
         return ConsignesMaquette::cours();
-    }
-
-    private function errorResult(string $message): array
-    {
-        Log::warning('GeminiProvider : ' . $message);
-        return ['status' => 'error', 'message' => $message];
     }
 }

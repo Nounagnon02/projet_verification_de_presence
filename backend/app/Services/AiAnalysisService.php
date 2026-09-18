@@ -30,9 +30,12 @@ class AiAnalysisService
         $filePath = $analyse->file_path;
 
         try {
-            // Télécharger le fichier depuis le stockage
+            // Télécharger le fichier depuis le stockage. Disque par défaut
+            // (FILESYSTEM_DISK) : c'est celui sur lequel ImportController écrit
+            // désormais l'upload — « supabase » codé en dur ici le désynchronisait
+            // et rendait l'import IA silencieusement introuvable en local et en test.
             $tmpPath = tempnam(sys_get_temp_dir(), 'ai_') . '.pdf';
-            file_put_contents($tmpPath, Storage::disk('supabase')->get($filePath));
+            file_put_contents($tmpPath, Storage::get($filePath));
 
             if (!file_exists($tmpPath)) {
                 throw new \Exception("Fichier introuvable sur le stockage : {$filePath}");
