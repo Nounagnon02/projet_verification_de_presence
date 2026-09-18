@@ -102,6 +102,45 @@ class GeminiProviderTest extends TestCase
         $this->assertTrue($resultat->isFailed());
     }
 
+    public function test_impose_un_schema_de_sortie_json_sans_rendre_les_champs_optionnels_obligatoires(): void
+    {
+        Http::fake(['*generateContent*' => Http::response($this->reponseGemini('{"ues": []}'), 200)]);
+
+        (new GeminiProvider('cle-test'))->analyzeDocument($this->fichierPdf(), 'courses');
+
+        Http::assertSent(function ($request) {
+            $config = $request->data()['generationConfig'] ?? null;
+
+            if (($config['responseMimeType'] ?? null) !== 'application/json') {
+                return false;
+            }
+
+            $schema = $config['responseSchema'];
+            $champUe = $schema['properties']['ues']['items']['properties'] ?? [];
+
+            // Un champ que la maquette peut ne pas donner (credits, volume_td...)
+            // ne doit jamais figurer dans un tableau « required » : Gemini
+            // inventerait une valeur pour s'y conformer.
+            $required = $schema['properties']['ues']['items']['required'] ?? [];
+
+            return isset($champUe['code'], $champUe['intitule']) && $required === [];
+        });
+    }
+
+    public function test_le_schema_de_lemploi_du_temps_nexige_que_le_champ_ec(): void
+    {
+        Http::fake(['*generateContent*' => Http::response($this->reponseGemini('{"events": []}'), 200)]);
+
+        (new GeminiProvider('cle-test'))->analyzeDocument($this->fichierPdf(), 'schedule');
+
+        Http::assertSent(function ($request) {
+            $schema = $request->data()['generationConfig']['responseSchema'];
+            $requisParCreneau = $schema['properties']['events']['items']['required'] ?? null;
+
+            return $requisParCreneau === ['ec'];
+        });
+    }
+
     public function test_la_confiance_dun_emploi_du_temps_reflete_le_diagnostic_du_classificateur(): void
     {
         // Un créneau daté (compris) et un objet illisible (écarté) : la

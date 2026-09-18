@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Providers;
 
 use App\Contracts\AiProviderInterface;
@@ -85,6 +87,15 @@ class GeminiProvider implements AiProviderInterface
                             ]],
                         ],
                     ],
+                ],
+                // responseSchema contraint la FORME de la réponse (JSON plutôt
+                // qu'un bloc ```json``` noyé dans du texte), pas son CONTENU :
+                // seul « ec » est requis. Rendre les autres champs requis aurait
+                // forcé le modèle à en inventer un quand le document ne le
+                // donne pas — l'inverse de la consigne « n'invente aucune donnée ».
+                'generationConfig' => [
+                    'responseMimeType' => 'application/json',
+                    'responseSchema'   => $this->schemaPourType($type),
                 ],
             ];
 
@@ -260,6 +271,77 @@ class GeminiProvider implements AiProviderInterface
      * d'inventer une date absente : un créneau daté à tort crée un cours fantôme,
      * donc des absences pour des étudiants réels.
      */
+    /**
+     * Schéma de sortie Gemini (sous-ensemble d'OpenAPI 3.0), par type
+     * d'analyse. Seuls les champs que le document donne TOUJOURS sont requis :
+     * le reste doit rester omissible, pour ne pas contredire la consigne
+     * « n'invente aucune donnée » des deux prompts.
+     */
+    private function schemaPourType(string $type): array
+    {
+        return match ($type) {
+            'schedule' => [
+                'type'       => 'OBJECT',
+                'properties' => [
+                    'events' => [
+                        'type'  => 'ARRAY',
+                        'items' => [
+                            'type'       => 'OBJECT',
+                            'properties' => [
+                                'ec'          => ['type' => 'STRING'],
+                                'ec_code'     => ['type' => 'STRING'],
+                                'jour'        => ['type' => 'STRING'],
+                                'date'        => ['type' => 'STRING'],
+                                'heure_debut' => ['type' => 'STRING'],
+                                'heure_fin'   => ['type' => 'STRING'],
+                                'salle'       => ['type' => 'STRING'],
+                                'enseignant'  => ['type' => 'STRING'],
+                                'filiere'     => ['type' => 'STRING'],
+                                'type_seance' => ['type' => 'STRING'],
+                            ],
+                            'required' => ['ec'],
+                        ],
+                    ],
+                    'valide_du' => ['type' => 'STRING'],
+                ],
+                'required' => ['events'],
+            ],
+            'courses' => [
+                'type'       => 'OBJECT',
+                'properties' => [
+                    'ues' => [
+                        'type'  => 'ARRAY',
+                        'items' => [
+                            'type'       => 'OBJECT',
+                            'properties' => [
+                                'code'     => ['type' => 'STRING'],
+                                'intitule' => ['type' => 'STRING'],
+                                'semestre' => ['type' => 'STRING'],
+                                'credits'  => ['type' => 'STRING'],
+                                'ecs'      => [
+                                    'type'  => 'ARRAY',
+                                    'items' => [
+                                        'type'       => 'OBJECT',
+                                        'properties' => [
+                                            'code'         => ['type' => 'STRING'],
+                                            'intitule'     => ['type' => 'STRING'],
+                                            'volume_cm'    => ['type' => 'STRING'],
+                                            'volume_td'    => ['type' => 'STRING'],
+                                            'volume_tp'    => ['type' => 'STRING'],
+                                            'volume_td_tp' => ['type' => 'STRING'],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'required' => ['ues'],
+            ],
+            default => throw new \InvalidArgumentException("Type inconnu : {$type}"),
+        };
+    }
+
     private function getSchedulePrompt(): string
     {
         return implode("\n", [
