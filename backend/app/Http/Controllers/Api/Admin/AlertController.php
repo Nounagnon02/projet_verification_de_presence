@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Exceptions\PresenceManuelleImpossible;
@@ -69,7 +71,12 @@ class AlertController extends Controller
         $seances = $this->seancesVisees($refus->getCollection());
         $presences = $this->presencesDesRefus($refus->getCollection(), $seances);
 
-        return $this->successResponse($refus->through(fn (Anomaly $a) => [
+        // paginatedResponse(), pas successResponse() : ce dernier renvoyait le
+        // paginateur Laravel tel quel dans « data » ({current_page, data: [...],
+        // total, ...}), le seul endpoint de liste à s'écarter du contrat
+        // {data: [...], meta: {...}} partagé par students, presence/history,
+        // notifications, tickets et evenements.
+        return $this->paginatedResponse($refus->through(fn (Anomaly $a) => [
             'id'          => $a->id,
             'type'        => $a->type,
             'description' => $a->description,

@@ -31,7 +31,8 @@ const REFUS = [
 const paginateur = (lignes) => ({
   data: {
     success: true,
-    data: { current_page: 1, data: lignes, from: 1, to: lignes.length, last_page: 1, per_page: 20, total: lignes.length },
+    data: lignes,
+    meta: { current_page: 1, from: 1, to: lignes.length, last_page: 1, per_page: 20, total: lignes.length },
   },
 })
 

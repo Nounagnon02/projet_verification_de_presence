@@ -70,7 +70,7 @@ class ScansRefusesTest extends TestCase
         // Second scan depuis un autre téléphone : refusé.
         $this->scan($etudiant, 'tel-2')->assertStatus(409);
 
-        $ligne = collect($this->refus(['search' => $etudiant->matricule])->assertOk()->json('data.data'))
+        $ligne = collect($this->refus(['search' => $etudiant->matricule])->assertOk()->json('data'))
             ->firstWhere('etudiant.id', $etudiant->id);
 
         $this->assertNotNull($ligne);
@@ -88,7 +88,7 @@ class ScansRefusesTest extends TestCase
 
         // L'alerte existe, mais ce scan se tranche dans la file, pas ici.
         $this->assertDatabaseHas('anomalies', ['type' => 'appareil_partage', 'etudiant_id' => $b->id]);
-        $this->assertSame(0, $this->refus(['search' => $b->matricule])->json('data.total'));
+        $this->assertSame(0, $this->refus(['search' => $b->matricule])->json('meta.total'));
     }
 
     public function test_plus_aucune_decision_ne_se_prend_depuis_cette_page(): void
@@ -132,7 +132,7 @@ class ScansRefusesTest extends TestCase
         $this->assertTrue(AuditLog::where('action', 'presence.enregistrement_manuel')
             ->where('model_id', $presence->id)->where('user_id', $admin->id)->exists());
 
-        $ligne = collect($this->refus(['search' => $etudiant->matricule])->json('data.data'))->firstWhere('id', $refus->id);
+        $ligne = collect($this->refus(['search' => $etudiant->matricule])->json('data'))->firstWhere('id', $refus->id);
         $this->assertSame('valide', $ligne['presence']['statut']);
         $this->assertTrue($ligne['presence']['depuis_ce_refus']);
     }

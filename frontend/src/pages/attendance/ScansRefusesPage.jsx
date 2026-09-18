@@ -131,10 +131,8 @@ export default function ScansRefusesPage() {
         const { data } = await api.get('/admin/alerts', { params, signal: controleur.signal });
         if (annule) return;
 
-        // Paginateur Laravel dans « data » : { current_page, data: [...], total, ... }.
-        const paginateur = data?.data ?? {};
-        setRefus(Array.isArray(paginateur.data) ? paginateur.data : []);
-        setPagination(paginateur.current_page ? paginateur : null);
+        setRefus(Array.isArray(data?.data) ? data.data : []);
+        setPagination(data?.meta ?? null);
       } catch (err) {
         if (annule || err.name === 'CanceledError' || err.name === 'AbortError') return;
         setRefus([]);
