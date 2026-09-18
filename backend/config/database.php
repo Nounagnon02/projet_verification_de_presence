@@ -117,14 +117,6 @@ return [
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
-        'turso' => [
-            'driver' => 'turso',
-            'url' => env('TURSO_DATABASE_URL'),
-            'authToken' => env('TURSO_AUTH_TOKEN'),
-            'database' => env('DB_DATABASE', 'database'),
-            'prefix' => '',
-        ],
-
     ],
 
     /*
