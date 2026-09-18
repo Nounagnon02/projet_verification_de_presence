@@ -8,6 +8,7 @@ use App\Models\Ec;
 use App\Models\Etudiant;
 use App\Models\Presence;
 use App\Models\User;
+use App\Services\AttendanceRateService;
 use App\Services\CriteresExport;
 use App\Traits\ScopedByEtablissement;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -382,7 +383,7 @@ class PresenceHistoryController extends Controller
         return response($content, 200, $headers);
     }
 
-    public function stats(Request $request): JsonResponse
+    public function stats(Request $request, AttendanceRateService $attendance): JsonResponse
     {
         $etablissementId = $this->getEtablissementId($request);
 
@@ -433,9 +434,19 @@ class PresenceHistoryController extends Controller
             ->groupBy('filieres.id', 'filieres.code', 'filieres.intitule')
             ->get();
 
-        $tauxGlobal = $totalEvenements > 0 && $totalEtudiants > 0
-            ? round(($totalPresences / ($totalEvenements * $totalEtudiants)) * 100, 1)
-            : 0;
+        // Même définition que le tableau de bord (AttendanceRateService) : le
+        // dénominateur est le nombre de présences réellement attendues (étudiants
+        // inscrits à l'EC de chaque événement passé), pas « tous les étudiants ×
+        // tous les événements », qui écrasait le taux affiché ici par rapport à
+        // celui du tableau de bord.
+        $filtreEvenementsPasses = function ($q) use ($etablissementId) {
+            $q->where('e.date', '<', now())->where('e.statut', 'termine');
+            if ($etablissementId) {
+                $q->join('filieres as f', 'f.id', '=', 'e.filiere_id')
+                  ->where('f.etablissement_id', $etablissementId);
+            }
+        };
+        $tauxGlobal = $attendance->rate($filtreEvenementsPasses);
 
         return $this->successResponse([
             'total_etudiants'    => $totalEtudiants,
@@ -447,7 +458,7 @@ class PresenceHistoryController extends Controller
         ]);
     }
 
-    public function studentStats(Request $request, Etudiant $student): JsonResponse
+    public function studentStats(Request $request, Etudiant $student, AttendanceRateService $attendance): JsonResponse
     {
         // Vérifier que l'admin a accès à cet étudiant (scope établissement)
         $etablissementId = $this->getEtablissementId($request);
@@ -457,14 +468,18 @@ class PresenceHistoryController extends Controller
 
         $student->load(['filiere', 'presences.evenement.ec']);
 
-        $totalEvenements = DB::table('evenements')
-            ->where('filiere_id', $student->filiere_id)
-            ->where('annee_id', $student->annee_id)
-            ->count();
-
-        $presencesCount = $student->presences()->count();
+        // Même définition que le tableau de bord et stats() ci-dessus : les
+        // événements attendus sont ceux des ECs auxquels l'étudiant est
+        // inscrit, pas « tous les événements de sa filière et de son année »,
+        // qui comptait aussi des cours suivis par d'autres groupes ou d'autres
+        // ECs et faussait le taux individuel.
+        $filtreEtudiant = function ($q) use ($student) {
+            $q->where('s.id', $student->id);
+        };
+        $totalEvenements = $attendance->expected($filtreEtudiant);
+        $presencesCount = $attendance->recorded($filtreEtudiant);
         $absencesCount = max(0, $totalEvenements - $presencesCount);
-        $taux = $totalEvenements > 0 ? round(($presencesCount / $totalEvenements) * 100, 1) : 0;
+        $taux = $attendance->rate($filtreEtudiant);
 
         $statsParCours = $student->presences()
             ->select('evenement_id', DB::raw('COUNT(*) as total'))

@@ -336,4 +336,115 @@ class PresenceHistoryTest extends TestCase
         $response->assertStatus(200)
             ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
     }
+
+    // ── STATS ────────────────────────────────────────────────────
+    //
+    // Régression : stats() et studentStats() calculaient chacun leur propre
+    // taux (« présences / (événements × étudiants) », puis « présences /
+    // événements de la filière ») au lieu de la définition partagée par le
+    // tableau de bord (AttendanceRateService) : présences attendues =
+    // étudiants réellement INSCRITS À L'EC de l'événement. Les deux valaient
+    // un chiffre différent de celui affiché au tableau de bord pour les mêmes
+    // données.
+
+    public function test_stats_utilise_la_meme_definition_du_taux_que_le_tableau_de_bord(): void
+    {
+        // Un second étudiant, inscrit à l'EC : lui seul compte au dénominateur.
+        $inscrit = Etudiant::create([
+            'id'                 => (string) Str::uuid(),
+            'nom'                => 'INSCRIT',
+            'prenom'             => 'Alix',
+            'matricule'          => 'HIST-INS',
+            'filiere_id'         => $this->filiere->id,
+            'annee_id'           => $this->annee->id,
+            'email'              => 'alix.inscrit@test.com',
+            'identifiant_unique' => 'INSCRIT_ALIX_HIST-INS_MIAGE_M1',
+        ]);
+        $inscrit->ecs()->attach([$this->ec->id => ['annee_id' => $this->annee->id]]);
+
+        $coursTermine = Evenement::create([
+            'ec_id'       => $this->ec->id,
+            'filiere_id'  => $this->filiere->id,
+            'annee_id'    => $this->annee->id,
+            'date'        => today()->subDay()->format('Y-m-d'),
+            'heure_debut' => '08:00',
+            'heure_fin'   => '10:00',
+            'salle'       => 'Salle Test',
+            'statut'      => 'termine',
+        ]);
+
+        Presence::create([
+            'etudiant_id'  => $inscrit->id,
+            'evenement_id' => $coursTermine->id,
+            'statut'       => 'valide',
+            'heure_scan'   => today()->subDay()->setTime(9, 0),
+        ]);
+
+        // $this->etudiant a des présences (via createPresence()) mais n'est
+        // inscrit à aucun EC : l'ancienne formule le comptait quand même au
+        // dénominateur (total_etudiants), faussant le taux.
+        $this->createPresence('valide', today()->subDay()->setTime(9, 5));
+
+        $response = $this->withToken($this->bearerToken)
+            ->getJson('/api/admin/presence/stats');
+
+        $response->assertStatus(200);
+
+        // 1 seul inscrit attendu au cours terminé, 1 présence valide : 100 %.
+        $this->assertSame(100.0, (float) $response->json('data.taux_global'));
+    }
+
+    public function test_studentstats_ne_compte_que_les_evenements_des_ecs_suivis(): void
+    {
+        // $this->etudiant a été créé après $this->ec (setUp) : l'inscription
+        // automatique à la création de l'EC ne l'a donc pas visé, il faut
+        // l'inscrire explicitement.
+        $this->etudiant->ecs()->attach([$this->ec->id => ['annee_id' => $this->annee->id]]);
+
+        $autreEc = Ec::create([
+            'ue_id'          => Ue::create([
+                'code'           => 'UE-AUTRE',
+                'intitule'       => 'Autre UE',
+                'filiere_id'     => $this->filiere->id,
+                'annee_id'       => $this->annee->id,
+                'semestre'       => 1,
+                'volume_horaire' => 20,
+            ])->id,
+            'code'           => 'EC-AUTRE',
+            'intitule'       => 'Autre EC',
+            'volume_horaire' => 20,
+        ]);
+
+        // Événement de cet AUTRE EC, dans la même filière et année. La
+        // création de son UE a auto-inscrit $this->etudiant (comportement
+        // normal, Etudiant::autoEnroll) : on simule un abandon de cet EC en
+        // le détachant, comme le ferait un retrait manuel. L'ancienne formule
+        // (tous les événements de la filière/année, sans regarder l'EC)
+        // aurait compté cet événement malgré l'abandon.
+        Evenement::create([
+            'ec_id'       => $autreEc->id,
+            'filiere_id'  => $this->filiere->id,
+            'annee_id'    => $this->annee->id,
+            'date'        => today()->subDays(2)->format('Y-m-d'),
+            'heure_debut' => '08:00',
+            'heure_fin'   => '10:00',
+            'salle'       => 'Salle Test',
+            'statut'      => 'termine',
+        ]);
+        $this->etudiant->ecs()->detach($autreEc->id);
+
+        // $this->etudiant reste inscrit à $this->ec (auto-inscription du
+        // setUp) : $this->evenement compte aussi comme attendu, en plus de
+        // celui-ci — 2 événements attendus au total, 1 seul honoré.
+        $this->createPresence('valide');
+
+        $response = $this->withToken($this->bearerToken)
+            ->getJson("/api/admin/students/{$this->etudiant->id}/stats");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.total_evenements', 2)
+            ->assertJsonPath('data.total_presences', 1)
+            ->assertJsonPath('data.total_absences', 1);
+        $this->assertSame(50.0, (float) $response->json('data.taux_presence'));
+    }
 }
