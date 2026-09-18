@@ -1,4 +1,4 @@
-import FingerprintJS from '@fingerprintjs/fingerprintjs';
+import FingerprintJS, { type Agent, type Confidence, type GetResult } from '@fingerprintjs/fingerprintjs';
 
 /**
  * Service pour la génération d'empreintes digitales (device fingerprinting)
@@ -8,20 +8,17 @@ import FingerprintJS from '@fingerprintjs/fingerprintjs';
  * corrélation scan QR + device fingerprint pour validation de présence.
  */
 
-let fpPromise: Promise<FingerprintJS.Agent> | null = null;
+let fpPromise: Promise<Agent> | null = null;
 
 /**
  * Initialise l'agent FingerprintJS (singleton)
  * Doit être appelé une seule fois au démarrage de l'application
  */
-export function initFingerprint(): Promise<FingerprintJS.Agent> {
+export function initFingerprint(): Promise<Agent> {
   if (!fpPromise) {
-    fpPromise = FingerprintJS.load({
-      // Options de configuration
-      cache: true, // Mettre en cache le résultat pour la session
-      // Note: En production, on peut configurer un endpoint pour envoyer le visitorId
-      // à un serveur pour déduplication côté serveur
-    });
+    // Pas d'option « cache » : elle n'existe pas dans LoadOptions (v5) et était
+    // ignorée sans erreur. La mise en cache, c'est ce singleton.
+    fpPromise = FingerprintJS.load();
   }
   return fpPromise;
 }
@@ -42,9 +39,9 @@ export async function getVisitorId(): Promise<string> {
  * Récupère le résultat complet du fingerprinting
  * Inclut le visitorId, la confiance (confidence), et les composants bruts
  *
- * @returns Promise<FingerprintJS.GetResult> - Résultat complet
+ * @returns Promise<GetResult> - Résultat complet
  */
-export async function getFullFingerprint(): Promise<FingerprintJS.GetResult> {
+export async function getFullFingerprint(): Promise<GetResult> {
   const fp = await initFingerprint();
   return fp.get();
 }
@@ -55,25 +52,12 @@ export async function getFullFingerprint(): Promise<FingerprintJS.GetResult> {
  */
 export interface FingerprintComponents {
   visitorId: string;
-  confidence: FingerprintJS.Confidence;
-  components: {
-    userAgent: string;
-    language: string;
-    colorDepth: number;
-    screenResolution: string;
-    timezone: string;
-    platform: string;
-    touchSupport: number;
-    hardwareConcurrency: number;
-    deviceMemory: number;
-    canvas: string;
-    webgl: string;
-    webglVendorAndRenderer: string;
-    audio: string;
-    fonts: string[];
-    // Composants supplémentaires disponibles selon la config
-    [key: string]: unknown;
-  };
+  confidence: Confidence;
+  // Le type réel de la bibliothèque. Il était décrit à la main (userAgent,
+  // webgl, webglVendorAndRenderer... en chaînes) : des champs qui n'existent pas
+  // dans la v5, masqués par un « as » que rien ne vérifiait — personne ne les
+  // lit, ce qui a empêché de le voir.
+  components: GetResult['components'];
 }
 
 /**
@@ -86,15 +70,16 @@ export async function getAntiFraudFingerprint(): Promise<FingerprintComponents> 
   return {
     visitorId: result.visitorId,
     confidence: result.confidence,
-    components: result.components as FingerprintComponents['components'],
+    components: result.components,
   };
 }
 
 /**
- * Compare deux visitorIds pour détecter un changement d'appareil
- * Retourne true si c'est probablement le même appareil (seuil de confiance)
+ * Compare deux visitorIds pour détecter un changement d'appareil : égalité
+ * stricte. Un paramètre « threshold » (seuil de confiance) était accepté sans
+ * jamais être lu.
  */
-export function isSameDevice(visitorId1: string, visitorId2: string, threshold: number = 0.8): boolean {
+export function isSameDevice(visitorId1: string, visitorId2: string): boolean {
   return visitorId1 === visitorId2;
 }
 
