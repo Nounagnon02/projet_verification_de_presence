@@ -5,6 +5,16 @@ npm-debug.log
 README.md
 .env
 .env.example
+# Toutes les variantes : .env.testing et les sauvegardes .env.avant-*
+# contiennent des secrets en clair et etaient copiees dans l'image par
+# le « COPY . . » du Dockerfile.
+.env.*
+# Documents bureautiques : 1,7 Mo embarques dans l'image pour rien.
+*.docx
+.~lock.*#
+# Sources et rapports de tests : inutiles a l'execution.
+tests
+.phpunit.result.cache
 Dockerfile
 .dockerignore
 vendor

@@ -18,6 +18,10 @@ Thumbs.db
 *.crt
 *.p12
 *.pfx
+# Notes de configuration contenant des secrets en clair. Retirees du suivi :
+# leurs valeurs sont a considerer comme compromises et a regenerer.
+backend/render-env-vars.md
+backend/neon-setup.md
 
 # Dependencies
 node_modules/
@@ -77,6 +81,16 @@ temp/
 
 # Project-specific documents and exports to exclude from version control
 CDC_UAC_Presence_v2.docx
+backend/CDC_UAC_Presence_v2.docx
+backend/CDC_UAC_Presence_Final.docx
+Tables_specifications_Offres_actuelles2022.docx
+# Verrous LibreOffice laisses par un document ouvert.
+.~lock.*#
+# Dumps de session du serveur MCP Playwright : 2,7 Mo de YAML regenerables.
+.playwright-mcp/
+# Photo source du fond de connexion : 4,1 Mo, 4032x3024, EXIF GPS inclus.
+# La version servie est frontend/public/images/rectorat-uac.webp (191 Ko).
+frontend/public/images/rectorat-uac.jpg
 fonctionnalites_a_ajouter.md
 tests-students-erreurs.csv
 tests-students-valides.csv
@@ -85,7 +99,8 @@ Mémoire_de_prince/
 maquette/
 .playwright/
 New_IFRI_template_latex_05_04_2020_Bachelor___Licence/
-docs/
+/docs/*
+!/docs/PLAN_DE_TESTS.md
 # Exception : backend/docs/openapi.yaml n'est pas de la documentation annexe,
 # c'est un fichier LU A L'EXECUTION. ApiDocumentationController le charge pour
 # servir /api/docs/json, et la passe OWASP ZAP s'en sert de cible. L'exclure
@@ -122,3 +137,6 @@ Mémoire_de_prince-*/
 # Dossier de travail des logos sources (sélections, variantes) — les fichiers
 # effectivement utilisés par l'application sont copiés dans ses assets.
 logoM/
+
+# Cache de PHPStan (regenerable).
+backend/storage/phpstan/
