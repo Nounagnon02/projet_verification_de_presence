@@ -38,7 +38,6 @@ const CourseValidationPage = lazy(() => import('./pages/import/CourseValidationP
 // Phase 6 - Report pages
 const ReportPrintPreview = lazy(() => import('./pages/reports/ReportPrintPreview'));
 const DepartmentFilterReport1 = lazy(() => import('./pages/reports/DepartmentFilterReport1'));
-const DepartmentFilterReport2 = lazy(() => import('./pages/reports/DepartmentFilterReport2'));
 const SemesterComparison = lazy(() => import('./pages/reports/SemesterComparison'));
 const ProgramComparison = lazy(() => import('./pages/reports/ProgramComparison'));
 const AcademicYearComparison = lazy(() => import('./pages/reports/AcademicYearComparison'));
@@ -136,7 +135,7 @@ function App() {
               <Route path="import" element={<BulkImportPage />} />
               <Route path="annees" element={<AnneesUniversitairesPage />} />
               <Route path="jours-feries" element={<JoursFeriesPage />} />
-              <Route path="settings" element={<div className="text-center py-16 text-slate-400">Paramètres globaux (à venir)</div>} />
+              <Route path="settings" element={<div className="text-center py-16 text-on-surface-variant">Paramètres globaux (à venir)</div>} />
             </Route>
 
             {/* Page publique de validation, hors de toute coquille.
@@ -175,8 +174,12 @@ function App() {
               <Route path="schedules/slate" element={<AcademicSlatePage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="reports/print/:id" element={<ReportPrintPreview />} />
+              {/* DepartmentFilterReport2 supprimee : elle ne lisait jamais :id et
+                  affichait un taux de 85 % ecrit en dur pour chaque filiere.
+                  DepartmentFilterReport1 lit desormais :id pour preselectionner
+                  la filiere, avec de vraies donnees. */}
               <Route path="reports/department" element={<DepartmentFilterReport1 />} />
-              <Route path="reports/department/:id" element={<DepartmentFilterReport2 />} />
+              <Route path="reports/department/:id" element={<DepartmentFilterReport1 />} />
               <Route path="reports/comparison/semester" element={<SemesterComparison />} />
               <Route path="reports/comparison/filiere" element={<ProgramComparison />} />
               <Route path="reports/comparison/year" element={<AcademicYearComparison />} />

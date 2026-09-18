@@ -19,6 +19,15 @@
   --on-secondary: 255 255 255;
   --secondary-container: 230 246 239;
   --on-secondary-container: 0 43 25;
+
+  /* « success » n'existait pas : 17 usages de text-success/bg-success/
+     border-success (dont l'ecran de confirmation de scan) ne produisaient
+     AUCUNE regle CSS. Memes valeurs que --secondary, deja le vert de
+     l'application — pas une cinquieme couleur a maintenir separement. */
+  --success: 0 135 81;
+  --on-success: 255 255 255;
+  --success-container: 230 246 239;
+  --on-success-container: 0 43 25;
   
   --warning: 252 209 22;
   --on-warning: 74 60 0;
@@ -68,6 +77,11 @@
     --on-secondary: 0 56 32;
     --secondary-container: 0 92 54;
     --on-secondary-container: 52 211 153;
+
+    --success: 16 185 129;
+    --on-success: 0 56 32;
+    --success-container: 0 92 54;
+    --on-success-container: 52 211 153;
     
     --warning: 251 191 36;
     --on-warning: 56 44 0;

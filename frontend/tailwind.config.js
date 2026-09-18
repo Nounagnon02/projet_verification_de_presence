@@ -1,6 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  darkMode: ['class'],
+  // Le thème sombre suit prefers-color-scheme, par les variables de src/index.css.
+  // Avec « class », les variantes dark: ne s'activaient JAMAIS : rien dans
+  // l'application n'ajoute la classe « dark » — 4 classes mortes le prouvaient.
+  darkMode: 'media',
   content: [
     './index.html',
     './src/**/*.{js,jsx,ts,tsx}',
@@ -18,6 +21,12 @@ module.exports = {
         'on-secondary': 'rgb(var(--on-secondary) / <alpha-value>)',
         'secondary-container': 'rgb(var(--secondary-container) / <alpha-value>)',
         'on-secondary-container': 'rgb(var(--on-secondary-container) / <alpha-value>)',
+        // Token manquant : 17 usages de text-success/bg-success/border-success
+        // (dont l'ecran de confirmation de scan) ne produisaient aucune regle.
+        success: 'rgb(var(--success) / <alpha-value>)',
+        'on-success': 'rgb(var(--on-success) / <alpha-value>)',
+        'success-container': 'rgb(var(--success-container) / <alpha-value>)',
+        'on-success-container': 'rgb(var(--on-success-container) / <alpha-value>)',
         warning: 'rgb(var(--warning) / <alpha-value>)',
         'on-warning': 'rgb(var(--on-warning) / <alpha-value>)',
         'warning-container': 'rgb(var(--warning-container) / <alpha-value>)',

@@ -1,12 +1,23 @@
 import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { FiDownload, FiLoader } from 'react-icons/fi';
-import Badge from '../../components/ui/Badge';
 import api from '../../api/axios';
 
+/**
+ * Sert aussi bien « /reports/department » (liste complète) que
+ * « /reports/department/:id » (une filière déjà présélectionnée) : c'est
+ * DepartmentFilterReport2 qui portait cette seconde route, sans jamais lire
+ * cet identifiant ni interroger le moindre vrai chiffre — un taux de 85 %
+ * ÉCRIT EN DUR présenté comme une statistique pour chaque filière. Cette
+ * page-ci fait déjà tout ce qu'il fallait : elle n'avait qu'à recevoir l'id.
+ */
 export default function DepartmentFilterReport1() {
+  const { id } = useParams();
+  const idPreselectionne = id ? Number(id) : null;
+
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected] = useState(idPreselectionne);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -107,7 +118,7 @@ export default function DepartmentFilterReport1() {
               <th className="p-4 font-semibold">Département</th>
               <th className="p-4 font-semibold text-right">Étudiants</th>
               <th className="p-4 font-semibold text-right">Code</th>
-              <th className="p-4 font-semibold text-right">Tendance</th>
+              <th className="p-4 font-semibold text-right">Taux</th>
             </tr>
           </thead>
           <tbody>
@@ -116,11 +127,7 @@ export default function DepartmentFilterReport1() {
                 <td className="p-4 font-medium">{row.department}</td>
                 <td className="p-4 text-right">{row.students}</td>
                 <td className="p-4 text-right font-mono text-xs">{row.code}</td>
-                <td className="p-4 text-right">
-                  <Badge variant={row.trend === 'up' ? 'success' : 'error'}>
-                    {row.trend === 'up' ? '↑' : '↓'}
-                  </Badge>
-                </td>
+                <td className="p-4 text-right">{row.rate}%</td>
               </tr>
             )) : (
               <tr><td colSpan={4} className="p-8 text-center text-on-surface-variant">Aucune donnée</td></tr>
