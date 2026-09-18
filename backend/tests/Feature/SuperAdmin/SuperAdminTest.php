@@ -46,9 +46,12 @@ class SuperAdminTest extends TestCase
 
         $this->sfx = Str::random(6);
 
+        // 2FA activée : le groupe /super-admin l'exige désormais. Les tests qui
+        // portent spécifiquement sur cette exigence créent leur propre jeton.
         $this->jetonSuperAdmin = User::factory()->create([
-            'email' => "sa-{$this->sfx}@example.test",
-            'role'  => 'super_admin',
+            'email'                   => "sa-{$this->sfx}@example.test",
+            'role'                    => 'super_admin',
+            'two_factor_confirmed_at' => now(),
         ])->createToken('t')->plainTextToken;
 
         // Administrateur d'une faculté tierce : il ne doit franchir aucune
@@ -771,17 +774,58 @@ class SuperAdminTest extends TestCase
         $this->assertNotNull($faculte->fresh());
     }
 
-    public function test_un_super_admin_au_mot_de_passe_temporaire_accede_quand_meme(): void
+    public function test_un_super_admin_au_mot_de_passe_temporaire_est_desormais_bloque(): void
     {
+        // Régression : le groupe /super-admin ne portait ni « password.changed »
+        // ni « throttle:api », ni la 2FA — trois protections que le groupe
+        // /admin porte pourtant. Un mot de passe temporaire restait pleinement
+        // utilisable sur ces routes, sans jamais forcer sa régularisation.
         $jeton = User::factory()->create([
-            'email'                => "temp-{$this->sfx}@example.test",
-            'role'                 => 'super_admin',
-            'must_change_password' => true,
+            'email'                   => "temp-{$this->sfx}@example.test",
+            'role'                    => 'super_admin',
+            'must_change_password'    => true,
+            'two_factor_confirmed_at' => now(),
         ])->createToken('t')->plainTextToken;
 
-        // DÉFAUT constaté : le groupe /super-admin ne porte ni « password.changed »
-        // ni « throttle:api », contrairement au groupe /admin. Un mot de passe
-        // temporaire reste donc pleinement utilisable sur ces routes.
+        $this->json('GET', '/api/super-admin/dashboard', [], ['Authorization' => 'Bearer ' . $jeton])
+            ->assertStatus(403)
+            ->assertJsonPath('must_change_password', true);
+    }
+
+    public function test_un_super_admin_sans_2fa_est_bloque_sur_les_routes_super_admin(): void
+    {
+        $jeton = User::factory()->create([
+            'email' => "no2fa-{$this->sfx}@example.test",
+            'role'  => 'super_admin',
+        ])->createToken('t')->plainTextToken;
+
+        $this->json('GET', '/api/super-admin/dashboard', [], ['Authorization' => 'Bearer ' . $jeton])
+            ->assertStatus(403)
+            ->assertJsonPath('code', 'two_factor_setup_required');
+    }
+
+    public function test_un_super_admin_sans_2fa_peut_neanmoins_l_activer(): void
+    {
+        // La route de configuration de la 2FA vit dans le groupe « admin »,
+        // pas « super-admin » : le middleware qui l'impose ne doit pas
+        // enfermer un super admin qui ne l'a pas encore activée.
+        $jeton = User::factory()->create([
+            'email' => "setup2fa-{$this->sfx}@example.test",
+            'role'  => 'super_admin',
+        ])->createToken('t')->plainTextToken;
+
+        $this->json('POST', '/api/admin/profile/2fa/enable', [], ['Authorization' => 'Bearer ' . $jeton])
+            ->assertOk();
+    }
+
+    public function test_un_super_admin_avec_2fa_accede_normalement(): void
+    {
+        $jeton = User::factory()->create([
+            'email'                   => "avec2fa-{$this->sfx}@example.test",
+            'role'                    => 'super_admin',
+            'two_factor_confirmed_at' => now(),
+        ])->createToken('t')->plainTextToken;
+
         $this->json('GET', '/api/super-admin/dashboard', [], ['Authorization' => 'Bearer ' . $jeton])
             ->assertStatus(200)
             ->assertJsonPath('success', true);

@@ -36,6 +36,14 @@ class User extends Authenticatable
             'email_verified_at'         => 'datetime',
             'two_factor_confirmed_at'   => 'datetime',
             'must_change_password'      => 'boolean',
+            // Chiffrés au repos : une lecture de la base — la fuite qui a
+            // motivé la rotation de APP_KEY — ne doit pas livrer un secret TOTP
+            // exploitable directement. La forme JSON de
+            // two_factor_recovery_codes (voir ProfileController) traverse le
+            // chiffrement inchangée : « encrypted », pas « encrypted:array »,
+            // ne touche qu'à l'enveloppe, jamais au contenu.
+            'two_factor_secret'         => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted',
         ];
     }
 

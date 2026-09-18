@@ -24,6 +24,8 @@ return Application::configure(basePath: dirname(__DIR__))
             // un jeton d'étudiant sur une route d'administration, et l'inverse.
             'ability'            => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
             'abilities'          => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
+            '2fa.super_admin'    => \App\Http\Middleware\RequireTwoFactorForSuperAdmin::class,
+            'cloisonnement.modeles' => \App\Http\Middleware\RestrictModelsToEtablissement::class,
         ]);
 
         // Le rôle avant la recherche de la ressource. Sinon la liaison de modèle
@@ -35,16 +37,48 @@ return Application::configure(basePath: dirname(__DIR__))
             prepend: \App\Http\Middleware\CheckRole::class,
         );
 
-        // SPA stateful auth (cookies httpOnly Sanctum) + Security headers
+        // Le garde de cloisonnement inspecte les modeles LIES par la route : il
+        // doit tourner APRES que SubstituteBindings les ait resolus, sans quoi
+        // il ne verrait que des identifiants et non des modeles Eloquent.
+        $middleware->appendToPriorityList(
+            after: \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            append: \App\Http\Middleware\RestrictModelsToEtablissement::class,
+        );
+
+        // Proxy de confiance. En production, l'API est derriere le repartiteur de
+        // Render, qui termine le TLS et transmet la requete en HTTP avec
+        // X-Forwarded-Proto et X-Forwarded-For. Sans proxy approuve, Laravel ignore
+        // ces en-tetes : $request->secure() est toujours faux, et ForceHttps
+        // redirige chaque requete vers elle-meme (boucle de 301) ; $request->ip()
+        // vaut l'adresse du repartiteur, si bien que toutes les limites de debit
+        // par IP etaient partagees par l'ensemble des utilisateurs. Le
+        // TrustProxies de app/Http/Middleware n'etait reference que par
+        // app/Http/Kernel.php, que Laravel 12 ne charge plus.
         //
+        // « * » n'approuve que le pair direct (REMOTE_ADDR) : l'IP client retenue
+        // est la derniere ajoutee a X-Forwarded-For par ce pair, pas une valeur
+        // qu'un client aurait placee plus a gauche dans l'en-tete.
+        $middleware->trustProxies(at: '*');
+
         // ForceHttps etait ecrit mais n'etait enregistre NULLE PART : une requete
         // en clair etait servie telle quelle. Le seul dispositif actif etait
         // URL::forceScheme() dans AppServiceProvider, qui ne concerne que les URL
         // GENEREES par l'application, jamais les requetes entrantes. Le cahier des
         // charges annoncait pourtant une « redirection forcee par middleware ».
+        //
+        // EnsureFrontendRequestsAreStateful (mode « SPA stateful », cookies
+        // httpOnly Sanctum) a ete retire : ni le SPA React ni l'application
+        // mobile n'appellent /sanctum/csrf-cookie ni n'envoient de requete avec
+        // credentials — les deux s'authentifient exclusivement par jeton
+        // Bearer. Ce middleware n'avait donc d'autre effet que d'activer une
+        // session pour toute origine listee dans SANCTUM_STATEFUL_DOMAINS
+        // (« localhost » par defaut, faute de valeur explicite) : un appelant
+        // qui se declarait Origin: http://localhost obtenait un cookie de
+        // session simplement en s'authentifiant, y compris pour un compte
+        // protege par la double authentification — voir la correction de
+        // AuthenticatedSessionController::store().
         $middleware->api(prepend: [
             \App\Http\Middleware\ForceHttps::class,
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             \App\Http\Middleware\SecurityHeaders::class,
         ]);
     })

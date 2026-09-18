@@ -150,8 +150,11 @@ class ApiDocumentationTest extends TestCase
 
         // Ce sont les surfaces d'attaque : elles doivent figurer dans la
         // specification, sinon la passe de securite ne les voit pas.
+        //
+        // « post /presence/scan » en est sorti : il exige desormais un jeton
+        // etudiant (auth:sanctum, ability:etudiant) et n'est plus un point
+        // d'entree public — voir routes/api.php.
         $critiques = [
-            'post /presence/scan',
             'get /presence/course-by-token/{P}',
             'post /login',
             'post /auth/student/login',

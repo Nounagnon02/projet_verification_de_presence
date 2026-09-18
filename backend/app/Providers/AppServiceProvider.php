@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -50,26 +52,49 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
+        // Politique de mot de passe (CDC 9.1). ProfileController::updatePassword
+        // n'exigeait qu'un « min:8 » sans complexité ; NewPasswordController,
+        // PasswordController et RegisteredUserController appelaient déjà
+        // Password::defaults(), mais rien ne le définissait — c'était donc,
+        // en silence, le défaut du framework, lui aussi un simple min:8.
+        //
+        // ->uncompromised() appelle l'API haveibeenpwned.com : réservé à la
+        // production, où le réseau sortant est disponible ; en test, cet
+        // appel échouerait ou ralentirait chaque test de mot de passe.
+        Password::defaults(function () {
+            $regle = Password::min(10)->letters()->numbers();
+
+            return $this->app->environment('production') ? $regle->uncompromised() : $regle;
+        });
+
         // Enregistrement du namespace mail pour les templates d'email
         // Les vues publiées sont dans resources/views/vendor/mail/
         View::addNamespace('mail', resource_path('views/vendor/mail/html'));
 
 
         // Rate Limiting pour le scan de présence (CDC 9.2.4)
-        // Limite : 3 requêtes par minute par device ou par IP
+        // Limite : 3 requêtes par minute par étudiant authentifié ET par IP.
+        //
+        // Indexée sur « device_fingerprint » auparavant — une valeur fournie
+        // par le client, qu'une empreinte aléatoire par requête suffisait à
+        // faire sortir de toute limite. Le scan étant désormais authentifié
+        // (auth:sanctum, ability:etudiant), l'identité de l'appelant est
+        // garantie par le serveur ; l'IP, elle, n'est fiable que parce que le
+        // répartiteur de Render est déclaré proxy de confiance
+        // (bootstrap/app.php) — sans quoi elle serait, elle aussi, une entête
+        // que le client écrit lui-même.
         RateLimiter::for('scan-presence', function (Request $request) {
-            $key = $request->input('device_fingerprint')
-                ?: $request->ip()
-                ?? 'unknown';
+            $reponseSaturee = function (Request $request, array $headers) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Trop de tentatives. Veuillez patienter avant de rescanner.',
+                ], 429, $headers);
+            };
 
-            return Limit::perMinute(3)
-                ->by('scan:' . $key)
-                ->response(function (Request $request, array $headers) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Trop de tentatives. Veuillez patienter avant de rescanner.',
-                    ], 429, $headers);
-                });
+            return [
+                Limit::perMinute(3)->by('scan:etudiant:' . $request->user()?->id)->response($reponseSaturee),
+                Limit::perMinute(3)->by('scan:ip:' . $request->ip())->response($reponseSaturee),
+            ];
         });
 
         // Rate Limiting pour le login étudiant (app mobile).
@@ -118,18 +143,37 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // Rate Limiting pour le login admin (CDC 9.1)
-        // Limite : 5 tentatives par minute par IP
+        // Limite : 5 tentatives par minute par email ET par IP — double clé,
+        // comme « student-login ». Indexée sur le seul email auparavant : en
+        // faisant varier l'email essayé, un mot de passe se testait contre des
+        // milliers de comptes sans jamais être ralenti (password spraying).
         RateLimiter::for('login', function (Request $request) {
-            $key = $request->input('email')
-                ?: $request->ip()
-                ?? 'unknown';
+            $reponseSaturee = function (Request $request, array $headers) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Trop de tentatives de connexion. Réessayez dans 1 minute.',
+                ], 429, $headers);
+            };
+
+            return [
+                Limit::perMinute(5)->by('login:email:' . Str::lower((string) $request->input('email')))->response($reponseSaturee),
+                Limit::perMinute(20)->by('login:ip:' . $request->ip())->response($reponseSaturee),
+            ];
+        });
+
+        // Rate Limiting dédié à la vérification du code TOTP (CDC 9.1).
+        // ProfileController::confirm2FA()/verify2FA() n'étaient couverts que
+        // par le throttle général de 60 requêtes/minute : un espace de 10^6
+        // codes s'épuise largement dans cette marge.
+        RateLimiter::for('totp', function (Request $request) {
+            $cle = $request->user()?->id ?: $request->ip() ?? 'unknown';
 
             return Limit::perMinute(5)
-                ->by('login:' . $key)
+                ->by('totp:' . $cle)
                 ->response(function (Request $request, array $headers) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Trop de tentatives de connexion. Réessayez dans 1 minute.',
+                        'message' => 'Trop de tentatives. Veuillez patienter avant de réessayer.',
                     ], 429, $headers);
                 });
         });

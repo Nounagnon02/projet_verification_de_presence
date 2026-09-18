@@ -47,7 +47,7 @@ class AnneesUniversitairesTest extends TestCase
 
         $this->jetonA = User::factory()->faculteAdmin($this->etabA->id)->create(['email' => "annees-a-{$this->sfx}@test.local"])->createToken('t')->plainTextToken;
         $this->jetonB = User::factory()->faculteAdmin($this->etabB->id)->create(['email' => "annees-b-{$this->sfx}@test.local"])->createToken('t')->plainTextToken;
-        $this->jetonSuper = User::factory()->create(['email' => "annees-s-{$this->sfx}@test.local", 'role' => 'super_admin'])->createToken('t')->plainTextToken;
+        $this->jetonSuper = User::factory()->create(['email' => "annees-s-{$this->sfx}@test.local", 'role' => 'super_admin', 'two_factor_confirmed_at' => now()])->createToken('t')->plainTextToken;
 
         AnneeAcademique::where('active', true)->update(['active' => false]);
         $this->y1 = $this->annee('2081-2082', true);

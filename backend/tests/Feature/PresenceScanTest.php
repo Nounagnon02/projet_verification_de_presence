@@ -131,11 +131,9 @@ class PresenceScanTest extends TestCase
      */
     public function test_scan_valide(): void
     {
-        $response = $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $this->etudiant->identifiant_unique,
+        $response = $this->withToken($this->jetonDeScan($this->etudiant))->postJson('/api/presence/scan', [
             'token'              => $this->token,
             'device_fingerprint' => 'device-abc-123',
-            'scan_challenge'     => $this->defiDeScan($this->token),
             'latitude'           => 6.3608,
             'longitude'          => 2.4354,
         ]);
@@ -172,11 +170,9 @@ class PresenceScanTest extends TestCase
             'actif'        => true,
         ]);
 
-        $response = $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $this->etudiant->identifiant_unique,
+        $response = $this->withToken($this->jetonDeScan($this->etudiant))->postJson('/api/presence/scan', [
             'token'              => $expiredToken,
             'device_fingerprint' => 'device-abc-123',
-            'scan_challenge'     => $this->defiDeScan($this->token),
         ]);
 
         $response->assertStatus(410)
@@ -207,11 +203,9 @@ class PresenceScanTest extends TestCase
             'identifiant_unique' => 'MARTIN_SOPHIE_TEST-002_AUTRE_L3',
         ]);
 
-        $response = $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $autreEtudiant->identifiant_unique,
+        $response = $this->withToken($this->jetonDeScan($autreEtudiant))->postJson('/api/presence/scan', [
             'token'              => $this->token,
             'device_fingerprint' => 'device-xyz-789',
-            'scan_challenge'     => $this->defiDeScan($this->token),
         ]);
 
         $response->assertStatus(403)
@@ -225,11 +219,9 @@ class PresenceScanTest extends TestCase
     public function test_tentative_fraude_double_scan(): void
     {
         // Premier scan valide
-        $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $this->etudiant->identifiant_unique,
+        $this->withToken($this->jetonDeScan($this->etudiant))->postJson('/api/presence/scan', [
             'token'              => $this->token,
             'device_fingerprint' => 'device-premier-001',
-            'scan_challenge'     => $this->defiDeScan($this->token),
         ])->assertStatus(201);
 
         // Créer un nouveau QR code pour un deuxième scan (le premier a été invalidé)
@@ -242,11 +234,9 @@ class PresenceScanTest extends TestCase
         ]);
 
         // Deuxième scan avec un device DIFFÉRENT → fraude
-        $response = $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $this->etudiant->identifiant_unique,
+        $response = $this->withToken($this->jetonDeScan($this->etudiant))->postJson('/api/presence/scan', [
             'token'              => $secondToken,
             'device_fingerprint' => 'device-frauduleux-999',
-            'scan_challenge'     => $this->defiDeScan($secondToken),
         ]);
 
         $response->assertStatus(409)
@@ -270,104 +260,47 @@ class PresenceScanTest extends TestCase
     }
 
     // =====================================================================
-    // Contrat client <-> serveur sur scan_challenge
+    // Contrat : le scan exige un jeton étudiant, qui seul désigne l'étudiant
     //
-    // Ces deux tests sont les seuls de la suite a ne PAS recalculer la formule
-    // du serveur. Ils partent de ce qu'un vrai client obtient reellement, et
-    // c'est precisement ce qui manquait : la suite pouvait etre entierement
-    // verte alors qu'aucun client existant ne parvenait a faire valider un
-    // scan.
+    // Avant l'authentification du scan, ces deux tests vérifiaient un défi
+    // cryptographique émis par le serveur puis renvoyé tel quel — un mécanisme
+    // qui n'authentifiait rien de plus qu'un jeton QR déjà valide. Le scan
+    // exige désormais un jeton Sanctum de capacité « etudiant » : c'est lui,
+    // et lui seul, qui désigne l'étudiant.
     // =====================================================================
 
-    public function test_le_defi_emis_par_le_serveur_est_accepte_au_scan(): void
+    public function test_scan_sans_jeton_est_refuse(): void
     {
-        // Etape 1 — le client ouvre l'URL du QR Code et lit les infos du cours.
-        $infos = $this->getJson('/api/presence/course-by-token/' . $this->token)
-            ->assertOk()
-            ->json('data');
-
-        $this->assertArrayHasKey(
-            'scan_challenge',
-            $infos,
-            "Le client n'a aucun moyen d'obtenir un defi valide si l'endpoint ne le fournit pas."
-        );
-        $this->assertNotEmpty($infos['scan_challenge']);
-
-        // Etape 2 — il soumet le defi tel quel, sans rien recalculer.
         $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $this->etudiant->identifiant_unique,
             'token'              => $this->token,
-            'device_fingerprint' => 'device-contrat-001',
-            'scan_challenge'     => $infos['scan_challenge'],
+            'device_fingerprint' => 'device-sans-jeton',
             'latitude'           => 6.3608,
             'longitude'          => 2.4354,
-        ])->assertStatus(201)->assertJsonPath('success', true);
-
-        $this->assertDatabaseHas('presences', [
-            'etudiant_id'  => $this->etudiant->id,
-            'evenement_id' => $this->evenement->id,
-            'statut'       => 'valide',
-        ]);
-    }
-
-    public function test_un_defi_fabrique_par_le_client_est_refuse(): void
-    {
-        // Un defi derive d'un secret cote client — la conception precedente —
-        // doit etre rejete, et laisser une trace exploitable.
-        $defiForge = hash('sha256', 'device-contrat-002:uac-presence-secret');
-
-        $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $this->etudiant->identifiant_unique,
-            'token'              => $this->token,
-            'device_fingerprint' => 'device-contrat-002',
-            'scan_challenge'     => $defiForge,
-            'latitude'           => 6.3608,
-            'longitude'          => 2.4354,
-        ])->assertStatus(403)
-            ->assertJsonPath('success', false);
-
-        $this->assertDatabaseHas('anomalies', [
-            'etudiant_id' => $this->etudiant->id,
-            'type'        => 'invalid_scan_challenge',
-            'severity'    => 'high',
-        ]);
+        ])->assertStatus(401);
 
         $this->assertDatabaseMissing('presences', [
-            'etudiant_id'  => $this->etudiant->id,
             'evenement_id' => $this->evenement->id,
         ]);
     }
 
-    public function test_le_defi_d_un_autre_qr_code_est_refuse(): void
+    public function test_le_jeton_designe_l_etudiant_quel_que_soit_le_corps_de_la_requete(): void
     {
-        // Le defi est lie au jeton : celui d'une autre seance ne doit pas passer.
-        $autreToken = (string) \Illuminate\Support\Str::uuid();
-        \App\Models\QrCode::create([
-            'evenement_id' => $this->evenement->id,
-            'token'        => $autreToken,
-            'expire_at'    => Carbon::now()->addMinutes(5),
-            'actif'        => true,
-        ]);
-
-        $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $this->etudiant->identifiant_unique,
+        // Régression : l'étudiant était identifié par « identifiant_unique »
+        // posté dans le corps — une chaîne déterministe, reconstituable par
+        // n'importe quel camarade de promotion. Un champ du même nom dans le
+        // corps ne doit plus avoir AUCUN effet : seul le jeton compte.
+        $response = $this->withToken($this->jetonDeScan($this->etudiant))->postJson('/api/presence/scan', [
+            'identifiant_unique' => 'CECI_NE_DESIGNE_PERSONNE',
             'token'              => $this->token,
-            'device_fingerprint' => 'device-contrat-003',
-            'scan_challenge'     => $this->defiDeScan($autreToken),
+            'device_fingerprint' => 'device-corps-ignore',
             'latitude'           => 6.3608,
             'longitude'          => 2.4354,
-        ])->assertStatus(403);
-    }
+        ]);
 
-    // =====================================================================
-    // Robustesse de l'endpoint public course-by-token
-    //
-    // Trouve par la passe OWASP ZAP du 2026-08-24 : la colonne « token » est de
-    // type uuid en base, et interroger Postgres avec une valeur qui n'en est pas
-    // un levait une erreur de syntaxe SQL. L'endpoint — public, non authentifie
-    // — repondait donc 500 en divulguant le type d'erreur applicative
-    // (regles ZAP 100000 et 90022).
-    // =====================================================================
+        $response->assertStatus(201)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.matricule', $this->etudiant->matricule);
+    }
 
     public static function jetonsMalFormes(): array
     {
@@ -444,11 +377,9 @@ class PresenceScanTest extends TestCase
 
         $this->assertSoftDeleted('presences', ['id' => $presence->id]);
 
-        $reponse = $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $this->etudiant->identifiant_unique,
+        $reponse = $this->withToken($this->jetonDeScan($this->etudiant))->postJson('/api/presence/scan', [
             'token'              => $this->token,
             'device_fingerprint' => 'device-apres-suppression',
-            'scan_challenge'     => $this->defiDeScan($this->token),
             'latitude'           => 6.3608,
             'longitude'          => 2.4354,
         ]);
@@ -487,11 +418,9 @@ class PresenceScanTest extends TestCase
         ]);
         $presence->delete();
 
-        $corps = $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $this->etudiant->identifiant_unique,
+        $corps = $this->withToken($this->jetonDeScan($this->etudiant))->postJson('/api/presence/scan', [
             'token'              => $this->token,
             'device_fingerprint' => 'device-autre',
-            'scan_challenge'     => $this->defiDeScan($this->token),
         ])->getContent();
 
         foreach (['SQLSTATE', 'duplicate key', 'presences_etudiant', 'pgsql', 'Connection:'] as $fuite) {
@@ -528,11 +457,9 @@ class PresenceScanTest extends TestCase
         ]));
 
         foreach ($camarades as $rang => $camarade) {
-            $this->postJson('/api/presence/scan', [
-                'identifiant_unique' => $camarade->identifiant_unique,
+            $this->withToken($this->jetonDeScan($camarade))->postJson('/api/presence/scan', [
                 'token'              => $this->token,
                 'device_fingerprint' => 'appareil-personnel-' . $rang,
-                'scan_challenge'     => $this->defiDeScan($this->token),
                 'latitude'           => 6.3608,
                 'longitude'          => 2.4354,
             ])->assertStatus(201)->assertJsonPath('success', true);
@@ -556,11 +483,9 @@ class PresenceScanTest extends TestCase
         // de la salle affichait encore le premier : l'etudiant suivant scannait
         // une image devenue inexploitable. La rotation appartient desormais au
         // seul planificateur.
-        $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $this->etudiant->identifiant_unique,
+        $this->withToken($this->jetonDeScan($this->etudiant))->postJson('/api/presence/scan', [
             'token'              => $this->token,
             'device_fingerprint' => 'device-rotation',
-            'scan_challenge'     => $this->defiDeScan($this->token),
             'latitude'           => 6.3608,
             'longitude'          => 2.4354,
         ])->assertStatus(201);
@@ -581,11 +506,9 @@ class PresenceScanTest extends TestCase
         \App\Models\QrCode::where('token', $this->token)
             ->update(['expire_at' => Carbon::now()->subSecond()]);
 
-        $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $this->etudiant->identifiant_unique,
+        $this->withToken($this->jetonDeScan($this->etudiant))->postJson('/api/presence/scan', [
             'token'              => $this->token,
             'device_fingerprint' => 'device-tardif',
-            'scan_challenge'     => $this->defiDeScan($this->token),
         ])->assertStatus(410);
     }
 }

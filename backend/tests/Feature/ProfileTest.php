@@ -49,14 +49,48 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($user)
+            // 10 caracteres, lettres et chiffres : la politique de mot de passe
+            // (AppServiceProvider::boot) l'exige desormais.
             ->putJson('/api/admin/profile/password', [
                 'current_password'      => 'current-password',
-                'password'              => 'new-password',
-                'password_confirmation' => 'new-password',
+                'password'              => 'nouveau-mdp1',
+                'password_confirmation' => 'nouveau-mdp1',
             ]);
 
         $response->assertOk()
             ->assertJsonPath('success', true);
+    }
+
+    public function test_un_mot_de_passe_sans_chiffre_est_refuse(): void
+    {
+        $user = User::factory()->create([
+            'password' => bcrypt('current-password'),
+        ]);
+
+        $this->actingAs($user)
+            ->putJson('/api/admin/profile/password', [
+                'current_password'      => 'current-password',
+                'password'              => 'sans-aucun-chiffre',
+                'password_confirmation' => 'sans-aucun-chiffre',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('password');
+    }
+
+    public function test_un_mot_de_passe_trop_court_est_refuse(): void
+    {
+        $user = User::factory()->create([
+            'password' => bcrypt('current-password'),
+        ]);
+
+        $this->actingAs($user)
+            ->putJson('/api/admin/profile/password', [
+                'current_password'      => 'current-password',
+                'password'              => 'abc123',
+                'password_confirmation' => 'abc123',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('password');
     }
 
     public function test_correct_password_must_be_provided_to_update_password(): void

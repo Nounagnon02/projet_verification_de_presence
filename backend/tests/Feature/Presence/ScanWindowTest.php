@@ -125,11 +125,9 @@ class ScanWindowTest extends TestCase
 
         $device = 'device-fenetre';
 
-        return $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $this->etudiant->identifiant_unique,
+        return $this->withToken($this->jetonDeScan($this->etudiant))->postJson('/api/presence/scan', [
             'token'              => $token,
             'device_fingerprint' => $device,
-            'scan_challenge'     => $this->defiDeScan($token),
         ]);
     }
 
@@ -188,11 +186,9 @@ class ScanWindowTest extends TestCase
 
         $device = 'device-minuit';
 
-        $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $this->etudiant->identifiant_unique,
+        $this->withToken($this->jetonDeScan($this->etudiant))->postJson('/api/presence/scan', [
             'token'              => $token,
             'device_fingerprint' => $device,
-            'scan_challenge'     => $this->defiDeScan($token),
         ])->assertStatus(201);
     }
 

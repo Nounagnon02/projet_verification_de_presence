@@ -44,7 +44,7 @@ class ProfileController extends Controller
     {
         $validated = $request->validate([
             'current_password' => 'required|current_password',
-            'password'         => 'required|string|min:8|confirmed',
+            'password'         => ['required', 'string', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
         ]);
 
         $request->user()->forceFill([

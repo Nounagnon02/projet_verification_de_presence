@@ -34,6 +34,11 @@ class ReportController extends Controller
     {
         $evenement = Evenement::with(['ec', 'presences.etudiant'])->findOrFail($evenementId);
 
+        // La feuille d'émargement (noms, matricules, heures de scan) n'était
+        // protégée que par le rôle : tout admin de faculté pouvait télécharger
+        // celle de n'importe quelle séance de l'université en parcourant les ID.
+        $this->authorizeEtablissement($evenement, $request, 'filiere');
+
         $data = [
             'evenement' => $evenement,
             'date'      => now()->format('d/m/Y H:i'),
@@ -51,6 +56,10 @@ class ReportController extends Controller
      */
     public function departmentReport(Request $request, Filiere $filiere, \App\Services\AttendanceRateService $attendance): mixed
     {
+        // Filière liée par la route : sans ce contrôle, le rapport (et sa
+        // version PDF) d'une filière d'une autre faculté était servi tel quel.
+        $this->authorizeEtablissement($filiere, $request);
+
         $totalEtudiants = Etudiant::where('filiere_id', $filiere->id)->count();
         $totalEvenements = Evenement::whereHas('ec.ue.filieres', fn ($q) => $q->where('filieres.id', $filiere->id))->where('date', '<', now())->count();
 
@@ -189,7 +198,11 @@ class ReportController extends Controller
         // Totaux globaux
         $totalPresences = $statsParSemestre->sum('total_presences');
         $totalEvenements = $statsParSemestre->sum('total_evenements');
-        $totalEtudiants = Etudiant::where('annee_id', $anneeAcademique->id)->count();
+        // Comptait sur TOUTE la base : un admin de faculte lisait l'effectif
+        // de l'universite entiere, pas celui de son etablissement.
+        $totalEtudiants = Etudiant::where('annee_id', $anneeAcademique->id)
+            ->when($etablissementId, fn ($q) => $q->whereHas('filiere', fn ($f) => $f->where('etablissement_id', $etablissementId)))
+            ->count();
 
         $filieres = Filiere::select('filieres.id', 'filieres.code', 'filieres.intitule', 'filieres.niveau',
                 DB::raw('COUNT(DISTINCT presences.id) as total_presences'),

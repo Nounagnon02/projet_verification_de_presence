@@ -26,6 +26,16 @@ class Etudiant extends Model
         'est_responsable',
     ];
 
+    /**
+     * Le hachage du code d'accès ne sort jamais du serveur : il n'a d'usage
+     * que pour Hash::check au moment de la connexion. Sans ce masquage, le
+     * moindre toArray() d'un étudiant — une ressource, un journal d'audit, une
+     * réponse d'API — le publierait et offrirait une cible à casser hors ligne.
+     */
+    protected $hidden = [
+        'code_acces',
+    ];
+
     protected $casts = [
         'est_responsable' => 'boolean',
     ];

@@ -15,8 +15,10 @@ class EventAndYearRulesTest extends TestCase
     private function token(): string
     {
         return User::factory()->create([
-            'email' => 'evt-' . Str::random(6) . '@example.test',
-            'role'  => 'super_admin',
+            'email'                   => 'evt-' . Str::random(6) . '@example.test',
+            'role'                    => 'super_admin',
+            // Le groupe /super-admin exige désormais la 2FA (voir routes/api.php).
+            'two_factor_confirmed_at' => now(),
         ])->createToken('t')->plainTextToken;
     }
 

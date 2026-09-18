@@ -33,16 +33,26 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Attempt to authenticate the request's credentials.
+     * Vérifie les identifiants SANS authentifier la requête.
+     *
+     * Auth::attempt() journalisait l'utilisateur — cookie de session posé —
+     * avant même de savoir si un second facteur était requis. Combiné au mode
+     * Sanctum « stateful » (actif pour toute origine déclarée dans
+     * SANCTUM_STATEFUL_DOMAINS, « localhost » par défaut faute de valeur
+     * explicite), un appelant qui se déclarait Origin: http://localhost
+     * obtenait une session valide avec le seul mot de passe : la 2FA devenait
+     * une formalité d'interface, sans jamais bloquer l'accès. Auth::validate()
+     * confirme les identifiants sans ouvrir de session ; c'est au contrôleur,
+     * une fois le second facteur passé (ou absent), d'appeler Auth::login().
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function authenticate(): void
+    public function validerIdentifiants(): \App\Models\User
     {
         try {
             $this->ensureIsNotRateLimited();
 
-            if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+            if (! Auth::guard('web')->validate($this->only('email', 'password'))) {
                 RateLimiter::hit($this->throttleKey());
 
                 throw ValidationException::withMessages([
@@ -51,6 +61,11 @@ class LoginRequest extends FormRequest
             }
 
             RateLimiter::clear($this->throttleKey());
+
+            /** @var \App\Models\User $utilisateur */
+            $utilisateur = Auth::guard('web')->getLastAttempted();
+
+            return $utilisateur;
         } catch (ValidationException $e) {
             throw $e;
         } catch (\Exception $e) {

@@ -95,6 +95,14 @@ class EnrollmentController extends Controller
         $this->authorizeEtablissement($student, $request, 'filiere');
         $this->refuserSiAnneeClose((int) $student->annee_id, $request);
 
+        // Seul $student était vérifié : rien n'empêchait de désinscrire un
+        // étudiant d'un EC d'une AUTRE faculté — l'EC n'appartenant à personne
+        // en particulier ici, le détachement (une simple ligne de table pivot)
+        // réussissait silencieusement sans toucher à ses données.
+        if (!$student->ecs()->where('ecs.id', $ec->id)->exists()) {
+            return $this->notFoundResponse("Cet étudiant n'est pas inscrit à cet EC.");
+        }
+
         $student->ecs()->detach($ec->id);
 
         return $this->successResponse(null, 'Étudiant désinscrit de cet EC.');

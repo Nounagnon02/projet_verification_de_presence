@@ -6,17 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
 use App\Http\Resources\EtudiantResource;
+use App\Jobs\SendIdentifiantEmailJob;
 use App\Models\AnneeAcademique;
 use App\Models\Etudiant;
 use App\Models\Filiere;
+use App\Services\CodeAccesEtudiant;
 use App\Services\IdentifiantService;
 use App\Services\StudentPromotionService;
 use App\Traits\ScopedByEtablissement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class StudentController extends Controller
@@ -110,6 +110,10 @@ class StudentController extends Controller
 
         $filiere = Filiere::findOrFail($request->filiere_id);
 
+        // « exists:filieres,id » ne dit rien de l'établissement : un admin de
+        // faculté pouvait inscrire un étudiant dans la filière d'une autre.
+        $this->authorizeEtablissement($filiere, $request);
+
         // L'inscription se fait toujours dans l'année active : on l'impose ici
         // plutôt que de laisser l'administrateur la choisir. C'est celle de
         // l'établissement de la filière — les facultés ne basculent pas toutes
@@ -191,7 +195,11 @@ class StudentController extends Controller
         $etudiant->setRelation('filiere', $filiere);
         $etudiant->setRelation('anneeAcademique', $annee);
 
-        $this->envoyerIdentifiantParEmail($etudiant);
+        // Code d'accès tiré à l'inscription : c'est le seul secret de la
+        // connexion étudiante, l'identifiant unique étant déterministe donc
+        // devinable. Il ne quitte le serveur que par l'e-mail ci-dessous, et
+        // n'apparaît dans aucune réponse d'API.
+        SendIdentifiantEmailJob::dispatch($etudiant, CodeAccesEtudiant::attribuer($etudiant));
 
         return $this->createdResponse(
             new EtudiantResource($etudiant),
@@ -200,36 +208,28 @@ class StudentController extends Controller
     }
 
     /**
-     * Envoi de l'identifiant unique par email (synchrone).
+     * Renvoie les identifiants d'un étudiant avec un code d'accès NEUF.
      *
-     * L'inscription est déjà validée en base quand cette méthode est appelée :
-     * aucune défaillance d'envoi ne doit la transformer en erreur côté client.
+     * Le code n'est pas récupérable : la base n'en garde que le hachage. Un
+     * étudiant qui a perdu le sien ne peut donc qu'en obtenir un autre, ce qui
+     * invalide le précédent — l'administration n'a rien à lire ni à dicter.
+     *
+     * POST /api/admin/students/{student}/identifiants
      */
-    private function envoyerIdentifiantParEmail(Etudiant $etudiant): void
+    public function renvoyerIdentifiants(Request $request, Etudiant $student): JsonResponse
     {
-        try {
-            Mail::send('emails.identifiant', [
-                'nom' => $etudiant->nom,
-                'prenom' => $etudiant->prenom,
-                'identifiant' => $etudiant->identifiant_unique,
-                'filiere' => $etudiant->filiere->intitule,
-                'annee' => $etudiant->anneeAcademique->libelle,
-            ], function ($message) use ($etudiant) {
-                $message->to($etudiant->email)
-                    ->subject('Votre identifiant unique - Système de présence UAC');
-            });
-        } catch (\Throwable $e) {
-            // \Throwable et non \Exception : une erreur de configuration du mailer
-            // (classe de transport absente, driver inconnu) lève une \Error qui
-            // ferait échouer l'inscription entière avec un 500.
-            try {
-                Log::error("Erreur envoi email étudiant {$etudiant->matricule}: " . $e->getMessage());
-            } catch (\Throwable) {
-                // Le journal lui-même peut être indisponible (canal stderr non
-                // ouvrable sous Apache) : sans ce second filet, c'est le
-                // traitement de l'erreur d'e-mail qui provoquait le 500.
-            }
-        }
+        $this->authorizeEtablissement($student, $request, 'filiere');
+
+        $student->loadMissing(['filiere', 'anneeAcademique']);
+
+        SendIdentifiantEmailJob::dispatch($student, CodeAccesEtudiant::attribuer($student));
+
+        // La réponse ne contient jamais le code : elle passerait par les
+        // journaux du répartiteur et par l'historique du navigateur.
+        return $this->successResponse(
+            ['email' => $student->email],
+            "Un nouveau code d'accès a été envoyé à l'étudiant. Le précédent ne fonctionne plus."
+        );
     }
 
     /**
@@ -241,6 +241,13 @@ class StudentController extends Controller
         $this->authorizeEtablissement($student, $request, 'filiere');
 
         $data = $request->validated();
+
+        // La filière actuelle de l'étudiant est contrôlée ci-dessus, pas celle
+        // vers laquelle on le déplace : un admin pouvait l'envoyer dans une
+        // autre faculté, et perdait ensuite tout droit de le corriger.
+        if (isset($data['filiere_id']) && (int) $data['filiere_id'] !== (int) $student->filiere_id) {
+            $this->authorizeEtablissement(Filiere::findOrFail($data['filiere_id']), $request);
+        }
 
         if ($request->filled('nom') || $request->filled('prenom')) {
             $nom     = $request->filled('nom') ? $request->nom : $student->nom;

@@ -11,6 +11,7 @@ use App\Models\Evenement;
 use App\Models\Filiere;
 use App\Models\Presence;
 use App\Models\QrCode;
+use App\Models\Salle;
 use App\Models\Ue;
 use App\Models\User;
 use Illuminate\Routing\Middleware\ThrottleRequests;
@@ -111,9 +112,10 @@ class ScansRefusesTest extends TestCase
     public function test_enregistrer_la_presence_d_un_etudiant_refuse_a_tort(): void
     {
         $etudiant = $this->etudiant();
-        // Refus réel : défi de sécurité invalide ; la séance est notée.
-        $this->scan($etudiant, 'tel-1', 'defi-faux')->assertStatus(403);
-        $refus = Anomaly::where('etudiant_id', $etudiant->id)->where('type', 'invalid_scan_challenge')->firstOrFail();
+        $this->exigerGeolocalisation();
+        // Refus réel : position non transmise ; la séance est notée.
+        $this->scan($etudiant, 'tel-1')->assertStatus(403);
+        $refus = Anomaly::where('etudiant_id', $etudiant->id)->where('type', 'verification_echouee')->firstOrFail();
         $admin = $this->superAdmin();
 
         $this->enTantQue($admin)
@@ -138,7 +140,8 @@ class ScansRefusesTest extends TestCase
     public function test_le_motif_est_obligatoire(): void
     {
         $etudiant = $this->etudiant();
-        $this->scan($etudiant, 'tel-1', 'defi-faux')->assertStatus(403);
+        $this->exigerGeolocalisation();
+        $this->scan($etudiant, 'tel-1')->assertStatus(403);
         $refus = Anomaly::where('etudiant_id', $etudiant->id)->firstOrFail();
 
         $this->enTantQue($this->superAdmin())
@@ -228,19 +231,38 @@ class ScansRefusesTest extends TestCase
         return $etudiant;
     }
 
-    private function scan(Etudiant $etudiant, string $telephone, ?string $defi = null): \Illuminate\Testing\TestResponse
+    private function scan(Etudiant $etudiant, string $telephone): \Illuminate\Testing\TestResponse
     {
         // Un jeton neuf par scan, comme la rotation du planificateur.
         QrCode::where('evenement_id', $this->seance->id)->update(['actif' => false]);
         $token = (string) Str::uuid();
         QrCode::create(['evenement_id' => $this->seance->id, 'token' => $token, 'expire_at' => Carbon::now()->addMinutes(5), 'actif' => true]);
 
-        return $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $etudiant->identifiant_unique,
+        return $this->withToken($this->jetonDeScan($etudiant))->postJson('/api/presence/scan', [
             'token'              => $token,
             'device_fingerprint' => $telephone,
-            'scan_challenge'     => $defi ?? $this->defiDeScan($token),
         ]);
+    }
+
+    /**
+     * Exige la géolocalisation sur la séance : un scan sans position produit
+     * désormais un refus RÉEL (anomalie « verification_echouee »), qui est le
+     * scénario que les tests de saisie manuelle visent. Le défi cryptographique
+     * qui servait auparavant à provoquer un refus a disparu avec le scan
+     * authentifié.
+     */
+    private function exigerGeolocalisation(): void
+    {
+        $salle = Salle::create([
+            'etablissement_id' => Etablissement::factory()->create()->id,
+            'nom'              => 'Salle stricte ' . Str::random(4),
+            'code'             => 'STRICT-' . Str::random(6),
+            'latitude'         => 6.3608,
+            'longitude'        => 2.4354,
+            'rayon_geofence_m' => 50,
+            'actif'            => true,
+        ]);
+        $this->seance->update(['salle_id' => $salle->id]);
     }
 
     private function refus(array $parametres = [])

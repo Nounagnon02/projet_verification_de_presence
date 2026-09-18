@@ -6,12 +6,28 @@ use App\Http\Controllers\Controller;
 use App\Models\Etudiant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
 class StudentAuthController extends Controller
 {
     /**
-     * Authentifie un étudiant avec son email et son identifiant unique.
+     * Message unique de refus. Distinguer « email inconnu », « identifiant
+     * erroné » et « code erroné » transformerait la connexion en oracle : le
+     * premier message dirait quel étudiant existe, le second confirmerait un
+     * identifiant deviné. Un seul et même texte pour les trois.
+     */
+    private const REFUS = 'Identifiants invalides.';
+
+    /**
+     * Authentifie un étudiant avec son email, son identifiant unique et son
+     * code d'accès.
+     *
+     * Le code d'accès est le seul des trois à être secret : l'identifiant
+     * unique est déterministe (NOM_PRENOM_MATRICULE_FILIERE_ANNEE, voir
+     * IdentifiantService) et l'email suit la convention de l'université. Sans
+     * ce troisième facteur, un camarade de promotion reconstituait le couple de
+     * toutes pièces et pointait à la place d'un absent.
      *
      * POST /api/auth/student/login
      */
@@ -20,12 +36,13 @@ class StudentAuthController extends Controller
         $validator = Validator::make($request->all(), [
             'email'              => 'required|email',
             'identifiant_unique' => 'required|string',
+            'code'               => 'required|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Email ou identifiant invalide.',
+                'message' => self::REFUS,
                 'errors'  => $validator->errors(),
             ], 422);
         }
@@ -37,7 +54,27 @@ class StudentAuthController extends Controller
         if (!$etudiant) {
             return response()->json([
                 'success' => false,
-                'message' => 'Identifiants invalides. Vérifiez votre email et votre identifiant unique.',
+                'message' => self::REFUS,
+            ], 422);
+        }
+
+        // Étudiant inscrit avant la mise en place du code : sans ce cas
+        // distinct, il lirait « identifiants invalides » et chercherait
+        // indéfiniment une faute de frappe dans des identifiants pourtant
+        // exacts. Le code lui est attribué par « etudiants:codes-acces
+        // --envoyer » ou par le renvoi d'identifiants côté administration.
+        if (!$etudiant->code_acces) {
+            return response()->json([
+                'success' => false,
+                'code'    => 'code_absent',
+                'message' => "Aucun code d'accès n'a encore été envoyé. Demandez-le à votre administration.",
+            ], 409);
+        }
+
+        if (!Hash::check((string) $request->input('code'), $etudiant->code_acces)) {
+            return response()->json([
+                'success' => false,
+                'message' => self::REFUS,
             ], 422);
         }
 

@@ -76,11 +76,9 @@ class SharedDeviceFraudTest extends TestCase
         $token = (string) Str::uuid();
         QrCode::create(['evenement_id' => $this->evenement->id, 'token' => $token, 'expire_at' => Carbon::now()->addMinutes(5), 'actif' => true]);
 
-        return $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $e->identifiant_unique,
+        return $this->withToken($this->jetonDeScan($e))->postJson('/api/presence/scan', [
             'token'              => $token,
             'device_fingerprint' => $device,
-            'scan_challenge'     => $this->defiDeScan($token),
         ]);
     }
 

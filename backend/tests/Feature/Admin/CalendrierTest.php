@@ -45,7 +45,7 @@ class CalendrierTest extends TestCase
         $this->etabA = Etablissement::create(['code' => 'CA' . $this->sfx, 'nom' => 'Faculté A', 'email' => "ca-{$this->sfx}@test.local"]);
         $this->etabB = Etablissement::create(['code' => 'CB' . $this->sfx, 'nom' => 'Faculté B', 'email' => "cb-{$this->sfx}@test.local"]);
         $this->jetonA = User::factory()->faculteAdmin($this->etabA->id)->create(['email' => "cal-a-{$this->sfx}@test.local"])->createToken('t')->plainTextToken;
-        $this->jetonSuper = User::factory()->create(['role' => 'super_admin', 'email' => "cal-s-{$this->sfx}@test.local"])->createToken('t')->plainTextToken;
+        $this->jetonSuper = User::factory()->create(['role' => 'super_admin', 'email' => "cal-s-{$this->sfx}@test.local", 'two_factor_confirmed_at' => now()])->createToken('t')->plainTextToken;
 
         AnneeAcademique::where('active', true)->update(['active' => false]);
         $this->annee = AnneeAcademique::create(['libelle' => '2044-2045', 'date_debut' => '2025-10-01', 'date_fin' => '2045-09-30', 'active' => true]);

@@ -20,6 +20,14 @@ class PasswordResetLinkController extends Controller
     }
 
     /**
+     * Message unique, quel que soit le statut réel de l'envoi (compte
+     * inconnu, lien envoyé, débit dépassé). « We can't find a user with that
+     * email address » distinguait un email inconnu d'un email existant :
+     * l'endpoint devenait un oracle permettant d'énumérer les comptes.
+     */
+    private const MESSAGE = "Si un compte existe avec cette adresse, un lien de réinitialisation vient d'être envoyé.";
+
+    /**
      * Handle an incoming password reset link request.
      * Support à la fois les réponses JSON (API) et les vues Blade.
      *
@@ -31,30 +39,19 @@ class PasswordResetLinkController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        // La valeur de retour ($status) n'influence plus la réponse : envoyer
+        // ou non le lien reste conditionné à l'existence du compte (c'est
+        // Password::sendResetLink() qui en décide), mais l'appelant ne doit
+        // jamais pouvoir distinguer les deux cas.
+        Password::sendResetLink($request->only('email'));
 
-        // Si la requête attend du JSON (appel API React)
         if ($request->expectsJson()) {
-            if ($status == Password::RESET_LINK_SENT) {
-                return response()->json([
-                    'success' => true,
-                    'message' => __($status),
-                ]);
-            }
-
             return response()->json([
-                'success' => false,
-                'message' => __($status),
-                'errors'  => ['email' => [__($status)]],
-            ], 422);
+                'success' => true,
+                'message' => self::MESSAGE,
+            ]);
         }
 
-        // Réponse classique pour les vues Blade
-        return $status == Password::RESET_LINK_SENT
-                    ? back()->with('status', __($status))
-                    : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+        return back()->with('status', self::MESSAGE);
     }
 }

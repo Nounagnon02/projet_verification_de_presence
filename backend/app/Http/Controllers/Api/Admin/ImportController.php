@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessAiImportJob;
+use App\Jobs\SendIdentifiantEmailJob;
 use App\Models\Analyse;
 use App\Models\AnneeAcademique;
 use App\Models\Etudiant;
@@ -11,6 +12,7 @@ use App\Models\Filiere;
 use App\Models\Ec;
 use App\Models\Salle;
 use App\Services\AiAnalysisService;
+use App\Services\CodeAccesEtudiant;
 use App\Services\IdentifiantService;
 use App\Services\RegleSeanceService;
 use App\Traits\ScopedByEtablissement;
@@ -92,7 +94,7 @@ class ImportController extends Controller
         }
         $header = $mapped;
 
-        $results = ['success' => 0, 'errors' => [], 'total' => 0, 'emails_echoues' => 0];
+        $results = ['success' => 0, 'errors' => [], 'total' => 0];
 
         while (($row = fgetcsv($handle, 1000, ',')) !== false) {
             $results['total']++;
@@ -171,12 +173,12 @@ class ImportController extends Controller
                 }
             }
 
-            // Envoi synchrone : il n'y a pas de worker de queue en production,
-            // un dispatch() n'aurait jamais été traité. Un échec d'e-mail ne
-            // doit pas interrompre l'import — l'étudiant reste créé.
-            if (!$this->envoyerIdentifiant($etudiant)) {
-                $results['emails_echoues']++;
-            }
+            // Code d'accès tiré à l'inscription : c'est le seul secret de la
+            // connexion étudiante (voir StudentController::store). Mis en
+            // file plutôt qu'envoyé ici : le worker planifié la draine chaque
+            // minute (routes/console.php) et une centaine de lignes ne bloque
+            // plus la requête HTTP sur autant d'envois SMTP synchrones.
+            SendIdentifiantEmailJob::dispatch($etudiant, CodeAccesEtudiant::attribuer($etudiant));
 
             $results['success']++;
         }
@@ -184,71 +186,38 @@ class ImportController extends Controller
         fclose($handle);
 
         $message = "Importation terminée : {$results['success']}/{$results['total']} étudiant(s) importé(s).";
-        if ($results['emails_echoues'] > 0) {
-            $message .= " {$results['emails_echoues']} e-mail(s) d'identifiant n'ont pas pu être envoyés.";
-        }
 
         return $this->successResponse($results, $message);
     }
 
     /**
-     * Importation et analyse des cours (UEs/ECs) via PDF (Gemini IA) — ASYNCHRONE.
+     * Importation et analyse des cours (UEs/ECs) via PDF (IA) — ASYNCHRONE.
      * Conforme CDC 8.1 & 8.4 — l'analyse est déléguée à un job de queue.
      *
      * POST /api/admin/import/courses
      */
     public function courses(Request $request): JsonResponse
     {
-        $validator = validator($request->all(), [
-            'file' => 'required|file|mimes:pdf|mimetypes:application/pdf|max:20480',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->validationErrorResponse($validator->errors());
-        }
-
-        $file = $request->file('file');
-
-        // Vérification des magic bytes PDF (%PDF en début de fichier)
-        $handle = fopen($file->getRealPath(), 'r');
-        $magic = fread($handle, 4);
-        fclose($handle);
-
-        if ($magic !== '%PDF') {
-            return $this->errorResponse('Le fichier fourni n\'est pas un PDF valide.', 422);
-        }
-
-        // Disque par défaut (FILESYSTEM_DISK), et non « supabase » codé en dur :
-        // la production le déclare déjà comme disque par défaut, et les tests
-        // peuvent ainsi écrire en local au lieu d'exiger un stockage distant.
-        $path    = $file->store('imports/courses');
-
-        // Création de l'analyse en base (statut: pending)
-        // On stocke le chemin RELATIF — le job utilise Storage::path() pour le résoudre
-        $analyse = Analyse::create([
-            'type'      => 'courses',
-            'status'    => 'pending',
-            'file_path' => $path,
-            'user_id'   => Auth::id(),
-        ]);
-
-        // Dispatch du job asynchrone sur queue dédiée
-        ProcessAiImportJob::dispatch($analyse)
-            ->onQueue('ai-import');
-
-        return $this->successResponse(
-            ['analysis_id' => $analyse->id, 'status' => 'pending'],
-            'Analyse des cours lancée en arrière-plan.'
-        );
+        return $this->lancerAnalysePdf($request, 'courses', 'imports/courses', 'Analyse des cours lancée en arrière-plan.');
     }
 
     /**
-     * Importation et analyse de l'emploi du temps via PDF (US03 - Gemini IA) — ASYNCHRONE.
+     * Importation et analyse de l'emploi du temps via PDF (US03 - IA) — ASYNCHRONE.
      * Conforme CDC 8.1 & 8.2 — l'analyse est déléguée à un job de queue.
      *
      * POST /api/admin/import/schedule
      */
     public function schedule(Request $request): JsonResponse
+    {
+        return $this->lancerAnalysePdf($request, 'schedule', 'imports/schedule', "Analyse de l'emploi du temps lancée en arrière-plan.");
+    }
+
+    /**
+     * courses() et schedule() ne différaient que par le type d'analyse, le
+     * dossier de stockage et le message de succès : même validation, mêmes
+     * magic bytes PDF, même création d'Analyse, même dispatch.
+     */
+    private function lancerAnalysePdf(Request $request, string $type, string $dossier, string $messageSucces): JsonResponse
     {
         $validator = validator($request->all(), [
             'file' => 'required|file|mimes:pdf|mimetypes:application/pdf|max:20480',
@@ -272,12 +241,12 @@ class ImportController extends Controller
         // Disque par défaut (FILESYSTEM_DISK), et non « supabase » codé en dur :
         // la production le déclare déjà comme disque par défaut, et les tests
         // peuvent ainsi écrire en local au lieu d'exiger un stockage distant.
-        $path    = $file->store('imports/schedule');
+        $path = $file->store($dossier);
 
         // Création de l'analyse en base (statut: pending)
         // On stocke le chemin RELATIF — le job utilise Storage::path() pour le résoudre
         $analyse = Analyse::create([
-            'type'      => 'schedule',
+            'type'      => $type,
             'status'    => 'pending',
             'file_path' => $path,
             'user_id'   => Auth::id(),
@@ -289,7 +258,7 @@ class ImportController extends Controller
 
         return $this->successResponse(
             ['analysis_id' => $analyse->id, 'status' => 'pending'],
-            'Analyse de l\'emploi du temps lancée en arrière-plan.'
+            $messageSucces
         );
     }
 
@@ -332,6 +301,23 @@ class ImportController extends Controller
             if (!empty($invalidIds)) {
                 return $this->errorResponse(
                     'Une ou plusieurs filières ne sont pas autorisées pour votre établissement.',
+                    403
+                );
+            }
+
+            // Même contrôle pour les EC : filiere_id et ec_id arrivent séparément,
+            // et seule la filière était vérifiée. Une séance de sa propre filière
+            // pouvait ainsi consommer le volume horaire d'un cours d'une autre
+            // faculté et entrer dans ses taux de présence.
+            $ecIds = array_unique(array_column($validated['events'], 'ec_id'));
+            $ecsAutorises = Ec::whereIn('id', $ecIds)
+                ->whereHas('ue.filiere', fn ($q) => $q->where('etablissement_id', $etablissementId))
+                ->pluck('id')
+                ->toArray();
+
+            if (array_diff($ecIds, $ecsAutorises) !== []) {
+                return $this->errorResponse(
+                    'Un ou plusieurs cours (EC) ne sont pas autorisés pour votre établissement.',
                     403
                 );
             }
@@ -619,34 +605,4 @@ class ImportController extends Controller
         ]);
     }
 
-    /**
-     * Envoie l'identifiant unique à l'étudiant de façon synchrone.
-     *
-     * Même logique que StudentController::store : pas de worker de queue en
-     * production. Renvoie false si l'envoi échoue, sans lever d'exception
-     * pour ne pas interrompre l'import.
-     */
-    private function envoyerIdentifiant(Etudiant $etudiant): bool
-    {
-        try {
-            \Illuminate\Support\Facades\Mail::send('emails.identifiant', [
-                'nom'         => $etudiant->nom,
-                'prenom'      => $etudiant->prenom,
-                'identifiant' => $etudiant->identifiant_unique,
-                'filiere'     => $etudiant->filiere->intitule,
-                'annee'       => $etudiant->anneeAcademique->libelle,
-            ], function ($message) use ($etudiant) {
-                $message->to($etudiant->email)
-                    ->subject('Votre identifiant unique - Système de présence UAC');
-            });
-
-            return true;
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error(
-                "Erreur envoi email import étudiant {$etudiant->matricule}: " . $e->getMessage()
-            );
-
-            return false;
-        }
-    }
 }

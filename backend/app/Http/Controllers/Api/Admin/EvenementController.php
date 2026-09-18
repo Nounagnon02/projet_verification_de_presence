@@ -66,7 +66,11 @@ class EvenementController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $query = Evenement::with(['ec.ue', 'filiere', 'groupe:id,libelle', 'presences', 'qrCode', 'salleRef']);
+        // withCount plutôt que charger « presences » en entier : l'index n'a
+        // besoin que du nombre, pas des lignes, qui pouvaient représenter tout
+        // un semestre de scans par événement affiché.
+        $query = Evenement::with(['ec.ue', 'filiere', 'groupe:id,libelle', 'qrCode', 'salleRef'])
+            ->withCount('presences');
 
         // Scope par établissement via la filière
         $this->scopeViaRelation($query, $request, 'filiere');
@@ -129,7 +133,7 @@ class EvenementController extends Controller
                 'annee_id'       => $e->annee_id,
                 'ue'             => $e->ec && $e->ec->ue ? ['id' => $e->ec->ue->id, 'code' => $e->ec->ue->code] : null,
                 'filiere'        => $e->filiere ? ['id' => $e->filiere->id, 'code' => $e->filiere->code] : null,
-                'presences_count' => $e->presences->count(),
+                'presences_count' => $e->presences_count,
                 'has_qr_code'    => $e->qrCode ? true : false,
                 'qr_code'        => $e->qrCode ? [
                     'id'         => $e->qrCode->id,
@@ -177,6 +181,11 @@ class EvenementController extends Controller
         if (!$ec->ue) {
             return $this->errorResponse("L'EC sélectionné n'est rattaché à aucune UE.", 422);
         }
+
+        // « exists:ecs,id » ne dit rien de l'établissement. La filière étant
+        // déduite de l'EC, l'EC d'une autre faculté créait la séance chez elle.
+        $this->authorizeEtablissement($ec->ue, $request, 'filiere');
+        $this->autoriserSalle($validated['salle_id'] ?? null, $request);
 
         $validated['filiere_id'] = $ec->ue->filiere_id;
         $validated['annee_id']   = $ec->ue->annee_id;
@@ -262,6 +271,9 @@ class EvenementController extends Controller
             if (!$ec->ue) {
                 return $this->errorResponse("L'EC sélectionné n'est rattaché à aucune UE.", 422);
             }
+            // Seule la séance actuelle est contrôlée en tête de méthode : changer
+            // son EC pour celui d'une autre faculté l'y déplaçait.
+            $this->authorizeEtablissement($ec->ue, $request, 'filiere');
             $validated['filiere_id'] = $ec->ue->filiere_id;
             $validated['annee_id']   = $ec->ue->annee_id;
             $this->refuserSiAnneeClose((int) $validated['annee_id'], $request);
@@ -270,6 +282,10 @@ class EvenementController extends Controller
         // Contrôle de conflit de salle sur les valeurs résultantes (nouvelles
         // si fournies, sinon celles déjà enregistrées), en excluant l'événement
         // lui-même.
+        if (!empty($validated['salle_id']) && (int) $validated['salle_id'] !== (int) $evenement->salle_id) {
+            $this->autoriserSalle($validated['salle_id'], $request);
+        }
+
         $salleId    = array_key_exists('salle_id', $validated) ? $validated['salle_id'] : $evenement->salle_id;
         $date       = $validated['date']        ?? $evenement->date->format('Y-m-d');
         $heureDebut = $validated['heure_debut'] ?? $evenement->heure_debut;
@@ -355,5 +371,21 @@ class EvenementController extends Controller
 
         $evenement->delete();
         return $this->successResponse(null, 'Événement supprimé.');
+    }
+
+    /**
+     * Une salle désignée par son identifiant doit appartenir à l'établissement
+     * de l'administrateur. « exists:salles,id » acceptait n'importe quelle salle
+     * de l'université : une séance pouvait réserver celle d'une autre faculté.
+     * 404, comme pour toute ressource hors périmètre, pour ne pas en confirmer
+     * l'existence.
+     */
+    private function autoriserSalle(int|string|null $salleId, Request $request): void
+    {
+        if (!$salleId) {
+            return;
+        }
+
+        $this->authorizeEtablissement(Salle::findOrFail($salleId), $request);
     }
 }

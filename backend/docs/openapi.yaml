@@ -305,19 +305,31 @@ paths:
 
   /presence/scan:
     post:
-      tags: [Public Presence]
+      tags: [Presence]
       summary: Scanner un QR code pour valider une présence
+      security:
+        - sanctum: []
       description: |
-        **VÉRIFICATION TRIPLE FACTEUR (CDC US04 & US06) :**
+        **AUTHENTIFICATION.** Exige un jeton étudiant (capacité « etudiant »),
+        obtenu par POST /auth/student/login. L'identifiant unique posté dans le
+        corps n'a plus cours : il était déterministe (NOM_PRENOM_MATRICULE_
+        FILIERE_ANNEE), donc reconstituable par n'importe quel camarade de
+        promotion — c'est désormais le jeton, et lui seul, qui désigne
+        l'étudiant.
+
+        **VÉRIFICATION (CDC US04 & US06) :**
         1. **QR Code visuel** : Token valide, non expiré, rotation 60s
         2. **Géolocalisation GPS** : Distance Haversine < rayon géofence salle
-        3. **Réseau WiFi** : SSID/BSSID correspond à la configuration salle
+        3. **Réseau** : SSID/BSSID correspondant, OU IP client dans la plage
+           « ip_range » de la salle
 
         **ANTI-FRAUDE (CDC 9.2) :**
-        - Invalidation immédiate du token QR après scan
-        - Device fingerprint + challenge cryptographique
-        - Détection cross-device (double scan appareil différent)
-        - Rate limiting : 3 req/min/device
+        - Détection d'appareil partagé et cross-device (double scan)
+        - Rate limiting : 3 req/min par étudiant ET par IP
+
+        Les refus ne divulguent ni la distance à la salle, ni le rayon
+        autorisé, ni le réseau attendu : ce détail reste dans l'anomalie
+        enregistrée, à l'usage de l'administration.
 
         Le QR code redirige vers `/scan?token={uuid}` sur le frontend.
       requestBody:
@@ -352,15 +364,21 @@ paths:
                   gamification:
                     perfect_week: true
                     points_awarded: 50
+        '401':
+          description: Jeton étudiant absent ou invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Vérification échouée (hors zone, mauvais WiFi, hors horaire)
+          description: Vérification échouée (hors zone, réseau non reconnu, hors horaire, non inscrit)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
                 success: false
-                message: "Vérification de présence échouée. Vous devez être physiquement dans la salle de cours. GPS hors zone (distance: 150m, max: 30m)."
+                message: "Vérification de présence échouée. Vous devez être physiquement dans la salle de cours. Vous ne semblez pas être dans la salle du cours."
         '409':
           description: Présence déjà enregistrée ou fraude détectée
           content:
@@ -2359,12 +2377,8 @@ components:
     # ========================================================================
     ScanPresenceRequest:
       type: object
-      required: [identifiant_unique, token, device_fingerprint]
+      required: [token, device_fingerprint]
       properties:
-        identifiant_unique:
-          type: string
-          description: Matricule ou identifiant unique étudiant
-          example: "22-12345-01"
         token:
           type: string
           format: uuid
@@ -2374,9 +2388,6 @@ components:
           type: string
           description: Empreinte device (fingerprintjs)
           example: "fp_abc123def456"
-        scan_challenge:
-          type: string
-          description: Challenge cryptographique optionnel
         latitude:
           type: number
           format: double

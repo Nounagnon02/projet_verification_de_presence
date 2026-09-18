@@ -88,24 +88,30 @@ Route::post('/forgot-password', [\App\Http\Controllers\Auth\PasswordResetLinkCon
 Route::post('/reset-password', [\App\Http\Controllers\Auth\NewPasswordController::class, 'store'])
     ->middleware('throttle:6,1');
 
-// Routes publiques pour les étudiants (Scan)
-// Rate limiting : max 3 requêtes/minute par device/IP (CDC 9.2.4)
+// Récupération des informations du cours via le token QR (CDC 7.4.1) — publique :
+// c'est ce qui permet à l'écran de scan d'afficher le cours avant que
+// l'étudiant se connecte.
 Route::prefix('presence')->group(function () {
-    Route::post('/scan', [PresenceController::class, 'scan'])
-        ->middleware('throttle:scan-presence')
-        ->name('api.presence.scan');
-
-    // Récupération publique des informations du cours via le token QR (CDC 7.4.1)
     Route::get('/course-by-token/{token}', [PresenceController::class, 'courseByToken'])
         ->name('api.presence.course-by-token');
 });
+
+// Le scan, lui, exige désormais l'authentification étudiante : il n'est plus un
+// point d'entrée public. Le corps de la requête portait auparavant
+// « identifiant_unique », une chaîne déterministe reconstituable par n'importe
+// quel camarade de promotion (NOM_PRENOM_MATRICULE_FILIERE_ANNEE) ; c'est le
+// jeton, capacité « etudiant », qui désigne désormais l'étudiant.
+// Rate limiting : par étudiant ET par IP (CDC 9.2.4) — voir AppServiceProvider.
+Route::post('/presence/scan', [PresenceController::class, 'scan'])
+    ->middleware(['auth:sanctum', 'ability:etudiant', 'throttle:scan-presence'])
+    ->name('api.presence.scan');
 
 // Routes protégées pour l'administration (faculté scope via scoped.etablissement)
 //
 // « ability:admin » écarte les jetons d'étudiant, qui portent la capacité
 // « etudiant ». Les jetons d'administrateur sont créés sans capacité, donc avec
 // « * », qui satisfait ce contrôle : les sessions en cours restent valides.
-Route::middleware(['auth:sanctum', 'ability:admin', 'scoped.etablissement', 'password.changed', 'throttle:api'])->prefix('admin')->group(function () {
+Route::middleware(['auth:sanctum', 'ability:admin', 'scoped.etablissement', 'password.changed', 'throttle:api', 'cloisonnement.modeles'])->prefix('admin')->group(function () {
 
     // Dashboard & Stats
     Route::get('/dashboard', [DashboardController::class, 'index']);
@@ -118,6 +124,11 @@ Route::middleware(['auth:sanctum', 'ability:admin', 'scoped.etablissement', 'pas
     // interprété comme /students/{student}.
     Route::post('/students/promote', [StudentController::class, 'promote']);
     Route::apiResource('students', StudentController::class);
+
+    // Renvoi des identifiants de connexion : le code d'accès est tiré à
+    // nouveau (jamais relu, la base n'en garde que le hachage) et l'ancien
+    // devient inexploitable.
+    Route::post('/students/{student}/identifiants', [StudentController::class, 'renvoyerIdentifiants']);
 
     // Inscriptions étudiant-cours (CDC 7.2.3)
     Route::get('/students/{student}/ecs', [EnrollmentController::class, 'index']);
@@ -266,11 +277,13 @@ Route::middleware(['auth:sanctum', 'ability:admin', 'scoped.etablissement', 'pas
     Route::put('/profile', [ProfileController::class, 'update']);
     Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
 
-    // Authentification à deux facteurs (2FA)
+    // Authentification à deux facteurs (2FA). confirm/verify sous
+    // « throttle:totp » : le seul throttle:api general (60/min) laissait un
+    // espace de 10^6 codes largement testable dans cette marge.
     Route::post('/profile/2fa/enable', [ProfileController::class, 'enable2FA']);
-    Route::post('/profile/2fa/confirm', [ProfileController::class, 'confirm2FA']);
+    Route::post('/profile/2fa/confirm', [ProfileController::class, 'confirm2FA'])->middleware('throttle:totp');
     Route::post('/profile/2fa/disable', [ProfileController::class, 'disable2FA']);
-    Route::post('/profile/2fa/verify', [ProfileController::class, 'verify2FA']);
+    Route::post('/profile/2fa/verify', [ProfileController::class, 'verify2FA'])->middleware('throttle:totp');
 
     // Sessions actives
     Route::get('/sessions', [SessionController::class, 'index']);
@@ -278,7 +291,11 @@ Route::middleware(['auth:sanctum', 'ability:admin', 'scoped.etablissement', 'pas
 });
 
 // Routes Super Admin UAC
-Route::middleware(['auth:sanctum', 'role:super_admin'])->prefix('super-admin')->group(function () {
+// Le groupe le plus privilegie n'imposait ni le rate limiting general, ni le
+// changement du mot de passe temporaire, ni la double authentification — trois
+// protections que le groupe « admin » porte pourtant toutes. Un mot de passe
+// compromis y donnait un acces total et illimite.
+Route::middleware(['auth:sanctum', 'role:super_admin', 'password.changed', 'throttle:api', '2fa.super_admin'])->prefix('super-admin')->group(function () {
     Route::get('/dashboard', [SuperAdminDashboardController::class, 'index']);
     Route::apiResource('/etablissements', EtablissementController::class);
     Route::post('/etablissements/import', [BulkRegistrationController::class, 'import']);

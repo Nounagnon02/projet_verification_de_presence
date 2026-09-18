@@ -54,18 +54,12 @@ class AuthenticatedSessionController extends Controller
     public function store(LoginRequest $request): RedirectResponse|JsonResponse
     {
         try {
-            $request->authenticate();
-
-            // Régénérer la session uniquement si disponible
-            try {
-                $request->session()->regenerate();
-            } catch (\RuntimeException $e) {
-                // Session non disponible (routes API sans session middleware)
-            }
+            // Identifiants vérifiés SANS session ouverte : voir le docblock de
+            // LoginRequest::validerIdentifiants(). La 2FA, si activée, est donc
+            // opposable AVANT toute trace d'authentification côté serveur.
+            $user = $request->validerIdentifiants();
 
             if ($request->expectsJson() || $request->is('api/*')) {
-                $user = $request->user();
-
                 // Portail 2FA : si l'utilisateur a activé la double authentification,
                 // le mot de passe seul ne suffit pas. On ne délivre le token qu'après
                 // vérification du code TOTP (ou d'un code de récupération).
@@ -74,7 +68,8 @@ class AuthenticatedSessionController extends Controller
 
                     if ($code === '') {
                         // Étape 1 réussie (mot de passe correct), étape 2 requise.
-                        // Aucun token n'est émis tant que le code n'est pas fourni.
+                        // Aucune session, aucun token : rien n'est émis tant que
+                        // le code n'est pas fourni et vérifié.
                         return response()->json([
                             'success'             => false,
                             'two_factor_required' => true,
@@ -90,6 +85,15 @@ class AuthenticatedSessionController extends Controller
                     }
                 }
 
+                // Authentification complète (mot de passe, et second facteur s'il
+                // est activé) : la session ne s'ouvre qu'à cet instant précis.
+                Auth::login($user, $request->boolean('remember'));
+                try {
+                    $request->session()->regenerate();
+                } catch (\RuntimeException $e) {
+                    // Session non disponible (routes API sans session middleware)
+                }
+
                 // Créer un token Sanctum API pour les clients mobiles / SPA JSON
                 $token = $user->createToken('api-token')->plainTextToken;
 
@@ -101,6 +105,13 @@ class AuthenticatedSessionController extends Controller
                         'token' => $token,
                     ],
                 ]);
+            }
+
+            Auth::login($user, $request->boolean('remember'));
+            try {
+                $request->session()->regenerate();
+            } catch (\RuntimeException $e) {
+                // Session non disponible
             }
 
             return redirect()->intended(route('dashboard', absolute: false));

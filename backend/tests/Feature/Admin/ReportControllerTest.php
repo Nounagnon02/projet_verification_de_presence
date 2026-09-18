@@ -344,39 +344,32 @@ class ReportControllerTest extends TestCase
 
         $this->assertSame(0.0, $this->nombre($reponse, 'data.taux_presence'));
 
-        // DÉFAUT CONSTATÉ — ReportController.php:168 : total_etudiants est
-        // compté sur toute la base (Etudiant::where('annee_id', ...)), sans
-        // filtre d'établissement. L'admin de l'établissement B lit donc
-        // l'effectif de l'établissement A. Assertion à inverser (0 attendu)
-        // dès que le comptage sera cloisonné.
-        $this->assertSame(4, $reponse->json('data.total_etudiants'));
+        // Régression : total_etudiants était compté sur TOUTE la base
+        // (Etudiant::where('annee_id', ...) sans filtre d'établissement) —
+        // l'admin de l'établissement B lisait l'effectif de l'établissement A.
+        $this->assertSame(0, $reponse->json('data.total_etudiants'));
     }
 
-    public function test_le_rapport_par_filiere_n_est_pas_cloisonne(): void
+    public function test_le_rapport_par_filiere_est_cloisonne(): void
     {
-        // DÉFAUT CONSTATÉ — ReportController.php:47 : departmentReport reçoit
-        // la filière par route model binding sans appeler
-        // authorizeEtablissement(). Un admin de l'établissement B obtient
-        // l'intégralité du rapport d'une filière de l'établissement A.
-        // Comportement attendu après correction : 404.
-        $reponse = $this->withToken($this->jetonB)
-            ->getJson('/api/admin/reports/department/' . $this->filiere->id);
-
-        $reponse->assertStatus(200)
-            ->assertJsonPath('data.filiere.code', $this->filiere->code)
-            ->assertJsonPath('data.total_etudiants', 4);
+        // Régression : departmentReport recevait la filière par route model
+        // binding sans appeler authorizeEtablissement(), et un admin de
+        // l'établissement B obtenait l'intégralité du rapport d'une filière de
+        // l'établissement A.
+        $this->withToken($this->jetonB)
+            ->getJson('/api/admin/reports/department/' . $this->filiere->id)
+            ->assertStatus(404);
     }
 
-    public function test_l_export_pdf_n_est_pas_cloisonne(): void
+    public function test_l_export_pdf_est_cloisonne(): void
     {
-        // DÉFAUT CONSTATÉ — ReportController.php:30 : exportPdf fait un
-        // Evenement::findOrFail() sans contrôle d'établissement. Un admin de
-        // l'établissement B télécharge la feuille de présence d'un événement
-        // de l'établissement A. Comportement attendu après correction : 404.
-        $reponse = $this->withToken($this->jetonB)
-            ->get('/api/admin/reports/presence/' . $this->evenement->id . '/pdf');
-
-        $reponse->assertStatus(200)->assertHeader('Content-Type', 'application/pdf');
+        // Régression : exportPdf faisait un Evenement::findOrFail() sans
+        // contrôle d'établissement, et un admin de l'établissement B
+        // téléchargeait la feuille de présence d'un événement de
+        // l'établissement A.
+        $this->withToken($this->jetonB)
+            ->get('/api/admin/reports/presence/' . $this->evenement->id . '/pdf')
+            ->assertStatus(404);
     }
 
     public function test_la_comparaison_semestrielle_est_cloisonnee(): void

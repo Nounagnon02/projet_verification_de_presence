@@ -27,17 +27,23 @@ abstract class TestCase extends BaseTestCase
     */
 
     /**
-     * Défi de scan attendu par le serveur pour un jeton de QR Code donné.
+     * Jeton d'authentification d'un étudiant, capacité « etudiant ».
      *
-     * Reproduit volontairement PresenceController::scanChallengeFor(). Le fait
-     * que ce défi soit bien celui qu'un vrai client obtient par
-     * GET /presence/course-by-token/{token} est vérifié séparément par le test
-     * de contrat de PresenceScanTest — sans quoi cette méthode ne prouverait
-     * que l'accord du serveur avec lui-même.
+     * Le scan de présence exige désormais ce jeton (voir
+     * App\Services\Presence\DemandeDeScan) : il a remplacé le couple
+     * identifiant_unique + scan_challenge posté dans le corps de la requête,
+     * qu'un camarade de promotion pouvait reconstituer sans authentification.
      */
-    protected function defiDeScan(string $token): string
+    protected function jetonDeScan(\App\Models\Etudiant $etudiant): string
     {
-        return hash_hmac('sha256', $token, (string) config('app.key'));
+        // Le guard Sanctum mémorise le premier utilisateur qu'il résout et le
+        // ressert tant qu'on ne l'a pas oublié — même si la requête suivante
+        // porte un jeton Bearer différent. Un scan qui enchaîne plusieurs
+        // étudiants dans le même test authentifiait donc TOUS ses appels
+        // comme le premier. Même précaution que ScansRefusesTest::enTantQue().
+        $this->app['auth']->forgetGuards();
+
+        return $etudiant->createToken('test', ['etudiant'])->plainTextToken;
     }
 
     protected function anneeActive(): \App\Models\AnneeAcademique

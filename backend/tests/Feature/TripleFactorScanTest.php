@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Anomaly;
 use App\Models\AnneeAcademique;
 use App\Models\Ec;
 use App\Models\Etablissement;
@@ -152,11 +153,9 @@ class TripleFactorScanTest extends TestCase
      */
     public function test_geolocalisation_et_wifi_valides(): void
     {
-        $response = $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $this->etudiant->identifiant_unique,
+        $response = $this->withToken($this->jetonDeScan($this->etudiant))->postJson('/api/presence/scan', [
             'token'              => $this->token,
             'device_fingerprint' => 'device-abc-123',
-            'scan_challenge'     => $this->defiDeScan($this->token),
             'latitude'           => 6.3608,
             'longitude'          => 2.4354,
             'ssid'               => 'ASIN-STAFF',
@@ -174,11 +173,9 @@ class TripleFactorScanTest extends TestCase
     public function test_gps_hors_zone(): void
     {
         // Coordonnées à ~1.5 km d'IFRI (Ganhi, Cotonou)
-        $response = $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $this->etudiant->identifiant_unique,
+        $response = $this->withToken($this->jetonDeScan($this->etudiant))->postJson('/api/presence/scan', [
             'token'              => $this->token,
             'device_fingerprint' => 'device-abc-123',
-            'scan_challenge'     => $this->defiDeScan($this->token),
             'latitude'           => 6.3720,
             'longitude'          => 2.4220,
             'ssid'               => 'ASIN-STAFF',
@@ -188,12 +185,17 @@ class TripleFactorScanTest extends TestCase
         $response->assertStatus(403)
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', fn (string $msg) =>
-                // Le message annonce la distance reelle et le rayon autorise,
-                // pas un simple « hors zone » : c'est ce qui permet a l'etudiant
-                // de savoir s'il doit se rapprocher de quelques metres ou s'il
-                // s'est trompe de salle.
-                str_contains($msg, 'de la salle') && str_contains($msg, 'rayon autorisé')
+                // Régression : le message annonçait la distance réelle et le
+                // rayon autorisé — trois scans depuis trois positions
+                // suffisaient à trianguler la salle. Générique désormais ; le
+                // détail reste dans l'anomalie, à l'usage de l'administration.
+                !str_contains($msg, 'm de la salle') && !str_contains($msg, 'rayon autorisé')
+                    && str_contains($msg, 'salle du cours')
             );
+
+        $anomalie = Anomaly::where('etudiant_id', $this->etudiant->id)->where('type', 'verification_echouee')->latest()->first();
+        $this->assertNotNull($anomalie, "Le detail reste dans l'anomalie, à l'usage de l'administration.");
+        $this->assertArrayHasKey('distance_metres', $anomalie->metadata);
     }
 
     /**
@@ -201,11 +203,9 @@ class TripleFactorScanTest extends TestCase
      */
     public function test_wifi_erreur(): void
     {
-        $response = $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $this->etudiant->identifiant_unique,
+        $response = $this->withToken($this->jetonDeScan($this->etudiant))->postJson('/api/presence/scan', [
             'token'              => $this->token,
             'device_fingerprint' => 'device-abc-123',
-            'scan_challenge'     => $this->defiDeScan($this->token),
             'latitude'           => 6.3608,
             'longitude'          => 2.4354,
             'ssid'               => 'CAFE-NEIGHBOUR',
@@ -215,10 +215,14 @@ class TripleFactorScanTest extends TestCase
         $response->assertStatus(403)
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', fn (string $msg) =>
-                // Le reseau attendu est nomme, pour que l'etudiant sache auquel
-                // se connecter.
-                str_contains($msg, 'Wi-Fi non conforme') && str_contains($msg, 'ASIN-STAFF')
+                // Régression : le SSID attendu était nommé dans le refus — il
+                // suffisait de ne pas l'avoir pour l'apprendre. Générique
+                // désormais ; le nom du réseau attendu reste dans l'anomalie.
+                !str_contains($msg, 'ASIN-STAFF') && str_contains($msg, 'réseau')
             );
+
+        $anomalie = Anomaly::where('etudiant_id', $this->etudiant->id)->where('type', 'verification_echouee')->latest()->first();
+        $this->assertSame('ASIN-STAFF', $anomalie->metadata['ssid_attendu'] ?? null);
     }
 
     /**
@@ -226,11 +230,9 @@ class TripleFactorScanTest extends TestCase
      */
     public function test_gps_et_wifi_invalides(): void
     {
-        $response = $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $this->etudiant->identifiant_unique,
+        $response = $this->withToken($this->jetonDeScan($this->etudiant))->postJson('/api/presence/scan', [
             'token'              => $this->token,
             'device_fingerprint' => 'device-abc-123',
-            'scan_challenge'     => $this->defiDeScan($this->token),
             'latitude'           => 6.3720,
             'longitude'          => 2.4220,
             'ssid'               => 'CAFE-NEIGHBOUR',
@@ -240,9 +242,11 @@ class TripleFactorScanTest extends TestCase
         $response->assertStatus(403)
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', fn (string $msg) =>
-                // Les deux motifs doivent figurer : corriger l'un sans l'autre
-                // laisserait l'etudiant devant un second refus inexplique.
-                str_contains($msg, 'de la salle') && str_contains($msg, 'Wi-Fi')
+                // Les deux motifs doivent figurer, sans rien y divulguer : corriger
+                // l'un sans l'autre laisserait l'etudiant devant un second refus
+                // inexplique.
+                str_contains($msg, 'salle du cours') && str_contains($msg, 'réseau')
+                    && !str_contains($msg, 'ASIN-STAFF') && !str_contains($msg, 'rayon autorisé')
             );
     }
 
@@ -251,11 +255,9 @@ class TripleFactorScanTest extends TestCase
      */
     public function test_gps_non_fourni(): void
     {
-        $response = $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $this->etudiant->identifiant_unique,
+        $response = $this->withToken($this->jetonDeScan($this->etudiant))->postJson('/api/presence/scan', [
             'token'              => $this->token,
             'device_fingerprint' => 'device-abc-123',
-            'scan_challenge'     => $this->defiDeScan($this->token),
             'ssid'               => 'ASIN-STAFF',
             'bssid'              => '20:58:69:69:ac:7c',
         ]);
@@ -306,11 +308,9 @@ class TripleFactorScanTest extends TestCase
         ]);
 
         // On envoie sans SSID/BSSID → doit passer car la salle est hors_reseau
-        $response = $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $this->etudiant->identifiant_unique,
+        $response = $this->withToken($this->jetonDeScan($this->etudiant))->postJson('/api/presence/scan', [
             'token'              => $tokenDegrade,
             'device_fingerprint' => 'device-degrade-001',
-            'scan_challenge'     => $this->defiDeScan($tokenDegrade),
             'latitude'           => 6.3608,
             'longitude'          => 2.4354,
         ]);
@@ -337,11 +337,9 @@ class TripleFactorScanTest extends TestCase
         ]);
 
         // Salle inactive → pas de vérif GPS/WiFi
-        $response = $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $this->etudiant->identifiant_unique,
+        $response = $this->withToken($this->jetonDeScan($this->etudiant))->postJson('/api/presence/scan', [
             'token'              => $tokenInactif,
             'device_fingerprint' => 'device-inactif-001',
-            'scan_challenge'     => $this->defiDeScan($tokenInactif),
             // Pas de GPS, pas de WiFi → doit passer quand même
         ]);
 
@@ -381,11 +379,9 @@ class TripleFactorScanTest extends TestCase
      */
     public function test_wifi_bssid_insensible_a_la_casse(): void
     {
-        $response = $this->postJson('/api/presence/scan', [
-            'identifiant_unique' => $this->etudiant->identifiant_unique,
+        $response = $this->withToken($this->jetonDeScan($this->etudiant))->postJson('/api/presence/scan', [
             'token'              => $this->token,
             'device_fingerprint' => 'device-case-001',
-            'scan_challenge'     => $this->defiDeScan($this->token),
             'latitude'           => 6.3608,
             'longitude'          => 2.4354,
             'ssid'               => 'asin-staff',
@@ -394,6 +390,30 @@ class TripleFactorScanTest extends TestCase
 
         $response->assertStatus(201)
             ->assertJsonPath('success', true);
+    }
+
+    /**
+     * Test 10 : SSID erroné, mais IP client dans « ip_range » de la salle →
+     * accepté. Le facteur réseau est désormais satisfait par L'UN OU L'AUTRE
+     * des deux indices, pas seulement le WiFi — utile en amphi câblé où le SSID
+     * diffusé varie d'une borne à l'autre.
+     */
+    public function test_reseau_valide_par_ip_range_malgre_un_ssid_errone(): void
+    {
+        // « trustProxies(at: \'*\') » (bootstrap/app.php) fait de X-Forwarded-For
+        // une source fiable : c'est ainsi qu'un client de test simule une IP du
+        // réseau de l'établissement.
+        $response = $this->withHeaders(['X-Forwarded-For' => '10.53.8.42'])
+            ->withToken($this->jetonDeScan($this->etudiant))
+            ->postJson('/api/presence/scan', [
+                'token'              => $this->token,
+                'device_fingerprint' => 'device-ip-range',
+                'latitude'           => 6.3608,
+                'longitude'          => 2.4354,
+                'ssid'               => 'CAFE-NEIGHBOUR',
+            ]);
+
+        $response->assertStatus(201)->assertJsonPath('success', true);
     }
 
     // ─── NETTOYAGE ──────────────────────────────────────────

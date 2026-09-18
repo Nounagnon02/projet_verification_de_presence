@@ -70,4 +70,34 @@ class TwoFactorLoginTest extends TestCase
         $codes = json_decode($user->two_factor_recovery_codes, true);
         $this->assertNotContains('RECOVER-AAA', $codes);
     }
+
+    /**
+     * Régression : Auth::attempt() journalisait l'utilisateur (cookie de
+     * session) dès le mot de passe validé, AVANT même de savoir qu'un second
+     * facteur était requis. Combiné au mode Sanctum « stateful », un appelant
+     * se déclarant Origin: http://localhost obtenait une session valide sans
+     * jamais fournir le code TOTP.
+     */
+    public function test_le_mot_de_passe_seul_n_ouvre_aucune_session_avant_le_2fa(): void
+    {
+        $reponse = $this->withHeaders(['Origin' => 'http://localhost'])
+            ->postJson('/api/login', ['email' => $this->email, 'password' => $this->password]);
+
+        $reponse->assertStatus(200)->assertJsonPath('two_factor_required', true);
+
+        // Aucune session : ni le guard par défaut, ni un cookie de session
+        // dans la réponse. Avant correction, ce test échouait sur les deux.
+        $this->assertGuest();
+        $enTeteCookies = $reponse->headers->get('Set-Cookie', '');
+        $this->assertStringNotContainsString((string) config('session.cookie'), (string) $enTeteCookies);
+    }
+
+    public function test_un_code_totp_invalide_n_ouvre_pas_davantage_de_session(): void
+    {
+        $this->withHeaders(['Origin' => 'http://localhost'])
+            ->postJson('/api/login', ['email' => $this->email, 'password' => $this->password, 'code' => '000000'])
+            ->assertStatus(422);
+
+        $this->assertGuest();
+    }
 }
