@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen bg-surface flex">
       {/* Bannière gauche */}
       <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden">
-        <img src={assets.rectoratUac} alt="Campus universitaire"
+        <img src={assets.rectoratUac} alt="Campus universitaire" width={assets.rectoratUacTaille.width} height={assets.rectoratUacTaille.height} loading="lazy" decoding="async"
           className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-br from-[#011549]/90 via-[#011549]/75 to-[#0a1a3a]/90"></div>
         <div className="relative flex flex-col justify-between p-12 w-full">

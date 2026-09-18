@@ -176,7 +176,7 @@ export default function LandingPage() {
         <div className="absolute inset-0">
           <img
             src={assets.rectoratUac}
-            alt="Campus universitaire"
+            alt="Campus universitaire" width={assets.rectoratUacTaille.width} height={assets.rectoratUacTaille.height} loading="lazy" decoding="async"
             className="w-full h-full object-cover"
           />
           {/* Voile en hexadécimal et non « from-primary/75 » : Tailwind ne sait

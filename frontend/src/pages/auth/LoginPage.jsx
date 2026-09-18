@@ -67,6 +67,10 @@ function LoginPage() {
         <img
           src={assets.rectoratUac}
           alt="Campus universitaire"
+          width={assets.rectoratUacTaille.width}
+          height={assets.rectoratUacTaille.height}
+          loading="lazy"
+          decoding="async"
           className="absolute inset-0 w-full h-full object-cover"
         />
         {/* Overlay */}
