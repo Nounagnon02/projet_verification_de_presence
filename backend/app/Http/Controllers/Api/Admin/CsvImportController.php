@@ -24,6 +24,14 @@ class CsvImportController extends Controller
     use ScopedByEtablissement;
 
     /**
+     * Filière et année, mémoïsées pour la durée de la requête : un fichier de
+     * plusieurs centaines de lignes répète le plus souvent la même filière et
+     * la même année sur chacune, sans que rien ne les reprécise avant.
+     */
+    private array $filieresCache = [];
+    private array $anneesCache = [];
+
+    /**
      * Mapping des noms de jours en français vers leur numéro (1-7).
      */
     private const JOURS_MAPPING = [
@@ -153,7 +161,7 @@ class CsvImportController extends Controller
                 }
 
                 // Résoudre année académique
-                $annee = AnneeAcademique::where('libelle', $ueData['annee_libelle'])->first();
+                $annee = $this->resoudreAnnee($ueData['annee_libelle']);
                 if (!$annee) {
                     $results['errors'][] = ['line' => $lineNum, 'error' => "Année académique '{$ueData['annee_libelle']}' introuvable."];
                     continue;
@@ -330,7 +338,7 @@ class CsvImportController extends Controller
                     continue;
                 }
 
-                $annee = AnneeAcademique::where('libelle', $row['annee_libelle'])->first();
+                $annee = $this->resoudreAnnee($row['annee_libelle']);
                 if (!$annee) {
                     $results['errors'][] = ['line' => $lineNum, 'error' => "Année '{$row['annee_libelle']}' introuvable."];
                     continue;
@@ -608,7 +616,8 @@ class CsvImportController extends Controller
      */
     private function resoudreFiliere(string $code, ?string $niveau, ?int $etablissementId, string $refusEtablissement): array
     {
-        $candidates = Filiere::where('code', $code)
+        $cle = $code . '|' . ($niveau ?? '');
+        $candidates = $this->filieresCache[$cle] ??= Filiere::where('code', $code)
             ->when(!empty($niveau), fn ($q) => $q->where('niveau', $niveau))
             ->get();
 
@@ -625,6 +634,12 @@ class CsvImportController extends Controller
         return $candidates->count() === 1
             ? [$candidates->first(), null]
             : [null, "Filière '{$code}' présente dans plusieurs établissements : importez depuis un compte de faculté."];
+    }
+
+    /** Année académique désignée par son libellé, mémoïsée (voir $anneesCache). */
+    private function resoudreAnnee(string $libelle): ?AnneeAcademique
+    {
+        return $this->anneesCache[$libelle] ??= AnneeAcademique::where('libelle', $libelle)->first();
     }
 
     /**
