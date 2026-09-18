@@ -1,0 +1,14 @@
+# Identites Git de l'auteur du projet.
+#
+# L'historique porte trois identites pour une seule personne : deux noms
+# (« prince.kangbode » et « Nounagnon02 », le compte GitHub qui heberge le
+# depot) et trois adresses, dont un « votre_email@example.com » laisse par une
+# configuration oubliee. « git shortlog -sn » comptait donc quatre auteurs
+# pour un projet qui n'en a qu'un.
+#
+# Ce fichier ne reecrit rien : il unifie seulement l'affichage (log, shortlog,
+# blame). Le commit de google-labs-jules[bot] n'est volontairement pas
+# reattribue : il n'a pas ete ecrit par l'auteur.
+prince.kangbode <princekangbode@gmail.com> Nounagnon02 <princekangbode@gmail.com>
+prince.kangbode <princekangbode@gmail.com> Nounagnon02 <votre_email@example.com>
+prince.kangbode <princekangbode@gmail.com> prince.kangbode <prince.kangbode@asin.bj>
