@@ -23,6 +23,13 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="pgsql"/>
+        <!-- La suite ne doit jamais viser une autre base que celle de test, même
+             si .env.testing est absent ou mal renseigné. Ce ne sont que des
+             valeurs par défaut : une variable déjà posée dans l'environnement
+             les remplace (la CI vise son service Postgres sur le port 55433). -->
+        <env name="DB_HOST" value="127.0.0.1"/>
+        <env name="DB_PORT" value="55434"/>
+        <env name="DB_DATABASE" value="presence_uac_test"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

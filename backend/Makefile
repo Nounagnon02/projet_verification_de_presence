@@ -1,18 +1,18 @@
 # Chaine de tests backend — SGP-UAC
 #
-# La suite exige un Postgres jetable sur 127.0.0.1:55433 (voir .env.testing).
+# La suite exige un Postgres jetable sur 127.0.0.1:55434 (voir .env.testing).
 # Sans lui, les 271 tests echouent sur « connection refused », ce qui se lit
 # comme une regression alors que seule la base manque. Ces cibles rendent ce
 # prerequis explicite et reproductible.
 
 PG_CONTENEUR := uac-test-pg
-PG_PORT      := 55433
+PG_PORT      := 55434
 PG_BASE      := presence_uac_test
 PG_USER      := postgres
 PG_PASS      := postgres
 PG_IMAGE     := postgres:15-alpine
 
-.PHONY: aide db-up db-down db-reset db-logs test test-couverture migrer fraiche lint
+.PHONY: aide db-up db-down db-reset db-logs test test-couverture migrer fraiche lint phpstan
 
 aide:
 	@echo "Cibles disponibles :"
@@ -81,6 +81,10 @@ test-couverture: db-up
 		exit 1; \
 	}
 	@php artisan test --coverage --min=70
+
+## Analyse statique, niveau 5 avec baseline : seuls les NOUVEAUX constats echouent.
+phpstan:
+	@./vendor/bin/phpstan analyse --memory-limit=1G --no-progress
 
 ## Une classe qui ne compile pas ne fait pas echouer « artisan list » : elle est
 ## simplement absente du registre. D'ou ce lint explicite.

@@ -1,8 +1,12 @@
 name: CI
 
-# Etages 1 a 3 du plan de tests §6.1. Les etages 4 (Playwright), 5 (ZAP) et
-# 6 (k6) exigent des services longs a demarrer : ils sont declares dans des
-# fichiers separes, declenches sur pull request et non a chaque poussee.
+# Etages 1 a 3 du plan de tests §6.1, plus le rejeu du harnais IA.
+#
+# Les etages qui demarrent des services longs vivent dans des fichiers separes :
+#   e2e.yml           Playwright, sur pull request (pile locale, jamais la prod)
+#   securite-zap.yml  passe OWASP ZAP, manuelle
+#   charge-k6.yml     campagne LOAD-01, manuelle
+# Cet en-tete les annoncait deja alors qu'aucun n'existait.
 
 on:
   push:
@@ -50,6 +54,14 @@ jobs:
         run: ./vendor/bin/pint --test
         continue-on-error: true
 
+      # Niveau 5 avec baseline : les ~300 constats anterieurs (proprietes
+      # Eloquent non typees pour l'essentiel) sont enregistres dans
+      # phpstan-baseline.neon, et tout NOUVEAU constat echoue la chaine. C'est
+      # un cliquet, comme les seuils de couverture : il ne se desserre pas.
+      - name: Analyse statique (PHPStan)
+        working-directory: backend
+        run: ./vendor/bin/phpstan analyse --memory-limit=1G --no-progress
+
       - name: Dependances frontend
         working-directory: frontend
         run: npm ci
@@ -57,6 +69,13 @@ jobs:
       - name: ESLint
         working-directory: frontend
         run: npm run lint
+
+      # 229 lignes de TypeScript (l'empreinte anti-fraude du navigateur) n'etaient
+      # ni lintees ni verifiees. Le controle des types a aussitot trouve un type de
+      # bibliotheque invente et une option inexistante.
+      - name: Types frontend
+        working-directory: frontend
+        run: npm run ts:check
 
       - name: Dependances mobile
         working-directory: mobile-app
@@ -163,6 +182,12 @@ jobs:
         working-directory: frontend
         run: npm run test:coverage
 
+      # Une erreur de construction (import circulaire, asset introuvable) n'etait
+      # decouverte qu'au deploiement Vercel.
+      - name: Construction
+        working-directory: frontend
+        run: npm run build
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -207,16 +232,52 @@ jobs:
           composer install --prefer-dist --no-interaction --no-progress
           composer audit
 
-      # Non bloquant en l'etat : « npm audit » signale deja 10 vulnerabilites,
-      # dont 8 de niveau eleve. Les traiter est un chantier a part ; le rendre
-      # bloquant tout de suite arreterait la chaine sans que personne ne puisse
-      # avancer. A basculer en bloquant une fois le stock resorbe.
+      # Bloquant : le stock a ete resorbe (13 vulnerabilites, dont 9 elevees,
+      # corrigees par « npm audit fix » le 2026-09-18). La marche interdit
+      # desormais d'en reintroduire.
       - name: npm audit frontend
         working-directory: frontend
         run: npm audit --audit-level=high
-        continue-on-error: true
 
+      # Non bloquant, et ce n'est pas de la complaisance : les vulnerabilites
+      # restantes sont dans l'outillage de construction d'Expo (Metro, CLI), et
+      # le seul « correctif » que npm propose est un retour a Expo 46. Elles ne
+      # sont pas embarquees dans l'application livree.
       - name: npm audit mobile
         working-directory: mobile-app
         run: npm audit --audit-level=high
         continue-on-error: true
+
+  # ─── Etage 3 bis — Extraction IA, en rejeu ──────────────────────────────────
+  ia:
+    name: Harnais IA (rejeu des reponses enregistrees)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, intl, gd, zip
+
+      - name: Dependances
+        working-directory: backend
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Environnement
+        working-directory: backend
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      # Les PDF du corpus ne sont pas versionnes : le generateur est la source
+      # de verite et les reconstruit en quelques secondes.
+      - name: Corpus
+        working-directory: backend
+        run: php ../tests/ia/generer-corpus.php
+
+      # Mode rejeu : aucune cle d'API, aucun quota consomme, resultat
+      # deterministe. Le mode « --reel » reste manuel, pour les campagnes.
+      - name: Rejeu
+        working-directory: backend
+        run: php ../tests/ia/evaluer.php --provider=gemini

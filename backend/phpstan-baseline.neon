@@ -1,0 +1,1411 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$intitule\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/AttribuerCodesAccesEtudiants.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$libelle\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/AttribuerCodesAccesEtudiants.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>intitule" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Console/Commands/AttribuerCodesAccesEtudiants.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>libelle" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Console/Commands/AttribuerCodesAccesEtudiants.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Console/Commands/EnrollExistingStudents.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/GenerateEventsFromSchedule.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$etablissement_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Console/Commands/GenerateEventsFromSchedule.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$ue\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/GenerateEventsFromSchedule.php
+
+		-
+			message: '#^Parameter \#1 \$ec of method App\\Services\\RegleSeanceService\:\:refus\(\) expects App\\Models\\Ec, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Console/Commands/GenerateEventsFromSchedule.php
+
+		-
+			message: '#^Parameter \#6 \$consommeesDansCeLot of method App\\Services\\RegleSeanceService\:\:refus\(\) expects array\<string, float\>\|float, list\<array\<string, mixed\>\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Console/Commands/GenerateEventsFromSchedule.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>code" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Console/Commands/GenerateEventsFromSchedule.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Console/Commands/GenerateEventsFromSchedule.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$etablissement_id\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Console/Commands/RattacherSallesSaisies.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$nom\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Console/Commands/RattacherSallesSaisies.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/AlertController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$filiere\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/Admin/AlertController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/AlertController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$intitule\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/AlertController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$matricule\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/AlertController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$nom\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/AlertController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$prenom\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/AlertController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Pagination\\AbstractPaginator\<int,App\\Models\\Anomaly\>\:\:through\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Api/Admin/AlertController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,mixed\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Api/Admin/AlertController.php
+
+		-
+			message: '#^Parameter \#1 \$etudiant of method App\\Services\\PresenceManuelleService\:\:enregistrer\(\) expects App\\Models\\Etudiant, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/Admin/AlertController.php
+
+		-
+			message: '#^Parameter \#2 \$etablissements of method App\\Services\\BasculeAnnee\:\:seancesAVenir\(\) expects Illuminate\\Support\\Collection\<int, int\|null\>, Illuminate\\Support\\Collection\<int, int\<min, \-1\>\|int\<1, max\>\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/Admin/AnneeAcademiqueController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>code" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Api/Admin/DashboardController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>intitule" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Api/Admin/DashboardController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Ec\:\:\$duree_max_seance\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EcController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Ec\:\:\$heures_reservees\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EcController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Ec\:\:\$heures_restantes\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EcController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Ec\:\:\$heures_restantes_par_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EcController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$annee_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/Admin/EcController.php
+
+		-
+			message: '#^Parameter \#2 \$ue of method App\\Services\\Maquette\\RegistreMaquette\:\:verifierCodeEc\(\) expects App\\Models\\Ue, Illuminate\\Database\\Eloquent\\Collection\<\(int\|string\), App\\Models\\Ue\>\|Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EcController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>\(Expression\)" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EcController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$annee_id\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$filiere_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$intitule\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$libelle\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$nom\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$ue\.$#'
+			identifier: property.notFound
+			count: 5
+			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: array\<string, mixed\>, Closure\(App\\Models\\EmploiDuTemps\)\: array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:filter\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: bool\)\|null, Closure\(App\\Models\\EmploiDuTemps\)\: bool given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
+
+		-
+			message: '#^Parameter \#1 \$creneaux of method App\\Http\\Controllers\\Api\\Admin\\EmploiDuTempsController\:\:conflitsParCreneau\(\) expects Illuminate\\Support\\Collection\<int, App\\Models\\EmploiDuTemps\>, Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
+
+		-
+			message: '#^Parameter \#1 \$modeles of method App\\Services\\Planning\\Conflits\:\:paires\(\) expects Illuminate\\Support\\Collection\<int, App\\Models\\EmploiDuTemps\|App\\Models\\Evenement\>, Illuminate\\Database\\Eloquent\\Collection\<int, App\\Models\\Evenement\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
+
+		-
+			message: '#^Parameter \#1 \$modeles of method App\\Services\\Planning\\Conflits\:\:paires\(\) expects Illuminate\\Support\\Collection\<int, App\\Models\\EmploiDuTemps\|App\\Models\\Evenement\>, Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>nom" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EnrollmentController.php
+
+		-
+			message: '#^Parameter \#1 \$ecs of method App\\Services\\AvancementCours\:\:appliquer\(\) expects iterable\<App\\Models\\Ec\>, Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\> given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Http/Controllers/Api/Admin/EnrollmentController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$actif\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EvenementController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$annee_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/Admin/EvenementController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Controllers/Api/Admin/EvenementController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$etablissement_id\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Controllers/Api/Admin/EvenementController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$expire_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EvenementController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$filiere_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/Admin/EvenementController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 5
+			path: app/Http/Controllers/Api/Admin/EvenementController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$intitule\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EvenementController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$libelle\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EvenementController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$nom\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/Admin/EvenementController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$token\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EvenementController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$ue\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EvenementController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:isExpired\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EvenementController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:verifieGps\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EvenementController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:verifieWifi\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EvenementController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Evenement\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EvenementController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,App\\Models\\EmploiDuTemps\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EvenementController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>nom" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Api/Admin/EvenementController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$annee_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/GroupeController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/GroupeController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$libelle\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/GroupeController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/GroupeController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:filieres\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/GroupeController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Api/Admin/GroupeController.php
+
+		-
+			message: '#^Parameter \#6 \$consommeesDansCeLot of method App\\Services\\RegleSeanceService\:\:refus\(\) expects array\<string, float\>\|float, list\<array\<string, mixed\>\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/Admin/ImportController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/PresenceHistoryController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$etablissement_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/PresenceHistoryController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$heure_scan\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/PresenceHistoryController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$statut\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/PresenceHistoryController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$total\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/PresenceHistoryController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 2
+			path: app/Http/Controllers/Api/Admin/PresenceHistoryController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>code" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 3
+			path: app/Http/Controllers/Api/Admin/PresenceHistoryController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>intitule" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 5
+			path: app/Http/Controllers/Api/Admin/PresenceHistoryController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>user_id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Api/Admin/PresenceHistoryController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/ProgrammeController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$intitule\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/ProgrammeController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$niveau\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/Admin/ProgrammeController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Ue\:\:\$total_etudiants\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/ReportController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Ue\:\:\$total_evenements\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/ReportController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Ue\:\:\$total_presences\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/ReportController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/Admin/ReportController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$intitule\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/Admin/ReportController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Evenement\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Api/Admin/ReportController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Ue\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Api/Admin/ReportController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<string,array\<string, array\<string, int\|string\|null\>\|int\|null\>\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Api/Admin/ReportController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<string,array\<string, mixed\>\>\:\:sort\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Api/Admin/ReportController.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Carbon\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Api/Admin/ReportController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>code" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Api/Admin/ReportController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>intitule" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Http/Controllers/Api/Admin/ReportController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/Admin/SaisieManuelleController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$etablissement_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/Admin/SaisieManuelleController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$intitule\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/SaisieManuelleController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$nom\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/SaisieManuelleController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>nom" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Api/Admin/SaisieManuelleController.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: app/Http/Controllers/Api/Admin/ScheduleImportController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/TicketController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/Admin/TicketController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Controllers/Api/Admin/TicketController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$message\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/Admin/TicketController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/Admin/TicketController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/Admin/TicketController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Api/Admin/TicketController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Pagination\\AbstractPaginator\<int,App\\Models\\SupportTicket\>\:\:through\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Api/Admin/TicketController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Collection\<\(int\|string\), App\\Models\\Filiere\>\|Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Controllers/Api/Admin/UeController.php
+
+		-
+			message: '#^Parameter \#2 \$filiere of method App\\Services\\Maquette\\RegistreMaquette\:\:verifierCodeUe\(\) expects App\\Models\\Filiere, Illuminate\\Database\\Eloquent\\Collection\<\(int\|string\), App\\Models\\Filiere\>\|Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/Admin/UeController.php
+
+		-
+			message: '#^Parameter \#2 \$filiere of method App\\Services\\Maquette\\RegistreMaquette\:\:verifierSemestre\(\) expects App\\Models\\Filiere, Illuminate\\Database\\Eloquent\\Collection\<\(int\|string\), App\\Models\\Filiere\>\|Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/Admin/UeController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$date\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/PresenceController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$filiere\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/PresenceController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$heure_debut\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/PresenceController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$heure_fin\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/PresenceController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$salle\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/PresenceController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$salleRef\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/PresenceController.php
+
+		-
+			message: '#^Parameter \$etudiant of class App\\Services\\Presence\\DemandeDeScan constructor expects App\\Models\\Etudiant, App\\Models\\User\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/PresenceController.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Carbon\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Api/PresenceController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>code" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Api/PresenceController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>intitule" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Api/PresenceController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>nom" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Api/PresenceController.php
+
+		-
+			message: '#^Instanceof between App\\Models\\User\|null and App\\Models\\Etudiant will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: app/Http/Controllers/Api/StudentAuthController.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: app/Http/Controllers/Api/StudentAuthController.php
+
+		-
+			message: '#^Instanceof between App\\Models\\User\|null and App\\Models\\Etudiant will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: app/Http/Controllers/Api/StudentQrCodeController.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: app/Http/Controllers/Api/StudentQrCodeController.php
+
+		-
+			message: '#^Parameter \#1 \$view of function view expects view\-string\|null, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Auth/AuthenticatedSessionController.php
+
+		-
+			message: '#^Parameter \#1 \$view of function view expects view\-string\|null, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Auth/ConfirmablePasswordController.php
+
+		-
+			message: '#^Parameter \#1 \$view of function view expects view\-string\|null, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Auth/EmailVerificationPromptController.php
+
+		-
+			message: '#^Parameter \#1 \$view of function view expects view\-string\|null, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Auth/NewPasswordController.php
+
+		-
+			message: '#^Parameter \#1 \$view of function view expects view\-string\|null, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Auth/PasswordResetLinkController.php
+
+		-
+			message: '#^Parameter \#1 \$view of function view expects view\-string\|null, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Auth/RegisteredUserController.php
+
+		-
+			message: '#^Parameter \#1 \$user of class Illuminate\\Auth\\Events\\Verified constructor expects Illuminate\\Contracts\\Auth\\MustVerifyEmail, App\\Models\\User\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Auth/VerifyEmailController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Contracts\\Auth\\StatefulGuard\:\:getLastAttempted\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Requests/Auth/LoginRequest.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeAcademiqueResource\:\:\$active\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeAcademiqueResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeAcademiqueResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeAcademiqueResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeAcademiqueResource\:\:\$date_debut\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeAcademiqueResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeAcademiqueResource\:\:\$date_fin\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeAcademiqueResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeAcademiqueResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeAcademiqueResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeAcademiqueResource\:\:\$libelle\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Resources/AnneeAcademiqueResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EcResource\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EcResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EcResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EcResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EcResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EcResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EcResource\:\:\$intitule\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EcResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EcResource\:\:\$statut\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EcResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EcResource\:\:\$volume_horaire\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EcResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtudiantResource\:\:\$annee_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtudiantResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtudiantResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtudiantResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtudiantResource\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtudiantResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtudiantResource\:\:\$est_responsable\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtudiantResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtudiantResource\:\:\$groupes\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtudiantResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtudiantResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtudiantResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtudiantResource\:\:\$identifiant_unique\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtudiantResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtudiantResource\:\:\$matricule\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtudiantResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtudiantResource\:\:\$nom\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtudiantResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtudiantResource\:\:\$prenom\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtudiantResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EvenementResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EvenementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EvenementResource\:\:\$date\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EvenementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EvenementResource\:\:\$heure_debut\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EvenementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EvenementResource\:\:\$heure_fin\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EvenementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EvenementResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EvenementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EvenementResource\:\:\$salle\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EvenementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EvenementResource\:\:\$statut\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EvenementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FiliereResource\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FiliereResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FiliereResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FiliereResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FiliereResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FiliereResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FiliereResource\:\:\$intitule\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FiliereResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FiliereResource\:\:\$niveau\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FiliereResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\QrCodeResource\:\:\$actif\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/QrCodeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\QrCodeResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/QrCodeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\QrCodeResource\:\:\$expire_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/QrCodeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\QrCodeResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/QrCodeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\QrCodeResource\:\:\$token\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/QrCodeResource.php
+
+		-
+			message: '#^Call to an undefined method App\\Http\\Resources\\QrCodeResource\:\:isExpired\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Resources/QrCodeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UeResource\:\:\$annee_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UeResource\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UeResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UeResource\:\:\$credits\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UeResource\:\:\$filieres\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UeResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UeResource\:\:\$intitule\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UeResource\:\:\$semestre\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UeResource\:\:\$statut\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UeResource\:\:\$volume_horaire\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UeResource.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between Carbon\\Carbon and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Models/AnneeAcademique.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Carbon\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Models/AnneeAcademique.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Etudiant.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$pivot\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Etudiant.php
+
+		-
+			message: '#^Parameter \#1 \$num of function deg2rad expects float, string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Models/Salle.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/AvancementCours.php
+
+		-
+			message: '#^Parameter \#1 \$ecs of method App\\Services\\AvancementCours\:\:appliquer\(\) expects iterable\<App\\Models\\Ec\>, Illuminate\\Support\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/AvancementCours.php
+
+		-
+			message: '#^Parameter \#2 \$etablissements of method App\\Services\\BasculeAnnee\:\:seancesAVenir\(\) expects Illuminate\\Support\\Collection\<int, int\|null\>, Illuminate\\Support\\Collection\<int, int\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/BasculeAnnee.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$annee_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Groupes/GestionGroupes.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:filieres\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/Groupes/GestionGroupes.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Services/Maquette/RegistreMaquette.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$etablissement_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Maquette/RegistreMaquette.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$filiere\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Maquette/RegistreMaquette.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$niveau\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Services/Maquette/RegistreMaquette.php
+
+		-
+			message: '#^Parameter \#3 \$filiere of method App\\Services\\Maquette\\RegistreMaquette\:\:conflitEc\(\) expects App\\Models\\Filiere, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Maquette/RegistreMaquette.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Planning/Conflits.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$filieres\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Planning/Conflits.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$nom\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Planning/Conflits.php
+
+		-
+			message: '#^Parameter \#2 \$ec of method App\\Services\\Planning\\Conflits\:\:decrire\(\) expects App\\Models\\Ec\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Services/Planning/Conflits.php
+
+		-
+			message: '#^Parameter \#3 \$groupe of method App\\Services\\Planning\\Conflits\:\:decrire\(\) expects App\\Models\\Groupe\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Services/Planning/Conflits.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>code" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Services/Planning/Conflits.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>filieres" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Planning/Conflits.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>nom" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Services/Planning/Conflits.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Ec\:\:\$ec_code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/PreparationAnnee.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Ec\:\:\$ue_code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/PreparationAnnee.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$actif\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Presence/EnregistrementPresence.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$intitule\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Presence/EnregistrementPresence.php
+
+		-
+			message: '#^Parameter \#1 \$evenement of static method App\\Services\\Presence\\FenetreDePresence\:\:verifier\(\) expects App\\Models\\Evenement, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Presence/EnregistrementPresence.php
+
+		-
+			message: '#^Parameter \#1 \$salle of static method App\\Services\\Presence\\FacteurReseau\:\:verifier\(\) expects App\\Models\\Salle, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Presence/EnregistrementPresence.php
+
+		-
+			message: '#^Parameter \#1 \$salle of static method App\\Services\\Presence\\GeoReperage\:\:verifier\(\) expects App\\Models\\Salle, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Presence/EnregistrementPresence.php
+
+		-
+			message: '#^Parameter \#2 \$evenement of method App\\Services\\Presence\\EnregistrementPresence\:\:enregistrer\(\) expects App\\Models\\Evenement, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Presence/EnregistrementPresence.php
+
+		-
+			message: '#^Parameter \#2 \$evenement of method App\\Services\\Presence\\EnregistrementPresence\:\:verifierSalle\(\) expects App\\Models\\Evenement, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Presence/EnregistrementPresence.php
+
+		-
+			message: '#^Parameter \#2 \$evenement of static method App\\Services\\Presence\\InscriptionAuCours\:\:verifier\(\) expects App\\Models\\Evenement, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Presence/EnregistrementPresence.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>intitule" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Presence/EnregistrementPresence.php
+
+		-
+			message: '#^Offset ''heures'' on array\{type\: string, groupe_id\: int\|null, heures\: float\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/RegleSeanceService.php
+
+		-
+			message: '#^Offset ''type'' on array\{type\: string, groupe_id\: int\|null, heures\: float\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/RegleSeanceService.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Services/Schedule/ClassificateurExtraction.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between non\-empty\-list\<array\<string, mixed\>\> and array\{\} will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Services/Schedule/ClassificateurExtraction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$semestre\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Schedule/ValidateurCreneau.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$nom\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/ScheduleSlotResolver.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>nom" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/ScheduleSlotResolver.php
+
+		-
+			message: '#^Match expression does not handle remaining value\: string$#'
+			identifier: match.unhandled
+			count: 1
+			path: app/ValueObjects/DiagnosticExtraction.php
+
+		-
+			message: '#^Parameter \#1 \$view of function view expects view\-string\|null, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/View/Components/AppLayout.php
+
+		-
+			message: '#^Parameter \#1 \$view of function view expects view\-string\|null, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/View/Components/GuestLayout.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$annee_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: database/factories/EvenementFactory.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$filiere_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: database/factories/EvenementFactory.php
