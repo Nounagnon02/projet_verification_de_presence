@@ -1,20 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   FiCheckCircle, FiAlertTriangle, FiLoader,
-  FiSmartphone, FiUser, FiArrowRight,
+  FiSmartphone, FiUser, FiArrowRight, FiMail, FiLock, FiLogOut,
   FiClock, FiMapPin, FiBookOpen
 } from 'react-icons/fi';
 import { MdVerified } from 'react-icons/md';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../api/axios';
+import apiEtudiant, { enregistrerJetonEtudiant, effacerJetonEtudiant, aUnJetonEtudiant } from '../../api/etudiant';
 import { useFingerprint } from '../../hooks/useFingerprint';
+
+/** Longueur exacte du code d'accès tiré et envoyé par l'administration. */
+const LONGUEUR_CODE = 6;
 
 const PresenceValidationPage = () => {
   const [searchParams] = useSearchParams();
   const tokenFromUrl = searchParams.get('token') || '';
 
   const [step, setStep] = useState(tokenFromUrl ? 'scan' : 'idle');
-  const [matricule, setMatricule] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
@@ -24,13 +27,30 @@ const PresenceValidationPage = () => {
 
   const qrToken = tokenFromUrl;
 
-  // L'empreinte d'appareil sert a la detection d'appareil partage cote serveur.
-  // Le defi anti-fraude, lui, est emis par le serveur dans la reponse de
-  // /presence/course-by-token et simplement renvoye tel quel.
+  // ─── Authentification étudiante ───
+  //
+  // Le scan exige désormais un jeton étudiant (POST /auth/student/login,
+  // email + identifiant unique + code d'accès) : l'identifiant unique seul
+  // est déterministe (NOM_PRENOM_MATRICULE_FILIERE_ANNEE) et ne prouvait rien
+  // — n'importe quel camarade de promotion pouvait le reconstituer. Le jeton
+  // est conservé sous une clé DISTINCTE de celle de l'administrateur
+  // (src/api/etudiant.js) : un même navigateur peut servir aux deux sans que
+  // l'un n'écrase la session de l'autre.
+  const [connecte, setConnecte] = useState(aUnJetonEtudiant());
+  const [email, setEmail] = useState('');
+  const [identifiantUnique, setIdentifiantUnique] = useState('');
+  const [code, setCode] = useState('');
+  const [loginErrors, setLoginErrors] = useState({});
+  const [loginLoading, setLoginLoading] = useState(false);
+  // Message d'aide affiché quand le serveur répond « code_absent » : l'étudiant
+  // ne peut rien corriger lui-même, il doit réclamer son code.
+  const [codeAbsent, setCodeAbsent] = useState(false);
+
+  // L'empreinte d'appareil sert à la détection d'appareil partagé côté serveur.
   const { visitorId } = useFingerprint();
 
-  // Position de l'appareil. Sans elle, toute salle geolocalisee refuse le scan :
-  // le serveur ne recevait aucune coordonnee et repondait « position non
+  // Position de l'appareil. Sans elle, toute salle géolocalisée refuse le scan :
+  // le serveur ne recevait aucune coordonnée et répondait « position non
   // transmise ». La page ne demandait pourtant jamais l'autorisation.
   const [position, setPosition] = useState(null);
   const [positionRefusee, setPositionRefusee] = useState(false);
@@ -38,7 +58,7 @@ const PresenceValidationPage = () => {
   // Charger les infos du cours depuis le token QR. Annulable : le QR étant
   // renouvelé régulièrement, un étudiant peut rescanner avant la fin de la
   // requête précédente, et c'est la réponse du dernier code scanné qui doit
-  // faire foi.
+  // faire foi. Point public : pas besoin d'être connecté pour voir le cours.
   useEffect(() => {
     let annule = false;
 
@@ -77,7 +97,6 @@ const PresenceValidationPage = () => {
   // d'ouvrir une invite d'autorisation quand le serveur n'en fera rien.
   useEffect(() => {
     if (!cours?.verification?.gps_requis || position || positionRefusee) return;
-
     let annule = false;
 
     (async () => {
@@ -104,36 +123,81 @@ const PresenceValidationPage = () => {
     return () => { annule = true; };
   }, [cours, position, positionRefusee]);
 
-  // Focus automatique sur le champ matricule
+  // Focus automatique sur le premier champ pertinent (connexion ou validation).
   useEffect(() => {
     if (step === 'scan' && inputRef.current) {
       inputRef.current.focus();
     }
-  }, [step]);
+  }, [step, connecte]);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    const erreurs = {};
+    if (!email.trim()) erreurs.email = "L'email est requis.";
+    if (!identifiantUnique.trim()) erreurs.identifiantUnique = "L'identifiant unique est requis.";
+    // Contrôle local : le serveur répond avec un message volontairement
+    // générique, qui ne dirait pas à l'étudiant que son code est incomplet.
+    if (code.trim().length !== LONGUEUR_CODE) {
+      erreurs.code = `Le code d'accès comporte ${LONGUEUR_CODE} chiffres.`;
+    }
+    if (Object.keys(erreurs).length > 0) {
+      setLoginErrors(erreurs);
+      return;
+    }
+    setLoginErrors({});
+    setCodeAbsent(false);
+    setLoginLoading(true);
+
+    try {
+      const { data } = await apiEtudiant.post('/auth/student/login', {
+        email: email.trim(),
+        identifiant_unique: identifiantUnique.trim(),
+        code: code.trim(),
+      });
+
+      if (!data.success) {
+        throw Object.assign(new Error(data.message || 'Identifiants invalides.'), {
+          response: { data },
+        });
+      }
+
+      enregistrerJetonEtudiant(data.data.token);
+      setConnecte(true);
+      setCode('');
+    } catch (err) {
+      const donnees = err.response?.data;
+      if (donnees?.code === 'code_absent') {
+        setCodeAbsent(true);
+      } else {
+        setLoginErrors({ general: donnees?.message || 'Identifiants invalides.' });
+      }
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    effacerJetonEtudiant();
+    setConnecte(false);
+    setEmail('');
+    setIdentifiantUnique('');
+    setCode('');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!matricule.trim()) {
-      setError('Veuillez saisir votre identifiant unique');
-      return;
-    }
-
-    if (!cours?.scan_challenge) {
-      setError('QR Code invalide ou expiré. Veuillez scanner un nouveau code.');
-      setStep('error');
-      return;
-    }
 
     setLoading(true);
     setError('');
     setResult(null);
 
     try {
-      const { data } = await api.post('/presence/scan', {
-        identifiant_unique: matricule.trim(),
+      // L'étudiant est désigné par le jeton (apiEtudiant l'injecte) : plus
+      // d'identifiant posté dans le corps, et plus de défi anti-fraude — voir
+      // le docblock de connexion ci-dessus.
+      const { data } = await apiEtudiant.post('/presence/scan', {
         token: qrToken,
         device_fingerprint: visitorId || navigator.userAgent || 'unknown',
-        scan_challenge: cours.scan_challenge,
         // Omises plutot qu'envoyees a null : le serveur distingue « position
         // absente » de « position hors zone », et les messages diffèrent.
         ...(position ? { latitude: position.latitude, longitude: position.longitude } : {}),
@@ -145,7 +209,7 @@ const PresenceValidationPage = () => {
           course: data.data?.cours || cours?.cours || 'Cours',
           time: `${cours?.heure_debut || '--:--'} - ${cours?.heure_fin || '--:--'}`,
           message: data.message || 'Présence validée avec succès !',
-          student: data.data?.etudiant || matricule.trim(),
+          student: data.data?.etudiant || '',
         });
         setStep('success');
       } else {
@@ -155,14 +219,18 @@ const PresenceValidationPage = () => {
     } catch (err) {
       const status = err.response?.status;
       const msg = err.response?.data?.message;
-      if (status === 410) {
+      if (status === 401) {
+        // Jeton étudiant expiré ou révoqué : retour à l'écran de connexion,
+        // pas à celui de l'administrateur — ce sont deux sessions distinctes.
+        effacerJetonEtudiant();
+        setConnecte(false);
+        setError('Votre session a expiré. Reconnectez-vous pour valider votre présence.');
+      } else if (status === 410) {
         setError('Session expirée. Veuillez scanner un nouveau QR code.');
       } else if (status === 409) {
         setError('Présence déjà validée pour ce cours.');
       } else if (status === 403) {
-        setError(msg || 'Vous n\'êtes pas inscrit à ce cours ou la fenêtre de validation est fermée.');
-      } else if (status === 404) {
-        setError(msg || 'Identifiant étudiant inconnu. Vérifiez votre identifiant unique (NOM_PRENOM_MATRICULE_FILIERE_ANNEE).');
+        setError(msg || "Vous n'êtes pas inscrit à ce cours ou la fenêtre de validation est fermée.");
       } else {
         setError(msg || 'Erreur lors de la validation. Veuillez réessayer.');
       }
@@ -174,7 +242,6 @@ const PresenceValidationPage = () => {
 
   const resetAll = () => {
     setStep('idle');
-    setMatricule('');
     setResult(null);
     setError('');
     setCours(null);
@@ -217,13 +284,15 @@ const PresenceValidationPage = () => {
                 </p>
               </div>
             </div>
-            <div className="bg-success/5 rounded-xl p-3 flex items-center gap-3">
-              <FiUser className="text-success shrink-0" size={16} />
-              <div>
-                <p className="text-xs text-on-surface-variant">Étudiant</p>
-                <p className="text-sm font-semibold text-on-surface font-mono">{result.student}</p>
+            {result.student && (
+              <div className="bg-success/5 rounded-xl p-3 flex items-center gap-3">
+                <FiUser className="text-success shrink-0" size={16} />
+                <div>
+                  <p className="text-xs text-on-surface-variant">Étudiant</p>
+                  <p className="text-sm font-semibold text-on-surface">{result.student}</p>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <button onClick={resetAll}
@@ -299,38 +368,43 @@ const PresenceValidationPage = () => {
     );
   }
 
-  // ─── SCREEN: SCAN (PRINCIPAL) ─────────────────────────
+  // ─── SCREEN: CONNEXION / SCAN (PRINCIPAL) ─────────────
   return (
     <div className="min-h-screen bg-surface flex flex-col">
       {/* TopBar */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-outline-variant/10">
-        {/* Deux lignes plutot qu'une. La hauteur etait figee a 64 px alors que le
-            logo, un titre en text-lg et son sous-titre occupent trois lignes dans
-            une colonne de 448 px : le titre chevauchait le logo. La marque et
-            l'etat de session tiennent la premiere ligne, le titre la seconde, et
-            la hauteur suit son contenu. */}
         <div className="max-w-md mx-auto px-5 py-3">
           <div className="flex items-center justify-between gap-3 mb-2">
             <img src="/images/logo-couleur-compact.png" alt="UAC Présences"
               className="h-6 w-auto shrink-0" />
-            {qrToken && (
-              <div className="bg-secondary/10 px-3 py-1.5 rounded-full flex items-center gap-1.5 shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
-                <span className="text-[9px] font-bold uppercase tracking-widest text-secondary">Session active</span>
-              </div>
-            )}
+            <div className="flex items-center gap-2 shrink-0">
+              {qrToken && (
+                <div className="bg-secondary/10 px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-secondary">Session active</span>
+                </div>
+              )}
+              {connecte && (
+                <button onClick={handleLogout} title="Se déconnecter"
+                  className="p-1.5 rounded-full hover:bg-surface-container-high text-on-surface-variant transition-colors">
+                  <FiLogOut size={14} />
+                </button>
+              )}
+            </div>
           </div>
           <h1 className="font-headline font-bold text-primary text-base leading-snug">
             Enregistrement de présence
           </h1>
           <p className="text-[11px] text-on-surface-variant font-medium leading-snug">
-            Saisissez votre identifiant pour confirmer votre présence
+            {connecte
+              ? 'Confirmez votre présence pour ce cours'
+              : 'Connectez-vous pour confirmer votre présence'}
           </p>
         </div>
       </header>
 
       <main className="flex-1 max-w-md mx-auto w-full px-5 pt-6 pb-12">
-        {/* Étape 1: Infos cours */}
+        {/* Infos cours */}
         {cours && (
           <div className="mb-6 animate-[fadeIn_0.3s_ease-out]">
             <div className="bg-gradient-to-br from-primary to-primary-container rounded-2xl p-5 text-white shadow-lg shadow-primary/20">
@@ -360,9 +434,7 @@ const PresenceValidationPage = () => {
           </div>
         )}
 
-        {/* Étape 2: Formulaire matricule */}
         <div className="animate-[fadeIn_0.3s_ease-out_0.1s_both]">
-          {/* Scan visuel */}
           {qrToken && (
             <div className="flex flex-col items-center mb-6">
               <div className="relative w-48 h-48 mb-4">
@@ -375,83 +447,152 @@ const PresenceValidationPage = () => {
                 </div>
                 <div className="absolute left-6 right-6 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent animate-[scanLine_2s_ease-in-out_infinite]"></div>
               </div>
-              <p className="text-xs text-on-surface-variant text-center mb-1">
-                Validez votre présence en saisissant votre identifiant unique
-              </p>
-              <p className="text-[10px] text-on-surface-variant/60 text-center">
-                Format : NOM_PRENOM_MATRICULE_FILIERE_ANNEE (ex: DOE_JOHN_22A1234_GLT_L3)
-              </p>
             </div>
           )}
 
-          {/* Formulaire */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Un navigateur ne peut pas lire le nom du réseau sans fil : aucune
-                page web ne satisfera jamais ce contrôle. Le dire AVANT la saisie,
-                plutôt que de laisser l'étudiant remplir le formulaire pour
-                récolter un refus qu'il ne pourra pas corriger.
-                Affaiblir la règle serait pire : tolérer l'absence du champ
-                offrirait à quiconque un contournement en une ligne. */}
-            {cours?.verification?.wifi_requis && (
-              <div className="bg-warning/10 rounded-xl p-3.5 flex items-start gap-2.5 border border-warning/20">
-                <FiSmartphone className="text-warning shrink-0 mt-0.5" size={16} />
-                <div className="text-sm text-on-surface">
-                  <p className="font-semibold">Validation par l'application mobile</p>
-                  <p className="text-on-surface-variant text-xs mt-0.5">
-                    Cette salle vérifie le réseau Wi-Fi, une information qu'un
-                    navigateur ne peut pas lire. Utilisez l'application UAC
-                    Présences pour valider votre présence.
+          {cours?.verification?.wifi_requis && (
+            <div className="bg-warning/10 rounded-xl p-3.5 flex items-start gap-2.5 border border-warning/20 mb-5">
+              <FiSmartphone className="text-warning shrink-0 mt-0.5" size={16} />
+              <div className="text-sm text-on-surface">
+                <p className="font-semibold">Validation par l'application mobile</p>
+                <p className="text-on-surface-variant text-xs mt-0.5">
+                  Cette salle vérifie le réseau Wi-Fi, une information qu'un
+                  navigateur ne peut pas lire. Utilisez l'application UAC
+                  Présences pour valider votre présence.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Étape A : connexion (email + identifiant + code) ─────── */}
+          {!connecte && (
+            <form onSubmit={handleLogin} className="space-y-5">
+              <p className="text-xs text-on-surface-variant text-center -mt-1 mb-1">
+                Identifiant et code reçus par e-mail lors de votre inscription.
+              </p>
+
+              {loginErrors.general && (
+                <div className="bg-error/10 rounded-xl p-3.5 flex items-start gap-2.5 border border-error/10 animate-[shake_0.4s_ease-out]">
+                  <FiAlertTriangle className="text-error shrink-0 mt-0.5" size={16} />
+                  <p className="text-sm text-error font-medium">{loginErrors.general}</p>
+                </div>
+              )}
+
+              {codeAbsent && (
+                <div className="rounded-xl border border-warning/20 bg-warning/10 p-3.5 flex items-start gap-2.5">
+                  <FiAlertTriangle className="text-warning shrink-0 mt-0.5" size={16} />
+                  <p className="text-sm text-on-surface">
+                    Aucun code d'accès n'a encore été envoyé pour ce compte.
+                    Demandez-le à votre administration : il vous parviendra par
+                    e-mail avec vos identifiants.
                   </p>
                 </div>
-              </div>
-            )}
-
-            {error && (
-              <div className="bg-error/10 rounded-xl p-3.5 flex items-start gap-2.5 border border-error/10 animate-[shake_0.4s_ease-out]">
-                <FiAlertTriangle className="text-error shrink-0 mt-0.5" size={16} />
-                <p className="text-sm text-error font-medium">{error}</p>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <label className="block text-xs font-semibold text-on-surface-variant ml-1 uppercase tracking-wider" htmlFor="matricule">
-                Identifiant unique
-              </label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-outline group-focus-within:text-primary transition-colors">
-                  <FiUser size={16} />
-                </div>
-                <input
-                  ref={inputRef}
-                  id="matricule"
-                  type="text"
-                  value={matricule}
-                  onChange={(e) => setMatricule(e.target.value)}
-                  placeholder="Ex: DOE_JOHN_22A1234_GLT_L3"
-                  disabled={loading}
-                  className="w-full bg-surface-container-lowest border-2 border-outline-variant/20 rounded-xl pl-11 pr-4 py-3.5 text-base font-mono focus:border-primary focus:outline-none transition-all peer disabled:opacity-60"
-                  autoComplete="off"
-                />
-                <div className="absolute bottom-0 left-3 right-3 h-0.5 bg-gradient-to-r from-primary/50 to-primary scale-x-0 peer-focus:scale-x-100 transition-transform duration-300 rounded-full"></div>
-              </div>
-
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-br from-primary to-primary-container text-white py-4 rounded-xl font-headline font-bold text-base shadow-lg shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-70 hover:shadow-xl hover:shadow-primary/30"
-            >
-              {loading ? (
-                <FiLoader className="animate-spin" size={20} />
-              ) : (
-                <FiCheckCircle size={20} />
               )}
-              {loading ? 'Validation...' : 'Valider ma présence'}
-            </button>
 
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-on-surface-variant ml-1 uppercase tracking-wider" htmlFor="email">
+                  Email
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-outline">
+                    <FiMail size={16} />
+                  </div>
+                  <input
+                    ref={inputRef}
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="votre.email@uac.bj"
+                    disabled={loginLoading}
+                    autoComplete="email"
+                    className="w-full bg-surface-container-lowest border-2 border-outline-variant/20 rounded-xl pl-11 pr-4 py-3.5 text-base focus:border-primary focus:outline-none transition-all disabled:opacity-60"
+                  />
+                </div>
+                {loginErrors.email && <p className="text-xs text-error ml-1">{loginErrors.email}</p>}
+              </div>
 
-          </form>
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-on-surface-variant ml-1 uppercase tracking-wider" htmlFor="identifiant">
+                  Identifiant unique
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-outline">
+                    <FiUser size={16} />
+                  </div>
+                  <input
+                    id="identifiant"
+                    type="text"
+                    value={identifiantUnique}
+                    onChange={(e) => setIdentifiantUnique(e.target.value)}
+                    placeholder="Ex: DOE_JOHN_22A1234_GLT_L3"
+                    disabled={loginLoading}
+                    autoComplete="off"
+                    className="w-full bg-surface-container-lowest border-2 border-outline-variant/20 rounded-xl pl-11 pr-4 py-3.5 text-base font-mono focus:border-primary focus:outline-none transition-all disabled:opacity-60"
+                  />
+                </div>
+                {loginErrors.identifiantUnique && <p className="text-xs text-error ml-1">{loginErrors.identifiantUnique}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-on-surface-variant ml-1 uppercase tracking-wider" htmlFor="code">
+                  Code d'accès
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-outline">
+                    <FiLock size={16} />
+                  </div>
+                  <input
+                    id="code"
+                    type="password"
+                    inputMode="numeric"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, LONGUEUR_CODE))}
+                    placeholder="••••••"
+                    disabled={loginLoading}
+                    maxLength={LONGUEUR_CODE}
+                    autoComplete="one-time-code"
+                    className="w-full bg-surface-container-lowest border-2 border-outline-variant/20 rounded-xl pl-11 pr-4 py-3.5 text-base font-mono tracking-widest focus:border-primary focus:outline-none transition-all disabled:opacity-60"
+                  />
+                </div>
+                {loginErrors.code && <p className="text-xs text-error ml-1">{loginErrors.code}</p>}
+              </div>
+
+              <button
+                type="submit"
+                disabled={loginLoading}
+                className="w-full bg-gradient-to-br from-primary to-primary-container text-white py-4 rounded-xl font-headline font-bold text-base shadow-lg shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-70 hover:shadow-xl hover:shadow-primary/30"
+              >
+                {loginLoading ? <FiLoader className="animate-spin" size={20} /> : <FiArrowRight size={20} />}
+                {loginLoading ? 'Connexion...' : 'Se connecter'}
+              </button>
+            </form>
+          )}
+
+          {/* ─── Étape B : validation (connecté) ───────────────────────── */}
+          {connecte && (
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {error && (
+                <div className="bg-error/10 rounded-xl p-3.5 flex items-start gap-2.5 border border-error/10 animate-[shake_0.4s_ease-out]">
+                  <FiAlertTriangle className="text-error shrink-0 mt-0.5" size={16} />
+                  <p className="text-sm text-error font-medium">{error}</p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-br from-primary to-primary-container text-white py-4 rounded-xl font-headline font-bold text-base shadow-lg shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-70 hover:shadow-xl hover:shadow-primary/30"
+              >
+                {loading ? (
+                  <FiLoader className="animate-spin" size={20} />
+                ) : (
+                  <FiCheckCircle size={20} />
+                )}
+                {loading ? 'Validation...' : 'Valider ma présence'}
+              </button>
+            </form>
+          )}
         </div>
       </main>
 

@@ -1,14 +1,24 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { FiUser, FiSave, FiMail, FiRefreshCw, FiAlertTriangle } from 'react-icons/fi';
 import api from '../../api/axios';
 import SecuriteCompte from '../../components/profile/SecuriteCompte';
+import ActiveSessionsPanel from '../../components/settings/ActiveSessionsPanel';
 import { libelleRole } from '../../utils/roles';
 
 export default function ProfilePage() {
+  const [searchParams] = useSearchParams();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  // Le super admin sans 2FA est redirigé ici (?securite=requise, voir
+  // src/api/axios.js) : le groupe /super-admin l'exige désormais, et cette
+  // page est là où il l'active — voir SecuriteCompte plus bas.
+  const [error, setError] = useState(
+    searchParams.get('securite') === 'requise'
+      ? "L'authentification à deux facteurs est obligatoire pour votre rôle. Activez-la ci-dessous avant de continuer."
+      : '',
+  );
   const [success, setSuccess] = useState('');
 
   // Formulaire profil
@@ -164,6 +174,9 @@ export default function ProfilePage() {
         deuxFacteursActive={Boolean(profile?.two_factor_enabled)}
         onDeuxFacteursChange={(actif) => setProfile((prev) => ({ ...prev, two_factor_enabled: actif }))}
       />
+
+      {/* Sessions actives : révoquer les autres appareils connectés. */}
+      <ActiveSessionsPanel />
 
       {/* Métadonnées compte */}
       {profile?.created_at && (

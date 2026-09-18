@@ -25,6 +25,7 @@ export function installerMouchard() {
       chemin: url.pathname,
       parametres: Object.fromEntries(url.searchParams),
       corps,
+      autorisation: request.headers.get('Authorization'),
     });
   };
 

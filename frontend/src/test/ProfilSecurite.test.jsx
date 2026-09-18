@@ -59,4 +59,21 @@ describe('Profil — sécurité du compte', () => {
       password_confirmation: 'nouveau-mdp-456',
     }))
   })
+
+  // Un super admin sans 2FA est renvoyé ici par l'intercepteur axios
+  // (?securite=requise) quand /super-admin/* répond 403
+  // { code: 'two_factor_setup_required' } : c'est cette page qui porte
+  // l'activation, juste au-dessous.
+  it('affiche un message quand la route venait de refuser faute de 2FA', async () => {
+    renderPage(<ProfilePage />, { route: '/profile?securite=requise' })
+
+    expect(await screen.findByText(/authentification à deux facteurs est obligatoire/i)).toBeInTheDocument()
+  })
+
+  it("n'affiche rien sans ce paramètre", async () => {
+    renderPage(<ProfilePage />)
+
+    await screen.findByRole('heading', { name: 'Informations personnelles' })
+    expect(screen.queryByText(/authentification à deux facteurs est obligatoire/i)).not.toBeInTheDocument()
+  })
 })

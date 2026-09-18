@@ -36,6 +36,11 @@ api.interceptors.response.use(
       localStorage.removeItem('presence_user');
       localStorage.removeItem(TOKEN_KEY);
       window.location.href = '/login';
+    } else if (err.response?.status === 403 && err.response?.data?.code === 'two_factor_setup_required') {
+      // Le groupe /super-admin exige désormais la 2FA (RequireTwoFactorForSuperAdmin).
+      // Le compte reste authentifié : on ne le déconnecte pas, on le renvoie
+      // vers l'écran où il peut l'activer.
+      window.location.href = '/profile?securite=requise';
     }
     return Promise.reject(err);
   }
