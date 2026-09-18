@@ -2,6 +2,31 @@ import { useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { FiX } from 'react-icons/fi';
 
+/**
+ * Éléments où le focus peut réellement se poser. Le piège de focus prenait
+ * auparavant tous les <button>, <input>… sans regarder s'ils étaient
+ * désactivés ou masqués : à l'étape du QR de la double authentification, le
+ * dernier « élément » était « Confirmer », désactivé tant que le code n'a pas
+ * six chiffres — Tab depuis le champ de code sortait alors de la modale. Même
+ * défaut avec l'<input type="file"> masqué des imports.
+ */
+const FOCALISABLES = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled]):not([type="hidden"])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"]):not([disabled])',
+].join(',');
+
+function elementsFocalisables(conteneur) {
+  // « .hidden » : display:none de Tailwind. Le test ne passe pas par la mise en
+  // page (offsetParent, getClientRects), que jsdom ne calcule pas.
+  return [...conteneur.querySelectorAll(FOCALISABLES)].filter(
+    (el) => !el.closest('.hidden, [hidden], [aria-hidden="true"]'),
+  );
+}
+
 export default function Modal({ isOpen, onClose, title, children, size = 'md', 'aria-describedby': ariaDescribedBy }) {
   const overlayRef = useRef(null);
   const contentRef = useRef(null);
@@ -19,18 +44,27 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', '
 
     // Trap focus inside modal
     if (e.key === 'Tab' && contentRef.current) {
-      const focusableElements = contentRef.current.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      const firstElement = focusableElements[0];
-      const lastElement = focusableElements[focusableElements.length - 1];
+      const focalisables = elementsFocalisables(contentRef.current);
 
-      if (e.shiftKey && document.activeElement === firstElement) {
+      // Rien de focalisable : le focus reste sur la boîte elle-même.
+      if (focalisables.length === 0) {
         e.preventDefault();
-        lastElement.focus();
-      } else if (!e.shiftKey && document.activeElement === lastElement) {
+        contentRef.current.focus();
+        return;
+      }
+
+      const premier = focalisables[0];
+      const dernier = focalisables[focalisables.length - 1];
+      const actif = document.activeElement;
+
+      // La boîte elle-même reçoit le focus à l'ouverture : Maj+Tab depuis elle
+      // sortait de la modale, comme Maj+Tab depuis le premier élément.
+      if (e.shiftKey && (actif === premier || actif === contentRef.current)) {
         e.preventDefault();
-        firstElement.focus();
+        dernier.focus();
+      } else if (!e.shiftKey && actif === dernier) {
+        e.preventDefault();
+        premier.focus();
       }
     }
   }, []); // Dépendances vides — onCloseRef est stable

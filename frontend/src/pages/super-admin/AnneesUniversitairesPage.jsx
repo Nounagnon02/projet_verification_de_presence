@@ -178,7 +178,7 @@ export default function AnneesUniversitairesPage() {
                             </li>
                           ))}
                         </ul>
-                      ) : <span className="text-xs text-slate-400">Aucun</span>}
+                      ) : <span className="text-xs text-on-surface-variant">Aucun</span>}
                     </td>
                     <td className="px-5 py-4 align-top text-xs text-slate-500 min-w-[12rem] max-w-[20rem]">
                       {contenuAnnee(a) || 'Vide'}

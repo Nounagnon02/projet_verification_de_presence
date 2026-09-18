@@ -72,14 +72,14 @@ export default function ContactFormPage() {
           <form onSubmit={handleSubmit} className="bg-surface-container-lowest rounded-xxl p-6 shadow-sm border border-outline-variant/10 space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-on-surface-variant">Sujet <span className="text-error">*</span></label>
-                <input className={`w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 transition-all focus:outline-none ${errors.subject ? 'border-error' : 'border-transparent focus:border-primary'}`}
+                <label htmlFor="contact-sujet" className="text-xs font-semibold text-on-surface-variant">Sujet <span className="text-error">*</span></label>
+                <input id="contact-sujet" className={`w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 transition-all focus:outline-none ${errors.subject ? 'border-error' : 'border-transparent focus:border-primary'}`}
                   value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder="Objet de votre message" />
                 {errors.subject && <p className="text-[10px] text-error flex items-center gap-1 mt-1"><FiAlertCircle size={12} />{errors.subject}</p>}
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-on-surface-variant">Priorité</label>
-                <select className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all"
+                <label htmlFor="contact-priorite" className="text-xs font-semibold text-on-surface-variant">Priorité</label>
+                <select id="contact-priorite" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all"
                   value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
                   <option value="basse">Basse</option>
                   <option value="moyenne">Normale</option>
@@ -90,8 +90,8 @@ export default function ContactFormPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-on-surface-variant">Message <span className="text-error">*</span></label>
-              <textarea rows="5" className={`w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 transition-all focus:outline-none resize-none ${errors.message ? 'border-error' : 'border-transparent focus:border-primary'}`}
+              <label htmlFor="contact-message" className="text-xs font-semibold text-on-surface-variant">Message <span className="text-error">*</span></label>
+              <textarea id="contact-message" rows="5" className={`w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 transition-all focus:outline-none resize-none ${errors.message ? 'border-error' : 'border-transparent focus:border-primary'}`}
                 value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} placeholder="Décrivez votre problème en détail..." />
               {errors.message && <p className="text-[10px] text-error flex items-center gap-1 mt-1"><FiAlertCircle size={12} />{errors.message}</p>}
             </div>

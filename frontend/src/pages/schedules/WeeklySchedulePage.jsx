@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-// Modales rendues dans <body> : placées dans la page, elles héritaient de la
-// marge de son conteneur (space-y) et laissaient une bande découverte en haut.
-import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiAlertTriangle, FiLoader, FiUpload, FiPlus, FiFileText, FiX, FiCalendar } from 'react-icons/fi';
 import api from '../../api/axios';
 import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 import BandeauAnneeClose from '../../components/ui/BandeauAnneeClose';
+import Modal from '../../components/ui/Modal';
 import CsvTemplateDownload from '../../components/import/CsvTemplateDownload';
 import FormulaireCreneau from '../../components/schedules/FormulaireCreneau';
 import { useToastCtx } from '../../context/ToastContext';
@@ -391,148 +389,140 @@ export default function WeeklySchedulePage() {
       />
 
       {/* ─── Modal Import EDT ─────────────────────────────── */}
-      {showImportModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-          onClick={() => { if (!importUploading) { setShowImportModal(false); resetImport(); } }}>
-          <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-primary">Importer un emploi du temps</h2>
-              <button type="button" onClick={() => { setShowImportModal(false); resetImport(); }} disabled={importUploading}
-                aria-label="Fermer" className="p-1 hover:bg-surface-container-high rounded-lg transition-colors">
-                <FiX size={20} className="text-outline" />
+      <Modal
+        isOpen={showImportModal}
+        // Pas de fermeture pendant l'envoi : resetImport effacerait l'état d'une
+        // requête encore en cours.
+        onClose={() => { if (!importUploading) { setShowImportModal(false); resetImport(); } }}
+        title="Importer un emploi du temps"
+        size="md"
+      >
+        {/* Le PDF passe par une extraction IA suivie d'une validation ; le CSV
+            est structuré et s'applique directement, avec les mêmes règles. */}
+        <div className="flex gap-1 mb-5 bg-surface-container-high rounded-xl p-1">
+          {[['pdf', 'PDF — analyse par IA'], ['csv', 'CSV — structuré']].map(([format, libelle]) => (
+            <button key={format} type="button" onClick={() => { setImportFormat(format); resetImport(); }} disabled={importUploading}
+              className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all disabled:opacity-50 ${importFormat === format ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-primary'}`}>
+              {libelle}
+            </button>
+          ))}
+        </div>
+
+        <div onDragOver={(e) => { e.preventDefault(); setImportDragOver(true); }} onDragLeave={() => setImportDragOver(false)} onDrop={handleImportDrop}
+          className={`border-2 border-dashed rounded-xl p-10 text-center transition-all cursor-pointer ${importDragOver ? 'border-primary bg-primary/5' : 'border-outline-variant/30 hover:border-primary/40'} ${importFile ? 'bg-surface-container-low' : ''}`}
+          onClick={() => importFileRef.current?.click()}>
+          <input ref={importFileRef} type="file" accept={importFormat === 'pdf' ? '.pdf' : '.csv'} aria-label={importFormat === 'pdf' ? "Choisir le fichier PDF de l'emploi du temps à importer" : "Choisir le fichier CSV de l'emploi du temps à importer"} className="hidden" onChange={(e) => {
+            const f = e.target.files[0]; if (f) { setImportFile(f); setImportError(''); }
+          }} />
+          {!importFile ? (
+            <>
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <FiUpload className="text-2xl text-primary" />
+              </div>
+              <h3 className="text-sm font-semibold text-on-surface mb-1">
+                {importFormat === 'pdf' ? 'Importez un fichier PDF' : 'Importez un fichier CSV'}
+              </h3>
+              <p className="text-xs text-on-surface-variant mb-4">
+                {importFormat === 'pdf' ? 'Analyse par IA' : 'Une ligne par créneau'} — ou{' '}
+                <span className="text-primary font-semibold cursor-pointer hover:underline">parcourez</span>
+              </p>
+              <p className="text-[10px] text-on-surface-variant/60">
+                {importFormat === 'pdf' ? 'PDF uniquement — 10 Mo max' : 'CSV uniquement — 5 Mo max'}
+              </p>
+            </>
+          ) : (
+            <div className="flex items-center gap-4 justify-center">
+              <FiFileText className="text-2xl text-primary" />
+              <div className="text-left">
+                <p className="text-sm font-medium text-on-surface">{importFile.name}</p>
+                <p className="text-[10px] text-on-surface-variant">{(importFile.size / 1024).toFixed(1)} Ko</p>
+              </div>
+              <button type="button" aria-label="Retirer le fichier" onClick={(e) => { e.stopPropagation(); resetImport(); }} className="p-2 hover:bg-surface-container-high rounded-lg transition-colors">
+                <FiX className="text-outline" />
               </button>
             </div>
+          )}
+        </div>
 
-            {/* Le PDF passe par une extraction IA suivie d'une validation ; le CSV
-                est structuré et s'applique directement, avec les mêmes règles. */}
-            <div className="flex gap-1 mb-5 bg-surface-container-high rounded-xl p-1">
-              {[['pdf', 'PDF — analyse par IA'], ['csv', 'CSV — structuré']].map(([format, libelle]) => (
-                <button key={format} type="button" onClick={() => { setImportFormat(format); resetImport(); }} disabled={importUploading}
-                  className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all disabled:opacity-50 ${importFormat === format ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-primary'}`}>
-                  {libelle}
-                </button>
-              ))}
-            </div>
-
-            <div onDragOver={(e) => { e.preventDefault(); setImportDragOver(true); }} onDragLeave={() => setImportDragOver(false)} onDrop={handleImportDrop}
-              className={`border-2 border-dashed rounded-xl p-10 text-center transition-all cursor-pointer ${importDragOver ? 'border-primary bg-primary/5' : 'border-outline-variant/30 hover:border-primary/40'} ${importFile ? 'bg-surface-container-low' : ''}`}
-              onClick={() => importFileRef.current?.click()}>
-              <input ref={importFileRef} type="file" accept={importFormat === 'pdf' ? '.pdf' : '.csv'} className="hidden" onChange={(e) => {
-                const f = e.target.files[0]; if (f) { setImportFile(f); setImportError(''); }
-              }} />
-              {!importFile ? (
-                <>
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-                    <FiUpload className="text-2xl text-primary" />
-                  </div>
-                  <h3 className="text-sm font-semibold text-on-surface mb-1">
-                    {importFormat === 'pdf' ? 'Importez un fichier PDF' : 'Importez un fichier CSV'}
-                  </h3>
-                  <p className="text-xs text-on-surface-variant mb-4">
-                    {importFormat === 'pdf' ? 'Analyse par IA' : 'Une ligne par créneau'} — ou{' '}
-                    <span className="text-primary font-semibold cursor-pointer hover:underline">parcourez</span>
-                  </p>
-                  <p className="text-[10px] text-on-surface-variant/60">
-                    {importFormat === 'pdf' ? 'PDF uniquement — 10 Mo max' : 'CSV uniquement — 5 Mo max'}
-                  </p>
-                </>
-              ) : (
-                <div className="flex items-center gap-4 justify-center">
-                  <FiFileText className="text-2xl text-primary" />
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-on-surface">{importFile.name}</p>
-                    <p className="text-[10px] text-on-surface-variant">{(importFile.size / 1024).toFixed(1)} Ko</p>
-                  </div>
-                  <button type="button" aria-label="Retirer le fichier" onClick={(e) => { e.stopPropagation(); resetImport(); }} className="p-2 hover:bg-surface-container-high rounded-lg transition-colors">
-                    <FiX className="text-outline" />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {importError && (
-              <div className="mt-4 flex items-center gap-2 p-3 bg-error-container rounded-xl text-on-error-container text-sm">
-                <FiAlertTriangle /> {importError}
-              </div>
-            )}
-
-            {importFile && !importUploading && !importResultat && (
-              <button type="button" onClick={handleImportUpload}
-                className="mt-6 w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-bold text-sm shadow-sm hover:opacity-90">
-                <FiUpload /> {importFormat === 'pdf' ? "Analyser avec l'IA" : "Importer l'emploi du temps"}
-              </button>
-            )}
-
-            {importUploading && (
-              <div className="mt-6 rounded-xl p-6 border border-outline-variant/10 text-center">
-                <FiLoader className="animate-spin mx-auto text-primary text-2xl mb-3" />
-                <p className="font-semibold text-primary text-sm">{importFormat === 'pdf' ? 'Analyse IA en cours…' : 'Import CSV en cours…'}</p>
-              </div>
-            )}
-
-            {importResultat && (
-              <div className="mt-6 rounded-xl p-4 bg-surface-container-low border border-outline-variant/10">
-                <p className="text-sm font-bold text-primary mb-1">{importResultat.crees} créneau(x) créé(s)</p>
-                {importResultat.sallesCreees.length > 0 && (
-                  <p role="status" className="text-xs text-on-surface-variant mt-1">
-                    <span className="font-semibold text-on-surface">Salles créées : {importResultat.sallesCreees.join(', ')}</span>
-                    {' '}— elles ne vérifient que le QR code.{' '}
-                    <Link to="/settings/salles?filtre=a-configurer" className="font-semibold text-primary hover:underline">
-                      Configurer leur GPS et leur Wi-Fi
-                    </Link>
-                  </p>
-                )}
-                {importResultat.avertissements.length > 0 && (
-                  <ul className="text-[11px] text-on-surface-variant list-disc list-inside space-y-0.5 mt-2">
-                    {importResultat.avertissements.slice(0, 20).map((a, i) => (
-                      <li key={i}>{typeof a === 'string' ? a : `Ligne ${a.line} : ${a.warning}`}</li>
-                    ))}
-                  </ul>
-                )}
-                {importResultat.erreurs.length > 0 ? (
-                  <>
-                    <p className="text-xs font-semibold text-error mt-2 mb-1">{importResultat.erreurs.length} ligne(s) refusée(s) :</p>
-                    <ul className="text-[11px] text-on-surface-variant list-disc list-inside space-y-0.5 max-h-40 overflow-y-auto">
-                      {importResultat.erreurs.slice(0, 20).map((e, i) => (
-                        <li key={i}>{typeof e === 'string' ? e : `Ligne ${e.line} : ${e.error}`}</li>
-                      ))}
-                    </ul>
-                  </>
-                ) : (
-                  <p className="text-xs text-on-surface-variant">Aucune ligne refusée.</p>
-                )}
-              </div>
-            )}
-
-            <div className="mt-6 bg-surface-container-high rounded-xl p-4">
-              <h4 className="text-xs font-bold text-primary mb-2">Format attendu</h4>
-              {importFormat === 'pdf' ? (
-                <p className="text-[11px] text-on-surface-variant">
-                  Le PDF est analysé pour en extraire les créneaux. Rien n'est enregistré avant votre validation, ligne par ligne.
-                </p>
-              ) : (
-                <>
-                  <p className="text-[11px] text-on-surface-variant font-mono">
-                    filiere_code, niveau, annee_libelle, semestre, ue_code, ec_code, jour,
-                    heure_debut, heure_fin, salle_code, type_cours
-                  </p>
-                  <p className="text-[11px] text-on-surface-variant mt-1">
-                    Facultatives : <span className="font-mono">groupe, enseignant, valide_du, valide_au</span>.
-                  </p>
-                  <p className="text-[11px] text-on-surface-variant mt-2">
-                    Mêmes règles que la grille : conflits de salle, de promotion (cours communs et groupes compris) et d'enseignant.
-                  </p>
-                  <div className="mt-3">
-                    <CsvTemplateDownload types={['edt']} avecColonnes={false} />
-                  </div>
-                </>
-              )}
-            </div>
+        {importError && (
+          <div className="mt-4 flex items-center gap-2 p-3 bg-error-container rounded-xl text-on-error-container text-sm">
+            <FiAlertTriangle /> {importError}
           </div>
-        </div>,
-        document.body,
-      )}
+        )}
+
+        {importFile && !importUploading && !importResultat && (
+          <button type="button" onClick={handleImportUpload}
+            className="mt-6 w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-bold text-sm shadow-sm hover:opacity-90">
+            <FiUpload /> {importFormat === 'pdf' ? "Analyser avec l'IA" : "Importer l'emploi du temps"}
+          </button>
+        )}
+
+        {importUploading && (
+          <div className="mt-6 rounded-xl p-6 border border-outline-variant/10 text-center">
+            <FiLoader className="animate-spin mx-auto text-primary text-2xl mb-3" />
+            <p className="font-semibold text-primary text-sm">{importFormat === 'pdf' ? 'Analyse IA en cours…' : 'Import CSV en cours…'}</p>
+          </div>
+        )}
+
+        {importResultat && (
+          <div className="mt-6 rounded-xl p-4 bg-surface-container-low border border-outline-variant/10">
+            <p className="text-sm font-bold text-primary mb-1">{importResultat.crees} créneau(x) créé(s)</p>
+            {importResultat.sallesCreees.length > 0 && (
+              <p role="status" className="text-xs text-on-surface-variant mt-1">
+                <span className="font-semibold text-on-surface">Salles créées : {importResultat.sallesCreees.join(', ')}</span>
+                {' '}— elles ne vérifient que le QR code.{' '}
+                <Link to="/settings/salles?filtre=a-configurer" className="font-semibold text-primary hover:underline">
+                  Configurer leur GPS et leur Wi-Fi
+                </Link>
+              </p>
+            )}
+            {importResultat.avertissements.length > 0 && (
+              <ul className="text-[11px] text-on-surface-variant list-disc list-inside space-y-0.5 mt-2">
+                {importResultat.avertissements.slice(0, 20).map((a, i) => (
+                  <li key={i}>{typeof a === 'string' ? a : `Ligne ${a.line} : ${a.warning}`}</li>
+                ))}
+              </ul>
+            )}
+            {importResultat.erreurs.length > 0 ? (
+              <>
+                <p className="text-xs font-semibold text-error mt-2 mb-1">{importResultat.erreurs.length} ligne(s) refusée(s) :</p>
+                <ul className="text-[11px] text-on-surface-variant list-disc list-inside space-y-0.5 max-h-40 overflow-y-auto">
+                  {importResultat.erreurs.slice(0, 20).map((e, i) => (
+                    <li key={i}>{typeof e === 'string' ? e : `Ligne ${e.line} : ${e.error}`}</li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <p className="text-xs text-on-surface-variant">Aucune ligne refusée.</p>
+            )}
+          </div>
+        )}
+
+        <div className="mt-6 bg-surface-container-high rounded-xl p-4">
+          <h4 className="text-xs font-bold text-primary mb-2">Format attendu</h4>
+          {importFormat === 'pdf' ? (
+            <p className="text-[11px] text-on-surface-variant">
+              Le PDF est analysé pour en extraire les créneaux. Rien n'est enregistré avant votre validation, ligne par ligne.
+            </p>
+          ) : (
+            <>
+              <p className="text-[11px] text-on-surface-variant font-mono">
+                filiere_code, niveau, annee_libelle, semestre, ue_code, ec_code, jour,
+                heure_debut, heure_fin, salle_code, type_cours
+              </p>
+              <p className="text-[11px] text-on-surface-variant mt-1">
+                Facultatives : <span className="font-mono">groupe, enseignant, valide_du, valide_au</span>.
+              </p>
+              <p className="text-[11px] text-on-surface-variant mt-2">
+                Mêmes règles que la grille : conflits de salle, de promotion (cours communs et groupes compris) et d'enseignant.
+              </p>
+              <div className="mt-3">
+                <CsvTemplateDownload types={['edt']} avecColonnes={false} />
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

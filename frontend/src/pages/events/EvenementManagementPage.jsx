@@ -1,10 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-// Modales rendues dans <body> : placées dans la page, elles héritaient de la
-// marge de son conteneur (space-y) et laissaient une bande découverte en haut.
-import { createPortal } from 'react-dom';
 import { aujourdhuiIso } from '../../utils/formatters';
-import { FiPlus, FiEdit2, FiTrash2, FiSave, FiX, FiRefreshCw, FiCalendar, FiClock, FiMapPin, FiAlertTriangle, FiCheckCircle, FiGrid, FiCopy, FiSmartphone } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiSave, FiRefreshCw, FiCalendar, FiClock, FiMapPin, FiAlertTriangle, FiCheckCircle, FiGrid, FiCopy, FiSmartphone } from 'react-icons/fi';
 import api from '../../api/axios';
+import Modal from '../../components/ui/Modal';
 import SelecteurHeure from '../../components/ui/SelecteurHeure';
 import SelecteurSalle from '../../components/ui/SelecteurSalle';
 import { FIN_JOURNEE, enHeure, enMinutes, finApresNouveauDebut } from '../../utils/heures';
@@ -342,20 +340,20 @@ export default function EvenementManagementPage() {
       <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/10">
         <div className="flex flex-wrap items-end gap-4">
           <div className="space-y-1 min-w-[160px] flex-1">
-              <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Du</label>
-              <input type="date" value={filters.date_debut}
+              <label htmlFor="filtre-date-debut" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Du</label>
+              <input id="filtre-date-debut" type="date" value={filters.date_debut}
                 onChange={(e) => setFilters(prev => ({ ...prev, date_debut: e.target.value }))}
                 className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20" />
             </div>
             <div className="space-y-1 min-w-[160px] flex-1">
-              <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Au</label>
-              <input type="date" value={filters.date_fin}
+              <label htmlFor="filtre-date-fin" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Au</label>
+              <input id="filtre-date-fin" type="date" value={filters.date_fin}
                 onChange={(e) => setFilters(prev => ({ ...prev, date_fin: e.target.value }))}
                 className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20" />
             </div>
             <div className="space-y-1 min-w-[180px] flex-1">
-              <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Filière</label>
-              <select value={filters.filiere_id}
+              <label htmlFor="filtre-filiere" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Filière</label>
+              <select id="filtre-filiere" value={filters.filiere_id}
                 onChange={(e) => setFilters(prev => ({ ...prev, filiere_id: e.target.value }))}
                 className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
                 <option value="">Toutes</option>
@@ -363,8 +361,8 @@ export default function EvenementManagementPage() {
               </select>
             </div>
             <div className="space-y-1 min-w-[180px] flex-1">
-              <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Statut</label>
-              <select value={filters.statut}
+              <label htmlFor="filtre-statut" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Statut</label>
+              <select id="filtre-statut" value={filters.statut}
                 onChange={(e) => setFilters(prev => ({ ...prev, statut: e.target.value }))}
                 className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
                 <option value="">Tous</option>
@@ -489,275 +487,247 @@ export default function EvenementManagementPage() {
       )}
 
       {/* ─── Modal QR Code ─────────────────────────────── */}
-      {qrModal.open && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-          onClick={() => setQrModal(prev => ({ ...prev, open: false }))}>
-          <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-sm shadow-xl"
-            onClick={(e) => e.stopPropagation()}>
-            {/* Close */}
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-primary">Code QR</h2>
-              <button onClick={() => setQrModal(prev => ({ ...prev, open: false }))}
-                className="p-1 hover:bg-surface-container-high rounded-lg transition-colors">
-                <FiX size={20} className="text-outline" />
-              </button>
-            </div>
-
-            {/* Event info */}
-            {qrModal.event && (
-              <div className="bg-surface-container-high rounded-xl p-3 mb-4 text-center">
-                <p className="font-bold text-sm text-primary">{qrModal.event.ec?.intitule || 'Cours'}</p>
-                <p className="text-[11px] text-on-surface-variant mt-0.5">
-                  {qrModal.event.date} · {qrModal.event.heure_debut} - {qrModal.event.heure_fin}
-                </p>
-                {qrModal.event.salle && (
-                  <p className="text-[11px] text-on-surface-variant">{qrModal.event.salle}</p>
-                )}
-              </div>
+      <Modal isOpen={qrModal.open} onClose={() => setQrModal(prev => ({ ...prev, open: false }))} title="Code QR" size="sm">
+        {/* Event info */}
+        {qrModal.event && (
+          <div className="bg-surface-container-high rounded-xl p-3 mb-4 text-center">
+            <p className="font-bold text-sm text-primary">{qrModal.event.ec?.intitule || 'Cours'}</p>
+            <p className="text-[11px] text-on-surface-variant mt-0.5">
+              {qrModal.event.date} · {qrModal.event.heure_debut} - {qrModal.event.heure_fin}
+            </p>
+            {qrModal.event.salle && (
+              <p className="text-[11px] text-on-surface-variant">{qrModal.event.salle}</p>
             )}
-
-            {/* QR Code — image SVG fournie par l'API. Elle était auparavant
-                demandée à un service tiers, ce qui faisait sortir le token du
-                système pour un simple encodage graphique. */}
-            <div className="flex justify-center mb-4">
-              {qrModal.svg ? (
-                <div
-                  className="w-56 h-56 rounded-xl bg-white p-2 shadow-sm [&>svg]:w-full [&>svg]:h-full"
-                  role="img"
-                  aria-label="QR Code de présence"
-                  dangerouslySetInnerHTML={{ __html: qrModal.svg }}
-                />
-              ) : (
-                <div className="w-56 h-56 rounded-xl bg-surface-container-high flex items-center justify-center text-xs text-on-surface-variant text-center px-4">
-                  Image indisponible. Régénérez le QR Code.
-                </div>
-              )}
-            </div>
-
-            {/* Lien de validation */}
-            <div className="bg-surface-container-high rounded-xl p-3 mb-4">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1">Lien de validation</p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 text-[10px] text-primary font-mono truncate bg-surface-container-lowest rounded-lg px-2 py-1.5">
-                  {qrModal.qrUrl}
-                </code>
-                <button onClick={() => copyToClipboard(qrModal.qrUrl)}
-                  className="p-1.5 text-outline hover:text-primary hover:bg-primary/10 rounded-lg transition-all" title="Copier">
-                  <FiCopy size={14} />
-                </button>
-              </div>
-            </div>
-
-            {/* Instructions */}
-            <div className="flex items-start gap-2 text-[11px] text-on-surface-variant p-3 bg-surface-container-high rounded-xl">
-              <FiSmartphone size={14} className="shrink-0 mt-0.5 text-secondary" />
-              <p>Les étudiants scannent ce QR code avec leur téléphone pour valider leur présence. Le code expire dans 60 secondes.</p>
-            </div>
-
-            <div className="mt-4">
-              <button onClick={() => setQrModal(prev => ({ ...prev, open: false }))}
-                className="w-full py-2.5 bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all">
-                Fermer
-              </button>
-            </div>
           </div>
-        </div>,
-        document.body,
-      )}
+        )}
+
+        {/* QR Code — image SVG fournie par l'API. Elle était auparavant
+            demandée à un service tiers, ce qui faisait sortir le token du
+            système pour un simple encodage graphique. */}
+        <div className="flex justify-center mb-4">
+          {qrModal.svg ? (
+            <div
+              className="w-56 h-56 rounded-xl bg-white p-2 shadow-sm [&>svg]:w-full [&>svg]:h-full"
+              role="img"
+              aria-label="QR Code de présence"
+              dangerouslySetInnerHTML={{ __html: qrModal.svg }}
+            />
+          ) : (
+            <div className="w-56 h-56 rounded-xl bg-surface-container-high flex items-center justify-center text-xs text-on-surface-variant text-center px-4">
+              Image indisponible. Régénérez le QR Code.
+            </div>
+          )}
+        </div>
+
+        {/* Lien de validation */}
+        <div className="bg-surface-container-high rounded-xl p-3 mb-4">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1">Lien de validation</p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 text-[10px] text-primary font-mono truncate bg-surface-container-lowest rounded-lg px-2 py-1.5">
+              {qrModal.qrUrl}
+            </code>
+            <button onClick={() => copyToClipboard(qrModal.qrUrl)}
+              className="p-1.5 text-outline hover:text-primary hover:bg-primary/10 rounded-lg transition-all" title="Copier">
+              <FiCopy size={14} />
+            </button>
+          </div>
+        </div>
+
+        {/* Instructions */}
+        <div className="flex items-start gap-2 text-[11px] text-on-surface-variant p-3 bg-surface-container-high rounded-xl">
+          <FiSmartphone size={14} className="shrink-0 mt-0.5 text-secondary" />
+          <p>Les étudiants scannent ce QR code avec leur téléphone pour valider leur présence. Le code expire dans 60 secondes.</p>
+        </div>
+
+        <div className="mt-4">
+          <button onClick={() => setQrModal(prev => ({ ...prev, open: false }))}
+            className="w-full py-2.5 bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all">
+            Fermer
+          </button>
+        </div>
+      </Modal>
 
       {/* ─── Modal événement ────────────────────────────── */}
-      {modal.open && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-          onClick={() => setModal(prev => ({ ...prev, open: false }))}>
-          <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg shadow-xl"
-            onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-primary">{modal.editing ? "Modifier l'événement" : 'Nouvel événement'}</h2>
-              <button onClick={() => setModal(prev => ({ ...prev, open: false }))} className="p-1 hover:bg-surface-container-high rounded-lg transition-colors">
-                <FiX size={20} className="text-outline" />
-              </button>
-            </div>
-            <form onSubmit={handleSave} className="space-y-4">
-              {/* La filière ne sert qu'à réduire la liste des cours : elle
-                  n'est pas envoyée. Le serveur déduit filière ET année de
-                  l'EC choisi, ce qui rend toute incohérence impossible. */}
-              <div>
-                <label className="block text-xs font-semibold text-on-surface mb-1">Filière <span className="font-normal text-on-surface-variant">(pour filtrer les cours)</span></label>
-                <select value={modal.data.filiere_id} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, filiere_id: e.target.value, ec_id: '' } }))}
-                  className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                  <option value="">Toutes les filières</option>
-                  {filieres.map(f => <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-on-surface mb-1">EC (Cours) *</label>
-                <select value={modal.data.ec_id} onChange={(e) => {
-                    const ecId = e.target.value;
-                    setModal(prev => ({ ...prev, data: { ...prev.data, ec_id: ecId } }));
-                    if (!modal.editing) chargerCreneaux(ecId, modal.data.date);
-                  }}
-                  required className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                  <option value="">Sélectionner...</option>
-                  {getEcsForFiliere().map(ec => {
-                    const filiereCode = ec.ue?.filiere?.code || ec.ue?.filiere_code;
-                    return (
-                      <option key={ec.id} value={ec.id}>
-                        {ec.code} — {ec.intitule}{filiereCode ? ` (${filiereCode})` : ''}{ec.statut === 'termine' ? ' — terminé, évaluation seulement' : ''}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="type-evenement" className="block text-xs font-semibold text-on-surface mb-1">Type de séance</label>
-                <select id="type-evenement" value={modal.data.type_cours} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, type_cours: e.target.value } }))}
-                  className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                  {TYPES_SEANCE.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
-              </div>
-              <SelecteurGroupe id="groupe-evenement" ecId={modal.data.ec_id} type={modal.data.type_cours} value={modal.data.groupe_id}
-                onChange={choisirGroupe}
-                labelClassName="block text-xs font-semibold text-on-surface mb-1"
-                className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-              <div>
-                <label className="block text-xs font-semibold text-on-surface mb-1">Date *</label>
-                <input type="date" value={modal.data.date} onChange={(e) => {
-                  const date = e.target.value;
-                  setModal(prev => ({ ...prev, data: { ...prev.data, date } }));
-                  if (!modal.editing) chargerCreneaux(modal.data.ec_id, date);
-                }}
-                  // Aujourd'hui au plus tôt : le sélecteur grise les jours passés.
-                  // En modification, la date d'origine laissée telle quelle reste
-                  // acceptée, pour pouvoir clore ou annuler un cours d'hier.
-                  min={modal.editing && modal.data.date === modal.dateOrigine ? undefined : aujourdhuiIso()}
-                  required className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-                {modal.editing && modal.dateOrigine && modal.dateOrigine < aujourdhuiIso() && (
-                  <p className="text-xs pt-1 text-on-surface-variant">
-                    Cet événement est passé : sa date peut être conservée, ou reportée à aujourd'hui ou plus tard.
-                  </p>
-                )}
-              </div>
-              {/* Suggestions issues de l'emploi du temps — création seulement */}
-              {!modal.editing && modal.data.ec_id && modal.data.date && (
-                <div className="rounded-xl border border-outline-variant/30 bg-surface-container-high/60 px-3 py-2.5 text-xs">
-                  {creneaux.loading ? (
-                    <span className="text-on-surface-variant">Recherche du créneau à l'emploi du temps…</span>
-                  ) : creneaux.options.length === 0 ? (
-                    <span className="text-on-surface-variant">
-                      Aucun créneau à l'emploi du temps ce jour-là pour ce cours. Saisissez les horaires ci-dessous.
-                    </span>
-                  ) : creneaux.options.length === 1 ? (
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-on-surface">
-                        <FiCheckCircle size={12} className="inline mb-0.5 mr-1 text-secondary" />
-                        Prérempli depuis l'emploi du temps
-                        {creneaux.options[0].type_cours ? ` (${creneaux.options[0].type_cours})` : ''}
-                      </span>
-                      <button type="button" onClick={reinitialiserHoraires}
-                        className="shrink-0 font-semibold text-primary hover:underline">
-                        Saisir à la main
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <p className="text-on-surface">
-                        Ce cours a {creneaux.options.length} créneaux ce jour-là. Lequel programmez-vous&nbsp;?
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {creneaux.options.map(c => {
-                          const actif = modal.data.heure_debut === c.heure_debut && modal.data.heure_fin === c.heure_fin;
-                          return (
-                            <button key={c.id} type="button" onClick={() => appliquerCreneau(c)}
-                              className={`px-2.5 py-1 rounded-lg border text-xs font-semibold transition-colors ${
-                                actif
-                                  ? 'border-primary bg-primary/10 text-primary'
-                                  : 'border-outline-variant/40 text-on-surface hover:bg-surface-container-highest'
-                              }`}>
-                              {c.heure_debut}–{c.heure_fin}
-                              {c.type_cours ? ` · ${c.type_cours}` : ''}
-                              {c.salle ? ` · ${c.salle}` : ''}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-on-surface mb-1">Début *</label>
-                  <SelecteurHeure required value={modal.data.heure_debut}
-                    // La fin suit le début en gardant la durée choisie, dans la limite permise.
-                    onChange={(v) => setModal(prev => ({
-                      ...prev,
-                      data: {
-                        ...prev.data,
-                        heure_debut: v,
-                        heure_fin: finApresNouveauDebut({
-                          ancienDebut: prev.data.heure_debut,
-                          ancienneFin: prev.data.heure_fin,
-                          nouveauDebut: v,
-                          limiteMinutes,
-                        }),
-                      },
-                    }))}
-                    className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-on-surface mb-1">Fin *</label>
-                  <SelecteurHeure required value={modal.data.heure_fin}
-                    apres={modal.data.heure_debut || null}
-                    jusqua={finAuPlusTard}
-                    onChange={(v) => setModal(prev => ({ ...prev, data: { ...prev.data, heure_fin: v } }))}
-                    className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-                  {finAuPlusTard && limiteMinutes !== null && (
-                    <p className="text-xs pt-1 text-on-surface-variant">
-                      Au plus tard {finAuPlusTard}
-                      {plafondMinutes !== null && limiteMinutes === plafondMinutes
-                        ? ` — une séance dure ${plafondMinutes / 60} h au maximum.`
-                        : ' — limite du volume horaire restant.'}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div>
-                <label htmlFor="salle-evenement" className="block text-xs font-semibold text-on-surface mb-1">Salle</label>
-                {/* Salles configurées uniquement : un nom saisi à la main ne permet
-                    ni le contrôle GPS/Wi-Fi ni la détection de double réservation. */}
-                <SelecteurSalle id="salle-evenement" salles={salles} value={modal.data.salle_id}
-                  nomActuel={modal.data.salle_id ? '' : modal.data.salle}
-                  onChange={(id) => setModal(prev => ({ ...prev, data: { ...prev.data, salle_id: id } }))}
-                  className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-              </div>
-              {/* Le statut ne se choisit qu'en modification : un événement naît
-                  planifié, puis la séance le fait passer « En cours » et
-                  « Terminé ». Seule une annulation reste une décision. */}
-              {modal.editing && (
-                <div>
-                  <label htmlFor="statut-evenement" className="block text-xs font-semibold text-on-surface mb-1">Statut</label>
-                  <select id="statut-evenement" value={modal.data.statut} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, statut: e.target.value } }))}
-                    className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                    {STATUTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                  </select>
-                </div>
-              )}
-              <div className="flex gap-3 pt-2">
-                <button type="submit" disabled={modal.saving}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50">
-                  {modal.saving ? <FiRefreshCw className="animate-spin" size={16} /> : <FiSave size={16} />}
-                  {modal.editing ? 'Mettre à jour' : "Créer l'événement"}
-                </button>
-                <button type="button" onClick={() => setModal(prev => ({ ...prev, open: false }))}
-                  className="px-6 py-2.5 bg-surface-container-high text-on-surface-variant rounded-xl font-semibold text-sm hover:bg-surface-container-high/80 transition-all">
-                  Annuler
-                </button>
-              </div>
-            </form>
+      <Modal isOpen={modal.open} onClose={() => setModal(prev => ({ ...prev, open: false }))}
+        title={modal.editing ? "Modifier l'événement" : 'Nouvel événement'} size="md">
+        <form onSubmit={handleSave} className="space-y-4">
+          {/* La filière ne sert qu'à réduire la liste des cours : elle
+              n'est pas envoyée. Le serveur déduit filière ET année de
+              l'EC choisi, ce qui rend toute incohérence impossible. */}
+          <div>
+            <label htmlFor="filiere-evenement" className="block text-xs font-semibold text-on-surface mb-1">Filière <span className="font-normal text-on-surface-variant">(pour filtrer les cours)</span></label>
+            <select id="filiere-evenement" value={modal.data.filiere_id} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, filiere_id: e.target.value, ec_id: '' } }))}
+              className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+              <option value="">Toutes les filières</option>
+              {filieres.map(f => <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>)}
+            </select>
           </div>
-        </div>,
-        document.body,
-      )}
+          <div>
+            <label htmlFor="ec-evenement" className="block text-xs font-semibold text-on-surface mb-1">EC (Cours) *</label>
+            <select id="ec-evenement" value={modal.data.ec_id} onChange={(e) => {
+                const ecId = e.target.value;
+                setModal(prev => ({ ...prev, data: { ...prev.data, ec_id: ecId } }));
+                if (!modal.editing) chargerCreneaux(ecId, modal.data.date);
+              }}
+              required className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+              <option value="">Sélectionner...</option>
+              {getEcsForFiliere().map(ec => {
+                const filiereCode = ec.ue?.filiere?.code || ec.ue?.filiere_code;
+                return (
+                  <option key={ec.id} value={ec.id}>
+                    {ec.code} — {ec.intitule}{filiereCode ? ` (${filiereCode})` : ''}{ec.statut === 'termine' ? ' — terminé, évaluation seulement' : ''}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="type-evenement" className="block text-xs font-semibold text-on-surface mb-1">Type de séance</label>
+            <select id="type-evenement" value={modal.data.type_cours} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, type_cours: e.target.value } }))}
+              className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+              {TYPES_SEANCE.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+          </div>
+          <SelecteurGroupe id="groupe-evenement" ecId={modal.data.ec_id} type={modal.data.type_cours} value={modal.data.groupe_id}
+            onChange={choisirGroupe}
+            labelClassName="block text-xs font-semibold text-on-surface mb-1"
+            className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+          <div>
+            <label htmlFor="date-evenement" className="block text-xs font-semibold text-on-surface mb-1">Date *</label>
+            <input id="date-evenement" type="date" value={modal.data.date} onChange={(e) => {
+              const date = e.target.value;
+              setModal(prev => ({ ...prev, data: { ...prev.data, date } }));
+              if (!modal.editing) chargerCreneaux(modal.data.ec_id, date);
+            }}
+              // Aujourd'hui au plus tôt : le sélecteur grise les jours passés.
+              // En modification, la date d'origine laissée telle quelle reste
+              // acceptée, pour pouvoir clore ou annuler un cours d'hier.
+              min={modal.editing && modal.data.date === modal.dateOrigine ? undefined : aujourdhuiIso()}
+              required className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+            {modal.editing && modal.dateOrigine && modal.dateOrigine < aujourdhuiIso() && (
+              <p className="text-xs pt-1 text-on-surface-variant">
+                Cet événement est passé : sa date peut être conservée, ou reportée à aujourd'hui ou plus tard.
+              </p>
+            )}
+          </div>
+          {/* Suggestions issues de l'emploi du temps — création seulement */}
+          {!modal.editing && modal.data.ec_id && modal.data.date && (
+            <div className="rounded-xl border border-outline-variant/30 bg-surface-container-high/60 px-3 py-2.5 text-xs">
+              {creneaux.loading ? (
+                <span className="text-on-surface-variant">Recherche du créneau à l'emploi du temps…</span>
+              ) : creneaux.options.length === 0 ? (
+                <span className="text-on-surface-variant">
+                  Aucun créneau à l'emploi du temps ce jour-là pour ce cours. Saisissez les horaires ci-dessous.
+                </span>
+              ) : creneaux.options.length === 1 ? (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-on-surface">
+                    <FiCheckCircle size={12} className="inline mb-0.5 mr-1 text-secondary" />
+                    Prérempli depuis l'emploi du temps
+                    {creneaux.options[0].type_cours ? ` (${creneaux.options[0].type_cours})` : ''}
+                  </span>
+                  <button type="button" onClick={reinitialiserHoraires}
+                    className="shrink-0 font-semibold text-primary hover:underline">
+                    Saisir à la main
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-on-surface">
+                    Ce cours a {creneaux.options.length} créneaux ce jour-là. Lequel programmez-vous&nbsp;?
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {creneaux.options.map(c => {
+                      const actif = modal.data.heure_debut === c.heure_debut && modal.data.heure_fin === c.heure_fin;
+                      return (
+                        <button key={c.id} type="button" onClick={() => appliquerCreneau(c)}
+                          className={`px-2.5 py-1 rounded-lg border text-xs font-semibold transition-colors ${
+                            actif
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-outline-variant/40 text-on-surface hover:bg-surface-container-highest'
+                          }`}>
+                          {c.heure_debut}–{c.heure_fin}
+                          {c.type_cours ? ` · ${c.type_cours}` : ''}
+                          {c.salle ? ` · ${c.salle}` : ''}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="heure-debut-evenement" className="block text-xs font-semibold text-on-surface mb-1">Début *</label>
+              <SelecteurHeure id="heure-debut-evenement" required value={modal.data.heure_debut}
+                // La fin suit le début en gardant la durée choisie, dans la limite permise.
+                onChange={(v) => setModal(prev => ({
+                  ...prev,
+                  data: {
+                    ...prev.data,
+                    heure_debut: v,
+                    heure_fin: finApresNouveauDebut({
+                      ancienDebut: prev.data.heure_debut,
+                      ancienneFin: prev.data.heure_fin,
+                      nouveauDebut: v,
+                      limiteMinutes,
+                    }),
+                  },
+                }))}
+                className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+            </div>
+            <div>
+              <label htmlFor="heure-fin-evenement" className="block text-xs font-semibold text-on-surface mb-1">Fin *</label>
+              <SelecteurHeure id="heure-fin-evenement" required value={modal.data.heure_fin}
+                apres={modal.data.heure_debut || null}
+                jusqua={finAuPlusTard}
+                onChange={(v) => setModal(prev => ({ ...prev, data: { ...prev.data, heure_fin: v } }))}
+                className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+              {finAuPlusTard && limiteMinutes !== null && (
+                <p className="text-xs pt-1 text-on-surface-variant">
+                  Au plus tard {finAuPlusTard}
+                  {plafondMinutes !== null && limiteMinutes === plafondMinutes
+                    ? ` — une séance dure ${plafondMinutes / 60} h au maximum.`
+                    : ' — limite du volume horaire restant.'}
+                </p>
+              )}
+            </div>
+          </div>
+          <div>
+            <label htmlFor="salle-evenement" className="block text-xs font-semibold text-on-surface mb-1">Salle</label>
+            {/* Salles configurées uniquement : un nom saisi à la main ne permet
+                ni le contrôle GPS/Wi-Fi ni la détection de double réservation. */}
+            <SelecteurSalle id="salle-evenement" salles={salles} value={modal.data.salle_id}
+              nomActuel={modal.data.salle_id ? '' : modal.data.salle}
+              onChange={(id) => setModal(prev => ({ ...prev, data: { ...prev.data, salle_id: id } }))}
+              className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+          {/* Le statut ne se choisit qu'en modification : un événement naît
+              planifié, puis la séance le fait passer « En cours » et
+              « Terminé ». Seule une annulation reste une décision. */}
+          {modal.editing && (
+            <div>
+              <label htmlFor="statut-evenement" className="block text-xs font-semibold text-on-surface mb-1">Statut</label>
+              <select id="statut-evenement" value={modal.data.statut} onChange={(e) => setModal(prev => ({ ...prev, data: { ...prev.data, statut: e.target.value } }))}
+                className="w-full px-3 py-2 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                {STATUTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+            </div>
+          )}
+          <div className="flex gap-3 pt-2">
+            <button type="submit" disabled={modal.saving}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50">
+              {modal.saving ? <FiRefreshCw className="animate-spin" size={16} /> : <FiSave size={16} />}
+              {modal.editing ? 'Mettre à jour' : "Créer l'événement"}
+            </button>
+            <button type="button" onClick={() => setModal(prev => ({ ...prev, open: false }))}
+              className="px-6 py-2.5 bg-surface-container-high text-on-surface-variant rounded-xl font-semibold text-sm hover:bg-surface-container-high/80 transition-all">
+              Annuler
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

@@ -79,6 +79,7 @@ export default function ProgramComparison() {
         {/* Filtre année */}
         <div className="w-full md:w-64">
           <select
+            aria-label="Année académique"
             value={selectedAnnee}
             onChange={e => setSelectedAnnee(e.target.value)}
             className="w-full px-4 py-2.5 bg-surface-container-high rounded-xl border-b-2 border-transparent focus:border-primary focus:bg-surface-container-lowest transition-all text-on-surface focus:outline-none text-sm"

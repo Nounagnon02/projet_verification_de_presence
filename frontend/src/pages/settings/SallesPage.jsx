@@ -1,10 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-// Modales rendues dans <body> : placées dans la page, elles héritaient de la
-// marge de son conteneur (space-y) et laissaient une bande découverte en haut.
-import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
-import { FiPlus, FiEdit2, FiTrash2, FiMapPin, FiWifi, FiAlertTriangle, FiX, FiSearch, FiLoader, FiCrosshair, FiCalendar } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiMapPin, FiWifi, FiAlertTriangle, FiSearch, FiLoader, FiCrosshair, FiCalendar } from 'react-icons/fi';
 import api from '../../api/axios';
+import Modal from '../../components/ui/Modal';
 import { useToastCtx } from '../../context/ToastContext';
 
 // La plage IP a quitté le formulaire : enregistrée et comparée au scan, elle
@@ -421,169 +419,151 @@ export default function SallesPage() {
       )}
 
       {/* Modal Création / Édition */}
-      {showModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/40 backdrop-blur-sm overflow-y-auto" onClick={() => setShowModal(false)}>
-          <div className="bg-surface-container-lowest rounded-2xl shadow-2xl max-w-2xl w-full p-6 my-8 relative" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-primary font-headline">
-                {editing ? 'Modifier la salle' : 'Nouvelle salle'}
-              </h3>
-              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-surface-container-high rounded-lg transition-colors" aria-label="Fermer">
-                <FiX size={20} className="text-on-surface-variant" />
-              </button>
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)}
+        title={editing ? 'Modifier la salle' : 'Nouvelle salle'} size="lg">
+        {error && (
+          <div className="flex items-center gap-2 p-3 bg-error/10 rounded-xl text-error text-sm mb-4">
+            <FiAlertTriangle size={16} />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSave} className="space-y-4">
+          {/* Infos générales */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="sm:col-span-2">
+              <Field label="Nom de la salle *" htmlFor="salle-nom">
+                <input id="salle-nom" type="text" required className={champ} value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} />
+              </Field>
             </div>
+            <Field label={editing ? 'Code unique *' : 'Code unique'} htmlFor="salle-code">
+              <input
+                id="salle-code"
+                type="text"
+                required={Boolean(editing)}
+                placeholder={editing ? '' : 'Dérivé du nom'}
+                className={`${champ} font-mono`}
+                value={form.code}
+                onChange={(e) => setForm({ ...form, code: e.target.value })}
+              />
+            </Field>
+          </div>
+          {!editing && (
+            <p className="text-[11px] text-on-surface-variant -mt-2">
+              Laissez le code vide : il sera dérivé du nom (« Labo Info 1 » donne LABO-INFO-1).
+            </p>
+          )}
 
-            {error && (
-              <div className="flex items-center gap-2 p-3 bg-error/10 rounded-xl text-error text-sm mb-4">
-                <FiAlertTriangle size={16} />
-                <span>{error}</span>
-              </div>
-            )}
+          <Field label="Entité">
+            <div className="flex items-center gap-2 px-3 py-2.5 bg-surface-container-high rounded-lg text-sm text-on-surface-variant">
+              <FiMapPin size={14} className="text-secondary" />
+              <span className="font-medium text-on-surface">{userEntity?.nom || userEntity?.code || 'Entité non définie'}</span>
+            </div>
+          </Field>
 
-            <form onSubmit={handleSave} className="space-y-4">
-              {/* Infos générales */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="sm:col-span-2">
-                  <Field label="Nom de la salle *" htmlFor="salle-nom">
-                    <input id="salle-nom" type="text" required className={champ} value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} />
-                  </Field>
-                </div>
-                <Field label={editing ? 'Code unique *' : 'Code unique'} htmlFor="salle-code">
-                  <input
-                    id="salle-code"
-                    type="text"
-                    required={Boolean(editing)}
-                    placeholder={editing ? '' : 'Dérivé du nom'}
-                    className={`${champ} font-mono`}
-                    value={form.code}
-                    onChange={(e) => setForm({ ...form, code: e.target.value })}
-                  />
-                </Field>
-              </div>
-              {!editing && (
-                <p className="text-[11px] text-on-surface-variant -mt-2">
-                  Laissez le code vide : il sera dérivé du nom (« Labo Info 1 » donne LABO-INFO-1).
+          {/* Géolocalisation */}
+          <div className="border-t border-outline-variant/20 pt-4">
+            <h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2"><FiMapPin size={16} /> Géolocalisation GPS</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Field label="Latitude" htmlFor="salle-latitude">
+                <input id="salle-latitude" type="number" step="any" placeholder="Ex: 6.3650" className={`${champ} font-mono`} value={form.latitude} onChange={(e) => setForm({ ...form, latitude: e.target.value })} />
+              </Field>
+              <Field label="Longitude" htmlFor="salle-longitude">
+                <input id="salle-longitude" type="number" step="any" placeholder="Ex: 2.4180" className={`${champ} font-mono`} value={form.longitude} onChange={(e) => setForm({ ...form, longitude: e.target.value })} />
+              </Field>
+              <Field label="Rayon geofence (mètres)" htmlFor="salle-rayon">
+                <input id="salle-rayon" type="number" min="5" max="500" placeholder="50" className={champ} value={form.rayon_geofence_m} onChange={(e) => setForm({ ...form, rayon_geofence_m: e.target.value })} />
+              </Field>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 mt-3">
+              <button
+                type="button"
+                onClick={utiliserMaPosition}
+                disabled={localisation.etat === 'encours'}
+                className="flex items-center gap-2 px-3 py-2 bg-primary/10 text-primary rounded-lg text-xs font-semibold hover:bg-primary/20 transition-all disabled:opacity-50"
+              >
+                {localisation.etat === 'encours' ? <FiLoader className="animate-spin" size={14} /> : <FiCrosshair size={14} />}
+                Utiliser ma position actuelle
+              </button>
+              {localisation.message && (
+                <p role="status" className={`text-xs ${localisation.etat === 'erreur' ? 'text-error' : 'text-on-surface-variant'}`}>
+                  {localisation.message}
                 </p>
               )}
-
-              <Field label="Entité">
-                <div className="flex items-center gap-2 px-3 py-2.5 bg-surface-container-high rounded-lg text-sm text-on-surface-variant">
-                  <FiMapPin size={14} className="text-secondary" />
-                  <span className="font-medium text-on-surface">{userEntity?.nom || userEntity?.code || 'Entité non définie'}</span>
-                </div>
-              </Field>
-
-              {/* Géolocalisation */}
-              <div className="border-t border-outline-variant/20 pt-4">
-                <h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2"><FiMapPin size={16} /> Géolocalisation GPS</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <Field label="Latitude" htmlFor="salle-latitude">
-                    <input id="salle-latitude" type="number" step="any" placeholder="Ex: 6.3650" className={`${champ} font-mono`} value={form.latitude} onChange={(e) => setForm({ ...form, latitude: e.target.value })} />
-                  </Field>
-                  <Field label="Longitude" htmlFor="salle-longitude">
-                    <input id="salle-longitude" type="number" step="any" placeholder="Ex: 2.4180" className={`${champ} font-mono`} value={form.longitude} onChange={(e) => setForm({ ...form, longitude: e.target.value })} />
-                  </Field>
-                  <Field label="Rayon geofence (mètres)" htmlFor="salle-rayon">
-                    <input id="salle-rayon" type="number" min="5" max="500" placeholder="50" className={champ} value={form.rayon_geofence_m} onChange={(e) => setForm({ ...form, rayon_geofence_m: e.target.value })} />
-                  </Field>
-                </div>
-                <div className="flex flex-wrap items-center gap-3 mt-3">
-                  <button
-                    type="button"
-                    onClick={utiliserMaPosition}
-                    disabled={localisation.etat === 'encours'}
-                    className="flex items-center gap-2 px-3 py-2 bg-primary/10 text-primary rounded-lg text-xs font-semibold hover:bg-primary/20 transition-all disabled:opacity-50"
-                  >
-                    {localisation.etat === 'encours' ? <FiLoader className="animate-spin" size={14} /> : <FiCrosshair size={14} />}
-                    Utiliser ma position actuelle
-                  </button>
-                  {localisation.message && (
-                    <p role="status" className={`text-xs ${localisation.etat === 'erreur' ? 'text-error' : 'text-on-surface-variant'}`}>
-                      {localisation.message}
-                    </p>
-                  )}
-                </div>
-                <p className="text-[11px] text-on-surface-variant mt-2">
-                  À faire depuis la salle, avec un téléphone : c'est la position de l'appareil qui est relevée.
-                </p>
-              </div>
-
-              {/* Réseau Wi-Fi */}
-              <div className="border-t border-outline-variant/20 pt-4">
-                <h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2"><FiWifi size={16} /> Réseau Wi-Fi</h4>
-                {/* Conséquence non évidente, à dire ici : c'est l'administrateur
-                    qui la déclenche en remplissant ces champs. */}
-                <p className="text-xs text-on-surface-variant mb-3">
-                  Renseigner un réseau rend cette salle validable{' '}
-                  <span className="font-semibold">uniquement depuis l'application mobile</span> :
-                  un navigateur ne peut pas lire le nom du réseau. Laissez ces champs
-                  vides, ou cochez « hors réseau », pour autoriser aussi la page web.
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Field label="SSID attendu" htmlFor="salle-ssid">
-                    <input id="salle-ssid" type="text" placeholder="Ex: IFRI-WiFi" className={champ} value={form.ssid_attendu} onChange={(e) => setForm({ ...form, ssid_attendu: e.target.value })} />
-                  </Field>
-                  <Field label="BSSID attendu (MAC)" htmlFor="salle-bssid">
-                    <input id="salle-bssid" type="text" placeholder="Ex: 00:11:22:33:44:55" className={`${champ} font-mono`} value={form.bssid_attendu} onChange={(e) => setForm({ ...form, bssid_attendu: e.target.value })} />
-                  </Field>
-                </div>
-                <label className="flex items-center gap-2 mt-3 cursor-pointer">
-                  <input type="checkbox" checked={form.hors_reseau} onChange={(e) => setForm({ ...form, hors_reseau: e.target.checked })} className="rounded border-outline-variant/30 text-primary focus:ring-primary/20" />
-                  <span className="text-xs text-on-surface-variant">Salle hors réseau : aucun contrôle Wi-Fi (GPS seul)</span>
-                </label>
-              </div>
-
-              {/* Statut */}
-              <div className="border-t border-outline-variant/20 pt-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={form.actif} onChange={(e) => setForm({ ...form, actif: e.target.checked })} className="rounded border-outline-variant/30 text-primary focus:ring-primary/20" />
-                  <span className="text-sm text-on-surface-variant">Salle active</span>
-                </label>
-              </div>
-
-              {/* Actions */}
-              <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 bg-surface-container-high text-on-surface rounded-xl text-sm font-semibold hover:bg-surface-container transition-colors">
-                  Annuler
-                </button>
-                <button type="submit" disabled={saving} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50">
-                  {saving && <FiLoader className="animate-spin" />}{saving ? 'Enregistrement...' : (editing ? 'Mettre à jour' : 'Créer')}
-                </button>
-              </div>
-            </form>
+            </div>
+            <p className="text-[11px] text-on-surface-variant mt-2">
+              À faire depuis la salle, avec un téléphone : c'est la position de l'appareil qui est relevée.
+            </p>
           </div>
-        </div>,
-        document.body,
-      )}
+
+          {/* Réseau Wi-Fi */}
+          <div className="border-t border-outline-variant/20 pt-4">
+            <h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2"><FiWifi size={16} /> Réseau Wi-Fi</h4>
+            {/* Conséquence non évidente, à dire ici : c'est l'administrateur
+                qui la déclenche en remplissant ces champs. */}
+            <p className="text-xs text-on-surface-variant mb-3">
+              Renseigner un réseau rend cette salle validable{' '}
+              <span className="font-semibold">uniquement depuis l'application mobile</span> :
+              un navigateur ne peut pas lire le nom du réseau. Laissez ces champs
+              vides, ou cochez « hors réseau », pour autoriser aussi la page web.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="SSID attendu" htmlFor="salle-ssid">
+                <input id="salle-ssid" type="text" placeholder="Ex: IFRI-WiFi" className={champ} value={form.ssid_attendu} onChange={(e) => setForm({ ...form, ssid_attendu: e.target.value })} />
+              </Field>
+              <Field label="BSSID attendu (MAC)" htmlFor="salle-bssid">
+                <input id="salle-bssid" type="text" placeholder="Ex: 00:11:22:33:44:55" className={`${champ} font-mono`} value={form.bssid_attendu} onChange={(e) => setForm({ ...form, bssid_attendu: e.target.value })} />
+              </Field>
+            </div>
+            <label className="flex items-center gap-2 mt-3 cursor-pointer">
+              <input type="checkbox" checked={form.hors_reseau} onChange={(e) => setForm({ ...form, hors_reseau: e.target.checked })} className="rounded border-outline-variant/30 text-primary focus:ring-primary/20" />
+              <span className="text-xs text-on-surface-variant">Salle hors réseau : aucun contrôle Wi-Fi (GPS seul)</span>
+            </label>
+          </div>
+
+          {/* Statut */}
+          <div className="border-t border-outline-variant/20 pt-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={form.actif} onChange={(e) => setForm({ ...form, actif: e.target.checked })} className="rounded border-outline-variant/30 text-primary focus:ring-primary/20" />
+              <span className="text-sm text-on-surface-variant">Salle active</span>
+            </label>
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-2">
+            <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 bg-surface-container-high text-on-surface rounded-xl text-sm font-semibold hover:bg-surface-container transition-colors">
+              Annuler
+            </button>
+            <button type="submit" disabled={saving} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50">
+              {saving && <FiLoader className="animate-spin" />}{saving ? 'Enregistrement...' : (editing ? 'Mettre à jour' : 'Créer')}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Modal confirmation suppression */}
-      {showDelete && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setShowDelete(null)}>
-          <div className="bg-surface-container-lowest rounded-2xl shadow-2xl max-w-md w-full p-6 relative" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-error/10 rounded-xl"><FiAlertTriangle className="text-error" size={20} /></div>
-              <div>
-                <h3 className="text-lg font-bold text-primary">Supprimer la salle</h3>
-                <p className="text-xs text-on-surface-variant">{showDelete.nom} ({showDelete.code})</p>
-              </div>
-            </div>
-            {/* La règle est énoncée avant le clic, plutôt que découverte par une
-                erreur : le serveur refuse si des événements à venir utilisent la
-                salle. */}
-            <p className="text-sm text-on-surface-variant mb-6">
-              Cette action est irréversible. Elle sera refusée si des événements à venir
-              utilisent cette salle ; les événements passés sont conservés. Pour la retirer
-              des listes sans la supprimer, décochez plutôt « Salle active ».
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => setShowDelete(null)} className="flex-1 px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl text-sm font-semibold hover:bg-surface-container transition-colors">Annuler</button>
-              <button onClick={handleDelete} disabled={deleting} className="flex items-center justify-center gap-2 flex-1 px-4 py-2.5 bg-error text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50">
-                {deleting && <FiLoader className="animate-spin" />}Supprimer</button>
-            </div>
-          </div>
-        </div>,
-        document.body,
-      )}
+      <Modal isOpen={Boolean(showDelete)} onClose={() => setShowDelete(null)} title="Supprimer la salle" size="md"
+        aria-describedby="suppression-salle-description">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 bg-error/10 rounded-xl"><FiAlertTriangle className="text-error" size={20} /></div>
+          {/* La salle visée peut être nulle : `Modal` ne se rend pas fermée, mais
+              ses enfants sont construits à chaque rendu de la page. */}
+          <p className="text-xs text-on-surface-variant">{showDelete?.nom} ({showDelete?.code})</p>
+        </div>
+        {/* La règle est énoncée avant le clic, plutôt que découverte par une
+            erreur : le serveur refuse si des événements à venir utilisent la
+            salle. */}
+        <p id="suppression-salle-description" className="text-sm text-on-surface-variant mb-6">
+          Cette action est irréversible. Elle sera refusée si des événements à venir
+          utilisent cette salle ; les événements passés sont conservés. Pour la retirer
+          des listes sans la supprimer, décochez plutôt « Salle active ».
+        </p>
+        <div className="flex gap-3">
+          <button onClick={() => setShowDelete(null)} className="flex-1 px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl text-sm font-semibold hover:bg-surface-container transition-colors">Annuler</button>
+          <button onClick={handleDelete} disabled={deleting} className="flex items-center justify-center gap-2 flex-1 px-4 py-2.5 bg-error text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50">
+            {deleting && <FiLoader className="animate-spin" />}Supprimer</button>
+        </div>
+      </Modal>
     </div>
   );
 }

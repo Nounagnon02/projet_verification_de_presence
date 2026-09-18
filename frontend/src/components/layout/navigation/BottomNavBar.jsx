@@ -20,7 +20,7 @@ export default function BottomNavBar() {
           to={link.to}
           className={({ isActive }) =>
             `flex flex-col items-center justify-center p-2 transition-colors ${
-              isActive ? 'text-primary' : 'text-slate-400'
+              isActive ? 'text-primary' : 'text-on-surface-variant'
             }`
           }
         >

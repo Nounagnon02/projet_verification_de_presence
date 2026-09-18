@@ -12,6 +12,7 @@
  * @param {Array}  salles     salles configurées ({ id, nom, verifie_gps, verifie_wifi })
  * @param {string} nomActuel  nom saisi d'une séance jamais rattachée (import ancien) :
  *                            affiché pour information, jamais effacé en silence
+ * @param {string} id         à relier à un <label htmlFor> du parent : c'est alors lui qui nomme le champ
  */
 
 function controles(salle) {
@@ -26,7 +27,11 @@ export default function SelecteurSalle({
   nomActuel = '',
   className = '',
   id,
+  'aria-label': ariaLabel,
 }) {
+  // Sans id, personne ne peut relier un <label> au champ : on lui donne un nom.
+  // Avec un id, un aria-label prendrait le pas sur le libellé visible du parent.
+  const nomAccessible = ariaLabel || (id ? undefined : 'Salle');
   const choisie = salles.find((s) => String(s.id) === String(value ?? ''));
   const protegees = salles.filter((s) => controles(s).length);
   const qrSeul = salles.filter((s) => !controles(s).length);
@@ -47,6 +52,7 @@ export default function SelecteurSalle({
     <div>
       <select
         id={id}
+        aria-label={nomAccessible}
         value={choisie ? String(choisie.id) : ''}
         onChange={(e) => onChange(e.target.value)}
         className={className}

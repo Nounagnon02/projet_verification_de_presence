@@ -183,40 +183,45 @@ export default function EtablissementDetailPage() {
           {editing ? (
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">Code</label>
+                <label htmlFor="etablissement-code" className="text-xs font-semibold uppercase tracking-wider text-slate-500">Code</label>
                 <input
+                  id="etablissement-code"
                   value={form.code}
                   onChange={(e) => setForm({ ...form, code: e.target.value })}
                   className="w-full mt-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#011549]/20"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">Nom</label>
+                <label htmlFor="etablissement-nom" className="text-xs font-semibold uppercase tracking-wider text-slate-500">Nom</label>
                 <input
+                  id="etablissement-nom"
                   value={form.nom}
                   onChange={(e) => setForm({ ...form, nom: e.target.value })}
                   className="w-full mt-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#011549]/20"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">Email</label>
+                <label htmlFor="etablissement-email" className="text-xs font-semibold uppercase tracking-wider text-slate-500">Email</label>
                 <input
+                  id="etablissement-email"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                   className="w-full mt-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#011549]/20"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">Téléphone</label>
+                <label htmlFor="etablissement-telephone" className="text-xs font-semibold uppercase tracking-wider text-slate-500">Téléphone</label>
                 <input
+                  id="etablissement-telephone"
                   value={form.telephone}
                   onChange={(e) => setForm({ ...form, telephone: e.target.value })}
                   className="w-full mt-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#011549]/20"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">Adresse</label>
+                <label htmlFor="etablissement-adresse" className="text-xs font-semibold uppercase tracking-wider text-slate-500">Adresse</label>
                 <textarea
+                  id="etablissement-adresse"
                   value={form.adresse}
                   onChange={(e) => setForm({ ...form, adresse: e.target.value })}
                   rows={2}
@@ -235,33 +240,33 @@ export default function EtablissementDetailPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex items-start gap-3">
-                <MdBusiness className="text-slate-400 mt-0.5" />
+                <MdBusiness className="text-on-surface-variant mt-0.5" />
                 <div>
-                  <p className="text-xs text-slate-400">Code</p>
+                  <p className="text-xs text-on-surface-variant">Code</p>
                   <p className="text-sm font-mono text-[#011549]">{etablissement.code}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <MdEmail className="text-slate-400 mt-0.5" />
+                <MdEmail className="text-on-surface-variant mt-0.5" />
                 <div>
-                  <p className="text-xs text-slate-400">Email</p>
+                  <p className="text-xs text-on-surface-variant">Email</p>
                   <p className="text-sm text-[#011549]">{etablissement.email}</p>
                 </div>
               </div>
               {etablissement.telephone && (
                 <div className="flex items-start gap-3">
-                  <MdPhone className="text-slate-400 mt-0.5" />
+                  <MdPhone className="text-on-surface-variant mt-0.5" />
                   <div>
-                    <p className="text-xs text-slate-400">Téléphone</p>
+                    <p className="text-xs text-on-surface-variant">Téléphone</p>
                     <p className="text-sm text-[#011549]">{etablissement.telephone}</p>
                   </div>
                 </div>
               )}
               {etablissement.adresse && (
                 <div className="flex items-start gap-3">
-                  <MdLocationOn className="text-slate-400 mt-0.5" />
+                  <MdLocationOn className="text-on-surface-variant mt-0.5" />
                   <div>
-                    <p className="text-xs text-slate-400">Adresse</p>
+                    <p className="text-xs text-on-surface-variant">Adresse</p>
                     <p className="text-sm text-[#011549]">{etablissement.adresse}</p>
                   </div>
                 </div>

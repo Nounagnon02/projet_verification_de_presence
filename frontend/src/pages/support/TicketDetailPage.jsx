@@ -115,8 +115,8 @@ export default function TicketDetailPage() {
 
       {ticket.status !== 'ferme' && (
         <form onSubmit={handleReply} className="bg-surface-container-lowest rounded-xxl p-6 shadow-sm border border-outline-variant/10">
-          <h3 className="text-sm font-bold text-primary mb-4">Votre réponse</h3>
-          <textarea rows="4" className="w-full px-4 py-3 bg-surface-container-high rounded-xl text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all resize-none"
+          <h3 id="ticket-reponse-titre" className="text-sm font-bold text-primary mb-4">Votre réponse</h3>
+          <textarea aria-labelledby="ticket-reponse-titre" rows="4" className="w-full px-4 py-3 bg-surface-container-high rounded-xl text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all resize-none"
             value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Écrivez votre message..." />
           <div className="flex justify-end mt-4">
             <button type="submit" disabled={sending || !reply.trim()} className="flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 disabled:opacity-50 transition-all">

@@ -32,7 +32,7 @@ const HelpCenterPage = () => {
       <div className="relative max-w-lg mb-8">
         <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-outline" />
         <input className="w-full pl-10 pr-4 py-3 bg-surface-container-low rounded-xl border border-outline-variant/20 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-          placeholder="Rechercher dans l'aide..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          placeholder="Rechercher dans l'aide..." aria-label="Rechercher dans l'aide" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
       {/* Categories */}

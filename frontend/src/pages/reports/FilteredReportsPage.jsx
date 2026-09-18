@@ -402,8 +402,8 @@ export default function FilteredReportsPage() {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-2.5">
           <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Filière</label>
-            <select value={filiereId} onChange={e => setFiliereId(e.target.value)}
+            <label htmlFor="rapport-filtre-filiere" className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Filière</label>
+            <select id="rapport-filtre-filiere" value={filiereId} onChange={e => setFiliereId(e.target.value)}
               disabled={filtres.anneeVide}
               className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface disabled:opacity-40">
               <option value="">{filtres.anneeVide ? 'Aucune' : 'Toutes'}</option>
@@ -411,59 +411,59 @@ export default function FilteredReportsPage() {
             </select>
           </div>
           <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Année</label>
-            <select value={anneeId} onChange={e => setAnneeId(e.target.value)}
+            <label htmlFor="rapport-filtre-annee" className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Année</label>
+            <select id="rapport-filtre-annee" value={anneeId} onChange={e => setAnneeId(e.target.value)}
               className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface">
               <option value="">Toutes</option>
               {annees.map(a => <option key={a.id} value={a.id}>{a.libelle}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Semestre</label>
-            <select value={semestre} onChange={e => setSemestre(e.target.value)}
+            <label htmlFor="rapport-filtre-semestre" className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Semestre</label>
+            <select id="rapport-filtre-semestre" value={semestre} onChange={e => setSemestre(e.target.value)}
               className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface">
               <option value="">Tous</option>
               {filtres.semestres.map(s => <option key={s} value={s}>S{s}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Trimestre</label>
-            <select value={trimestre} onChange={e => setTrimestre(e.target.value)}
+            <label htmlFor="rapport-filtre-trimestre" className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Trimestre</label>
+            <select id="rapport-filtre-trimestre" value={trimestre} onChange={e => setTrimestre(e.target.value)}
               className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface">
               <option value="">Tous</option>
               {TRIMESTRES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">UE</label>
-            <select value={ueId} onChange={e => setUeId(e.target.value)}
+            <label htmlFor="rapport-filtre-ue" className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">UE</label>
+            <select id="rapport-filtre-ue" value={ueId} onChange={e => setUeId(e.target.value)}
               className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface">
               <option value="">Toutes</option>
               {ues.map(u => <option key={u.id} value={u.id}>{u.code}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">EC</label>
-            <select value={ecId} onChange={e => setEcId(e.target.value)} disabled={!ueId}
+            <label htmlFor="rapport-filtre-ec" className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">EC</label>
+            <select id="rapport-filtre-ec" value={ecId} onChange={e => setEcId(e.target.value)} disabled={!ueId}
               className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface disabled:opacity-40">
               <option value="">Tous</option>
               {ecs.map(e => <option key={e.id} value={e.id}>{e.code || e.intitule}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Jours</label>
-            <input type="number" min="1" max="365" value={jours}
+            <label htmlFor="rapport-filtre-jours" className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Jours</label>
+            <input id="rapport-filtre-jours" type="number" min="1" max="365" value={jours}
               onChange={e => setJours(Math.max(1, parseInt(e.target.value) || 30))}
               className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface" />
           </div>
           <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Du</label>
-            <input type="date" value={dateDebut} onChange={e => setDateDebut(e.target.value)}
+            <label htmlFor="rapport-filtre-du" className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Du</label>
+            <input id="rapport-filtre-du" type="date" value={dateDebut} onChange={e => setDateDebut(e.target.value)}
               className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface" />
           </div>
           <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Au</label>
-            <input type="date" value={dateFin} onChange={e => setDateFin(e.target.value)}
+            <label htmlFor="rapport-filtre-au" className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Au</label>
+            <input id="rapport-filtre-au" type="date" value={dateFin} onChange={e => setDateFin(e.target.value)}
               className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface" />
           </div>
         </div>

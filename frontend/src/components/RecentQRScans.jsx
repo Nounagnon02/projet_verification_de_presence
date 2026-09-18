@@ -22,7 +22,7 @@ const RecentQRScans = ({ scans }) => {
             <p className={`text-[10px] font-mono font-bold text-${scan.status === 'SUCCÈS' ? 'secondary' : scan.status === 'ÉCHEC' ? 'error' : 'secondary'}`}>
               {scan.status}
             </p>
-            <p className="text-[9px] text-slate-400 font-mono">{scan.time}</p>
+            <p className="text-[9px] text-on-surface-variant font-mono">{scan.time}</p>
           </div>
         </div>
       ))}

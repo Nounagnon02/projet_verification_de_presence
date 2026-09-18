@@ -94,10 +94,10 @@ export default function CreateEtablissementPage() {
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 space-y-6">
         <div className="space-y-1.5">
           <label className="text-xs font-semibold uppercase tracking-wider text-slate-500" htmlFor="code">
-            Code * <span className="text-xs font-normal normal-case tracking-normal text-slate-400">(ex: FAST, EPAC, FDS)</span>
+            Code * <span className="text-xs font-normal normal-case tracking-normal text-on-surface-variant">(ex: FAST, EPAC, FDS)</span>
           </label>
           <div className="relative">
-            <MdBusiness className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <MdBusiness className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant" />
             <input
               id="code"
               name="code"
@@ -116,7 +116,7 @@ export default function CreateEtablissementPage() {
             Nom complet *
           </label>
           <div className="relative">
-            <MdBusiness className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <MdBusiness className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant" />
             <input
               id="nom"
               name="nom"
@@ -135,7 +135,7 @@ export default function CreateEtablissementPage() {
             Email de contact *
           </label>
           <div className="relative">
-            <MdEmail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <MdEmail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant" />
             <input
               id="email"
               name="email"
@@ -148,7 +148,7 @@ export default function CreateEtablissementPage() {
               disabled={loading}
             />
           </div>
-          <p className="text-xs text-slate-400">Un compte administrateur sera créé avec cet email.</p>
+          <p className="text-xs text-on-surface-variant">Un compte administrateur sera créé avec cet email.</p>
         </div>
 
         <div className="space-y-1.5">
@@ -156,7 +156,7 @@ export default function CreateEtablissementPage() {
             Téléphone
           </label>
           <div className="relative">
-            <MdPhone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <MdPhone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant" />
             <input
               id="telephone"
               name="telephone"
@@ -174,7 +174,7 @@ export default function CreateEtablissementPage() {
             Adresse
           </label>
           <div className="relative">
-            <MdLocationOn className="absolute left-3.5 top-3 text-slate-400" />
+            <MdLocationOn className="absolute left-3.5 top-3 text-on-surface-variant" />
             <textarea
               id="adresse"
               name="adresse"

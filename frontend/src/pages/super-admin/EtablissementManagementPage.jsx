@@ -72,9 +72,10 @@ export default function EtablissementManagementPage() {
 
       {/* Search */}
       <div className="relative max-w-md">
-        <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+        <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant" size={18} />
         <input
           type="text"
+          aria-label="Rechercher une faculté par nom, code ou email"
           placeholder="Rechercher par nom, code ou email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -107,12 +108,12 @@ export default function EtablissementManagementPage() {
                     <div>
                       <p className="text-sm font-semibold text-[#011549]">{etablissement.nom}</p>
                       <div className="flex items-center gap-3 mt-0.5">
-                        <span className="text-xs font-mono text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded">
+                        <span className="text-xs font-mono text-on-surface-variant bg-slate-50 px-1.5 py-0.5 rounded">
                           {etablissement.code}
                         </span>
-                        <span className="text-xs text-slate-400">{etablissement.email}</span>
+                        <span className="text-xs text-on-surface-variant">{etablissement.email}</span>
                         {etablissement.telephone && (
-                          <span className="text-xs text-slate-400">{etablissement.telephone}</span>
+                          <span className="text-xs text-on-surface-variant">{etablissement.telephone}</span>
                         )}
                       </div>
                     </div>
@@ -123,7 +124,7 @@ export default function EtablissementManagementPage() {
                     ) : (
                       <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">Inactif</span>
                     )}
-                    <MdChevronRight className="text-slate-400" />
+                    <MdChevronRight className="text-on-surface-variant" />
                   </div>
                 </div>
               ))}
@@ -133,7 +134,7 @@ export default function EtablissementManagementPage() {
               <MdSchool size={40} className="mx-auto text-slate-200 mb-3" />
               <p className="text-sm text-slate-500 mb-2">Aucune faculté trouvée</p>
               {search ? (
-                <p className="text-xs text-slate-400">Essayez de modifier votre recherche</p>
+                <p className="text-xs text-on-surface-variant">Essayez de modifier votre recherche</p>
               ) : (
                 <Link
                   to="/super-admin/etablissements/create"

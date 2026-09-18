@@ -30,7 +30,7 @@ const TodaysEvents = ({ events }) => {
                 <span className={statusClasses[event.status]}>
                   {event.status}
                 </span>
-                <span className="text-[10px] text-slate-400 font-mono">
+                <span className="text-[10px] text-on-surface-variant font-mono">
                   {event.time}
                 </span>
               </div>
@@ -39,7 +39,7 @@ const TodaysEvents = ({ events }) => {
               {event.progress && (
                 <>
                   <div className="mt-3">
-                    <div className="flex justify-between text-[9px] text-slate-400 mb-1">
+                    <div className="flex justify-between text-[9px] text-on-surface-variant mb-1">
                       <span>Progression</span>
                       <span>{event.progress}%</span>
                     </div>

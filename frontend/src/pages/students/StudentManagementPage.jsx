@@ -1,8 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-// Modales rendues dans <body> : placées dans la page, elles héritaient de la
-// marge de son conteneur (space-y) et laissaient une bande découverte en haut.
-import { createPortal } from 'react-dom';
-import { FiPlus, FiEdit2, FiTrash2, FiAlertTriangle, FiLoader, FiRefreshCw, FiUpload, FiCheck, FiFileText, FiTrendingUp, FiUsers } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiAlertTriangle, FiLoader, FiRefreshCw, FiUpload, FiCheck, FiFileText, FiTrendingUp, FiUsers, FiBookOpen } from 'react-icons/fi';
 import api from '../../api/axios';
 import SearchInput from '../../components/ui/SearchInput';
 import Pagination from '../../components/ui/Pagination';
@@ -12,6 +9,7 @@ import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 import useNiveaux from '../../hooks/useNiveaux';
 import { useToastCtx } from '../../context/ToastContext';
 import GroupesPromotion from '../../components/students/GroupesPromotion';
+import EnrollmentDrawer from '../../components/students/EnrollmentDrawer';
 
 /** Identifiant du groupe de TD ou de TP d'un étudiant, '' s'il n'en a pas. */
 const groupeDe = (etudiant, type) => String(etudiant?.groupes?.find((g) => g.type === type)?.id ?? '');
@@ -89,6 +87,8 @@ const StudentManagementPage = () => {
   // la précédente à chaque relance.
   const [rechargement, setRechargement] = useState(0);
   const rafraichir = useCallback(() => setRechargement((n) => n + 1), []);
+  // Tiroir des inscriptions aux EC — un étudiant à la fois.
+  const [enrollmentStudent, setEnrollmentStudent] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -418,40 +418,40 @@ const StudentManagementPage = () => {
       <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/10 mb-6">
         <div className="flex flex-wrap items-end gap-4">
           <div className="space-y-1 flex-1 min-w-[160px]">
-            <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Année académique</label>
-            <select value={filtres.annee} onChange={(e) => filtres.setAnnee(e.target.value)}
+            <label htmlFor="filtre-annee" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Année académique</label>
+            <select id="filtre-annee" value={filtres.annee} onChange={(e) => filtres.setAnnee(e.target.value)}
               className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
               <option value="">Toutes les années</option>
               {annees.map(a => <option key={a.id} value={a.id}>{a.libelle || a.annee}{a.active ? ' (Active)' : ''}</option>)}
             </select>
           </div>
           <div className="space-y-1 flex-1 min-w-[160px]">
-            <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Filière</label>
-            <select value={filtres.filiere} onChange={(e) => filtres.setFiliere(e.target.value)}
+            <label htmlFor="filtre-filiere" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Filière</label>
+            <select id="filtre-filiere" value={filtres.filiere} onChange={(e) => filtres.setFiliere(e.target.value)}
               disabled={filtres.anneeVide} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
               <option value="">{filtres.anneeVide ? 'Aucune filière cette année' : 'Toutes les filières'}</option>
               {filieres.map(f => <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>)}
             </select>
           </div>
           <div className="space-y-1 min-w-[140px]">
-            <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Niveau</label>
-            <select value={filtres.niveau} onChange={(e) => filtres.setNiveau(e.target.value)}
+            <label htmlFor="filtre-niveau" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Niveau</label>
+            <select id="filtre-niveau" value={filtres.niveau} onChange={(e) => filtres.setNiveau(e.target.value)}
               disabled={filtres.niveaux.length === 0} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
               <option value="">Tous les niveaux</option>
               {filtres.niveaux.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>
           <div className="space-y-1 min-w-[120px]">
-            <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Semestre</label>
-            <select value={filtres.semestre} onChange={(e) => filtres.setSemestre(e.target.value)}
+            <label htmlFor="filtre-semestre" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Semestre</label>
+            <select id="filtre-semestre" value={filtres.semestre} onChange={(e) => filtres.setSemestre(e.target.value)}
               disabled={filtres.semestres.length === 0} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
               <option value="">Tous</option>
               {filtres.semestres.map(s => <option key={s} value={s}>Semestre {s}</option>)}
             </select>
           </div>
           <div className="space-y-1 min-w-[140px]">
-            <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Responsable</label>
-            <select value={filtreResponsable} onChange={(e) => { setFiltreResponsable(e.target.value); setPageCourante(1); }}
+            <label htmlFor="filtre-responsable" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Responsable</label>
+            <select id="filtre-responsable" value={filtreResponsable} onChange={(e) => { setFiltreResponsable(e.target.value); setPageCourante(1); }}
               className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
               <option value="">Tous les étudiants</option>
               <option value="1">Responsables uniquement</option>
@@ -575,6 +575,9 @@ const StudentManagementPage = () => {
                 </td>
                 <td className="p-4 text-right">
                   <div className="flex items-center justify-end gap-2">
+                    <button onClick={() => setEnrollmentStudent(s)} title="Inscriptions aux EC" className="p-2 hover:bg-surface-container-high rounded-lg transition-colors">
+                      <FiBookOpen className="text-on-surface-variant" />
+                    </button>
                     <button onClick={() => openEdit(s)} className="p-2 hover:bg-surface-container-high rounded-lg transition-colors">
                       <FiEdit2 className="text-on-surface-variant" />
                     </button>
@@ -602,30 +605,30 @@ const StudentManagementPage = () => {
           )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-on-surface-variant">Nom *</label>
-              <input className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
+              <label htmlFor="etudiant-nom" className="text-xs font-semibold text-on-surface-variant">Nom *</label>
+              <input id="etudiant-nom" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
                 value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-on-surface-variant">Prénom *</label>
-              <input className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
+              <label htmlFor="etudiant-prenom" className="text-xs font-semibold text-on-surface-variant">Prénom *</label>
+              <input id="etudiant-prenom" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
                 value={form.prenom} onChange={(e) => setForm({ ...form, prenom: e.target.value })} />
             </div>
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-on-surface-variant">Email *</label>
-            <input type="email" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
+            <label htmlFor="etudiant-email" className="text-xs font-semibold text-on-surface-variant">Email *</label>
+            <input id="etudiant-email" type="email" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
               value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-on-surface-variant">Matricule *</label>
-            <input className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono border-b-2 border-transparent focus:border-primary transition-colors"
+            <label htmlFor="etudiant-matricule" className="text-xs font-semibold text-on-surface-variant">Matricule *</label>
+            <input id="etudiant-matricule" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono border-b-2 border-transparent focus:border-primary transition-colors"
               value={form.matricule} onChange={(e) => setForm({ ...form, matricule: e.target.value })} placeholder="22-XXXX-XXXX" required />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-on-surface-variant">Filière *</label>
-              <select className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
+              <label htmlFor="etudiant-filiere" className="text-xs font-semibold text-on-surface-variant">Filière *</label>
+              <select id="etudiant-filiere" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
                 value={form.filiere_id} onChange={(e) => setForm({ ...form, filiere_id: e.target.value })}>
                 <option value="">Sélectionner une filière</option>
                 {filieresToutes.map((f) => (
@@ -636,11 +639,11 @@ const StudentManagementPage = () => {
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-on-surface-variant">Année académique</label>
+              <label htmlFor="etudiant-annee" className="text-xs font-semibold text-on-surface-variant">Année académique</label>
               {editing ? (
                 // En édition, l'année reste modifiable (le changement d'année
                 // relève d'une promotion — voir évolution à venir).
-                <select className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
+                <select id="etudiant-annee" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
                   value={form.annee_id} onChange={(e) => setForm({ ...form, annee_id: e.target.value })}>
                   <option value="">Sélectionner une année</option>
                   {annees.map((a) => (
@@ -776,8 +779,8 @@ const StudentManagementPage = () => {
           )}
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-on-surface-variant">Année de destination</label>
-            <select className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            <label htmlFor="promo-annee-destination" className="text-xs font-semibold text-on-surface-variant">Année de destination</label>
+            <select id="promo-annee-destination" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
               value={promoteForm.to_annee_id}
               onChange={(e) => setPromoteForm({ ...promoteForm, to_annee_id: e.target.value })}>
               <option value="">Conserver l'année actuelle</option>
@@ -811,112 +814,106 @@ const StudentManagementPage = () => {
         filiereInitiale={filtres.filiere} anneeInitiale={anneeGroupes} onModifie={rafraichir} />
 
       {/* ─── Modal Import CSV ───────────────────────────── */}
-      {showImportModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-          onClick={() => { if (!importUploading) { setShowImportModal(false); resetImport(); } }}>
-          <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-primary">Import en masse</h2>
-              <button onClick={() => { setShowImportModal(false); resetImport(); }} disabled={importUploading}
-                className="p-1 hover:bg-surface-container-high rounded-lg transition-colors">
-                <span className="text-2xl leading-none text-outline">&times;</span>
+      {/* Pas de fermeture pendant l'envoi : Modal appelle onClose pour le voile, Échap et la croix,
+          d'où la garde ici plutôt que sur chaque commande. */}
+      <Modal isOpen={showImportModal} title="Import en masse" size="md"
+        onClose={() => { if (!importUploading) { setShowImportModal(false); resetImport(); } }}>
+        {/* Drop zone */}
+        <div onDragOver={(e) => { e.preventDefault(); setImportDragOver(true); }} onDragLeave={() => setImportDragOver(false)} onDrop={handleImportDrop}
+          className={`border-2 border-dashed rounded-xl p-10 text-center transition-all cursor-pointer ${importDragOver ? 'border-primary bg-primary/5' : 'border-outline-variant/30 hover:border-primary/40'} ${importFile ? 'bg-surface-container-low' : ''}`}
+          onClick={() => importFileRef.current?.click()}>
+          <input ref={importFileRef} type="file" accept=".csv,.xlsx" aria-label="Choisir le fichier CSV ou XLSX des étudiants" className="hidden" onChange={(e) => {
+            const f = e.target.files[0]; if (f) { setImportFile(f); setImportError(''); setImportResult(null); }
+          }} />
+          {!importFile ? (
+            <>
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <FiUpload className="text-2xl text-primary" />
+              </div>
+              <h3 className="text-sm font-semibold text-on-surface mb-1">Importez un fichier CSV</h3>
+              <p className="text-xs text-on-surface-variant mb-4">ou <span className="text-primary font-semibold cursor-pointer hover:underline">parcourez</span></p>
+              <p className="text-[10px] text-on-surface-variant/60">CSV ou XLSX — 5 Mo max</p>
+            </>
+          ) : (
+            <div className="flex items-center gap-4 justify-center">
+              <FiFileText className="text-2xl text-primary" />
+              <div className="text-left">
+                <p className="text-sm font-medium text-on-surface">{importFile.name}</p>
+                <p className="text-[10px] text-on-surface-variant">{(importFile.size / 1024).toFixed(1)} Ko</p>
+              </div>
+              <button onClick={(e) => { e.stopPropagation(); resetImport(); }} className="p-2 hover:bg-surface-container-high rounded-lg transition-colors">
+                <FiTrash2 className="text-outline" />
               </button>
             </div>
+          )}
+        </div>
 
-            {/* Drop zone */}
-            <div onDragOver={(e) => { e.preventDefault(); setImportDragOver(true); }} onDragLeave={() => setImportDragOver(false)} onDrop={handleImportDrop}
-              className={`border-2 border-dashed rounded-xl p-10 text-center transition-all cursor-pointer ${importDragOver ? 'border-primary bg-primary/5' : 'border-outline-variant/30 hover:border-primary/40'} ${importFile ? 'bg-surface-container-low' : ''}`}
-              onClick={() => importFileRef.current?.click()}>
-              <input ref={importFileRef} type="file" accept=".csv,.xlsx" className="hidden" onChange={(e) => {
-                const f = e.target.files[0]; if (f) { setImportFile(f); setImportError(''); setImportResult(null); }
-              }} />
-              {!importFile ? (
-                <>
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-                    <FiUpload className="text-2xl text-primary" />
-                  </div>
-                  <h3 className="text-sm font-semibold text-on-surface mb-1">Importez un fichier CSV</h3>
-                  <p className="text-xs text-on-surface-variant mb-4">ou <span className="text-primary font-semibold cursor-pointer hover:underline">parcourez</span></p>
-                  <p className="text-[10px] text-on-surface-variant/60">CSV ou XLSX — 5 Mo max</p>
-                </>
-              ) : (
-                <div className="flex items-center gap-4 justify-center">
-                  <FiFileText className="text-2xl text-primary" />
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-on-surface">{importFile.name}</p>
-                    <p className="text-[10px] text-on-surface-variant">{(importFile.size / 1024).toFixed(1)} Ko</p>
-                  </div>
-                  <button onClick={(e) => { e.stopPropagation(); resetImport(); }} className="p-2 hover:bg-surface-container-high rounded-lg transition-colors">
-                    <FiTrash2 className="text-outline" />
-                  </button>
+        {/* Erreur */}
+        {importError && (
+          <div className="mt-4 flex items-center gap-2 p-3 bg-error-container/30 rounded-xl text-on-error-container text-sm">
+            <FiAlertTriangle /> {importError}
+          </div>
+        )}
+
+        {/* Résultat */}
+        {importResult && (
+          <div className={`mt-4 p-4 rounded-xl flex items-start gap-3 ${importResult.success ? 'bg-secondary-container/30 border border-secondary/10' : 'bg-error-container/30 border border-error/10'}`}>
+            {importResult.success ? <FiCheck className="text-secondary text-lg mt-0.5 flex-shrink-0" /> : <FiAlertTriangle className="text-error text-lg mt-0.5 flex-shrink-0" />}
+            <div className="text-sm flex-1">
+              <p className="font-semibold">{importResult.success ? 'Import terminé avec succès' : 'Erreurs lors de l\'import'}</p>
+              <p className="text-on-surface-variant text-xs mt-1">
+                {importResult.imported}/{importResult.total} étudiants importés
+                {importResult.errors?.length > 0 && ` (${importResult.errors.length} erreur${importResult.errors.length > 1 ? 's' : ''})`}
+              </p>
+              {importResult.errors?.length > 0 && (
+                <div className="mt-3 space-y-1 max-h-32 overflow-y-auto">
+                  {importResult.errors.map((e, i) => (
+                    <p key={i} className="text-xs text-on-error-container/70 bg-error-container/20 p-1.5 rounded">
+                      {typeof e === 'string' ? e : `${e.row || 'Ligne ' + (i+1)} : ${Array.isArray(e.errors) ? e.errors.join(', ') : e.errors || 'Erreur'}`}
+                    </p>
+                  ))}
                 </div>
               )}
             </div>
-
-            {/* Erreur */}
-            {importError && (
-              <div className="mt-4 flex items-center gap-2 p-3 bg-error-container/30 rounded-xl text-on-error-container text-sm">
-                <FiAlertTriangle /> {importError}
-              </div>
-            )}
-
-            {/* Résultat */}
-            {importResult && (
-              <div className={`mt-4 p-4 rounded-xl flex items-start gap-3 ${importResult.success ? 'bg-secondary-container/30 border border-secondary/10' : 'bg-error-container/30 border border-error/10'}`}>
-                {importResult.success ? <FiCheck className="text-secondary text-lg mt-0.5 flex-shrink-0" /> : <FiAlertTriangle className="text-error text-lg mt-0.5 flex-shrink-0" />}
-                <div className="text-sm flex-1">
-                  <p className="font-semibold">{importResult.success ? 'Import terminé avec succès' : 'Erreurs lors de l\'import'}</p>
-                  <p className="text-on-surface-variant text-xs mt-1">
-                    {importResult.imported}/{importResult.total} étudiants importés
-                    {importResult.errors?.length > 0 && ` (${importResult.errors.length} erreur${importResult.errors.length > 1 ? 's' : ''})`}
-                  </p>
-                  {importResult.errors?.length > 0 && (
-                    <div className="mt-3 space-y-1 max-h-32 overflow-y-auto">
-                      {importResult.errors.map((e, i) => (
-                        <p key={i} className="text-xs text-on-error-container/70 bg-error-container/20 p-1.5 rounded">
-                          {typeof e === 'string' ? e : `${e.row || 'Ligne ' + (i+1)} : ${Array.isArray(e.errors) ? e.errors.join(', ') : e.errors || 'Erreur'}`}
-                        </p>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {importFile && !importResult && !importUploading && (
-              <button onClick={handleImportUpload}
-                className="mt-6 w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-br from-primary to-primary-container text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-primary/20 active:scale-[0.99] transition-all">
-                <FiUpload /> Importer les étudiants
-              </button>
-            )}
-
-            {importUploading && (
-              <div className="mt-6 bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10 text-center">
-                <FiLoader className="animate-spin mx-auto text-primary text-2xl mb-3" />
-                <p className="font-semibold text-primary text-sm">Analyse du fichier en cours...</p>
-                <p className="text-xs text-on-surface-variant mt-1">Veuillez patienter</p>
-              </div>
-            )}
-
-            {/* Format info */}
-            <div className="mt-6 bg-surface-container-high rounded-xl p-4">
-              <h4 className="text-xs font-bold text-primary mb-2">Format attendu</h4>
-              <p className="text-[11px] text-on-surface-variant">Colonnes : <span className="font-mono font-medium text-primary">nom, prenom, email, matricule, filiere_code, annee_libelle</span></p>
-              <p className="text-[11px] text-on-surface-variant mt-1">Facultatives : <span className="font-mono font-medium text-primary">groupe_td, groupe_tp</span> — le groupe est créé dans la promotion s'il n'existe pas.</p>
-              <p className="text-[11px] text-on-surface-variant mt-1">CSV avec séparateur virgule, encodage UTF-8.</p>
-            </div>
-
-            {importResult && (
-              <button onClick={() => { setShowImportModal(false); resetImport(); }}
-                className="mt-4 w-full py-2.5 bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all">
-                Fermer
-              </button>
-            )}
           </div>
-        </div>,
-        document.body,
-      )}
+        )}
+
+        {importFile && !importResult && !importUploading && (
+          <button onClick={handleImportUpload}
+            className="mt-6 w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-br from-primary to-primary-container text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-primary/20 active:scale-[0.99] transition-all">
+            <FiUpload /> Importer les étudiants
+          </button>
+        )}
+
+        {importUploading && (
+          <div className="mt-6 bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10 text-center">
+            <FiLoader className="animate-spin mx-auto text-primary text-2xl mb-3" />
+            <p className="font-semibold text-primary text-sm">Analyse du fichier en cours...</p>
+            <p className="text-xs text-on-surface-variant mt-1">Veuillez patienter</p>
+          </div>
+        )}
+
+        {/* Format info */}
+        <div className="mt-6 bg-surface-container-high rounded-xl p-4">
+          <h4 className="text-xs font-bold text-primary mb-2">Format attendu</h4>
+          <p className="text-[11px] text-on-surface-variant">Colonnes : <span className="font-mono font-medium text-primary">nom, prenom, email, matricule, filiere_code, annee_libelle</span></p>
+          <p className="text-[11px] text-on-surface-variant mt-1">Facultatives : <span className="font-mono font-medium text-primary">groupe_td, groupe_tp</span> — le groupe est créé dans la promotion s'il n'existe pas.</p>
+          <p className="text-[11px] text-on-surface-variant mt-1">CSV avec séparateur virgule, encodage UTF-8.</p>
+        </div>
+
+        {importResult && (
+          <button onClick={() => { setShowImportModal(false); resetImport(); }}
+            className="mt-4 w-full py-2.5 bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all">
+            Fermer
+          </button>
+        )}
+      </Modal>
+      <EnrollmentDrawer
+        student={enrollmentStudent}
+        open={!!enrollmentStudent}
+        onClose={() => setEnrollmentStudent(null)}
+        onChange={rafraichir}
+      />
     </div>
   );
 };

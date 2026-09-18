@@ -1,10 +1,11 @@
 import { useState } from 'react';
-// Modales rendues dans <body> : placées dans la page, elles héritaient de la
-// marge de son conteneur (space-y) et laissaient une bande découverte en haut.
-import { createPortal } from 'react-dom';
-import { FiShield, FiLock, FiCheck, FiX, FiCopy, FiAlertTriangle, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiShield, FiLock, FiCheck, FiCopy, FiAlertTriangle, FiEye, FiEyeOff } from 'react-icons/fi';
 import api from '../../api/axios';
+import Modal from '../ui/Modal';
 import { useToastCtx } from '../../context/ToastContext';
+
+// L'étape « start » n'a pas de titre : la fenêtre n'est jamais ouverte à ce moment-là.
+const TITRE_ETAPE_2FA = { qr: 'Scannez le QR code', done: 'Codes de récupération' };
 
 /**
  * Champ mot de passe avec bascule d'affichage.
@@ -260,161 +261,140 @@ export default function SecuriteCompte({ deuxFacteursActive = false, onDeuxFacte
       </div>
 
       {/* Modal 2FA — Activation */}
-      {show2FAModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={handleCloseModal}>
-          <div className="bg-surface-container-lowest rounded-2xl shadow-2xl max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-primary font-headline">
-                {twoFAStep === 'qr' && 'Scannez le QR code'}
-                {twoFAStep === 'done' && 'Codes de récupération'}
-              </h3>
-              <button onClick={handleCloseModal} className="p-1 hover:bg-surface-container-high rounded-lg transition-colors">
-                <FiX size={20} className="text-on-surface-variant" />
+      <Modal isOpen={show2FAModal} onClose={handleCloseModal} title={TITRE_ETAPE_2FA[twoFAStep]} size="md">
+        {twoFAError && (
+          <div className="flex items-center gap-2 p-3 bg-error/10 rounded-xl text-error text-sm mb-4">
+            <FiAlertTriangle size={16} />
+            <span>{twoFAError}</span>
+          </div>
+        )}
+
+        {/* Étape QR code */}
+        {twoFAStep === 'qr' && (
+          <div className="space-y-5">
+            <p className="text-sm text-on-surface-variant">
+              Scannez ce QR code avec votre application d'authentification (Google Authenticator, Authy, etc.).
+            </p>
+            <div className="flex justify-center bg-white p-4 rounded-xl border border-outline-variant/10">
+              {qrCodeSvg ? (
+                <img
+                  src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrCodeSvg)}`}
+                  alt="QR Code pour l'authentification à deux facteurs"
+                  width={250}
+                  height={250}
+                />
+              ) : (
+                <div className="w-[250px] h-[250px] bg-surface-container-high rounded-lg flex items-center justify-center text-on-surface-variant text-sm">
+                  Chargement...
+                </div>
+              )}
+            </div>
+            <div className="bg-surface-container-high rounded-xl p-3 flex items-center justify-between gap-2">
+              <code className="text-xs text-on-surface-variant break-all font-mono select-all">{twoFASecret}</code>
+              <button
+                onClick={() => { navigator.clipboard.writeText(twoFASecret); addToast?.('Clé copiée', 'success'); }}
+                className="flex-shrink-0 p-1.5 hover:bg-surface-container-lowest rounded-lg transition-colors"
+                title="Copier la clé"
+              >
+                <FiCopy size={14} className="text-on-surface-variant" />
               </button>
             </div>
-
-            {twoFAError && (
-              <div className="flex items-center gap-2 p-3 bg-error/10 rounded-xl text-error text-sm mb-4">
-                <FiAlertTriangle size={16} />
-                <span>{twoFAError}</span>
-              </div>
-            )}
-
-            {/* Étape QR code */}
-            {twoFAStep === 'qr' && (
-              <div className="space-y-5">
-                <p className="text-sm text-on-surface-variant">
-                  Scannez ce QR code avec votre application d'authentification (Google Authenticator, Authy, etc.).
-                </p>
-                <div className="flex justify-center bg-white p-4 rounded-xl border border-outline-variant/10">
-                  {qrCodeSvg ? (
-                    <img
-                      src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrCodeSvg)}`}
-                      alt="QR Code pour l'authentification à deux facteurs"
-                      width={250}
-                      height={250}
-                    />
-                  ) : (
-                    <div className="w-[250px] h-[250px] bg-surface-container-high rounded-lg flex items-center justify-center text-on-surface-variant text-sm">
-                      Chargement...
-                    </div>
-                  )}
-                </div>
-                <div className="bg-surface-container-high rounded-xl p-3 flex items-center justify-between gap-2">
-                  <code className="text-xs text-on-surface-variant break-all font-mono select-all">{twoFASecret}</code>
-                  <button
-                    onClick={() => { navigator.clipboard.writeText(twoFASecret); addToast?.('Clé copiée', 'success'); }}
-                    className="flex-shrink-0 p-1.5 hover:bg-surface-container-lowest rounded-lg transition-colors"
-                    title="Copier la clé"
-                  >
-                    <FiCopy size={14} className="text-on-surface-variant" />
-                  </button>
-                </div>
-                <p className="text-sm text-on-surface-variant">
-                  Entrez le code à 6 chiffres généré par l'application pour confirmer.
-                </p>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  placeholder="000000"
-                  className="w-full px-4 py-3 bg-surface-container-high rounded-xl text-center text-2xl font-mono tracking-widest text-primary border-b-2 border-transparent focus:border-primary focus:outline-none transition-all"
-                  value={twoFACode}
-                  onChange={(e) => setTwoFACode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                />
-                <button
-                  onClick={handleConfirm2FA}
-                  disabled={twoFALoading || twoFACode.length !== 6}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50"
-                >
-                  {twoFALoading ? 'Vérification...' : <><FiCheck size={18} /> Confirmer</>}
-                </button>
-              </div>
-            )}
-
-            {/* Étape codes de récupération */}
-            {twoFAStep === 'done' && (
-              <div className="space-y-5">
-                <div className="flex items-center gap-2 p-3 bg-secondary/10 rounded-xl text-secondary text-sm">
-                  <FiShield size={16} />
-                  <span>2FA activée avec succès !</span>
-                </div>
-                <p className="text-sm text-on-surface-variant">
-                  Ces codes de récupération sont affichés une seule fois. Conservez-les dans un endroit sûr.
-                </p>
-                <div className="bg-surface-container-high rounded-xl p-4">
-                  <div className="grid grid-cols-2 gap-2">
-                    {recoveryCodes.map((code, i) => (
-                      <code key={i} className="font-mono text-sm text-on-surface bg-surface-container-lowest px-3 py-1.5 rounded-lg text-center select-all">{code}</code>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <button onClick={copyRecoveryCodes} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl text-sm font-semibold hover:bg-surface-container transition-colors">
-                    <FiCopy size={16} />
-                    {copied ? 'Copié !' : 'Copier'}
-                  </button>
-                  <button onClick={handleCloseModal} className="flex-1 px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all">
-                    Terminé
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>,
-        document.body,
-      )}
-
-      {/* Modal désactiver 2FA */}
-      {showDisableConfirm && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setShowDisableConfirm(false)}>
-          <div className="bg-surface-container-lowest rounded-2xl shadow-2xl max-w-md w-full p-6 relative" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-error/10 rounded-xl">
-                <FiAlertTriangle className="text-error" size={20} />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-primary font-headline">Désactiver la 2FA</h3>
-                <p className="text-xs text-on-surface-variant">Cette action réduit la sécurité de votre compte.</p>
-              </div>
-            </div>
-
-            {disableError && (
-              <div className="flex items-center gap-2 p-3 bg-error/10 rounded-xl text-error text-sm mb-4">
-                <FiAlertTriangle size={16} />
-                <span>{disableError}</span>
-              </div>
-            )}
-
-            <p className="text-sm text-on-surface-variant mb-4">
-              Veuillez confirmer votre mot de passe pour désactiver l'authentification à deux facteurs.
+            <p className="text-sm text-on-surface-variant">
+              Entrez le code à 6 chiffres généré par l'application pour confirmer.
             </p>
             <input
-              type="password"
-              placeholder="Votre mot de passe actuel"
-              className="w-full px-4 py-2.5 bg-surface-container-high rounded-xl text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all mb-4"
-              value={disablePassword}
-              onChange={(e) => setDisablePassword(e.target.value)}
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="000000"
+              aria-label="Code à 6 chiffres"
+              className="w-full px-4 py-3 bg-surface-container-high rounded-xl text-center text-2xl font-mono tracking-widest text-primary border-b-2 border-transparent focus:border-primary focus:outline-none transition-all"
+              value={twoFACode}
+              onChange={(e) => setTwoFACode(e.target.value.replace(/\D/g, '').slice(0, 6))}
             />
+            <button
+              onClick={handleConfirm2FA}
+              disabled={twoFALoading || twoFACode.length !== 6}
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50"
+            >
+              {twoFALoading ? 'Vérification...' : <><FiCheck size={18} /> Confirmer</>}
+            </button>
+          </div>
+        )}
+
+        {/* Étape codes de récupération */}
+        {twoFAStep === 'done' && (
+          <div className="space-y-5">
+            <div className="flex items-center gap-2 p-3 bg-secondary/10 rounded-xl text-secondary text-sm">
+              <FiShield size={16} />
+              <span>2FA activée avec succès !</span>
+            </div>
+            <p className="text-sm text-on-surface-variant">
+              Ces codes de récupération sont affichés une seule fois. Conservez-les dans un endroit sûr.
+            </p>
+            <div className="bg-surface-container-high rounded-xl p-4">
+              <div className="grid grid-cols-2 gap-2">
+                {recoveryCodes.map((code, i) => (
+                  <code key={i} className="font-mono text-sm text-on-surface bg-surface-container-lowest px-3 py-1.5 rounded-lg text-center select-all">{code}</code>
+                ))}
+              </div>
+            </div>
             <div className="flex gap-3">
-              <button
-                onClick={() => { setShowDisableConfirm(false); setDisablePassword(''); setDisableError(''); }}
-                className="flex-1 px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl text-sm font-semibold hover:bg-surface-container transition-colors"
-              >
-                Annuler
+              <button onClick={copyRecoveryCodes} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl text-sm font-semibold hover:bg-surface-container transition-colors">
+                <FiCopy size={16} />
+                {copied ? 'Copié !' : 'Copier'}
               </button>
-              <button
-                onClick={handleDisable2FA}
-                disabled={twoFALoading || !disablePassword}
-                className="flex-1 px-4 py-2.5 bg-error text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
-              >
-                {twoFALoading ? 'Désactivation...' : 'Confirmer'}
+              <button onClick={handleCloseModal} className="flex-1 px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all">
+                Terminé
               </button>
             </div>
           </div>
-        </div>,
-        document.body,
-      )}
+        )}
+      </Modal>
+
+      {/* Modal désactiver 2FA */}
+      <Modal isOpen={showDisableConfirm} onClose={() => setShowDisableConfirm(false)} title="Désactiver la 2FA" size="sm">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-error/10 rounded-xl">
+            <FiAlertTriangle className="text-error" size={20} />
+          </div>
+          <p className="text-xs text-on-surface-variant">Cette action réduit la sécurité de votre compte.</p>
+        </div>
+
+        {disableError && (
+          <div className="flex items-center gap-2 p-3 bg-error/10 rounded-xl text-error text-sm mb-4">
+            <FiAlertTriangle size={16} />
+            <span>{disableError}</span>
+          </div>
+        )}
+
+        <p className="text-sm text-on-surface-variant mb-4">
+          Veuillez confirmer votre mot de passe pour désactiver l'authentification à deux facteurs.
+        </p>
+        <input
+          type="password"
+          placeholder="Votre mot de passe actuel"
+          aria-label="Mot de passe actuel"
+          className="w-full px-4 py-2.5 bg-surface-container-high rounded-xl text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all mb-4"
+          value={disablePassword}
+          onChange={(e) => setDisablePassword(e.target.value)}
+        />
+        <div className="flex gap-3">
+          <button
+            onClick={() => { setShowDisableConfirm(false); setDisablePassword(''); setDisableError(''); }}
+            className="flex-1 px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl text-sm font-semibold hover:bg-surface-container transition-colors"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={handleDisable2FA}
+            disabled={twoFALoading || !disablePassword}
+            className="flex-1 px-4 py-2.5 bg-error text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
+          >
+            {twoFALoading ? 'Désactivation...' : 'Confirmer'}
+          </button>
+        </div>
+      </Modal>
     </section>
   );
 }

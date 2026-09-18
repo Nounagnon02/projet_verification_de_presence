@@ -97,12 +97,12 @@ export default function SuperAdminDashboardPage() {
                   ) : (
                     <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">Inactif</span>
                   )}
-                  <MdChevronRight className="text-slate-400" />
+                  <MdChevronRight className="text-on-surface-variant" />
                 </div>
               </Link>
             ))
           ) : (
-            <div className="px-6 py-8 text-center text-sm text-slate-400">
+            <div className="px-6 py-8 text-center text-sm text-on-surface-variant">
               Aucune faculté enregistrée pour le moment.
             </div>
           )}

@@ -181,6 +181,7 @@ export default function BulkImportPage() {
             ref={fileInputRef}
             type="file"
             accept=".csv"
+            aria-label="Choisir le fichier CSV des facultés à importer"
             onChange={handleFileSelect}
             className="hidden"
           />
@@ -188,7 +189,7 @@ export default function BulkImportPage() {
             <div className="space-y-3">
               <MdInsertDriveFile size={40} className="mx-auto text-emerald-500" />
               <p className="text-sm font-medium text-[#011549]">{file.name}</p>
-              <p className="text-xs text-slate-400">{(file.size / 1024).toFixed(1)} Ko</p>
+              <p className="text-xs text-on-surface-variant">{(file.size / 1024).toFixed(1)} Ko</p>
               <button
                 onClick={(e) => { e.stopPropagation(); resetForm(); }}
                 className="text-xs text-red-500 hover:underline"
@@ -202,7 +203,7 @@ export default function BulkImportPage() {
               <p className="text-sm text-slate-500">
                 Glissez-déposez votre fichier CSV ici, ou <span className="text-blue-600 font-medium">cliquez pour parcourir</span>
               </p>
-              <p className="text-xs text-slate-400">Taille max : 2 Mo</p>
+              <p className="text-xs text-on-surface-variant">Taille max : 2 Mo</p>
             </div>
           )}
         </div>

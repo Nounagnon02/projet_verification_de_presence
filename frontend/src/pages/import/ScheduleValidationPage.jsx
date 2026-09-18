@@ -492,6 +492,7 @@ export default function ScheduleValidationPage() {
                   <th className="py-4 px-6 w-12 text-center">
                     <input
                       type="checkbox"
+                      aria-label="Tout sélectionner"
                       className="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4"
                       checked={Object.values(selected).every(Boolean) && Object.keys(selected).length > 0}
                       onChange={toggleAll}
@@ -517,11 +518,14 @@ export default function ScheduleValidationPage() {
                     const status = getStatusInfo(event, idx);
                     const StatusIcon = status.icon;
                     const isConflict = conflicts.has(idx);
+                    const intitule = event.ec || event.ec_libelle || event.cours || 'Cours sans nom';
+                    const jour = getDayName(event.date, event.jour_semaine);
                     return (
                       <tr key={idx} className={`hover:bg-surface-bright transition-colors group ${isConflict ? 'bg-red-50/20' : ''}`}>
                         <td className="py-5 px-6 text-center">
                           <input
                             type="checkbox"
+                            aria-label={`Sélectionner le créneau ${intitule}, ${jour}${event.heure_debut ? ` à ${event.heure_debut}` : ''}`}
                             className="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4"
                             checked={!!selected[idx]}
                             onChange={() => toggleOne(idx)}
@@ -532,12 +536,12 @@ export default function ScheduleValidationPage() {
                           <div className="flex flex-col">
                             {/* L'extraction rend « ec_libelle » et « ec_code » : ne lire que
                                 « ec » affichait « Cours sans nom » sur toute la liste. */}
-                            <span className="font-semibold text-on-surface">{event.ec || event.ec_libelle || event.cours || 'Cours sans nom'}</span>
+                            <span className="font-semibold text-on-surface">{intitule}</span>
                             {(event.code || event.ec_code) && <span className="text-xs text-on-surface-variant font-mono">{event.code || event.ec_code}</span>}
                           </div>
                         </td>
                         <td className="py-5 px-6">
-                          <span className="text-sm font-medium">{getDayName(event.date, event.jour_semaine)}</span>
+                          <span className="text-sm font-medium">{jour}</span>
                           <span className="text-xs text-on-surface-variant block">{event.date || 'chaque semaine'}</span>
                         </td>
                         <td className="py-5 px-6">

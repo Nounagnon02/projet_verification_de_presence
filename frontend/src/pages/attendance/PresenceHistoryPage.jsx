@@ -228,7 +228,7 @@ const PresenceHistoryPage = () => {
               </button>
               <button onClick={() => handleExport('xlsx')}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-high transition-colors text-left border-t border-outline-variant/5">
-                <span className="w-7 h-7 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 flex items-center justify-center text-xs font-bold">XLSX</span>
+                <span className="w-7 h-7 rounded-lg bg-success-container text-on-success-container flex items-center justify-center text-xs font-bold">XLSX</span>
                 <div>
                   <p className="font-medium">Fichier Excel</p>
                   <p className="text-[10px] text-on-surface-variant">Tableur (formaté)</p>
@@ -251,45 +251,45 @@ const PresenceHistoryPage = () => {
       <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/10 mb-4">
         <div className="flex flex-wrap items-end gap-4">
           <div className="space-y-1 min-w-[160px] flex-1">
-            <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Année académique</label>
-            <select value={filtres.annee} onChange={e => filtres.setAnnee(e.target.value)}
+            <label htmlFor="historique-annee" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Année académique</label>
+            <select id="historique-annee" value={filtres.annee} onChange={e => filtres.setAnnee(e.target.value)}
               className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
               <option value="">Toutes</option>
               {annees.map(a => <option key={a.id} value={a.id}>{a.libelle}</option>)}
             </select>
           </div>
           <div className="space-y-1 min-w-[160px] flex-1">
-            <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Filière</label>
-            <select value={filtres.filiere} onChange={e => filtres.setFiliere(e.target.value)}
+            <label htmlFor="historique-filiere" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Filière</label>
+            <select id="historique-filiere" value={filtres.filiere} onChange={e => filtres.setFiliere(e.target.value)}
               disabled={filtres.anneeVide} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
               <option value="">{filtres.anneeVide ? 'Aucune filière cette année' : 'Toutes'}</option>
               {filieres.map(f => <option key={f.id} value={f.id}>{f.code}</option>)}
             </select>
           </div>
           <div className="space-y-1 min-w-[140px] flex-1">
-            <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Niveau</label>
-            <select value={filtres.niveau} onChange={e => filtres.setNiveau(e.target.value)}
+            <label htmlFor="historique-niveau" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Niveau</label>
+            <select id="historique-niveau" value={filtres.niveau} onChange={e => filtres.setNiveau(e.target.value)}
               disabled={filtres.niveaux.length === 0} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
               <option value="">Tous</option>
               {filtres.niveaux.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>
           <div className="space-y-1 min-w-[140px] flex-1">
-            <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Semestre</label>
-            <select value={filtres.semestre} onChange={e => filtres.setSemestre(e.target.value)}
+            <label htmlFor="historique-semestre" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Semestre</label>
+            <select id="historique-semestre" value={filtres.semestre} onChange={e => filtres.setSemestre(e.target.value)}
               disabled={filtres.semestres.length === 0} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
               <option value="">Tous</option>
               {filtres.semestres.map(s => <option key={s} value={s}>S{s}</option>)}
             </select>
           </div>
           <div className="space-y-1 min-w-[140px] flex-1">
-            <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Date début</label>
-            <input type="date" value={dateDebut} onChange={e => { setDateDebut(e.target.value); setPage(1); }}
+            <label htmlFor="historique-date-debut" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Date début</label>
+            <input id="historique-date-debut" type="date" value={dateDebut} onChange={e => { setDateDebut(e.target.value); setPage(1); }}
               className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20" />
           </div>
           <div className="space-y-1 min-w-[140px] flex-1">
-            <label className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Date fin</label>
-            <input type="date" value={dateFin} onChange={e => { setDateFin(e.target.value); setPage(1); }}
+            <label htmlFor="historique-date-fin" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Date fin</label>
+            <input id="historique-date-fin" type="date" value={dateFin} onChange={e => { setDateFin(e.target.value); setPage(1); }}
               className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20" />
           </div>
           {hasActiveFilters && (

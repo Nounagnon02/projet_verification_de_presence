@@ -99,10 +99,11 @@ export default function SemesterComparison() {
       {/* Filtres */}
       <div className="flex flex-wrap gap-4 mb-8 bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10">
         <div className="flex-1 min-w-[200px]">
-          <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant block mb-1.5">
+          <label htmlFor="comparaison-semestre-filiere" className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant block mb-1.5">
             Filière
           </label>
           <select
+            id="comparaison-semestre-filiere"
             value={selectedFiliere}
             onChange={e => setSelectedFiliere(e.target.value)}
             className="w-full px-4 py-2.5 bg-surface-container-high rounded-xl border-b-2 border-transparent focus:border-primary focus:bg-surface-container-lowest transition-all text-on-surface focus:outline-none text-sm"
@@ -114,10 +115,11 @@ export default function SemesterComparison() {
           </select>
         </div>
         <div className="flex-1 min-w-[200px]">
-          <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant block mb-1.5">
+          <label htmlFor="comparaison-semestre-annee" className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant block mb-1.5">
             Année académique
           </label>
           <select
+            id="comparaison-semestre-annee"
             value={selectedAnnee}
             onChange={e => setSelectedAnnee(e.target.value)}
             className="w-full px-4 py-2.5 bg-surface-container-high rounded-xl border-b-2 border-transparent focus:border-primary focus:bg-surface-container-lowest transition-all text-on-surface focus:outline-none text-sm"

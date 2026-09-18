@@ -450,6 +450,7 @@ export default function CourseValidationPage() {
                             onChange={(e) => updateCourse(course.id, 'code', e.target.value)}
                             className={`bg-transparent border-b py-1 text-sm font-medium focus:ring-0 w-24 font-mono ${course.code ? 'border-transparent text-primary' : 'border-dashed border-outline-variant text-on-surface-variant'}`}
                             placeholder={course.isUe ? 'UE-INF-301' : 'INF3011'}
+                            aria-label={`Code de la ligne ${course.id + 1}`}
                           />
                         </td>
                         <td className="px-4 py-4">
@@ -459,12 +460,14 @@ export default function CourseValidationPage() {
                             onChange={(e) => updateCourse(course.id, 'intitule', e.target.value)}
                             className={`bg-transparent border-b py-1 text-sm focus:ring-0 w-full ${course.intitule ? 'border-transparent' : 'border-dashed border-outline-variant'}`}
                             placeholder="Nom du cours..."
+                            aria-label={`Intitulé de la ligne ${course.id + 1}`}
                           />
                         </td>
                         <td className="px-4 py-4">
                           <select
                             value={course.semestre.toString().replace(/[^0-9]/g, '')}
                             onChange={(e) => updateCourse(course.id, 'semestre', `S${e.target.value}`)}
+                            aria-label={`Semestre de la ligne ${course.id + 1}`}
                             className="bg-transparent text-sm border-none focus:ring-0 py-1">
                             <option value="">Semestre</option>
                             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((s) => (
