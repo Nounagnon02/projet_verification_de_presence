@@ -1,54 +1,54 @@
 {
     "provider": "gemini",
-    "mode": "reel",
-    "documents": 9,
-    "tec_moyen": 0.4444,
-    "tfp_moyen": 0.4444,
+    "mode": "rejeu",
+    "documents": 8,
+    "tec_moyen": 1,
+    "tfp_moyen": 0,
     "scm": 0.8563,
-    "echecs_analyse": 1,
+    "echecs_analyse": 0,
     "par_document": [
         {
             "id": "edt-01-simple",
             "type": "schedule",
             "difficulte": "facile",
-            "tec": 0,
-            "tfp": 1,
+            "tec": 1,
+            "tfp": 0,
             "confiance": 1,
             "statut": "completed",
-            "detail": "0\/20 champs, 3 invention(s) sur 3 produit(s)",
+            "detail": "20\/20 champs, 0 invention(s) sur 4 produit(s)",
             "duree_ms": 16071
         },
         {
             "id": "edt-02-abreviations",
             "type": "schedule",
             "difficulte": "moyenne",
-            "tec": 0,
-            "tfp": 1,
+            "tec": 1,
+            "tfp": 0,
             "confiance": 1,
             "statut": "completed",
-            "detail": "0\/15 champs, 3 invention(s) sur 3 produit(s)",
+            "detail": "15\/15 champs, 0 invention(s) sur 3 produit(s)",
             "duree_ms": 17171
         },
         {
             "id": "edt-03-seances-longues",
             "type": "schedule",
             "difficulte": "moyenne",
-            "tec": 0,
-            "tfp": 1,
+            "tec": 1,
+            "tfp": 0,
             "confiance": 1,
             "statut": "completed",
-            "detail": "0\/10 champs, 2 invention(s) sur 2 produit(s)",
+            "detail": "10\/10 champs, 0 invention(s) sur 2 produit(s)",
             "duree_ms": 21610
         },
         {
             "id": "edt-04-creneau-unique",
             "type": "schedule",
             "difficulte": "facile",
-            "tec": 0,
-            "tfp": 1,
+            "tec": 1,
+            "tfp": 0,
             "confiance": 1,
             "statut": "completed",
-            "detail": "0\/5 champs, 1 invention(s) sur 1 produit(s)",
+            "detail": "5\/5 champs, 0 invention(s) sur 1 produit(s)",
             "duree_ms": 21696
         },
         {
@@ -94,17 +94,6 @@
             "statut": "completed",
             "detail": "refus correct",
             "duree_ms": 11828
-        },
-        {
-            "id": "edt-05-date",
-            "type": "schedule",
-            "difficulte": "facile",
-            "tec": 0,
-            "tfp": 0,
-            "confiance": null,
-            "statut": "failed",
-            "detail": "0\/20 champs, 0 invention(s) sur 0 produit(s)",
-            "duree_ms": 27790
         }
     ]
 }

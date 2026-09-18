@@ -1,6 +1,6 @@
 {
-    "genere_le": "2026-08-24T16:19:33+00:00",
-    "documents": 9,
+    "genere_le": "2026-09-18T10:21:08+01:00",
+    "documents": 8,
     "liste": [
         {
             "id": "edt-01-simple",
@@ -65,14 +65,6 @@
             "pdf": "corpus/hors-01-note-de-service.pdf",
             "verite": "verites/hors-01-note-de-service.json",
             "octets": 878030
-        },
-        {
-            "id": "edt-05-date",
-            "type": "schedule",
-            "difficulte": "facile",
-            "pdf": "corpus/edt-05-date.pdf",
-            "verite": "verites/edt-05-date.json",
-            "octets": 878767
         }
     ]
 }

@@ -177,3 +177,56 @@ php ../tests/ia/evaluer.php --provider=gemini         # rejeu, gratuit
 Les PDF ne sont pas versionnés : ils se régénèrent en quelques secondes depuis
 `generer-corpus.php`, qui est la source de vérité. Sont versionnés le générateur,
 les vérités terrain, les enregistrements de réponses et les résultats.
+
+---
+
+# Reprise du 2026-09-18 — le défaut des emplois du temps hebdomadaires est corrigé
+
+> Mesure en mode **rejeu** (déterministe, sans appel au fournisseur), sur les
+> réponses réenregistrées au commit `5d73fce`. Elle ne remplace pas une campagne
+> `--reel` : elle mesure le pipeline d'extraction, pas la variabilité du modèle.
+
+## Résultats
+
+| Indicateur | 2026-08-24 (campagne réelle) | 2026-09-18 (rejeu) |
+|---|---:|---:|
+| Documents | 9 | 8 |
+| TEC moyen | 53,3 % | **100 %** |
+| TFP moyen | 0 % | **0 %** |
+| SCM | 0,43 | **0,856** |
+| Analyses en échec | 0 / 9 | 0 / 8 |
+
+Les quatre emplois du temps **hebdomadaires** qui rendaient une extraction vide
+— `edt-01-simple`, `edt-02-abreviations`, `edt-03-seances-longues`,
+`edt-04-creneau-unique` — sont désormais extraits à 100 %. Le défaut décrit plus
+haut (« le pipeline n'accepte que les emplois du temps datés ») a été corrigé
+entre-temps par la reconstruction de l'import hebdomadaire.
+
+`edt-05-date` ne fait plus partie du corpus : le générateur en produit huit.
+
+## Ce que cela change pour le mémoire
+
+| Cas du plan | État au 2026-08-24 | État au 2026-09-18 |
+|---|---|---|
+| IA-02 TEC par type | 53,3 % en moyenne, 0 % sur les EDT hebdomadaires | 100 % sur les huit documents |
+| IA-03 TFP ≤ 2 % | ✅ 0 % | ✅ 0 % |
+| IA-04 SCM ≥ 0,84 | ⚠️ 0,43 | ✅ 0,856 |
+| IA-05 bascule de fournisseur | ❌ Groq et OpenRouter non mesurés | ❌ inchangé |
+| IA-06 indisponibilité du fournisseur | ❌ | ❌ |
+| IA-07 réponse non-JSON | ❌ | ❌ |
+
+Le corpus reste petit : **huit documents**, contre les 45 annoncés au §4.5 et
+définitivement perdus. Publier ces chiffres exige de dire sur combien de
+documents ils portent, et qu'ils proviennent d'un rejeu.
+
+## Reproduire
+
+Le rejeu est désormais exécuté à chaque intégration continue
+(`.github/workflows/ci.yml`, tâche « ia ») : il est déterministe et ne consomme
+aucun quota, ce pour quoi le mode avait été construit.
+
+```bash
+cd backend
+php ../tests/ia/generer-corpus.php
+php ../tests/ia/evaluer.php --provider=gemini
+```
