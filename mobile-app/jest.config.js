@@ -28,6 +28,12 @@ module.exports = {
 
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
+    // lucide-react-native expose une condition d'export « react-native » qui
+    // pointe vers un .mjs. jest-expo resout les conditions d'export dans cet
+    // ordre et choisit ce fichier avant le CJS — Jest ne le transforme pas
+    // (aucune regle « transform » ne cible .mjs), et « export » brut fait
+    // planter le test a l'import. On force la resolution vers le CJS.
+    '^lucide-react-native$': '<rootDir>/node_modules/lucide-react-native/dist/cjs/lucide-react-native.js',
   },
 
   testMatch: [
@@ -44,11 +50,10 @@ module.exports = {
   ],
 
   // Cliquet, comme cote web. Premiere mesure (2026-08-22) : 6,95 % de lignes.
-  // Le harnais vient d'etre monte et ne couvre pour l'instant que l'empreinte
-  // d'appareil et le stockage du jeton. Les seuils sont cales juste dessous et
-  // doivent monter a chaque lot ajoute — hooks (useScan, useLocation, useWifi),
-  // client API, contexte d'authentification, puis ecrans.
+  // Relevee au 2026-09-18 a 39,5 % (lignes), avec l'ajout des tests de
+  // connexion et de scan authentifie. Encore a couvrir : useLocation, useWifi,
+  // useFingerprint, les composants scanner/ui, et les ecrans hors connexion.
   coverageThreshold: {
-    global: { lines: 6, functions: 9, branches: 3, statements: 6 },
+    global: { lines: 42, functions: 30, branches: 28, statements: 39 },
   },
 };

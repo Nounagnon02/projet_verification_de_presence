@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { router } from 'expo-router';
 import { useAuth } from '../auth/AuthContext';
 import { useFingerprint } from './useFingerprint';
 import { useLocation } from './useLocation';
@@ -9,7 +10,7 @@ import type { ScanPayload, ScanResponse } from '../types';
 import { CONFIG } from '../constants/config';
 
 export function useScan() {
-  const { user } = useAuth();
+  const { sessionExpiree } = useAuth();
   const { fingerprint } = useFingerprint();
   const { getPosition } = useLocation();
   const { getWifiInfo } = useWifi();
@@ -19,38 +20,25 @@ export function useScan() {
 
   const submitScan = useCallback(
     async (qrToken: string): Promise<ScanResponse> => {
-      if (!user?.identifiant_unique) {
-        throw new Error('Identifiant étudiant introuvable. Reconnectez-vous.');
-      }
       if (!fingerprint) {
         throw new Error('Empreinte appareil non disponible.');
       }
 
       setScanning(true);
       try {
-        // 1. Recuperer le defi anti-fraude aupres du serveur, en meme temps que
-        //    le GPS et le Wi-Fi. Le defi est signe par le serveur et lie a ce
-        //    jeton de QR Code : il ne peut pas etre calcule ici, et une cle
-        //    embarquee dans l'APK n'aurait rien authentifie.
-        const [infosCours, position, wifi] = await Promise.all([
-          apiClient.get<{ data?: { scan_challenge?: string } }>(
-            `/presence/course-by-token/${qrToken}`,
-          ),
-          getPosition(),
-          getWifiInfo(),
-        ]);
+        // 1. Relever les facteurs de vérification, en parallèle.
+        //    Plus aucun appel préalable à course-by-token : il ne servait qu'à
+        //    récupérer le défi anti-fraude, que le scan authentifié ne demande
+        //    plus. Cet aller-retour retardait chaque scan sans rien apporter.
+        const [position, wifi] = await Promise.all([getPosition(), getWifiInfo()]);
 
-        const challenge = infosCours.data?.data?.scan_challenge;
-        if (!challenge) {
-          throw new Error('QR Code invalide ou expire. Rescannez un nouveau code.');
-        }
-
-        // 2. Construire le payload
+        // 2. Construire le payload.
+        //    L'étudiant n'est plus désigné par « identifiant_unique » : le
+        //    serveur le lit dans le jeton Bearer (injecté par src/api/client.ts).
+        //    Envoyer son identifiant permettait de scanner au nom d'un autre.
         const payload: ScanPayload = {
-          identifiant_unique: user.identifiant_unique,
           token: qrToken,
           device_fingerprint: fingerprint,
-          scan_challenge: challenge,
           latitude: position?.latitude,
           longitude: position?.longitude,
           ssid: wifi?.ssid ?? undefined,
@@ -79,13 +67,24 @@ export function useScan() {
         return result;
       } catch (err: unknown) {
         // Le serveur formule des refus précis — fenêtre de scan non encore
-        // ouverte, GPS hors du rayon de la salle, présence déjà enregistrée.
-        // Sans cette lecture, axios les remplaçait par « Request failed with
-        // status code 422 » : le message utile n'atteignait jamais l'étudiant.
-        const reponse = (err as any)?.response;
+        // ouverte, présence déjà enregistrée, appareil non reconnu. Sans cette
+        // lecture, axios les remplaçait par « Request failed with status code
+        // 422 » : le message utile n'atteignait jamais l'étudiant.
+        const reponse = (err as { response?: { status?: number; data?: { message?: string } } })?.response;
         const messageServeur: string | undefined = reponse?.data?.message;
 
-        if (reponse?.status === 409) {
+        if (reponse?.status === 401) {
+          // Le scan est désormais authentifié : un jeton expiré ou révoqué se
+          // traduit par un 401. Laisser l'étudiant sur le scanner lui ferait
+          // rescanner indéfiniment un QR Code qui ne sera jamais accepté.
+          await sessionExpiree();
+          showToast(
+            'error',
+            'Session expirée',
+            messageServeur ?? 'Reconnectez-vous pour valider votre présence.',
+          );
+          router.replace('/login');
+        } else if (reponse?.status === 409) {
           // Déjà enregistré : l'objectif de l'étudiant est atteint. Le signaler
           // en rouge comme un échec serait trompeur.
           showToast(
@@ -111,7 +110,7 @@ export function useScan() {
         setScanning(false);
       }
     },
-    [user, fingerprint, getPosition, getWifiInfo],
+    [fingerprint, getPosition, getWifiInfo, sessionExpiree],
   );
 
   return { submitScan, scanning, lastResult };

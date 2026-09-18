@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { AuthProvider } from '../src/auth/AuthContext';
+import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 import { toastConfig } from '../src/utils/toast-config';
@@ -31,16 +32,21 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <StatusBar style="dark" />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="login" options={{ presentation: 'fullScreenModal' }} />
-          <Stack.Screen name="(tabs)" />
-        </Stack>
-        <Toast config={toastConfig} />
-      </AuthProvider>
-    </QueryClientProvider>
+    // La barrière englobe les fournisseurs : une exception levée dans le
+    // contexte d'authentification ou dans React Query laissait, elle aussi, un
+    // écran blanc sans aucun message.
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <StatusBar style="dark" />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="login" options={{ presentation: 'fullScreenModal' }} />
+            <Stack.Screen name="(tabs)" />
+          </Stack>
+          <Toast config={toastConfig} />
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

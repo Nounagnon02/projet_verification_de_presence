@@ -16,15 +16,20 @@ jest.mock('expo-device', () => ({
   isDevice: true,
 }));
 
+// Signatures calquees sur node_modules/expo-application/build/Application.d.ts.
+// Un double qui invente une API la rend invisible aux tests : c'est ainsi que
+// la disparition de Constants.installationId est passee inapercue.
 jest.mock('expo-application', () => ({
   applicationId: 'bj.uac.presence.test',
   nativeBuildVersion: '1',
+  getAndroidId: jest.fn(() => 'android-id-de-test'),
+  getIosIdForVendorAsync: jest.fn(() => Promise.resolve('IDFV-DE-TEST')),
 }));
 
+// Pas d'installationId : expo-constants l'a supprime (voir son CHANGELOG).
 jest.mock('expo-constants', () => ({
   __esModule: true,
   default: {
-    installationId: 'installation-de-test',
     expoConfig: { extra: {} },
   },
 }));
@@ -37,6 +42,7 @@ jest.mock('expo-crypto', () => {
     CryptoDigestAlgorithm: { SHA256: 'SHA-256' },
     digestStringAsync: (_algo, valeur) =>
       Promise.resolve(crypto.createHash('sha256').update(valeur).digest('hex')),
+    randomUUID: jest.fn(() => crypto.randomUUID()),
   };
 });
 

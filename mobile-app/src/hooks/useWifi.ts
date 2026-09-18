@@ -26,7 +26,14 @@ export function useWifi() {
         }
       }
 
-      return { ssid: '__ios_wifi__', bssid: null };
+      // iOS ne laisse pas lire le nom du réseau sans droit particulier. On
+      // renvoyait ici le SSID fictif « __ios_wifi__ » : le serveur le comparait
+      // au SSID configuré sur la salle, n'y trouvait aucune correspondance, et
+      // REFUSAIT donc TOUT scan iOS dans une salle où un SSID est renseigné.
+      // On ne transmet plus rien : le facteur réseau retombe alors sur le
+      // contrôle de l'IP du client (salles.ip_range), qui, lui, fonctionne
+      // depuis un iPhone.
+      return null;
     } catch {
       return null;
     }

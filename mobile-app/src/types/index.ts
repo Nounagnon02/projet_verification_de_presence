@@ -17,7 +17,7 @@ export interface ApiUser {
   updated_at?: string;
 }
 
-// ─── Réponse POST /api/login ───
+// ─── Réponse POST /api/auth/student/login ───
 export interface AuthResponse {
   success: boolean;
   message: string;
@@ -28,11 +28,14 @@ export interface AuthResponse {
 }
 
 // ─── Payload POST /api/presence/scan ───
+// Le scan est authentifié : la route porte « auth:sanctum » + « ability:etudiant »
+// et le serveur lit l'étudiant dans le jeton. « identifiant_unique » et
+// « scan_challenge » ont disparu du contrat — le premier laissait scanner au nom
+// d'un autre en saisissant son identifiant, le second n'était qu'un aller-retour
+// supplémentaire que l'authentification rend inutile.
 export interface ScanPayload {
-  identifiant_unique: string;
   token: string;
   device_fingerprint: string;
-  scan_challenge?: string;
   latitude?: number;
   longitude?: number;
   ssid?: string;

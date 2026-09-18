@@ -1,21 +1,37 @@
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 /**
- * URL de l'API backend Render (production).
- * En développement sur appareil physique, utiliser le backend Render directement.
+ * URL de l'API backend Render (production), conservée comme valeur de repli.
+ * En développement sur appareil physique, on vise le backend Render directement.
  */
 const RENDER_API_URL = 'https://presence-uac-api.onrender.com';
 
+/** Repli si app.json ne fournit rien : le comportement d'avant P3.6. */
+const API_URL_REPLI = `${RENDER_API_URL}/api`;
+const API_URL_DEV_ANDROID_REPLI = 'http://10.0.2.2:8000/api';
+
+/**
+ * P3.6 — l'URL de l'API était écrite en dur ici : changer de backend (recette,
+ * autre établissement) imposait de modifier le code et de reconstruire l'APK.
+ * Elle est désormais déclarée dans app.json, sous « expo.extra », et lue à
+ * l'exécution via expo-constants. La valeur historique ne sert plus que de
+ * repli : une clé absente, vide ou d'un autre type ne doit pas empêcher
+ * l'application de démarrer.
+ */
+function lireUrlDeAppJson(cle: string): string | undefined {
+  const extra = Constants.expoConfig?.extra as Record<string, unknown> | undefined;
+  const valeur = extra?.[cle];
+  return typeof valeur === 'string' && valeur.trim() !== '' ? valeur.trim() : undefined;
+}
+
 function getApiBaseUrl(): string {
-  if (__DEV__) {
-    // Émulateur Android uniquement : 10.0.2.2 pointe vers localhost
-    if (Platform.OS === 'android') {
-      return 'http://10.0.2.2:8000/api';
-    }
-    // Appareil physique iOS ou Android réel : utiliser le backend Render
-    return `${RENDER_API_URL}/api`;
+  // Émulateur Android uniquement : 10.0.2.2 pointe vers le localhost de la
+  // machine hôte, que « localhost » ne peut pas atteindre depuis l'émulateur.
+  if (__DEV__ && Platform.OS === 'android') {
+    return lireUrlDeAppJson('apiUrlDevAndroid') ?? API_URL_DEV_ANDROID_REPLI;
   }
-  return `${RENDER_API_URL}/api`;
+  return lireUrlDeAppJson('apiUrl') ?? API_URL_REPLI;
 }
 
 export const CONFIG = {
@@ -30,6 +46,13 @@ export const CONFIG = {
 
   /** Clé AsyncStorage pour le cache utilisateur */
   USER_KEY: 'auth_user',
+
+  /**
+   * Clé SecureStore de l'identifiant d'appareil retenu pour l'empreinte.
+   * Distincte du jeton : la déconnexion ne doit pas changer l'identité de
+   * l'appareil.
+   */
+  DEVICE_ID_KEY: 'device_id',
 
   /**
    * Timeout axios pour les requêtes de scan (ms).

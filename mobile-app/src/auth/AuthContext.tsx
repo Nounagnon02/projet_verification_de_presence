@@ -17,6 +17,37 @@ import {
 } from '../utils/token-storage';
 import type { ApiUser } from '../types';
 
+// ─── Erreur de connexion ───
+
+/**
+ * Erreur de connexion porteuse du code métier renvoyé par le serveur.
+ *
+ * Le serveur distingue deux refus que l'écran doit traiter différemment : des
+ * identifiants faux (422, message générique) et un étudiant à qui aucun code
+ * d'accès n'a encore été envoyé (409, code « code_absent »). Sans ce code, axios
+ * ne remontait que « Request failed with status code 409 » et l'écran ne pouvait
+ * pas dire à l'étudiant de réclamer son code à l'administration.
+ */
+export class ErreurConnexion extends Error {
+  readonly codeMetier?: string;
+
+  constructor(message: string, codeMetier?: string) {
+    super(message);
+    this.name = 'ErreurConnexion';
+    this.codeMetier = codeMetier;
+  }
+}
+
+/** Traduit l'échec HTTP de la connexion en ErreurConnexion exploitable. */
+function traduireEchecConnexion(err: unknown): ErreurConnexion {
+  const reponse = (err as { response?: { data?: { message?: string; code?: string } } })?.response;
+  const donnees = reponse?.data;
+  return new ErreurConnexion(
+    donnees?.message ?? 'Identifiants invalides.',
+    donnees?.code,
+  );
+}
+
 // ─── State ───
 
 interface AuthState {
@@ -56,10 +87,16 @@ export interface AuthContextType {
   isLoading: boolean;
   /** true si l'utilisateur est authentifié */
   isAuthenticated: boolean;
-  /** Connecte l'étudiant avec email et identifiant unique */
-  login: (email: string, identifiantUnique: string) => Promise<void>;
+  /** Connecte l'étudiant avec email, identifiant unique et code d'accès à 6 chiffres */
+  login: (email: string, identifiantUnique: string, code: string) => Promise<void>;
   /** Déconnecte et nettoie le stockage local */
   logout: () => Promise<void>;
+  /**
+   * Clôt la session localement, sans appeler /logout.
+   * Utilisée quand le serveur a déjà répondu 401 : le jeton est révoqué, lui
+   * repasser une requête ne ferait qu'ajouter un aller-retour voué au même 401.
+   */
+  sessionExpiree: () => Promise<void>;
   /** Rafraîchit les infos utilisateur depuis l'API */
   refreshUser: () => Promise<void>;
 }
@@ -114,10 +151,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, []);
 
-  const login = useCallback(async (email: string, identifiantUnique: string) => {
-    const { data } = await apiClient.post('/auth/student/login', { email, identifiant_unique: identifiantUnique });
+  const login = useCallback(async (email: string, identifiantUnique: string, code: string) => {
+    let data;
+    try {
+      // Le code d'accès à 6 chiffres est le secret de l'étudiant : l'email et
+      // l'identifiant unique figurent sur sa carte et circulent en clair, ils
+      // ne prouvaient rien à eux seuls.
+      ({ data } = await apiClient.post('/auth/student/login', {
+        email,
+        identifiant_unique: identifiantUnique,
+        code,
+      }));
+    } catch (err: unknown) {
+      throw traduireEchecConnexion(err);
+    }
     if (!data.success) {
-      throw new Error(data.message || 'Identifiants invalides.');
+      throw new ErreurConnexion(data.message || 'Identifiants invalides.', data.code);
     }
     const { user, token } = data.data;
     await Promise.all([setToken(token), setCachedUser(user)]);
@@ -130,6 +179,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // Même si l'API échoue, on nettoie localement
     }
+    await clearAuth();
+    dispatch({ type: 'LOGOUT' });
+  }, []);
+
+  const sessionExpiree = useCallback(async () => {
     await clearAuth();
     dispatch({ type: 'LOGOUT' });
   }, []);
@@ -154,9 +208,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: !!state.token && !!state.user,
       login,
       logout,
+      sessionExpiree,
       refreshUser,
     }),
-    [state, login, logout, refreshUser],
+    [state, login, logout, sessionExpiree, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

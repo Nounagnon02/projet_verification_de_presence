@@ -76,7 +76,9 @@
       "router": {},
       "eas": {
         "projectId": "4467e701-9bca-4084-bd45-8a387c1b1c4b"
-      }
+      },
+      "apiUrl": "https://presence-uac-api.onrender.com/api",
+      "apiUrlDevAndroid": "http://10.0.2.2:8000/api"
     }
   }
 }
