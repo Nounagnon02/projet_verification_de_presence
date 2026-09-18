@@ -1,0 +1,85 @@
+name: Securite (OWASP ZAP)
+
+# Etage 5 du plan de tests, §4.3 du memoire. Declenchement MANUEL seulement :
+# la passe dure une dizaine de minutes et envoie de vraies charges d'attaque.
+#
+# Ce qu'elle ne couvre pas, et qu'il ne faut pas laisser croire : ZAP est une
+# passe boite noire NON AUTHENTIFIEE. Le cloisonnement entre facultes (A01), la
+# limitation de debit (A07) et la configuration cryptographique (A02) relevent
+# de la suite PHPUnit, pas d'ici.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  zap:
+    name: Passe ZAP sur une pile locale
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: presence_uac_zap
+        ports: ['55436:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: '55436'
+      DB_DATABASE: presence_uac_zap
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_pgsql, mbstring, intl, gd, zip
+
+      - name: Dependances et pile locale
+        working-directory: backend
+        run: |
+          composer install --prefer-dist --no-interaction --no-progress
+          cp .env.example .env
+          php artisan key:generate
+          php artisan migrate --force
+          php artisan db:seed --force
+          php artisan serve --host=127.0.0.1 --port=8100 &
+          npx --yes wait-on http://127.0.0.1:8100/api/health --timeout 60000
+        env:
+          APP_ENV: production
+          APP_DEBUG: 'false'
+          SEED_ADMIN_PASSWORD: MotDePasseCI!2026
+          SEED_SUPERADMIN_PASSWORD: MotDePasseCI!2026
+
+      # « -O » force TOUTES les requetes vers la cible indiquee. Sans lui, ZAP
+      # attaque aussi les serveurs declares dans openapi.yaml — dont celui de
+      # production. Ce n'est pas une option de confort.
+      - name: Passe ZAP
+        run: |
+          docker run --rm --memory=3g --network host \
+            -v "${{ github.workspace }}/tests/security:/zap/wrk/:rw" \
+            ghcr.io/zaproxy/zaproxy:stable zap-api-scan.py \
+            -t http://127.0.0.1:8100/api/docs/json -f openapi \
+            -O http://127.0.0.1:8100 \
+            -c zap-baseline.conf \
+            -r rapport-zap.html -J rapport-zap.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rapport-zap
+          path: |
+            tests/security/rapport-zap.html
+            tests/security/rapport-zap.json
+          retention-days: 30

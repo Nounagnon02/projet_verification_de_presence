@@ -1,0 +1,119 @@
+name: E2E (Playwright)
+
+# Etage 4 du plan de tests. Il tourne sur une pile LOCALE, jamais sur la
+# production : les specs de tests/api/ creent et suppriment des etudiants, et
+# tests/.env.test sait viser Render et Vercel. Une campagne lancee par erreur
+# sur « prod » ecrirait dans la vraie base.
+#
+# Non declenche a chaque poussee : il demarre trois serveurs et un Chromium.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    name: Parcours de bout en bout
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: presence_uac_e2e
+        ports: ['55435:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # Base jetable du job : aucun de ces identifiants n'existe ailleurs.
+      ADMIN_PASSWORD: MotDePasseCI!2026
+      CODE_ETUDIANT: '123456'
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: '55435'
+      DB_DATABASE: presence_uac_e2e
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_pgsql, mbstring, intl, gd, zip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # ─── Backend ────────────────────────────────────────────────────────────
+      - name: Dependances backend
+        working-directory: backend
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Environnement backend
+        working-directory: backend
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan migrate --force
+          php artisan db:seed --force
+        env:
+          APP_ENV: testing
+          SEED_ADMIN_PASSWORD: ${{ env.ADMIN_PASSWORD }}
+          SEED_SUPERADMIN_PASSWORD: ${{ env.ADMIN_PASSWORD }}
+
+      # Le code d'acces etudiant est aleatoire et transmis par courriel : les
+      # tests ne peuvent pas le deviner. On en impose un connu sur cette base
+      # jetable, ce qui serait evidemment inacceptable ailleurs.
+      - name: Code d'acces connu pour les etudiants de demonstration
+        working-directory: backend
+        run: |
+          php artisan tinker --execute "\App\Models\Etudiant::query()->update(['code_acces' => \Illuminate\Support\Facades\Hash::make(getenv('CODE_ETUDIANT'))]);"
+
+      - name: Demarrer l'API
+        working-directory: backend
+        run: |
+          php artisan serve --host=127.0.0.1 --port=8000 &
+          npx --yes wait-on http://127.0.0.1:8000/api/health --timeout 60000
+
+      # ─── Frontend ───────────────────────────────────────────────────────────
+      - name: Construire et servir le frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          VITE_API_URL=http://127.0.0.1:8000/api npm run build
+          npx vite preview --port 5173 --host 127.0.0.1 &
+          npx --yes wait-on http://127.0.0.1:5173 --timeout 60000
+
+      # ─── Playwright ─────────────────────────────────────────────────────────
+      - name: Preparer la suite
+        working-directory: tests
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          cat > .env.test <<EOF
+          LOCAL_API_URL=http://127.0.0.1:8000/api
+          LOCAL_FRONTEND_URL=http://127.0.0.1:5173
+          LOCAL_ADMIN_EMAIL=admin@presence.uac.bj
+          LOCAL_ADMIN_PASSWORD=${{ env.ADMIN_PASSWORD }}
+          STUDENT_CODE=${{ env.CODE_ETUDIANT }}
+          EOF
+
+      - name: Parcours API et navigateur (cible locale)
+        working-directory: tests
+        run: npx playwright test --project=api-local --project=frontend-local
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rapport-playwright
+          path: tests/playwright-report/
+          retention-days: 14

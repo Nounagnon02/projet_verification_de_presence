@@ -1,0 +1,87 @@
+name: Charge (k6)
+
+# Etage 6 du plan de tests, hypothese H3 du memoire. Declenchement MANUEL.
+#
+# Deux avertissements que la campagne du 2026-08-24 a payes comptant :
+#  - le generateur ecrit des lignes REELLES et persistantes : jamais sur la base
+#    de la suite PHPUnit, sous peine de faire echouer 149 tests d'un coup ;
+#  - un runner GitHub partage (2 vCPU) ne mesure pas une capacite. Les chiffres
+#    produits ici decrivent une tendance, pas la production.
+
+on:
+  workflow_dispatch:
+    inputs:
+      utilisateurs:
+        description: 'Utilisateurs virtuels simultanes'
+        required: false
+        default: '50'
+
+jobs:
+  charge:
+    name: LOAD-01 sur une pile locale
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: presence_uac_charge
+        ports: ['55437:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: '55437'
+      DB_DATABASE: presence_uac_charge
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_pgsql, mbstring, intl, gd, zip
+
+      - name: Pile locale et jeu de charge
+        working-directory: backend
+        run: |
+          composer install --prefer-dist --no-interaction --no-progress
+          cp .env.example .env
+          php artisan key:generate
+          php artisan migrate --force
+          php artisan config:cache
+          php -S 127.0.0.1:8000 -t public &
+          npx --yes wait-on http://127.0.0.1:8000/api/health --timeout 60000
+          php ../tests/load/preparer-charge.php --vus=${{ inputs.utilisateurs }} > ${{ github.workspace }}/charge.json
+        env:
+          PHP_CLI_SERVER_WORKERS: '8'
+
+      - name: Installer k6
+        run: |
+          curl -sSL https://github.com/grafana/k6/releases/latest/download/k6-linux-amd64.tar.gz \
+            | tar xz --strip-components=1 -C /usr/local/bin --wildcards '*/k6'
+          k6 version
+
+      - name: Campagne
+        working-directory: tests/load
+        run: k6 run scan-seul.k6.js --summary-export=resultats-ci.json
+        env:
+          JEU: ${{ github.workspace }}/charge.json
+          BASE_URL: http://127.0.0.1:8000/api
+          VUS: ${{ inputs.utilisateurs }}
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resultats-k6
+          path: tests/load/resultats-ci.json
+          retention-days: 30
