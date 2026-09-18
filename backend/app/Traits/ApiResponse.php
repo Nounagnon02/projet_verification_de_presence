@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Traits;
 
 use Illuminate\Http\JsonResponse;
@@ -125,11 +127,16 @@ trait ApiResponse
             'success' => true,
             'message' => $message,
             'data'    => $collection->items(),
+            // from/to : le composant Pagination du frontend les affiche
+            // (« {from}-{to} sur {total} ») ; sans eux, il rendait
+            // « undefined-undefined ».
             'meta'    => [
                 'current_page' => $collection->currentPage(),
                 'last_page'    => $collection->lastPage(),
                 'per_page'     => $collection->perPage(),
                 'total'        => $collection->total(),
+                'from'         => $collection->firstItem(),
+                'to'           => $collection->lastItem(),
             ],
         ]);
     }

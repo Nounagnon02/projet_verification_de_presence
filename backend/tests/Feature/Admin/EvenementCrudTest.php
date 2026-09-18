@@ -136,6 +136,58 @@ class EvenementCrudTest extends TestCase
             ->assertJsonCount(2, 'data');
     }
 
+    /**
+     * Régression : sans filtre de date, l'index chargeait TOUTES les séances
+     * jamais créées — un établissement de quelques semestres en a des
+     * milliers. Elle est désormais paginée, comme students et presence/history.
+     */
+    public function test_la_liste_des_evenements_est_paginee(): void
+    {
+        foreach (range(1, 25) as $i) {
+            Evenement::create([
+                'ec_id'       => $this->ec->id,
+                'filiere_id'  => $this->filiere->id,
+                'annee_id'    => $this->annee->id,
+                'date'        => today()->addDays($i)->format('Y-m-d'),
+                'heure_debut' => '08:00',
+                'heure_fin'   => '10:00',
+                'salle'       => "Salle {$i}",
+            ]);
+        }
+
+        $reponse = $this->withToken($this->bearerToken)
+            ->getJson('/api/admin/evenements?per_page=10');
+
+        $reponse->assertStatus(200)
+            ->assertJsonCount(10, 'data')
+            ->assertJsonPath('meta.current_page', 1)
+            ->assertJsonPath('meta.last_page', 3)
+            ->assertJsonPath('meta.per_page', 10)
+            ->assertJsonPath('meta.total', 25)
+            ->assertJsonPath('meta.from', 1)
+            ->assertJsonPath('meta.to', 10);
+
+        $page2 = $this->withToken($this->bearerToken)
+            ->getJson('/api/admin/evenements?per_page=10&page=2')
+            ->assertStatus(200)
+            ->assertJsonCount(10, 'data');
+
+        // Aucun événement de la page 1 ne réapparaît sur la page 2.
+        $idsPage1 = $reponse->json('data.*.id');
+        $idsPage2 = $page2->json('data.*.id');
+        $this->assertEmpty(array_intersect($idsPage1, $idsPage2));
+    }
+
+    /** per_page est plafonné, comme pour students et presence/history : sans borne, ?per_page=100000 reviendrait à tout charger. */
+    public function test_per_page_est_plafonne_a_cent(): void
+    {
+        $reponse = $this->withToken($this->bearerToken)
+            ->getJson('/api/admin/evenements?per_page=100000');
+
+        $reponse->assertStatus(200)
+            ->assertJsonPath('meta.per_page', 100);
+    }
+
     public function test_admin_peut_consulter_un_evenement(): void
     {
         $evenement = Evenement::create([

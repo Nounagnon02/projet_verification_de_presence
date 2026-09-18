@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
@@ -77,11 +79,16 @@ class StudentController extends Controller
             'success' => true,
             'message' => 'Liste des étudiants récupérée.',
             'data'    => EtudiantResource::collection($paginator->items()),
+            // from/to : le composant Pagination du frontend les affiche
+            // (« {from}-{to} sur {total} ») ; sans eux, il rendait
+            // « undefined-undefined ».
             'meta'    => [
                 'current_page' => $paginator->currentPage(),
                 'last_page'    => $paginator->lastPage(),
                 'per_page'     => $paginator->perPage(),
                 'total'        => $paginator->total(),
+                'from'         => $paginator->firstItem(),
+                'to'           => $paginator->lastItem(),
             ],
         ]);
     }

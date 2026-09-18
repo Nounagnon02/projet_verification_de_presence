@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
@@ -64,6 +66,15 @@ class EvenementController extends Controller
         );
     }
 
+    /**
+     * Séances de l'établissement.
+     *
+     * Sans filtre de date, le formulaire chargeait TOUTES les séances jamais
+     * créées : un établissement de quelques semestres en a déjà des milliers.
+     * Paginée, comme students et presence/history.
+     *
+     * GET /api/admin/evenements?page=&per_page=
+     */
     public function index(Request $request): JsonResponse
     {
         // withCount plutôt que charger « presences » en entier : l'index n'a
@@ -104,10 +115,12 @@ class EvenementController extends Controller
             $query->where('statut', $request->statut);
         }
 
-        $evenements = $query->orderBy('date', 'asc')
+        $perPage = min((int) $request->input('per_page', 20), 100);
+        $paginateur = $query->orderBy('date', 'asc')
             ->orderBy('heure_debut', 'asc')
-            ->get()
-            ->map(fn($e) => [
+            ->paginate($perPage);
+
+        return $this->paginatedResponse($paginateur->through(fn($e) => [
                 'id'             => $e->id,
                 'date'           => $e->date->format('Y-m-d'),
                 'heure_debut'    => $e->heure_debut,
@@ -142,9 +155,7 @@ class EvenementController extends Controller
                     'actif'      => $e->qrCode->actif,
                     'is_expired' => $e->qrCode->isExpired(),
                 ] : null,
-            ]);
-
-        return $this->successResponse($evenements);
+            ]));
     }
 
     public function store(Request $request, RegleSeanceService $volumes): JsonResponse
