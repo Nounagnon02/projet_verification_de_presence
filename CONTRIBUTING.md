@@ -51,11 +51,13 @@ en passant, jamais dans un commit séparé.
 - `make phpstan` (backend) : niveau 5, avec un cliquet. Les constats antérieurs
   sont dans `phpstan-baseline.neon` ; tout **nouveau** constat échoue la CI. On
   ne l'ajoute pas à la baseline pour le faire taire : on corrige la cause.
-- Tout fichier PHP **nouveau** commence par `declare(strict_types=1);`. Les
-  fichiers existants l'adoptent au fil des modifications, un par un, tests à
-  l'appui : le poser en bloc sur 150 fichiers changerait des conversions
-  implicites (chaînes numériques des requêtes, colonnes Eloquent) sans qu'aucun
-  test ne le signale.
+- `declare(strict_types=1);` est posé sur tout `app/*.php` (2026-09-18), par
+  lots suivis chacun de la suite complète : deux coercions implicites s'en sont
+  révélées de vrais bugs (`Salle::distanceMetres()` passait une chaîne
+  `decimal:8` à `deg2rad()`, qui attend un float ; `LoginRequest::throttleKey()`
+  passait un `Stringable` à `Str::lower()`, qui attend une chaîne — PHP les
+  coerçait en silence, strict_types a fait échouer l'appel). Tout fichier
+  **nouveau** en porte un dès sa création.
 - Frontend : `npm run ts:check` (tsc strict sur les `.ts`) et ESLint sur
   `.ts`/`.tsx`. Prettier n'est pas passé sur tout l'historique — il ne formaterait
   que du bruit — mais sur les fichiers touchés : `npx simple-git-hooks` (une fois,
@@ -73,6 +75,24 @@ en passant, jamais dans un commit séparé.
   committé une fois est compromis : il faut le régénérer, pas seulement le
   retirer.
 
+## Frontend — accès à l'API
+
+- Une ressource lue ou écrite par une page passe par un module dédié dans
+  `frontend/src/api/resources/` (`etudiants.js`, `evenements.js`,
+  `reference.js`…), pas par un appel `api.get/post(...)` écrit dans la page :
+  la forme de la requête HTTP se lit à un seul endroit, et ces fonctions
+  servent directement de `queryFn` à TanStack Query.
+- Les listes se lisent avec `useQuery` (clé = nom de la ressource + les
+  paramètres qui la font varier), pas avec un `useEffect` manuel : annulation,
+  cache et absence de re-fetch des données de référence à chaque changement de
+  page en découlent sans code supplémentaire. Une mutation qui change la liste
+  appelle `queryClient.invalidateQueries` plutôt que de rappeler soi-même la
+  fonction de chargement.
+- StudentManagementPage et EvenementManagementPage suivent ce motif de bout en
+  bout (2026-09-18) : à prendre comme référence. Les 53 autres pages qui
+  importent `api/axios.js` directement n'ont pas encore été migrées — le
+  faire en bloc sans page pilote n'aurait rien prouvé de plus que la première.
+
 ## Git
 
 - L'auteur du projet est unique ; aucun commit ne porte d'attribution à un
@@ -88,3 +108,14 @@ Une dépendance ajoutée doit être utilisée. Le dépôt a porté trois paquets
 Composer morts (`turso-driver-laravel`, `lara-sms`, `laravel-google-calendar`),
 dont l'un installait une extension native à la construction de l'image.
 `composer.json` et `package.json` ne sont pas des listes de souhaits.
+
+`mobile-app` : `npm audit` (2026-09-18) distingue le code EMBARQUÉ dans
+l'application de l'outillage de construction (Metro, `@expo/cli`, `xcode`,
+qui ne s'exécutent que sur la machine de développement, jamais sur le
+téléphone). `decode-uri-component` (déni de service par décodage exponentiel)
+est la seule faille du second groupe atteignable en usage réel : `expo-router`
+l'utilise pour analyser les liens profonds, et un QR code scanné en est un —
+`package.json > overrides` la force à sa version corrigée, sans dépendre d'une
+montée majeure d'Expo. Les 15 avis restants sont tous dans l'outillage ; leur
+correctif exigerait le SDK 58, encore en canary/preview au 2026-09-18 —
+inadapté à une application qui authentifie des présences réelles.
