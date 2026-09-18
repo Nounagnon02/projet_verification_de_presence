@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
@@ -18,7 +20,7 @@ class UpdateStudentRequest extends FormRequest
     /**
      * Règles de validation pour la mise à jour d'un étudiant.
      *
-     * @return array<string, string[]>
+     * @return array<string, array<int, \Illuminate\Validation\Rules\Unique|string>>
      */
     public function rules(): array
     {

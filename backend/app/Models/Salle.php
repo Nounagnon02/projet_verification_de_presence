@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -79,8 +81,10 @@ class Salle extends Model
 
         $earthRadius = 6371000; // mètres
 
-        $latFrom = deg2rad($this->latitude);
-        $lonFrom = deg2rad($this->longitude);
+        // decimal:8 renvoie une chaîne (précision exacte) : deg2rad() exige un
+        // float, que la coercion implicite fournissait avant strict_types.
+        $latFrom = deg2rad((float) $this->latitude);
+        $lonFrom = deg2rad((float) $this->longitude);
         $latTo   = deg2rad($latitude);
         $lonTo   = deg2rad($longitude);
 

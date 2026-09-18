@@ -391,7 +391,7 @@ parameters:
 			path: app/Http/Controllers/Api/Admin/EvenementController.php
 
 		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Evenement\>\:\:map\(\) contains unresolvable type\.$#'
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Pagination\\AbstractPaginator\<int,App\\Models\\Evenement\>\:\:through\(\) contains unresolvable type\.$#'
 			identifier: argument.unresolvableType
 			count: 1
 			path: app/Http/Controllers/Api/Admin/EvenementController.php
@@ -1157,12 +1157,6 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: app/Models/Etudiant.php
-
-		-
-			message: '#^Parameter \#1 \$num of function deg2rad expects float, string given\.$#'
-			identifier: argument.type
-			count: 2
-			path: app/Models/Salle.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'

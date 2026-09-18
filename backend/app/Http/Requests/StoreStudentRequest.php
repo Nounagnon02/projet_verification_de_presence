@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
@@ -19,7 +21,7 @@ class StoreStudentRequest extends FormRequest
      * Règles de validation pour la création d'un étudiant.
      * Conforme CDC 7.1.1 & 7.1.3.
      *
-     * @return array<string, string[]>
+     * @return array<string, array<int, \Illuminate\Validation\Rules\Unique|string>>
      */
     public function rules(): array
     {
