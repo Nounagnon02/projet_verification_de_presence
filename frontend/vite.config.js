@@ -21,6 +21,25 @@ export default defineConfig(({ mode }) => {
 
   return {
   plugins: [react()],
+  build: {
+    rolldownOptions: {
+      output: {
+        // Le noyau React dans son propre fichier : il ne change qu'aux montées
+        // de version, alors que le code applicatif change à chaque déploiement.
+        // Un chunk d'entrée unique de 334 Ko était invalidé en entier par la
+        // moindre correction, et re-téléchargé sur réseau mobile.
+        codeSplitting: {
+          groups: [
+            {
+              name: 'vendor-react',
+              test: /node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/,
+              priority: 20,
+            },
+          ],
+        },
+      },
+    },
+  },
   server: {
     allowedHosts: true,
     proxy: {
@@ -52,19 +71,23 @@ export default defineConfig(({ mode }) => {
       // CLIQUET, pas cible.
       //
       // Premiere mesure reelle (2026-08-22) : 29,27 % de lignes, avant les
-      // premiers tests d'integration MSW ; 30,80 % apres. L'exigence §2.1.3 du
-      // memoire — 70 % — n'est donc PAS atteinte : les tests existants couvrent
-      // les composants d'interface, presque aucune page.
+      // premiers tests d'integration MSW ; 30,80 % apres. Relevee au
+      // 2026-09-18 a 65,37 % (lignes) avec le contrat de scan authentifie
+      // (PresenceValidationPage, axios.js, ProfilePage) et les pages jusque
+      // -la sans test (rapports, sessions actives), puis a 66,4 % apres le
+      // retrait de 7 composants morts et les tests de AuthContext et de
+      // ProtectedRoute. L'exigence §2.1.3 du memoire — 70 % — s'en approche
+      // mais n'est pas encore atteinte.
       //
       // Les seuils sont cales juste sous le niveau mesure : ils empechent toute
       // regression sans bloquer la chaine sur un chiffre hors d'atteinte, qui
       // aurait ete desactive a la premiere occasion. Ils doivent etre releves a
       // chaque lot de tests ajoute, jusqu'aux valeurs de l'exigence.
       thresholds: {
-        lines: 30,
-        functions: 19,
-        branches: 20,
-        statements: 28,
+        lines: 66,
+        functions: 54,
+        branches: 53,
+        statements: 62,
       },
     },
   },
