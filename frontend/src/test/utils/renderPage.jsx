@@ -1,5 +1,6 @@
 import { render } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 /**
  * Rend une page dans un routeur mémoire, sans dépendance réseau.
@@ -11,9 +12,22 @@ import { MemoryRouter } from 'react-router-dom'
  *
  * Les mocks de `api` et des contextes se déclarent dans le fichier de test
  * appelant, `vi.mock` étant remonté en tête de module.
+ *
+ * QueryClientProvider : les pages migrées vers TanStack Query (voir
+ * src/api/resources) en ont besoin pour se monter. Sans relance ni cache
+ * entre les tests — un nouveau client à chaque rendu, pour ne pas faire
+ * fuiter le cache d'un test au suivant.
  */
 export function renderPage(ui, { route = '/' } = {}) {
-  return render(<MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>)
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: 0 } },
+  })
+
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
+    </QueryClientProvider>,
+  )
 }
 
 /**

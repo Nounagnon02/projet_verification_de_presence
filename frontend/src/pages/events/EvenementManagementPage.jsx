@@ -1,13 +1,22 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { aujourdhuiIso } from '../../utils/formatters';
 import { FiPlus, FiEdit2, FiTrash2, FiSave, FiRefreshCw, FiCalendar, FiClock, FiMapPin, FiAlertTriangle, FiCheckCircle, FiGrid, FiCopy, FiSmartphone } from 'react-icons/fi';
-import api from '../../api/axios';
+import {
+  listerEvenements, creerEvenement, modifierEvenement, supprimerEvenement,
+  genererQrCode, creneauxEmploiDuTemps,
+} from '../../api/resources/evenements';
+import { listerEcs, listerFilieres, listerAnnees, listerSallesDisponibles } from '../../api/resources/reference';
 import Modal from '../../components/ui/Modal';
+import Pagination from '../../components/ui/Pagination';
 import SelecteurHeure from '../../components/ui/SelecteurHeure';
 import SelecteurSalle from '../../components/ui/SelecteurSalle';
 import { FIN_JOURNEE, enHeure, enMinutes, finApresNouveauDebut } from '../../utils/heures';
 import { TYPES_SEANCE, restantesPour } from '../../utils/typesSeance';
 import SelecteurGroupe from '../../components/ui/SelecteurGroupe';
+
+/** Même forme partout : { success, data, meta? } ou, plus rarement, le tableau nu. */
+const donnees = (reponse) => reponse?.data ?? reponse ?? [];
 
 const INITIAL_EVENT = {
   ec_id: '', filiere_id: '', annee_id: '',
@@ -22,15 +31,13 @@ const STATUTS = [
 ];
 
 export default function EvenementManagementPage() {
-  const [events, setEvents] = useState([]);
-  const [ecs, setEcs] = useState([]);
-  const [filieres, setFilieres] = useState([]);
-  const [annees, setAnnees] = useState([]);
-  const [salles, setSalles] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [qrGenerating, setQrGenerating] = useState(null);
+
+  // /admin/evenements est paginé (sans filtre de date, la liste peut compter
+  // des milliers de séances accumulées sur plusieurs semestres).
+  const [page, setPage] = useState(1);
 
   // Filtres
   const [filters, setFilters] = useState({ date_debut: '', date_fin: '', filiere_id: '', statut: '' });
@@ -45,50 +52,56 @@ export default function EvenementManagementPage() {
   // Créneaux de l'emploi du temps proposés pour le cours et la date choisis.
   const [creneaux, setCreneaux] = useState({ loading: false, options: [] });
 
+  const queryClient = useQueryClient();
 
-  // Compteur de rechargement : les actions qui modifient les données
-  // l'incrémentent au lieu d'appeler une seconde fonction de chargement. La
-  // requête n'est émise qu'à un seul endroit, et l'annulation y est
-  // systématique — une réponse tardive ne peut plus écraser un état plus récent.
-  const [rechargement, setRechargement] = useState(0);
-  const rafraichir = useCallback(() => setRechargement((n) => n + 1), []);
+  // Revient à la page 1 quand un filtre change : la page 3 des résultats
+  // précédents n'a aucun sens pour un nouveau filtre. Ajustée PENDANT le rendu
+  // (le mécanisme documenté de React pour dériver un état d'un changement de
+  // props/état, hors effet) : un effet séparé aurait déclenché une requête
+  // intermédiaire avec l'ancienne page ET les nouveaux filtres.
+  const [filtresPrecedents, setFiltresPrecedents] = useState(filters);
+  if (filtresPrecedents !== filters) {
+    setFiltresPrecedents(filters);
+    if (page !== 1) setPage(1);
+  }
 
-  useEffect(() => {
-    let annule = false;
+  const parametresListe = useMemo(() => {
+    const params = { page };
+    if (filters.date_debut) params.date_debut = filters.date_debut;
+    if (params.date_debut && !filters.date_fin) params.date_fin = filters.date_debut;
+    if (filters.filiere_id) params.filiere_id = filters.filiere_id;
+    if (filters.statut) params.statut = filters.statut;
+    return params;
+  }, [filters, page]);
 
-    (async () => {
-      try {
-        setLoading(true);
-        if (!annule) setError('');
-        const params = {};
-        if (filters.date_debut) params.date_debut = filters.date_debut;
-        if (params.date_debut && !filters.date_fin) params.date_fin = filters.date_debut;
-        if (filters.filiere_id) params.filiere_id = filters.filiere_id;
-        if (filters.statut) params.statut = filters.statut;
+  // Une clé de requête par combinaison filtres+page : changer de page ne
+  // refait plus les 4 requêtes de données de référence, qui ne dépendent
+  // d'aucun des deux (elles sont désormais mises en cache après leur premier
+  // chargement, plutôt que rechargées à chaque changement de page ou de filtre).
+  const evenementsQuery = useQuery({
+    queryKey: ['evenements', parametresListe],
+    queryFn: ({ signal }) => listerEvenements(parametresListe, signal),
+  });
+  const ecsQuery = useQuery({ queryKey: ['ecs'], queryFn: () => listerEcs() });
+  const filieresQuery = useQuery({ queryKey: ['filieres'], queryFn: () => listerFilieres() });
+  const anneesQuery = useQuery({ queryKey: ['annees-academiques'], queryFn: () => listerAnnees() });
+  const sallesQuery = useQuery({ queryKey: ['salles-disponibles'], queryFn: () => listerSallesDisponibles() });
 
-        const [eventsRes, ecsRes, filieresRes, anneesRes, sallesRes] = await Promise.all([
-          api.get('/admin/evenements', { params }),
-          api.get('/admin/ecs'),
-          api.get('/admin/filieres'),
-          api.get('/admin/annees-academiques'),
-          api.get('/admin/salles/disponibles'),
-        ]);
-        if (!annule) setEvents(eventsRes.data?.data ?? eventsRes.data ?? []);
-        if (!annule) setEcs(ecsRes.data?.data ?? ecsRes.data ?? []);
-        if (!annule) setFilieres(filieresRes.data?.data ?? filieresRes.data ?? []);
-        if (!annule) setAnnees(anneesRes.data?.data ?? anneesRes.data ?? []);
-        if (!annule) setSalles(sallesRes.data?.data ?? sallesRes.data ?? []);
-      } catch (err) {
-        if (!annule) setError('Erreur lors du chargement des événements.');
-        console.error('[Evenements]', err);
-      } finally {
-        if (!annule) setLoading(false);
-      }
-  
-    })();
+  const events = donnees(evenementsQuery.data);
+  const pagination = evenementsQuery.data?.meta ?? null;
+  const ecs = donnees(ecsQuery.data);
+  const filieres = donnees(filieresQuery.data);
+  const annees = donnees(anneesQuery.data);
+  const salles = donnees(sallesQuery.data);
+  const loading = evenementsQuery.isLoading || ecsQuery.isLoading || filieresQuery.isLoading || anneesQuery.isLoading || sallesQuery.isLoading;
 
-    return () => { annule = true; };
-  }, [filters, rechargement]);
+  // Après une création, une modification, une suppression ou une génération de
+  // QR : seule la liste des événements est à rejouer, les quatre autres
+  // requêtes ne dépendent pas de ce qu'on vient de changer.
+  const rafraichir = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ['evenements'] }),
+    [queryClient],
+  );
 
   const getStatutBadge = (statut) => {
     const s = STATUTS.find(s => s.value === statut);
@@ -104,7 +117,7 @@ export default function EvenementManagementPage() {
     setError('');
     setSuccess('');
     try {
-      const { data: res } = await api.get(`/admin/qrcode/${eventId}/generate`);
+      const res = await genererQrCode(eventId);
       const d = res.data || res;
       setQrModal({
         open: true,
@@ -186,9 +199,7 @@ export default function EvenementManagementPage() {
     setCreneaux({ loading: true, options: [] });
 
     try {
-      const { data } = await api.get('/admin/evenements/creneaux-emploi-du-temps', {
-        params: { ec_id: ecId, date },
-      });
+      const data = await creneauxEmploiDuTemps(ecId, date);
       const options = data?.data || [];
       setCreneaux({ loading: false, options });
 
@@ -259,10 +270,10 @@ export default function EvenementManagementPage() {
     setSuccess('');
     try {
       if (modal.editing) {
-        await api.put(`/admin/evenements/${modal.data.id}`, modal.data);
+        await modifierEvenement(modal.data.id, modal.data);
         setSuccess('Événement mis à jour.');
       } else {
-        await api.post('/admin/evenements', modal.data);
+        await creerEvenement(modal.data);
         setSuccess('Événement créé.');
       }
       setModal({ open: false, editing: false, data: INITIAL_EVENT, saving: false });
@@ -287,7 +298,7 @@ export default function EvenementManagementPage() {
   const handleDelete = async (ev) => {
     if (!window.confirm(`Supprimer l'événement du ${ev.date} (${ev.heure_debut}-${ev.heure_fin}) ?`)) return;
     try {
-      await api.delete(`/admin/evenements/${ev.id}`);
+      await supprimerEvenement(ev.id);
       setSuccess('Événement supprimé.');
       rafraichir();
     } catch { setError('Erreur lors de la suppression.'); }
@@ -321,10 +332,10 @@ export default function EvenementManagementPage() {
       </div>
 
       {/* Alertes */}
-      {error && (
+      {(error || evenementsQuery.isError) && (
         <div className="flex items-center gap-2 p-3 bg-error-container/30 rounded-xl text-on-error-container text-sm">
           <FiAlertTriangle size={16} className="flex-shrink-0" />
-          <span className="flex-1">{error}</span>
+          <span className="flex-1">{error || 'Erreur lors du chargement des événements.'}</span>
           <button onClick={() => setError('')} className="text-on-error-container/60">&times;</button>
         </div>
       )}
@@ -485,6 +496,8 @@ export default function EvenementManagementPage() {
           ))}
         </div>
       )}
+
+      <Pagination pagination={pagination} onPageChange={setPage} />
 
       {/* ─── Modal QR Code ─────────────────────────────── */}
       <Modal isOpen={qrModal.open} onClose={() => setQrModal(prev => ({ ...prev, open: false }))} title="Code QR" size="sm">

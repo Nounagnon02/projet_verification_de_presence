@@ -1,6 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiPlus, FiEdit2, FiTrash2, FiAlertTriangle, FiLoader, FiRefreshCw, FiUpload, FiCheck, FiFileText, FiTrendingUp, FiUsers, FiBookOpen } from 'react-icons/fi';
-import api from '../../api/axios';
+import {
+  listerEtudiants, listerGroupes, creerEtudiant, modifierEtudiant,
+  modifierGroupesEtudiant, supprimerEtudiant, promouvoirEtudiants, importerEtudiantsCsv,
+} from '../../api/resources/etudiants';
 import SearchInput from '../../components/ui/SearchInput';
 import Pagination from '../../components/ui/Pagination';
 import Modal from '../../components/ui/Modal';
@@ -21,11 +25,7 @@ const memePromotion = (etudiant, form) => (
 );
 
 const StudentManagementPage = () => {
-  const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
-  const [pagination, setPagination] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ nom: '', prenom: '', email: '', matricule: '', filiere_id: '', annee_id: '', est_responsable: false });
@@ -44,7 +44,6 @@ const StudentManagementPage = () => {
   // Groupes de TD et de TP : filtre de la liste, fenêtre de gestion, et
   // groupes de l'étudiant en cours de modification.
   const [filtreGroupe, setFiltreGroupe] = useState('');
-  const [groupesPromo, setGroupesPromo] = useState({ cle: '', liste: [] });
   const [showGroupes, setShowGroupes] = useState(false);
   const [formGroupes, setFormGroupes] = useState({ td: '', tp: '' });
   const [groupesEleve, setGroupesEleve] = useState([]);
@@ -78,57 +77,45 @@ const StudentManagementPage = () => {
   const [importError, setImportError] = useState('');
   const importFileRef = useRef(null);
 
-  const abortFetchRef = useRef(null);
-
-
-  // Compteur de rechargement : les six actions qui rafraîchissaient la liste
-  // l'incrémentent, au lieu d'appeler une fonction de chargement partagée. La
-  // requête part d'un seul endroit, et l'AbortController déjà en place annule
-  // la précédente à chaque relance.
-  const [rechargement, setRechargement] = useState(0);
-  const rafraichir = useCallback(() => setRechargement((n) => n + 1), []);
   // Tiroir des inscriptions aux EC — un étudiant à la fois.
   const [enrollmentStudent, setEnrollmentStudent] = useState(null);
 
-  useEffect(() => {
-    (async () => {
-      abortFetchRef.current?.abort();
-      const controller = new AbortController();
-      abortFetchRef.current = controller;
-      setLoading(true);
-      setError(null);
-      try {
-        const params = { page, per_page: 15 };
-        if (search.trim()) params.search = search;
-        if (filtres.annee) params.annee_id = filtres.annee;
-        if (filtres.filiere) params.filiere_id = filtres.filiere;
-        if (filtres.semestre) params.semestre = filtres.semestre;
-        if (filtres.niveau) params.niveau = filtres.niveau;
-        if (filtreResponsable) params.responsable = filtreResponsable;
-        if (filtreGroupe) params.groupe_id = filtreGroupe;
-        const response = await api.get('/admin/students', { params, signal: controller.signal });
-        const result = response.data;
+  const queryClient = useQueryClient();
 
-        if (result.success) {
-          setStudents(result.data ?? []);
-          setPagination(result.meta ?? null);
-        } else {
-          setError(result.message || 'Erreur lors du chargement');
-          setStudents([]);
-        }
-      } catch (err) {
-        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
-        const message = err.response?.data?.message || err.message || 'Erreur de connexion au serveur';
-        setError(message);
-        setStudents([]);
-      } finally {
-        setLoading(false);
-      }
-  
-    })();
+  const parametresListe = useMemo(() => {
+    const params = { page, per_page: 15 };
+    if (search.trim()) params.search = search;
+    if (filtres.annee) params.annee_id = filtres.annee;
+    if (filtres.filiere) params.filiere_id = filtres.filiere;
+    if (filtres.semestre) params.semestre = filtres.semestre;
+    if (filtres.niveau) params.niveau = filtres.niveau;
+    if (filtreResponsable) params.responsable = filtreResponsable;
+    if (filtreGroupe) params.groupe_id = filtreGroupe;
+    return params;
+  }, [page, search, filtres.annee, filtres.filiere, filtres.semestre, filtres.niveau, filtreResponsable, filtreGroupe]);
 
-    return () => abortFetchRef.current?.abort();
-  }, [page, search, filtres.annee, filtres.filiere, filtres.semestre, filtres.niveau, filtreResponsable, filtreGroupe, rechargement]);
+  const etudiantsQuery = useQuery({
+    queryKey: ['etudiants', parametresListe],
+    queryFn: async ({ signal }) => {
+      const result = await listerEtudiants(parametresListe, signal);
+      if (!result.success) throw new Error(result.message || 'Erreur lors du chargement');
+      return result;
+    },
+  });
+
+  const students = etudiantsQuery.data?.data ?? [];
+  const pagination = etudiantsQuery.data?.meta ?? null;
+  const loading = etudiantsQuery.isLoading;
+  const error = etudiantsQuery.isError
+    ? (etudiantsQuery.error?.response?.data?.message || etudiantsQuery.error?.message || 'Erreur de connexion au serveur')
+    : null;
+
+  // Après une création, une modification, une suppression, une promotion ou
+  // un import : la liste ET les groupes de la promotion peuvent avoir changé.
+  const rafraichir = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['etudiants'] });
+    queryClient.invalidateQueries({ queryKey: ['groupes'] });
+  }, [queryClient]);
 
   // L'inscription se fait toujours dans l'année active : on ne la fait pas
   // choisir, on l'impose (le serveur la ré-applique de toute façon).
@@ -137,16 +124,16 @@ const StudentManagementPage = () => {
   // Groupes de la promotion filtrée (filière, et année choisie ou active).
   const anneeGroupes = filtres.annee || (activeYear ? String(activeYear.id) : '');
   const cleGroupes = filtres.filiere && anneeGroupes ? `${filtres.filiere}|${anneeGroupes}` : '';
-  useEffect(() => {
-    if (!cleGroupes) return undefined;
-    let annule = false;
-    const [filiere_id, annee_id] = cleGroupes.split('|');
-    api.get('/admin/groupes', { params: { filiere_id, annee_id } })
-      .then(({ data }) => { if (!annule) setGroupesPromo({ cle: cleGroupes, liste: data?.data ?? [] }); })
-      .catch(() => { if (!annule) setGroupesPromo({ cle: cleGroupes, liste: [] }); });
-    return () => { annule = true; };
-  }, [cleGroupes, rechargement]);
-  const groupesFiltre = groupesPromo.cle === cleGroupes ? groupesPromo.liste : [];
+  const [filiereGroupes, anneeIdGroupes] = cleGroupes ? cleGroupes.split('|') : [null, null];
+  const groupesPromoQuery = useQuery({
+    queryKey: ['groupes', filiereGroupes, anneeIdGroupes],
+    queryFn: () => listerGroupes(filiereGroupes, anneeIdGroupes),
+    enabled: Boolean(cleGroupes),
+  });
+  // Une clé de requête par (filière, année) : jamais les groupes d'une autre
+  // promotion affichés pendant que ceux-ci chargent — TanStack Query ne garde
+  // pas les données d'une clé différente comme le ferait un simple state.
+  const groupesFiltre = groupesPromoQuery.data?.data ?? [];
 
   const openCreate = () => {
     setEditing(null);
@@ -171,8 +158,8 @@ const StudentManagementPage = () => {
     const filiereId = s.filiere?.id ?? s.filiere_id;
     const anneeId = s.annee?.id ?? s.annee_id;
     if (filiereId && anneeId) {
-      api.get('/admin/groupes', { params: { filiere_id: filiereId, annee_id: anneeId } })
-        .then(({ data }) => setGroupesEleve(data?.data ?? []))
+      listerGroupes(filiereId, anneeId)
+        .then((data) => setGroupesEleve(data?.data ?? []))
         .catch(() => setGroupesEleve([]));
     }
     setFormError('');
@@ -223,16 +210,16 @@ const StudentManagementPage = () => {
       }
 
       if (editing) {
-        await api.put(`/admin/students/${editing.id}`, payload);
+        await modifierEtudiant(editing.id, payload);
         // Les groupes ne se choisissent que dans la même promotion : un changement
         // de filière ou d'année en retire l'étudiant, côté serveur.
         if (memePromotion(editing, form)
           && (formGroupes.td !== groupeDe(editing, 'td') || formGroupes.tp !== groupeDe(editing, 'tp'))) {
-          await api.put(`/admin/students/${editing.id}/groupes`, { td: formGroupes.td || null, tp: formGroupes.tp || null });
+          await modifierGroupesEtudiant(editing.id, formGroupes);
         }
         addToast?.('Étudiant modifié avec succès', 'success');
       } else {
-        await api.post('/admin/students', payload);
+        await creerEtudiant(payload);
         addToast?.('Étudiant créé avec succès', 'success');
       }
       setShowModal(false);
@@ -252,7 +239,7 @@ const StudentManagementPage = () => {
     if (!deleteId) return;
     setDeleting(true);
     try {
-      await api.delete(`/admin/students/${deleteId}`);
+      await supprimerEtudiant(deleteId);
       addToast?.('Étudiant supprimé', 'success');
       setDeleteId(null);
       rafraichir();
@@ -278,7 +265,7 @@ const StudentManagementPage = () => {
   const previewPromotion = useCallback(async (fromId) => {
     if (!fromId) { setPromotePreview(null); return; }
     try {
-      const { data } = await api.post('/admin/students/promote', {
+      const data = await promouvoirEtudiants({
         from_filiere_id: parseInt(fromId, 10),
         dry_run: true,
       });
@@ -313,7 +300,7 @@ const StudentManagementPage = () => {
     setPromoting(true);
     setPromoteError('');
     try {
-      const { data } = await api.post('/admin/students/promote', {
+      const data = await promouvoirEtudiants({
         from_filiere_id: parseInt(promoteForm.from_filiere_id, 10),
         to_filiere_id: parseInt(promoteForm.to_filiere_id, 10),
         to_annee_id: promoteForm.to_annee_id ? parseInt(promoteForm.to_annee_id, 10) : undefined,
@@ -350,10 +337,7 @@ const StudentManagementPage = () => {
     const formData = new FormData();
     formData.append('file', importFile);
     try {
-      const response = await api.post('/admin/import/students', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      const apiData = response.data;
+      const apiData = await importerEtudiantsCsv(formData);
       if (apiData.success && apiData.data) {
         setImportResult({
           success: true,
@@ -578,10 +562,10 @@ const StudentManagementPage = () => {
                     <button onClick={() => setEnrollmentStudent(s)} title="Inscriptions aux EC" className="p-2 hover:bg-surface-container-high rounded-lg transition-colors">
                       <FiBookOpen className="text-on-surface-variant" />
                     </button>
-                    <button onClick={() => openEdit(s)} className="p-2 hover:bg-surface-container-high rounded-lg transition-colors">
+                    <button onClick={() => openEdit(s)} title="Modifier" className="p-2 hover:bg-surface-container-high rounded-lg transition-colors">
                       <FiEdit2 className="text-on-surface-variant" />
                     </button>
-                    <button onClick={() => setDeleteId(s.id)} className="p-2 hover:bg-error/10 rounded-lg transition-colors">
+                    <button onClick={() => setDeleteId(s.id)} title="Supprimer" className="p-2 hover:bg-error/10 rounded-lg transition-colors">
                       <FiTrash2 className="text-error" />
                     </button>
                   </div>

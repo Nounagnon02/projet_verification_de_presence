@@ -76,18 +76,19 @@ export default defineConfig(({ mode }) => {
       // (PresenceValidationPage, axios.js, ProfilePage) et les pages jusque
       // -la sans test (rapports, sessions actives), puis a 66,4 % apres le
       // retrait de 7 composants morts et les tests de AuthContext et de
-      // ProtectedRoute. L'exigence §2.1.3 du memoire — 70 % — s'en approche
-      // mais n'est pas encore atteinte.
+      // ProtectedRoute, puis a 67,17 % apres la migration de StudentManagementPage
+      // et EvenementManagementPage vers TanStack Query. L'exigence §2.1.3 du
+      // memoire — 70 % — s'en approche mais n'est pas encore atteinte.
       //
       // Les seuils sont cales juste sous le niveau mesure : ils empechent toute
       // regression sans bloquer la chaine sur un chiffre hors d'atteinte, qui
       // aurait ete desactive a la premiere occasion. Ils doivent etre releves a
       // chaque lot de tests ajoute, jusqu'aux valeurs de l'exigence.
       thresholds: {
-        lines: 66,
-        functions: 54,
-        branches: 53,
-        statements: 62,
+        lines: 67,
+        functions: 55,
+        branches: 54,
+        statements: 63,
       },
     },
   },
