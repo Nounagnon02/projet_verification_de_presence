@@ -1,8 +1,10 @@
-// Mesure POST /presence/scan SEUL a 500 utilisateurs simultanes.
-// Le defi est pre-calcule hors mesure : dans le parcours reel, la page est
-// chargee pendant que l'etudiant saisit son identifiant, plusieurs secondes
-// avant qu'il ne valide. Enchainer les deux requetes dans la meme iteration
-// mesurerait une sequence que personne n'execute.
+// Mesure POST /presence/scan SEUL a N utilisateurs simultanes.
+//
+// Le scan est authentifie (jeton Bearer d'etudiant, emis par preparer-charge.php).
+// La page est chargee pendant que l'etudiant se prepare, plusieurs secondes avant
+// qu'il ne valide : enchainer la lecture du cours et le scan dans la meme
+// iteration mesurerait une sequence que personne n'execute. Voir scan.k6.js pour
+// le parcours complet.
 import http from 'k6/http';
 import { check } from 'k6';
 import { Trend } from 'k6/metrics';
@@ -20,25 +22,23 @@ export const options = {
   summaryTrendStats: ['min', 'med', 'avg', 'p(90)', 'p(95)', 'p(99)', 'max'],
 };
 
-// Le defi est obtenu au setup, hors de la fenetre mesuree.
-export function setup() {
-  const defis = {};
-  for (let i = 0; i < VUS; i++) {
-    const c = JEU.nominal[i % JEU.nominal.length];
-    const r = http.get(`${BASE}/api/presence/course-by-token/${c.token}`);
-    if (r.status === 200) defis[c.token] = r.json('data.scan_challenge');
-  }
-  return { defis };
+// En-tetes communs. PROXY_HTTPS=1 imite le repartiteur de Render (ForceHttps
+// redirige toute requete en clair en production). IP_DISTINCTES=1 donne a chaque
+// utilisateur sa propre adresse (etudiants en donnees mobiles) ; sans lui, tous
+// arrivent de la meme adresse — une salle ou un campus derriere un meme NAT.
+function entetes(vu, extra = {}) {
+  const h = { 'Content-Type': 'application/json', Accept: 'application/json', ...extra };
+  if (__ENV.PROXY_HTTPS === '1') h['X-Forwarded-Proto'] = 'https';
+  if (__ENV.IP_DISTINCTES === '1') h['X-Forwarded-For'] = `10.${(vu >> 8) & 255}.${vu & 255}.1`;
+  return h;
 }
 
-export default function (donnees) {
+export default function () {
   const c = JEU.nominal[(__VU - 1) % JEU.nominal.length];
   const r = http.post(`${BASE}/api/presence/scan`, JSON.stringify({
-    identifiant_unique: c.identifiant_unique,
     token: c.token,
     device_fingerprint: c.empreinte,
-    scan_challenge: donnees.defis[c.token],
-  }), { headers: { 'Content-Type': 'application/json', Accept: 'application/json' } });
+  }), { headers: entetes(__VU, { Authorization: `Bearer ${c.bearer}` }) });
 
   latence.add(r.timings.duration);
   check(r, { 'scan accepte (201)': (x) => x.status === 201 });

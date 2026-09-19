@@ -18,13 +18,21 @@
  *   php ../tests/load/preparer-charge.php --vus=500 > /tmp/charge.json
  *   k6 run -e JEU=/tmp/charge.json -e VUS=500 ../tests/load/scan.k6.js
  *
- * A relancer avant CHAQUE execution : les jetons sont a usage unique.
+ * A relancer avant CHAQUE execution : un etudiant ne peut scanner qu'une fois un
+ * evenement donne (contrainte d'unicite).
+ *
+ * Le scan est AUTHENTIFIE (Sanctum, capacite « etudiant ») : chaque couple porte
+ * donc aussi le jeton Bearer de son etudiant. C'est l'etat d'un etudiant deja
+ * connecte — la connexion, elle, hache un code d'acces avec bcrypt et n'est pas
+ * l'objet de LOAD-01.
  *
  * Options
  *   --vus=N        nombre de couples a produire (defaut 500)
  *   --iterations=N couples par utilisateur (defaut 1) ; au-dela de 1, il faut
  *                  autant d'evenements par etudiant
  *   --garder       ne supprime pas le jeu precedent avant de regenerer
+ *   --evenements-distincts
+ *                  un evenement et un QR Code par utilisateur (ancien mode)
  */
 
 require __DIR__ . '/../../backend/vendor/autoload.php';
@@ -46,10 +54,18 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-$options = getopt('', ['vus::', 'iterations::', 'garder', 'forcer']);
+$options = getopt('', ['vus::', 'iterations::', 'garder', 'forcer', 'evenements-distincts']);
 $vus = (int) ($options['vus'] ?? 500);
 $iterations = max(1, (int) ($options['iterations'] ?? 1));
 $total = $vus * $iterations;
+
+// Par defaut : UN evenement, UN QR Code, N etudiants distincts — le parcours
+// reel d'une salle. Le jeton de QR Code n'est plus a usage unique (voir
+// config/presence.php) : tous les etudiants presents scannent le meme code.
+// Un evenement par couple (--evenements-distincts, ou iterations > 1) disperse
+// les lignes et masque la contention sur l'evenement, le QR Code et la detection
+// d'appareil partage : reserve a la comparaison avec les anciennes campagnes.
+$evenementsDistincts = isset($options['evenements-distincts']) || $iterations > 1;
 
 /** Ecrit sur STDERR : STDOUT est reserve au JSON consomme par k6. */
 $journal = fn (string $message) => fwrite(STDERR, $message . PHP_EOL);
@@ -85,7 +101,8 @@ if (!isset($options['forcer']) && str_contains((string) $base, '_test')) {
     exit(1);
 }
 
-$journal("Preparation de {$total} couples ({$vus} utilisateurs x {$iterations} iterations)…");
+$journal("Preparation de {$total} couples ({$vus} utilisateurs x {$iterations} iterations), "
+    . ($evenementsDistincts ? 'un evenement par couple' : 'un seul evenement et un seul QR Code') . '…');
 
 $MARQUEUR = 'CHARGE-K6';
 
@@ -104,6 +121,7 @@ if (!isset($options['garder'])) {
         $ueIds       = Ue::whereIn('filiere_id', $filiereIds)->pluck('id');
         $etudiantIds = Etudiant::whereIn('filiere_id', $filiereIds)->pluck('id');
 
+        DB::table('personal_access_tokens')->whereIn('tokenable_id', $etudiantIds)->delete();
         DB::table('presences')->whereIn('evenement_id', $evenementIds)->delete();
         QrCode::whereIn('evenement_id', $evenementIds)->delete();
         Evenement::whereIn('id', $evenementIds)->delete();
@@ -186,36 +204,62 @@ $sfx = Str::upper(Str::random(4));
 // La fenetre de presence est ancree sur l'heure de FIN : [fin - 15, fin + 10].
 // La fin est placee devant nous pour que la campagne entiere se deroule dedans.
 $fin = Carbon::now()->addMinutes(9);
-$appKey = (string) config('app.key');
 
 $nominal = [];
+$evenementPartage = null;
 $LOT = 200;
 
 for ($debut = 0; $debut < $total; $debut += $LOT) {
     $taille = min($LOT, $total - $debut);
 
-    DB::transaction(function () use ($debut, $taille, $ue, $filiere, $annee, $salle, $fin, $appKey, &$nominal, $sfx) {
+    DB::transaction(function () use ($debut, $taille, $ue, $filiere, $annee, $salle, $fin, &$nominal, &$evenementPartage, $evenementsDistincts, $sfx) {
         for ($i = $debut; $i < $debut + $taille; $i++) {
-            // Un EC et un evenement par couple : c'est ce qui rend les scans
-            // independants malgre la contrainte (etudiant_id, evenement_id).
-            $ec = Ec::create([
-                'ue_id'          => $ue->id,
-                'code'           => "EC-CHG-{$sfx}-{$i}",
-                'intitule'       => "EC de charge {$i}",
-                'volume_horaire' => 20,
-            ]);
+            if ($evenementsDistincts || $evenementPartage === null) {
+                $ec = Ec::create([
+                    'ue_id'          => $ue->id,
+                    'code'           => "EC-CHG-{$sfx}-{$i}",
+                    'intitule'       => "EC de charge {$i}",
+                    'volume_horaire' => 20,
+                ]);
 
-            $evenement = Evenement::create([
-                'ec_id'       => $ec->id,
-                'filiere_id'  => $filiere->id,
-                'annee_id'    => $annee->id,
-                'date'        => $fin->toDateString(),
-                'heure_debut' => $fin->copy()->subHours(2)->format('H:i:s'),
-                'heure_fin'   => $fin->format('H:i:s'),
-                'salle'       => $salle->nom,
-                'salle_id'    => $salle->id,
-                'statut'      => 'planifie',
-            ]);
+                // Evenement::finCours() suppose que « date » est le jour de DEBUT du
+                // cours (elle ajoute elle-meme un jour si heure_fin <= heure_debut).
+                // Poser « date » sur le jour de FIN, comme ci-dessous en commentaire,
+                // fait ajouter un jour EN TROP pres de minuit heure locale
+                // (Africa/Porto-Novo) : la fenetre de scan se retrouve calculee pour
+                // le lendemain soir. Constate en pleine campagne : tous les scans
+                // suivants refuses en 403 « pas encore ouverte ».
+                // Nom distinct de $debut (compteur de la boucle englobante) : PHP
+                // n'a pas de portée de bloc pour un for, et une variable de même
+                // nom réaffectée ici écraserait le compteur capturé par la
+                // fermeture, faussant sa condition dès la 2e itération interne.
+                $debutCours = $fin->copy()->subHours(2);
+                $evenement = Evenement::create([
+                    'ec_id'       => $ec->id,
+                    'filiere_id'  => $filiere->id,
+                    'annee_id'    => $annee->id,
+                    'date'        => $debutCours->toDateString(),
+                    'heure_debut' => $debutCours->format('H:i:s'),
+                    'heure_fin'   => $fin->format('H:i:s'),
+                    'salle'       => $salle->nom,
+                    'salle_id'    => $salle->id,
+                    'statut'      => 'planifie',
+                ]);
+
+                $token = (string) Str::uuid();
+                QrCode::create([
+                    'evenement_id' => $evenement->id,
+                    'token'        => $token,
+                    'expire_at'    => $evenement->fermetureScan(),
+                    'actif'        => true,
+                ]);
+
+                if (!$evenementsDistincts) {
+                    $evenementPartage = [$ec, $evenement, $token];
+                }
+            } else {
+                [$ec, $evenement, $token] = $evenementPartage;
+            }
 
             $nom = "CHARGE{$i}";
             $prenom = "Prenom{$i}";
@@ -238,20 +282,16 @@ for ($debut = 0; $debut < $total; $debut += $LOT) {
                 $ec->id => ['annee_id' => $annee->id],
             ]);
 
-            $token = (string) Str::uuid();
-            QrCode::create([
-                'evenement_id' => $evenement->id,
-                'token'        => $token,
-                'expire_at'    => $evenement->fermetureScan(),
-                'actif'        => true,
-            ]);
+            // Jeton d'authentification de l'etudiant : sans lui, le scan repond
+            // 401 (auth:sanctum, ability:etudiant).
+            $bearer = $etudiant->createToken('charge-k6', ['etudiant'])->plainTextToken;
 
             $nominal[] = [
-                'identifiant_unique' => $etudiant->identifiant_unique,
-                'token'              => $token,
-                'empreinte'          => 'k6-' . $sfx . '-' . $i,
-                'latitude'           => null,
-                'longitude'          => null,
+                'bearer'    => $bearer,
+                'token'     => $token,
+                'empreinte' => 'k6-' . $sfx . '-' . $i,
+                'latitude'  => null,
+                'longitude' => null,
             ];
         }
     });
@@ -259,9 +299,8 @@ for ($debut = 0; $debut < $total; $debut += $LOT) {
     $journal(sprintf('  %d / %d couples', min($debut + $LOT, $total), $total));
 }
 
-// Jeu du chemin de rejet : des jetons volontairement inactifs. Le defi est
-// calcule ici comme le serveur le fera — il n'est de toute facon pas atteint,
-// le refus intervenant des la verification du jeton.
+// Jeu du chemin de rejet : des jetons de QR Code volontairement inactifs, le
+// refus intervenant des la verification du jeton.
 $rejet = [];
 foreach (array_slice($nominal, 0, min(20, count($nominal))) as $couple) {
     $tokenMort = (string) Str::uuid();
@@ -273,10 +312,9 @@ foreach (array_slice($nominal, 0, min(20, count($nominal))) as $couple) {
     ]);
 
     $rejet[] = [
-        'identifiant_unique' => $couple['identifiant_unique'],
-        'token'              => $tokenMort,
-        'empreinte'          => $couple['empreinte'] . '-rejet',
-        'defi'               => hash_hmac('sha256', $tokenMort, $appKey),
+        'bearer'    => $couple['bearer'],
+        'token'     => $tokenMort,
+        'empreinte' => $couple['empreinte'] . '-rejet',
     ];
 }
 

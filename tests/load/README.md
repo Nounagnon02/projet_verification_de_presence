@@ -5,22 +5,49 @@ simultanes sur `POST /presence/scan`.
 
 ## Le piege a connaitre avant de lire un chiffre
 
-Chaque scan reussi **invalide son jeton** de QR Code (anti-rejeu, CDC 9.2.1), et
-la contrainte d'unicite `(etudiant_id, evenement_id)` interdit a un etudiant de
-scanner deux fois le meme cours.
+Le scan est **authentifie** (jeton Bearer Sanctum, capacite `etudiant`) : c'est le
+jeton qui designe l'etudiant. Et la contrainte d'unicite
+`(etudiant_id, evenement_id)` interdit a un etudiant de scanner deux fois le meme
+cours ; la limite de debit ajoute trois scans par minute et par etudiant.
 
-Consequence : une campagne naive — 500 utilisateurs sur un evenement et un jeton
-— mesure **un** scan reussi et **499 refus 410**. Le chiffre obtenu decrit le
-chemin de rejet, qui ne touche ni l'ecriture de presence, ni le georeperage, ni
-la detection d'appareil partage. Il est plusieurs fois meilleur que le parcours
-reel.
+Consequence : une campagne naive — 500 utilisateurs avec le meme compte — mesure
+**un** scan reussi et 499 refus (409 doublon, 429 limite de debit). Le chiffre
+obtenu decrit un chemin de refus, qui ne touche ni l'ecriture de presence, ni le
+georeperage, ni la detection d'appareil partage. Il est plusieurs fois meilleur
+que le parcours reel.
 
 D'ou deux elements indissociables :
 
-1. `preparer-charge.php` genere un couple **(etudiant, evenement, jeton) distinct
-   par utilisateur virtuel** ;
+1. `preparer-charge.php` genere **un etudiant distinct par utilisateur virtuel**,
+   avec son jeton Bearer, tous inscrits au meme cours : **un seul evenement, un
+   seul QR Code**, comme dans une salle (le jeton de QR Code n'est plus a usage
+   unique, voir `config/presence.php`). `--evenements-distincts` restitue l'ancien
+   mode, un evenement par utilisateur, qui disperse les lignes et masque la
+   contention ; il ne sert qu'a comparer avec les campagnes anterieures a
+   l'authentification du scan ;
 2. `scan.k6.js` mesure separement le parcours nominal et le chemin de rejet, et
    n'applique le seuil H3 qu'au premier.
+
+Ce que la campagne ne mesure pas : la **connexion** de l'etudiant. Elle hache un
+code d'acces avec bcrypt, donc coute nettement plus qu'un scan ; le scenario
+suppose un etudiant deja connecte, ce que fait l'application (jeton conserve).
+
+## Le reseau : une adresse par etudiant, ou une seule
+
+Une salle, un campus derriere un meme NAT ou un operateur mobile (CGNAT) font
+arriver beaucoup d'etudiants sous **une seule adresse IP**. C'est le cas nominal
+du produit. Le limiteur du scan ne doit donc pas refuser au-dela de quelques
+requetes par IP : il le faisait (3 par minute), et une campagne a 500
+utilisateurs depuis une machine ne voyait que trois scans reussis
+(`ScanRateLimitTest` verrouille la correction ; plafond dans
+`config/presence.php`).
+
+- par defaut, tous les utilisateurs virtuels arrivent de la **meme adresse** ;
+- `-e IP_DISTINCTES=1` donne a chacun la sienne (`X-Forwarded-For`), pour
+  etudier la latence sans l'effet du plafond par IP ;
+- `-e PROXY_HTTPS=1` ajoute `X-Forwarded-Proto: https`, que le repartiteur de
+  Render envoie et sans lequel `ForceHttps` redirige toute requete en
+  production.
 
 ## Base de donnees : jamais celle de la suite PHPUnit
 
@@ -72,9 +99,8 @@ Un jeu rejoue ne mesure que des 410. Le script le signale par le controle
 
 Le parcours nominal compte **les deux requetes** du parcours reel :
 
-1. `GET /presence/course-by-token/{token}` — le client y recupere le defi
-   anti-fraude, que le serveur seul peut emettre ;
-2. `POST /presence/scan`.
+1. `GET /presence/course-by-token/{token}` — la page de confirmation, publique ;
+2. `POST /presence/scan`, authentifie.
 
 Mesurer le seul POST sous-estimerait la latence percue par l'etudiant.
 
@@ -97,8 +123,8 @@ Les annees de charge utilisent la plage reservee `2090-2091`, pour ne jamais
 entrer en collision avec une annee realiste. Le format `AAAA-AAAA` est conserve :
 l'identifiant unique des etudiants le reprend tel quel (CDC 7.1.3).
 
-`--garder` conserve le jeu precedent, mais ses jetons sont consommes : il n'est
-plus utilisable pour une mesure nominale.
+`--garder` conserve le jeu precedent, mais ses etudiants ont deja scanne (contrainte
+d'unicite) : il n'est plus utilisable pour une mesure nominale.
 
 Le script refuse de tourner si `APP_ENV` vaut `production`, ou si la base cible
 porte `_test` dans son nom.

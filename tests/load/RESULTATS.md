@@ -15,10 +15,11 @@ Les chiffres ci-dessous ne veulent rien dire sans elle.
 | Machine | poste de développement, 15 Gio de mémoire dont ~10 Gio déjà occupés |
 | Injecteur | k6 v2.2.0 en conteneur, sur la même machine que le serveur |
 
-**Ce n'est pas une pile de production.** En production (Render), l'application
-tourne derrière nginx et php-fpm. Une mesure de capacité réelle doit être refaite
-sur cette pile ; les chiffres ci-dessous décrivent le comportement de
-l'application, pas la capacité de l'infrastructure cible.
+**Ce n'est pas une pile de production.** En production (Render), l'image
+`php:8.3-apache` sert l'application en mod_php derrière Apache 2.4 (le `Dockerfile`
+de `backend/` fait foi). Une mesure de capacité réelle doit être refaite sur cette
+pile ; les chiffres ci-dessous décrivent le comportement de l'application, pas la
+capacité de l'infrastructure cible.
 
 ## Courbe de capacité
 
@@ -191,6 +192,107 @@ mesure confirme.
 Total : 12 → 11 requêtes, SQL de 27,8 à 23,7 ms par scan.
 
 ## Ce qu'il manque pour tenir 500
+
+> **Décision du 2026-09-19 : la production reste sous Apache/mod_php.** Octane n'est
+> pas déployé et `laravel/octane` n'est plus qu'une dépendance de développement. Les
+> chiffres Octane de ce document mesurent un plafond atteignable sur cette machine,
+> pas la capacité de la pile retenue. La voie 1 ci-dessous n'est donc pas retenue ;
+> la mesure de l'image de production elle-même (§ suivante) a été faite le
+> 2026-09-19/20.
+
+## Mesure de l'image de production (Apache/mod_php)
+
+Contrairement aux campagnes précédentes de ce document, celle-ci tourne sur
+**l'image Docker réellement déployée** (`backend/Dockerfile`, `php:8.3-apache`),
+construite depuis le dépôt et exécutée avec les mêmes variables que
+`render.yaml`, sur une base PostgreSQL 15 dédiée. Le scan est authentifié
+(jeton Bearer par étudiant) : voir « Le scan est authentifié » plus haut dans ce
+document pour ce que ça change au jeu de données.
+
+**Un défaut de configuration a été trouvé et corrigé au passage.** Apache
+prefork garde une connexion HTTP ouverte 5 secondes après chaque réponse
+(`KeepAliveTimeout` par défaut) ; le worker qui la tient reste occupé tout ce
+temps. Quand une salle scanne en même temps, les arrivées suivantes attendent
+qu'un worker se libère — pas qu'une requête s'exécute. Mesuré : p95 = 6 s à
+50 utilisateurs et 20 s à 500, contre 336 ms et 2,9 s une fois `KeepAlive Off`
+posé dans l'image (`backend/Dockerfile`) ; le gain vient uniquement de là,
+aucun autre réglage n'a changé. Derrière le répartiteur de Render, qui gère
+lui-même le maintien de connexion avec le client, rouvrir une connexion TCP
+interne à chaque requête ne coûte presque rien.
+
+**Trois bugs de calendrier ont aussi été trouvés en préparant cette campagne**,
+tous de la même famille (une date de « fin » assignée au champ `date`, que
+`Evenement::finCours()` lit comme un jour de *début* et fait rouler d'un jour
+si `heure_fin` ≤ `heure_debut`) — actifs seulement entre minuit et ~2 h heure
+locale (Africa/Porto-Novo) :
+
+- `tests/load/preparer-charge.php` : la fenêtre de scan tombait calculée pour
+  le lendemain soir dès que la campagne franchissait minuit.
+- `database/factories/EvenementFactory::fenetreOuverte()` — le même défaut, dans
+  une fabrique utilisée par plusieurs suites (`QrCodeDelegueTest`, `FactoriesTest`).
+- `DashboardController::topAbsences()` — ici une variante différente : une
+  comparaison SQL brute (`ev.date < now()`) opposait une date locale à
+  l'horloge de *session* de Postgres, en UTC. Pendant l'heure qui suit minuit
+  heure locale, la date du jour, une fois convertie à minuit UTC, tombait
+  encore devant l'heure UTC réelle : les séances du jour sortaient du calcul
+  d'absentéisme. Corrigé en liant la date locale en paramètre plutôt que de
+  faire confiance à l'horloge de la base.
+
+Chacun a un test de non-régression (`tests/Feature/FenetreDeChargeTest.php`,
+et un cas dans `DashboardControllerTest`), vérifié par mutation (la version
+non corrigée fait échouer le test).
+
+| Utilisateurs | p50 | p95 | p99 | Scans réussis |
+|---:|---:|---:|---:|---|
+| 50 | 250 ms | 336 ms | 345 ms | 150 / 150 |
+| 60 | 337 ms | 451 ms | 466 ms | 180 / 180 |
+| 70 | 383 ms | **528 ms** | 534 ms | 210 / 210 |
+| 80 | 391 ms | 535 ms | 549 ms | 240 / 240 |
+| 90 | 504 ms | 667 ms | 684 ms | 270 / 270 |
+| 100 | 481 ms | 660 ms | 671 ms | 300 / 300 |
+| 200 | 914 ms | 1 235 ms | 1 264 ms | 600 / 600 |
+| 350 | 1 437 ms | 1 918 ms | 1 961 ms | 1 050 / 1 050 |
+| 500 | 2 194 ms | 2 893 ms | 2 943 ms | 1 500 / 1 500 |
+
+Chaque ligne est la médiane de 3 répétitions ; aucun échec HTTP à aucun palier.
+**Le seuil de 500 ms au 95ᵉ centile est tenu jusqu'à 60 utilisateurs simultanés
+et dépassé à partir de 70**, sur cette image, cette machine (14 cœurs, 15 Gio
+partagés avec six autres conteneurs) et sa configuration Apache par défaut
+(`MaxRequestWorkers` non réglé, valeur de base 150). C'est un chiffre voisin du
+palier mesuré sur le serveur intégré (~50, plus haut dans ce document) : les
+deux piles restent mono-machine, sans persistance applicative entre requêtes.
+
+**Reproduire.**
+
+```bash
+# Base et image dédiées (voir aussi « Reproduire » plus haut pour Postgres) :
+docker network create charge-net
+docker run -d --name uac-charge-pg --network charge-net -p 127.0.0.1:55437:5432 \
+  -e POSTGRES_PASSWORD=charge -e POSTGRES_DB=presence_uac_charge postgres:15
+cd backend && docker build -t uac-apache-charge .
+docker run -d --name uac-apache-charge --network charge-net -p 127.0.0.1:8088:80 \
+  -e APP_ENV=production -e APP_KEY=base64:$(openssl rand -base64 32) \
+  -e DB_CONNECTION=pgsql -e DB_HOST=uac-charge-pg -e DB_PORT=5432 \
+  -e DB_DATABASE=presence_uac_charge -e DB_USERNAME=postgres -e DB_PASSWORD=charge \
+  -e DB_SSLMODE=disable -e CACHE_STORE=file -e QUEUE_CONNECTION=database \
+  uac-apache-charge sh -c 'php artisan config:cache && php artisan route:cache \
+    && php artisan view:cache && exec apache2-foreground'
+
+DB_CONNECTION=pgsql DB_HOST=127.0.0.1 DB_PORT=55437 DB_DATABASE=presence_uac_charge \
+  DB_USERNAME=postgres DB_PASSWORD=charge php artisan migrate --force
+DB_CONNECTION=pgsql DB_HOST=127.0.0.1 DB_PORT=55437 DB_DATABASE=presence_uac_charge \
+  DB_USERNAME=postgres DB_PASSWORD=charge php ../tests/load/preparer-charge.php --vus=500 \
+  > /tmp/charge.json
+
+docker run --rm --network charge-net -v /tmp:/data -v "$PWD/../tests/load:/scripts:ro" \
+  grafana/k6:latest run -q -e JEU=/data/charge.json -e VUS=500 -e SANS_REJET=1 \
+  -e BASE_URL=http://uac-apache-charge -e PROXY_HTTPS=1 /scripts/scan.k6.js
+```
+
+`SANS_REJET=1` isole le parcours nominal : le scénario de rejet, laissé actif,
+boucle à pleine vitesse pendant 60 s et perturbe la mesure à haute concurrence.
+`PROXY_HTTPS=1` imite l'en-tête que le répartiteur de Render ajoute en
+production (`ForceHttps` redirige sinon toute requête en clair).
 
 L'extrapolation est linéaire et sans surprise : **il faut environ 1,4 fois la
 capacité actuelle**, soit ~20 cœurs au lieu de 14, ou une seconde instance
