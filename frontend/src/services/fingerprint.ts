@@ -91,8 +91,9 @@ export function isSameDevice(visitorId1: string, visitorId2: string): boolean {
  * à tous les navigateurs n'authentifie rien, et la valeur obtenue ne
  * correspondait de toute façon jamais à celle attendue par le serveur.
  *
- * Le défi est désormais émis par le serveur dans la réponse de
- * GET /presence/course-by-token/{token} ; le client le renvoie tel quel.
+ * Le défi a ensuite été supprimé du parcours : le serveur n'en émet plus et le
+ * scan n'en transmet aucun. C'est l'authentification de l'étudiant (jeton
+ * Bearer obtenu par identifiant et code d'accès) qui l'identifie désormais.
  * Ce module ne fournit plus que l'empreinte d'appareil, qui sert à la détection
  * d'appareil partagé côté serveur.
  */
