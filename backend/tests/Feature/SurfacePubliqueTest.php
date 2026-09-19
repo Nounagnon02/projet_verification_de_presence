@@ -155,4 +155,22 @@ class SurfacePubliqueTest extends TestCase
         $this->getJson('/api/docs/json')->assertOk()->assertJsonStructure(['openapi', 'paths']);
         $this->get('/api/docs/yaml')->assertOk();
     }
+
+    public function test_la_specification_json_ne_depend_pas_d_un_paquet_de_developpement(): void
+    {
+        // Les tests tournent avec les dépendances de développement : ils ne
+        // peuvent pas voir qu'un paquet manque à l'image de production
+        // (composer install --no-dev). ApiDocumentationController::json() lit le
+        // YAML avec symfony/yaml, que seul laravel/sail (développement) tirait :
+        // /api/docs/json répondait 500 en production, tests au vert.
+        $installes = collect(json_decode(file_get_contents(base_path('composer.lock')), true)['packages'])
+            ->pluck('name');
+        $composer = json_decode(file_get_contents(base_path('composer.json')), true);
+
+        $this->assertArrayHasKey('symfony/yaml', $composer['require']);
+        $this->assertTrue(
+            $installes->contains('symfony/yaml'),
+            'symfony/yaml doit figurer dans les paquets de production de composer.lock.'
+        );
+    }
 }

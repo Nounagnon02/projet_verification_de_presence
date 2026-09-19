@@ -54,8 +54,16 @@ la lancer contre la base déclarée dans `.env` : les migrations y passeraient.
 l'image. Les secrets sont marqués `sync: false` et se saisissent dans le tableau
 de bord Render : rien de sensible n'entre dans le dépôt.
 
-`laravel/octane` est installé et mesuré (facteur 4 sur la latence sous charge)
-mais **n'est pas déployé** : l'image sert l'application sous Apache/mod_php.
+**La production reste sous Apache/mod_php** (choix du 2026-09-19). `laravel/octane`
+a été mesuré (facteur 4 sur la latence sous charge, voir `tests/load/RESULTATS.md`),
+mais c'est une dépendance de **développement** : elle sert à rejouer cette campagne
+et n'entre pas dans l'image (`composer install --no-dev`).
+
+Corollaire : tout paquet que le code applicatif utilise doit être dans `require`,
+jamais dans `require-dev`. Les tests tournent avec les dépendances de
+développement et ne voient pas ce manque : `symfony/yaml`, tiré seulement par
+`laravel/sail`, faisait répondre 500 à `/api/docs/json` en production
+(`SurfacePubliqueTest` verrouille ce cas).
 
 ## Architecture
 
