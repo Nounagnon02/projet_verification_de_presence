@@ -74,6 +74,14 @@ en passant, jamais dans un commit séparé.
 - Aucun secret dans le dépôt, y compris dans un fichier de notes. Ce qui a été
   committé une fois est compromis : il faut le régénérer, pas seulement le
   retirer.
+- `frontend/vercel.json` porte la CSP de la SPA. `style-src` garde
+  `'unsafe-inline'` : les graphiques (`ProgressBar`, `GaugeChart`, les
+  pourcentages colorés des rapports) posent leur couleur via `style={{...}}`,
+  un attribut inline que la CSP bloquerait sinon dans les navigateurs qui
+  appliquent `style-src` aux attributs. `script-src`, lui, reste strict (pas de
+  `'unsafe-inline'`/`'unsafe-eval'`) : c'est la direction qui compte contre une
+  XSS. `connect-src` nomme le domaine Render en dur — à mettre à jour si l'API
+  change d'hébergeur.
 
 ## Frontend — accès à l'API
 
@@ -88,10 +96,10 @@ en passant, jamais dans un commit séparé.
   page en découlent sans code supplémentaire. Une mutation qui change la liste
   appelle `queryClient.invalidateQueries` plutôt que de rappeler soi-même la
   fonction de chargement.
-- StudentManagementPage et EvenementManagementPage suivent ce motif de bout en
-  bout (2026-09-18) : à prendre comme référence. Les 53 autres pages qui
-  importent `api/axios.js` directement n'ont pas encore été migrées — le
-  faire en bloc sans page pilote n'aurait rien prouvé de plus que la première.
+- StudentManagementPage et EvenementManagementPage ont ouvert ce motif
+  (2026-09-18) ; toutes les pages et tous les composants qui touchaient
+  `api/axios.js` directement suivent désormais le même motif (2026-09-19). Un
+  module par domaine, jamais un appel HTTP écrit dans une page.
 
 ## Git
 
