@@ -1,76 +1,68 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   MdArrowBack, MdBusiness, MdEmail, MdPhone, MdLocationOn,
   MdEdit, MdDelete, MdRefresh, MdContentCopy, MdCheck, MdWarning,
 } from 'react-icons/md';
-import api from '../../api/axios';
+import {
+  recupererEtablissement, recupererStatsEtablissement, modifierEtablissement,
+  supprimerEtablissement, renvoyerIdentifiantsEtablissement,
+} from '../../api/resources/etablissements';
 
 export default function EtablissementDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [etablissement, setEtablissement] = useState(null);
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  // Un seul chemin de chargement : l'effet. Le bouton « rafraîchir » l'invalide
-  // en incrémentant ce compteur, ce qui évite d'entretenir deux fonctions de
-  // chargement en parallèle.
-  const [rechargement, setRechargement] = useState(0);
-  const rafraichir = useCallback(() => setRechargement((n) => n + 1), []);
+  // Une clé de requête par établissement : changer de faculté ne peut plus
+  // afficher les données de la précédente, TanStack Query annulant/ignorant
+  // la requête devenue obsolète.
+  const etablissementQuery = useQuery({
+    queryKey: ['etablissement', id],
+    queryFn: ({ signal }) => recupererEtablissement(id, signal),
+  });
+  const statsQuery = useQuery({
+    queryKey: ['etablissement-stats', id],
+    queryFn: ({ signal }) => recupererStatsEtablissement(id, signal),
+  });
+  const etablissement = etablissementQuery.data?.data ?? null;
+  const stats = statsQuery.data?.data ?? null;
+  const loading = etablissementQuery.isLoading || statsQuery.isLoading;
 
-  useEffect(() => {
-    let annule = false;
+  const rafraichir = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['etablissement', id] });
+    queryClient.invalidateQueries({ queryKey: ['etablissement-stats', id] });
+  }, [queryClient, id]);
 
-    // Annulation indispensable ici : en changeant de faculté, la réponse de la
-    // précédente peut arriver après celle de la nouvelle et afficher les
-    // données de la mauvaise entité.
-    (async () => {
-      setLoading(true);
-
-      try {
-        const [etabRes, statsRes] = await Promise.all([
-          api.get(`/super-admin/etablissements/${id}`),
-          api.get(`/super-admin/etablissements/${id}/stats`),
-        ]);
-
-        if (annule) return;
-
-        if (etabRes.data.success) {
-          setEtablissement(etabRes.data.data);
-          setForm({
-            code: etabRes.data.data.code || '',
-            nom: etabRes.data.data.nom || '',
-            email: etabRes.data.data.email || '',
-            telephone: etabRes.data.data.telephone || '',
-            adresse: etabRes.data.data.adresse || '',
-          });
-        }
-
-        if (statsRes.data.success) {
-          setStats(statsRes.data.data);
-        }
-      } catch (err) {
-        if (!annule) console.error('Erreur chargement:', err);
-      } finally {
-        if (!annule) setLoading(false);
-      }
-    })();
-
-    return () => { annule = true; };
-  }, [id, rechargement]);
+  // Préremplissage du formulaire d'édition depuis les données chargées, ajusté
+  // PENDANT le rendu (mécanisme documenté de React pour dériver un état d'un
+  // changement de props/état, hors effet — même motif que dans
+  // EvenementManagementPage) : un effet aurait déclenché un rendu
+  // supplémentaire à chaque chargement.
+  const [etablissementCharge, setEtablissementCharge] = useState(null);
+  if (etablissement && etablissementCharge !== etablissement) {
+    setEtablissementCharge(etablissement);
+    setForm({
+      code: etablissement.code || '',
+      nom: etablissement.nom || '',
+      email: etablissement.email || '',
+      telephone: etablissement.telephone || '',
+      adresse: etablissement.adresse || '',
+    });
+  }
 
   const handleSave = async () => {
     setSaving(true);
     setMessage({ type: '', text: '' });
     try {
-      const { data } = await api.put(`/super-admin/etablissements/${id}`, form);
+      const data = await modifierEtablissement(id, form);
       if (data.success) {
-        setEtablissement(data.data);
+        queryClient.invalidateQueries({ queryKey: ['etablissement', id] });
         setEditing(false);
         setMessage({ type: 'success', text: 'Faculté mise à jour avec succès.' });
       }
@@ -88,7 +80,10 @@ export default function EtablissementDetailPage() {
   const handleDelete = async () => {
     if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette faculté ? Cette action est irréversible.')) return;
     try {
-      await api.delete(`/super-admin/etablissements/${id}`);
+      await supprimerEtablissement(id);
+      // La liste des facultés, si elle est déjà en cache, ne doit plus montrer
+      // celle qu'on vient de supprimer.
+      queryClient.invalidateQueries({ queryKey: ['etablissements'] });
       navigate('/super-admin/etablissements');
     } catch {
       setMessage({ type: 'error', text: 'Erreur lors de la suppression.' });
@@ -97,7 +92,7 @@ export default function EtablissementDetailPage() {
 
   const handleResendCredentials = async () => {
     try {
-      const { data } = await api.post(`/super-admin/etablissements/${id}/resend-credentials`);
+      const data = await renvoyerIdentifiantsEtablissement(id);
       if (data.success) {
         setMessage({ type: 'success', text: 'Identifiants renvoyés par email.' });
       }
@@ -296,7 +291,7 @@ export default function EtablissementDetailPage() {
               <div className="flex justify-between items-center">
                 <span className="text-sm text-slate-500">Statut</span>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                  etablissement.actif ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'
+                  etablissement.actif ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
                 }`}>
                   {etablissement.actif ? 'Actif' : 'Inactif'}
                 </span>

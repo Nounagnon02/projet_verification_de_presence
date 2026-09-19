@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useId, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiAlertTriangle, FiCheckCircle, FiMapPin, FiRefreshCw, FiShield, FiSmartphone } from 'react-icons/fi';
-import api from '../../api/axios';
+import { listerScansRefuses, enregistrerPresenceDepuisRefus } from '../../api/resources/alertes';
+import { listerFilieres } from '../../api/resources/reference';
 import { useToastCtx } from '../../context/ToastContext';
 import useDebounce from '../../hooks/useDebounce';
 import Button from '../../components/ui/Button';
@@ -74,20 +76,12 @@ export default function ScansRefusesPage() {
   const { addToast } = useToastCtx();
   const idMotif = useId();
 
-  const [refus, setRefus] = useState([]);
-  const [pagination, setPagination] = useState(null);
-  const [chargement, setChargement] = useState(true);
-  const [erreur, setErreur] = useState('');
-
   const [page, setPage] = useState(1);
   const [filtreFiliere, setFiltreFiliere] = useState('');
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
   const [recherche, setRecherche] = useState('');
   const rechercheServeur = useDebounce(recherche.trim(), 300);
-  const [rechargement, setRechargement] = useState(0);
-
-  const [filieres, setFilieres] = useState([]);
 
   // Enregistrement d'une présence depuis un refus.
   const [cible, setCible] = useState(null);
@@ -95,59 +89,46 @@ export default function ScansRefusesPage() {
   const [envoi, setEnvoi] = useState(false);
   const [erreurModale, setErreurModale] = useState('');
 
-  const rafraichir = useCallback(() => setRechargement((n) => n + 1), []);
+  const queryClient = useQueryClient();
+  const rafraichir = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ['scans-refuses'] }),
+    [queryClient],
+  );
 
   // Liste des filières pour le filtre. Son échec n'empêche pas de consulter.
-  useEffect(() => {
-    const controleur = new AbortController();
+  const filieresQuery = useQuery({ queryKey: ['filieres'], queryFn: () => listerFilieres() });
+  const filieres = Array.isArray(filieresQuery.data?.data) ? filieresQuery.data.data : [];
 
-    (async () => {
-      try {
-        const { data } = await api.get('/admin/filieres', { signal: controleur.signal });
-        setFilieres(Array.isArray(data?.data) ? data.data : []);
-      } catch {
-        // Filtre secondaire : on reste silencieux plutôt que d'alarmer.
-      }
-    })();
+  const parametresListe = useMemo(() => {
+    const params = { page, per_page: PAR_PAGE };
+    if (filtreFiliere) params.filiere_id = filtreFiliere;
+    if (dateDebut) params.date_from = dateDebut;
+    if (dateFin) params.date_to = dateFin;
+    if (rechercheServeur) params.search = rechercheServeur;
+    return params;
+  }, [page, filtreFiliere, dateDebut, dateFin, rechercheServeur]);
 
-    return () => controleur.abort();
-  }, []);
+  const refusQuery = useQuery({
+    queryKey: ['scans-refuses', parametresListe],
+    queryFn: ({ signal }) => listerScansRefuses(parametresListe, signal),
+  });
 
-  useEffect(() => {
-    const controleur = new AbortController();
-    let annule = false;
+  const chargement = refusQuery.isFetching;
+  const erreur = refusQuery.isError
+    ? (refusQuery.error?.response?.data?.message
+      || 'Impossible de charger les scans refusés. Vérifiez votre connexion puis réessayez.')
+    : '';
 
-    (async () => {
-      setChargement(true);
-      setErreur('');
-
-      try {
-        const params = { page, per_page: PAR_PAGE };
-        if (filtreFiliere) params.filiere_id = filtreFiliere;
-        if (dateDebut) params.date_from = dateDebut;
-        if (dateFin) params.date_to = dateFin;
-        if (rechercheServeur) params.search = rechercheServeur;
-
-        const { data } = await api.get('/admin/alerts', { params, signal: controleur.signal });
-        if (annule) return;
-
-        setRefus(Array.isArray(data?.data) ? data.data : []);
-        setPagination(data?.meta ?? null);
-      } catch (err) {
-        if (annule || err.name === 'CanceledError' || err.name === 'AbortError') return;
-        setRefus([]);
-        setPagination(null);
-        setErreur(err.response?.data?.message || 'Impossible de charger les scans refusés. Vérifiez votre connexion puis réessayez.');
-      } finally {
-        if (!annule) setChargement(false);
-      }
-    })();
-
-    return () => {
-      annule = true;
-      controleur.abort();
-    };
-  }, [page, filtreFiliere, dateDebut, dateFin, rechercheServeur, rechargement]);
+  // Copie locale : la fenêtre d'enregistrement marque directement la ligne
+  // traitée, sans attendre un nouveau chargement.
+  const [refus, setRefus] = useState([]);
+  const [pagination, setPagination] = useState(null);
+  const [derniereReponse, setDerniereReponse] = useState(undefined);
+  if (refusQuery.data !== undefined && refusQuery.data !== derniereReponse) {
+    setDerniereReponse(refusQuery.data);
+    setRefus(Array.isArray(refusQuery.data?.data) ? refusQuery.data.data : []);
+    setPagination(refusQuery.data?.meta ?? null);
+  }
 
   const filtresActifs = Boolean(filtreFiliere || dateDebut || dateFin || rechercheServeur);
 
@@ -180,7 +161,7 @@ export default function ScansRefusesPage() {
     setErreurModale('');
 
     try {
-      const { data } = await api.post(`/admin/alerts/${cible.id}/presence`, { motif: motifNettoye });
+      const data = await enregistrerPresenceDepuisRefus(cible.id, { motif: motifNettoye });
       const presence = data?.data?.presence;
 
       setRefus((precedent) => precedent.map((ligne) => (ligne.id === cible.id

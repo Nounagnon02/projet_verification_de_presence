@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiAlertTriangle, FiLoader, FiTrash2 } from 'react-icons/fi';
-import api from '../../api/axios';
-import useApi from '../../hooks/useApi';
+import { listerAnneesUniversitaires } from '../../api/resources/anneesUniversitaires';
+import { listerJoursFeries, declarerJourFerie, supprimerJourFerie } from '../../api/resources/joursFeries';
 import { useToastCtx } from '../../context/ToastContext';
 import { datesLisibles, questionRetrait } from '../../utils/calendrier';
 
@@ -20,45 +21,46 @@ const messageErreur = (err, defaut) => {
  * semestres, vacances et examens.
  */
 export default function JoursFeriesPage() {
-  const { data: annees } = useApi('/super-admin/annees-academiques');
+  const queryClient = useQueryClient();
+  const anneesQuery = useQuery({
+    queryKey: ['annees-universitaires'],
+    queryFn: ({ signal }) => listerAnneesUniversitaires(signal),
+  });
   const { addToast } = useToastCtx() ?? {};
   const [anneeId, setAnneeId] = useState('');
-  const [rechargement, setRechargement] = useState(0);
-  const [etat, setEtat] = useState({ cle: '', liste: [], erreur: '' });
   const [ferie, setFerie] = useState(FERIE_VIDE);
   const [enCours, setEnCours] = useState('');
 
-  const liste = Array.isArray(annees) ? annees : [];
+  const liste = Array.isArray(anneesQuery.data?.data) ? anneesQuery.data.data : [];
   const choisie = anneeId || String(liste.find((a) => a.active)?.id ?? '');
   const annee = liste.find((a) => String(a.id) === choisie) ?? null;
-  const cle = choisie ? `${choisie}|${rechargement}` : '';
 
-  useEffect(() => {
-    if (!cle) return undefined;
-    let annule = false;
-    api.get('/super-admin/jours-feries', { params: { annee_id: cle.split('|')[0] } })
-      .then(({ data }) => { if (!annule) setEtat({ cle, liste: data?.data ?? [], erreur: '' }); })
-      .catch((err) => { if (!annule) setEtat({ cle, liste: [], erreur: messageErreur(err, "Les jours fériés n'ont pas pu être chargés.") }); });
-    return () => { annule = true; };
-  }, [cle]);
+  const feriesQuery = useQuery({
+    queryKey: ['jours-feries', choisie],
+    queryFn: ({ signal }) => listerJoursFeries(choisie, signal),
+    enabled: Boolean(choisie),
+  });
 
-  const charge = etat.cle === cle;
-  const feries = charge ? etat.liste : [];
+  const charge = !feriesQuery.isLoading;
+  const feries = feriesQuery.data?.data ?? [];
+  const erreurFeries = feriesQuery.isError ? messageErreur(feriesQuery.error, "Les jours fériés n'ont pas pu être chargés.") : '';
   const occupe = Boolean(enCours);
+
+  const rafraichirFeries = () => queryClient.invalidateQueries({ queryKey: ['jours-feries'] });
 
   const declarer = async (e) => {
     e.preventDefault();
     const corps = { ...ferie, annee_id: annee.id, date_fin: ferie.date_fin || ferie.date_debut };
     setEnCours('declarer');
     try {
-      const { data: apercu } = await api.post('/super-admin/jours-feries', { ...corps, apercu: true });
+      const apercu = await declarerJourFerie({ ...corps, apercu: true });
       const n = Number(apercu?.data?.seances_a_retirer ?? 0);
       if (n > 0 && !window.confirm(questionRetrait(n, corps.libelle))) return;
 
-      const { data } = await api.post('/super-admin/jours-feries', corps);
+      const data = await declarerJourFerie(corps);
       addToast?.(data?.message || 'Jour férié déclaré.', 'success');
       setFerie(FERIE_VIDE);
-      setRechargement((x) => x + 1);
+      rafraichirFeries();
     } catch (err) {
       addToast?.(messageErreur(err, "Le jour férié n'a pas été déclaré."), 'error');
     } finally {
@@ -70,9 +72,9 @@ export default function JoursFeriesPage() {
     if (!window.confirm(`Retirer « ${f.libelle} » ? La génération planifiée recréera les séances de ce jour.`)) return;
     setEnCours(`retirer-${f.id}`);
     try {
-      const { data } = await api.delete(`/super-admin/jours-feries/${f.id}`);
+      const data = await supprimerJourFerie(f.id);
       addToast?.(data?.message || 'Jour férié retiré.', 'success');
-      setRechargement((x) => x + 1);
+      rafraichirFeries();
     } catch (err) {
       addToast?.(messageErreur(err, "Le jour férié n'a pas été retiré."), 'error');
     } finally {
@@ -98,9 +100,9 @@ export default function JoursFeriesPage() {
         </div>
       </div>
 
-      {etat.erreur && (
+      {erreurFeries && (
         <p role="alert" className="flex items-start gap-2 p-3 bg-error/10 text-error rounded-lg text-sm">
-          <FiAlertTriangle className="mt-0.5 shrink-0" aria-hidden="true" /> {etat.erreur}
+          <FiAlertTriangle className="mt-0.5 shrink-0" aria-hidden="true" /> {erreurFeries}
         </p>
       )}
 
@@ -114,7 +116,7 @@ export default function JoursFeriesPage() {
             </tr>
           </thead>
           <tbody>
-            {!charge && cle ? (
+            {!charge && choisie ? (
               <tr><td colSpan={3} className="p-6 text-center"><FiLoader className="animate-spin mx-auto text-primary" aria-label="Chargement" /></td></tr>
             ) : feries.length === 0 ? (
               <tr><td colSpan={3} className="p-6 text-center text-on-surface-variant">Aucun jour férié déclaré{annee ? ` pour ${annee.libelle}` : ''}.</td></tr>

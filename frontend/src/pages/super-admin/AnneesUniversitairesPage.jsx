@@ -1,15 +1,18 @@
 import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { MdAdd, MdEdit, MdDelete, MdEventAvailable, MdWarningAmber } from 'react-icons/md';
 import Modal from '../../components/ui/Modal';
-import useApi from '../../hooks/useApi';
-import api from '../../api/axios';
+import {
+  listerAnneesUniversitaires, creerAnneeUniversitaire, modifierAnneeUniversitaire,
+  definirAnneeEnCours, supprimerAnneeUniversitaire,
+} from '../../api/resources/anneesUniversitaires';
 import { useToastCtx } from '../../context/ToastContext';
 import {
   LIBELLES_STATUT, contenuAnnee, formatDateLongue, joursAvant, pluriel, proposerAnneeSuivante,
 } from '../../utils/annees';
 
 const CLASSES_STATUT = {
-  terminee: 'bg-slate-100 text-slate-500',
+  terminee: 'bg-slate-100 text-slate-600',
   en_cours: 'bg-emerald-50 text-emerald-700',
   a_venir: 'bg-blue-50 text-blue-700',
 };
@@ -35,9 +38,15 @@ function obstacleSuppression(annee) {
  * désigne l'année en cours ; chaque établissement choisit ensuite la sienne.
  */
 export default function AnneesUniversitairesPage() {
-  const { data, loading, refetch } = useApi('/super-admin/annees-academiques');
+  const queryClient = useQueryClient();
+  const anneesQuery = useQuery({
+    queryKey: ['annees-universitaires'],
+    queryFn: ({ signal }) => listerAnneesUniversitaires(signal),
+  });
   const { addToast } = useToastCtx();
-  const annees = data || [];
+  const annees = anneesQuery.data?.data || [];
+  const loading = anneesQuery.isLoading;
+  const refetch = () => queryClient.invalidateQueries({ queryKey: ['annees-universitaires'] });
   const enCours = annees.find((a) => a.active);
 
   const [formulaire, setFormulaire] = useState(null); // { id?, libelle, date_debut, date_fin }
@@ -63,9 +72,9 @@ export default function AnneesUniversitairesPage() {
     const { id, ...valeurs } = formulaire;
 
     try {
-      const { data: reponse } = id
-        ? await api.put(`/super-admin/annees-academiques/${id}`, valeurs)
-        : await api.post('/super-admin/annees-academiques', valeurs);
+      const reponse = id
+        ? await modifierAnneeUniversitaire(id, valeurs)
+        : await creerAnneeUniversitaire(valeurs);
       addToast?.(reponse?.message || 'Année enregistrée.', 'success');
       setFormulaire(null);
       refetch();
@@ -81,7 +90,7 @@ export default function AnneesUniversitairesPage() {
   const agir = async (requete, fermer) => {
     setEnvoi(true);
     try {
-      const { data: reponse } = await requete();
+      const reponse = await requete();
       addToast?.(reponse?.message || 'Fait.', 'success');
       fermer();
       refetch();
@@ -318,7 +327,7 @@ export default function AnneesUniversitairesPage() {
               <button
                 type="button"
                 disabled={envoi}
-                onClick={() => agir(() => api.patch(`/super-admin/annees-academiques/${aDesigner.id}/en-cours`), () => setADesigner(null))}
+                onClick={() => agir(() => definirAnneeEnCours(aDesigner.id), () => setADesigner(null))}
                 className="px-5 py-2.5 bg-[#011549] text-white rounded-xl text-sm font-semibold hover:bg-[#011549]/90 disabled:opacity-50"
               >
                 Définir {aDesigner.libelle} en cours
@@ -340,7 +349,7 @@ export default function AnneesUniversitairesPage() {
               <button
                 type="button"
                 disabled={envoi}
-                onClick={() => agir(() => api.delete(`/super-admin/annees-academiques/${aSupprimer.id}`), () => setASupprimer(null))}
+                onClick={() => agir(() => supprimerAnneeUniversitaire(aSupprimer.id), () => setASupprimer(null))}
                 className="px-5 py-2.5 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
               >
                 Supprimer

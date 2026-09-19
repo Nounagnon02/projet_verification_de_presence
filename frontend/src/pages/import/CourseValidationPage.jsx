@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiChevronRight, FiCheck, FiAlertCircle, FiPlus, FiArrowRight, FiLoader } from 'react-icons/fi';
 import { MdCloudDone } from 'react-icons/md';
-import api from '../../api/axios';
+import { validerCoursImportes } from '../../api/resources/imports';
 import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 import BandeauAnneeClose from '../../components/ui/BandeauAnneeClose';
 import { VOLUMES } from '../../utils/typesSeance';
@@ -311,7 +311,7 @@ export default function CourseValidationPage() {
         })),
       };
 
-      const { data: res } = await api.post('/admin/import/validate-courses', payload);
+      const res = await validerCoursImportes(payload);
       if (res.success) {
         setSaved(true);
         sessionStorage.setItem('import_courses_result', JSON.stringify(res));

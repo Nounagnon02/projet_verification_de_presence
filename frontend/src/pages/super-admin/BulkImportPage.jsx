@@ -4,7 +4,7 @@ import {
   MdCloudUpload, MdArrowBack, MdCheck, MdWarning,
   MdDownload, MdInsertDriveFile,
 } from 'react-icons/md';
-import api from '../../api/axios';
+import { importerEtablissementsCsv } from '../../api/resources/etablissements';
 
 export default function BulkImportPage() {
   const navigate = useNavigate();
@@ -44,9 +44,7 @@ export default function BulkImportPage() {
     formData.append('file', file);
 
     try {
-      const { data } = await api.post('/super-admin/etablissements/import', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const data = await importerEtablissementsCsv(formData);
       if (data.success) {
         setResult({
           created: data.data?.created ?? 0,

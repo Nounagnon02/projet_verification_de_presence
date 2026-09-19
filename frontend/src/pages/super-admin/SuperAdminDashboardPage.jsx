@@ -1,27 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { MdSchool, MdGroup, MdHowToReg, MdEvent, MdBusiness, MdChevronRight } from 'react-icons/md';
-import api from '../../api/axios';
+import { recupererTableauDeBordSuperAdmin } from '../../api/resources/etablissements';
 
 export default function SuperAdminDashboardPage() {
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchDashboard = async () => {
-      try {
-        const { data } = await api.get('/super-admin/dashboard');
-        if (data.success) {
-          setStats(data.data);
-        }
-      } catch (err) {
-        console.error('Erreur chargement dashboard super admin:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDashboard();
-  }, []);
+  const dashboardQuery = useQuery({
+    queryKey: ['tableau-de-bord-super-admin'],
+    queryFn: ({ signal }) => recupererTableauDeBordSuperAdmin(signal),
+  });
+  const stats = dashboardQuery.data?.data ?? null;
+  const loading = dashboardQuery.isLoading;
 
   if (loading) {
     return (
@@ -93,9 +81,9 @@ export default function SuperAdminDashboardPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   {fac.actif ? (
-                    <span className="text-xs bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full font-medium">Actif</span>
+                    <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Actif</span>
                   ) : (
-                    <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">Inactif</span>
+                    <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">Inactif</span>
                   )}
                   <MdChevronRight className="text-on-surface-variant" />
                 </div>

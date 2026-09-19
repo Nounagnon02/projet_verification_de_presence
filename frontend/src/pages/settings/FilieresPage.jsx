@@ -1,8 +1,13 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { FiPlus, FiEdit2, FiTrash2, FiLoader, FiAlertTriangle } from 'react-icons/fi';
 import Modal from '../../components/ui/Modal';
-import api from '../../api/axios';
+import { listerAnnees, listerFilieres } from '../../api/resources/reference';
+import {
+  listerProgrammes, creerFiliere, modifierFiliere, supprimerFiliere,
+  renommerProgramme as apiRenommerProgramme,
+} from '../../api/resources/filieres';
 import useNiveaux from '../../hooks/useNiveaux';
 import { useToastCtx } from '../../context/ToastContext';
 
@@ -10,7 +15,6 @@ const NOUVEAU = 'nouveau';
 const CHAMP = 'w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all disabled:opacity-50';
 const ETIQUETTE = 'block text-xs font-semibold text-on-surface-variant mb-1';
 
-const liste = (reponse) => (Array.isArray(reponse?.data?.data) ? reponse.data.data : []);
 const pluriel = (n, mot) => `${n} ${mot}${n > 1 ? 's' : ''}`;
 
 /** Ce qui empêche la suppression, toutes années confondues ; null si rien. */
@@ -90,15 +94,9 @@ function CaseFiliere({ filiere, annee, niveau, anneeId, onModifier, onSupprimer 
 export default function FilieresPage() {
   const { addToast } = useToastCtx() ?? {};
   const niveaux = useNiveaux();
+  const queryClient = useQueryClient();
 
-  const [annees, setAnnees] = useState(null); // null : pas encore chargées
   const [anneeId, setAnneeId] = useState('');
-  const [toutes, setToutes] = useState([]);
-  const [delAnnee, setDelAnnee] = useState(() => new Map());
-  const [programmes, setProgrammes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [erreurChargement, setErreurChargement] = useState(false);
-  const [rechargement, setRechargement] = useState(0);
 
   const [formulaire, setFormulaire] = useState(null);
   const [erreurs, setErreurs] = useState({});
@@ -110,53 +108,55 @@ export default function FilieresPage() {
   const [renommage, setRenommage] = useState(false);
 
   // Années : l'écran s'ouvre sur l'année active.
-  useEffect(() => {
-    const controleur = new AbortController();
+  const anneesQuery = useQuery({ queryKey: ['annees-academiques'], queryFn: () => listerAnnees() });
+  const annees = anneesQuery.data?.data ?? (anneesQuery.isError ? [] : null); // null : pas encore chargées
 
-    api.get('/admin/annees-academiques', { signal: controleur.signal })
-      .then((reponse) => {
-        const lues = liste(reponse);
-        setAnnees(lues);
-        const active = lues.find((a) => a.active);
-        if (active) setAnneeId(String(active.id));
-      })
-      .catch(() => { if (!controleur.signal.aborted) setAnnees([]); });
+  // Une fois l'année active connue, elle devient le filtre par défaut — une
+  // seule fois, pour ne pas écraser un choix déjà fait par la personne.
+  // Ajusté pendant le rendu (pas un effet) : setState() dans useMemo() bouclerait.
+  const [anneesVues, setAnneesVues] = useState(null);
+  if (annees && annees !== anneesVues) {
+    setAnneesVues(annees);
+    if (!anneeId) {
+      const active = annees.find((a) => a.active);
+      if (active) setAnneeId(String(active.id));
+    }
+  }
 
-    return () => controleur.abort();
-  }, []);
+  // Toutes les filières (la grille), et leurs effectifs de l'année choisie.
+  // Une clé par requête indépendante : changer d'année ne refait plus la
+  // requête « toutes » ni celle des programmes.
+  const toutesQuery = useQuery({ queryKey: ['filieres'], queryFn: () => listerFilieres() });
+  // Une filière sans activité cette année reste dans sa case : la proposer à
+  // nouveau à la création mènerait droit à un code en double. `placeholderData`
+  // garde l'ancienne année affichée pendant qu'on charge la nouvelle, plutôt
+  // que de basculer un instant sur les effectifs « toutes années ».
+  const anneeQuery = useQuery({
+    queryKey: ['filieres', anneeId],
+    queryFn: () => listerFilieres({ annee_id: anneeId }),
+    enabled: Boolean(anneeId),
+    placeholderData: (precedent) => precedent,
+  });
+  const programmesQuery = useQuery({ queryKey: ['programmes'], queryFn: ({ signal }) => listerProgrammes(signal) });
 
-  // Toutes les filières (la grille), leurs effectifs de l'année choisie, et les
-  // programmes. Une filière sans activité cette année reste dans sa case : la
-  // proposer à nouveau à la création mènerait droit à un code en double.
-  useEffect(() => {
-    if (annees === null) return undefined;
+  const loading = anneesQuery.isLoading || toutesQuery.isLoading || anneeQuery.isLoading || programmesQuery.isLoading;
+  const erreurChargement = anneesQuery.isError || toutesQuery.isError || anneeQuery.isError || programmesQuery.isError;
 
-    let annule = false;
+  // Mémoïsés : `?? []` recréerait un tableau à chaque rendu tant que la requête
+  // n'a pas répondu, et invaliderait les useMemo qui en dépendent.
+  const toutesBrutes = toutesQuery.data;
+  const programmesBrutes = programmesQuery.data;
+  const toutes = useMemo(() => toutesBrutes?.data ?? [], [toutesBrutes]);
+  const programmes = useMemo(() => programmesBrutes?.data ?? [], [programmesBrutes]);
+  const delAnnee = new Map((anneeQuery.data?.data ?? toutes).map((f) => [f.id, f]));
 
-    (async () => {
-      setLoading(true);
-      setErreurChargement(false);
-
-      try {
-        const [tout, annee, progs] = await Promise.all([
-          api.get('/admin/filieres'),
-          anneeId ? api.get('/admin/filieres', { params: { annee_id: anneeId } }) : Promise.resolve(null),
-          api.get('/admin/programmes'),
-        ]);
-        if (annule) return;
-
-        setToutes(liste(tout));
-        setDelAnnee(new Map(liste(annee ?? tout).map((f) => [f.id, f])));
-        setProgrammes(liste(progs));
-      } catch {
-        if (!annule) setErreurChargement(true);
-      } finally {
-        if (!annule) setLoading(false);
-      }
-    })();
-
-    return () => { annule = true; };
-  }, [annees, anneeId, rechargement]);
+  // Après une création, une modification, une suppression ou un renommage de
+  // programme : les deux variantes de filières (toutes années, année choisie)
+  // et les programmes peuvent avoir changé.
+  const rafraichir = () => {
+    queryClient.invalidateQueries({ queryKey: ['filieres'] });
+    queryClient.invalidateQueries({ queryKey: ['programmes'] });
+  };
 
   // Une ligne par programme, dans l'ordre des codes ; les filières sans
   // programme, s'il en reste, ferment la grille.
@@ -243,17 +243,17 @@ export default function FilieresPage() {
         } else {
           charge.programme_id = Number(v.programme);
         }
-        await api.post('/admin/filieres', charge);
+        await creerFiliere(charge);
         addToast?.(`Filière ${code} créée.`, 'success');
       } else {
         const { filiere } = formulaire;
         const charge = { code, intitule, programme_id: v.programme ? Number(v.programme) : null };
         if (v.niveau !== filiere.niveau) charge.niveau = v.niveau;
-        await api.put(`/admin/filieres/${filiere.id}`, charge);
+        await modifierFiliere(filiere.id, charge);
         addToast?.(`Filière ${code} mise à jour.`, 'success');
       }
       setFormulaire(null);
-      setRechargement((n) => n + 1);
+      rafraichir();
     } catch (err) {
       const d = err.response?.data;
       setErreurs(d?.errors ?? { general: [d?.message || "L'enregistrement a échoué."] });
@@ -265,10 +265,10 @@ export default function FilieresPage() {
   const supprimer = async () => {
     setSuppression(true);
     try {
-      await api.delete(`/admin/filieres/${aSupprimer.id}`);
+      await supprimerFiliere(aSupprimer.id);
       addToast?.(`Filière ${aSupprimer.code} supprimée.`, 'success');
       setASupprimer(null);
-      setRechargement((n) => n + 1);
+      rafraichir();
     } catch (err) {
       addToast?.(err.response?.data?.message || 'La suppression a échoué.', 'error');
     } finally {
@@ -282,13 +282,13 @@ export default function FilieresPage() {
     e.preventDefault();
     setRenommage(true);
     try {
-      const { data } = await api.put(`/admin/programmes/${programmeEdite.id}`, {
+      const data = await apiRenommerProgramme(programmeEdite.id, {
         intitule: programmeEdite.intitule.trim(),
         renommer_filieres: programmeEdite.renommer_filieres,
       });
       addToast?.(data?.message || 'Programme renommé.', 'success');
       setProgrammeEdite(null);
-      setRechargement((n) => n + 1);
+      rafraichir();
     } catch (err) {
       addToast?.(err.response?.data?.errors?.intitule?.[0] || err.response?.data?.message || 'Le renommage a échoué.', 'error');
     } finally {
@@ -322,7 +322,7 @@ export default function FilieresPage() {
         </div>
       </div>
 
-      {loading && toutes.length === 0 ? (
+      {loading ? (
         <div className="text-center py-12 text-on-surface-variant">Chargement…</div>
       ) : erreurChargement ? (
         <div className="text-center py-12 text-on-surface-variant bg-surface-container-lowest rounded-xl">

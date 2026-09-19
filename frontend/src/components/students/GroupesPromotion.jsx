@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiLoader, FiTrash2, FiAlertTriangle, FiCheck } from 'react-icons/fi';
-import api from '../../api/axios';
+import { listerGroupes } from '../../api/resources/etudiants';
+import { repartirGroupes, creerGroupe, supprimerGroupe } from '../../api/resources/inscriptions';
 import Modal from '../ui/Modal';
 
 const TYPES = [{ value: 'td', label: 'TD' }, { value: 'tp', label: 'TP' }];
@@ -19,14 +21,13 @@ const messageErreur = (err, defaut) => {
 export default function GroupesPromotion({ isOpen, onClose, annees, filieres, filiereInitiale = '', anneeInitiale = '', onModifie }) {
   const [filiereId, setFiliereId] = useState('');
   const [anneeId, setAnneeId] = useState('');
-  const [etat, setEtat] = useState({ cle: '', liste: [] });
-  const [rechargement, setRechargement] = useState(0);
   const [typeRepartition, setTypeRepartition] = useState('td');
   const [nombre, setNombre] = useState('2');
   const [typeCreation, setTypeCreation] = useState('td');
   const [libelle, setLibelle] = useState('');
   const [enCours, setEnCours] = useState(false);
   const [retour, setRetour] = useState(null);
+  const queryClient = useQueryClient();
 
   // À chaque ouverture, la promotion filtrée dans la page.
   const [ouvert, setOuvert] = useState(false);
@@ -39,30 +40,30 @@ export default function GroupesPromotion({ isOpen, onClose, annees, filieres, fi
     }
   }
 
-  const cle = isOpen && filiereId && anneeId ? `${filiereId}|${anneeId}|${rechargement}` : '';
+  const cle = Boolean(isOpen && filiereId && anneeId);
 
-  useEffect(() => {
-    if (!cle) return undefined;
-    let annule = false;
-    const [filiere_id, annee_id] = cle.split('|');
-    api.get('/admin/groupes', { params: { filiere_id, annee_id } })
-      .then(({ data }) => { if (!annule) setEtat({ cle, liste: data?.data ?? [] }); })
-      .catch(() => { if (!annule) setEtat({ cle, liste: [] }); });
-    return () => { annule = true; };
-  }, [cle]);
+  const groupesQuery = useQuery({
+    queryKey: ['groupes', filiereId, anneeId],
+    queryFn: () => listerGroupes(filiereId, anneeId),
+    enabled: cle,
+  });
 
-  const charge = etat.cle === cle;
-  const groupes = charge ? etat.liste : [];
+  // Une erreur de chargement se tait ici (aucun message d'erreur dédié à cette
+  // liste) : on affiche simplement « aucun groupe », comme avant la migration.
+  const charge = groupesQuery.isSuccess || groupesQuery.isError;
+  const groupes = groupesQuery.isError ? [] : (groupesQuery.data?.data ?? []);
   const close = Boolean(annees.find((a) => String(a.id) === String(anneeId))?.close);
   const verrouille = close || enCours;
+
+  const rafraichir = () => queryClient.invalidateQueries({ queryKey: ['groupes'] });
 
   const agir = async (requete, succes) => {
     setEnCours(true);
     setRetour(null);
     try {
-      const { data } = await requete();
+      const data = await requete();
       setRetour({ ok: true, message: data?.message || succes });
-      setRechargement((n) => n + 1);
+      rafraichir();
       onModifie?.();
       return true;
     } catch (err) {
@@ -77,13 +78,13 @@ export default function GroupesPromotion({ isOpen, onClose, annees, filieres, fi
 
   const repartir = (e) => {
     e.preventDefault();
-    agir(() => api.post('/admin/groupes/repartir', { ...promotion, type: typeRepartition, nombre: Number(nombre) }), 'Répartition faite.');
+    agir(() => repartirGroupes({ ...promotion, type: typeRepartition, nombre: Number(nombre) }), 'Répartition faite.');
   };
 
   const creer = async (e) => {
     e.preventDefault();
     if (!libelle.trim()) return;
-    if (await agir(() => api.post('/admin/groupes', { ...promotion, type: typeCreation, libelle: libelle.trim() }), 'Groupe créé.')) {
+    if (await agir(() => creerGroupe({ ...promotion, type: typeCreation, libelle: libelle.trim() }), 'Groupe créé.')) {
       setLibelle('');
     }
   };
@@ -91,7 +92,7 @@ export default function GroupesPromotion({ isOpen, onClose, annees, filieres, fi
   const supprimer = (g) => {
     const type = g.type.toUpperCase();
     if (!window.confirm(`Supprimer le groupe de ${type} ${g.libelle} ? Ses ${g.etudiants_count} étudiant(s) n'auront plus de groupe de ${type}.`)) return;
-    agir(() => api.delete(`/admin/groupes/${g.id}`), 'Groupe supprimé.');
+    agir(() => supprimerGroupe(g.id), 'Groupe supprimé.');
   };
 
   return (

@@ -1,8 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { FiChevronRight, FiSave, FiAlertCircle, FiInfo, FiZoomIn, FiCheck, FiLoader } from 'react-icons/fi';
 import { MdAutoAwesome } from 'react-icons/md';
-import api from '../../api/axios';
+import { listerSallesDisponibles } from '../../api/resources/reference';
+import {
+  reconnaitreSalles, creerSalleDepuisNom, verifierImportEmploiDuTemps, confirmerImportEmploiDuTemps,
+} from '../../api/resources/imports';
 import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 import BandeauAnneeClose from '../../components/ui/BandeauAnneeClose';
 
@@ -180,7 +184,6 @@ export default function ScheduleValidationPage() {
   const [choixSalles, setChoixSalles] = useState(() => Object.fromEntries(
     (initial?.analyse?.events ?? []).map((e, i) => [i, e.salle ? A_CHOISIR : AUCUNE]),
   ));
-  const [salles, setSalles] = useState([]);
   const [creationEnCours, setCreationEnCours] = useState(false);
   const [infoSalle, setInfoSalle] = useState('');
 
@@ -193,16 +196,20 @@ export default function ScheduleValidationPage() {
   const events = useMemo(() => analysisData?.events || [], [analysisData]);
   const conflicts = useMemo(() => detectConflicts(events), [events]);
 
-  // Salles configurées, proposées dans chaque ligne.
-  useEffect(() => {
-    const controleur = new AbortController();
-
-    api.get('/admin/salles/disponibles', { signal: controleur.signal })
-      .then(({ data }) => setSalles(Array.isArray(data?.data) ? data.data : []))
-      .catch(() => { /* la liste reste vide : « Aucune » et « Créer » restent possibles */ });
-
-    return () => controleur.abort();
-  }, []);
+  // Salles configurées, proposées dans chaque ligne : une liste, lue via
+  // useQuery. Les salles trouvées par reconnaissance ou créées à la volée
+  // (ci-dessous) s'ajoutent à part, dans un état local, plutôt que d'être
+  // fusionnées dans le cache de la requête.
+  const sallesQuery = useQuery({
+    queryKey: ['salles-disponibles'],
+    queryFn: () => listerSallesDisponibles(),
+  });
+  const [sallesSupplementaires, setSallesSupplementaires] = useState([]);
+  const salles = useMemo(() => {
+    const sallesBase = sallesQuery.data?.data ?? [];
+    const connues = new Set(sallesBase.map((s) => s.id));
+    return [...sallesBase, ...sallesSupplementaires.filter((s) => !connues.has(s.id))];
+  }, [sallesQuery.data, sallesSupplementaires]);
 
   const filiereChoisie = filtres.filieres.find((f) => String(f.id) === String(filtres.filiere));
 
@@ -226,11 +233,11 @@ export default function ScheduleValidationPage() {
 
     const controleur = new AbortController();
 
-    api.post('/admin/salles/reconnaitre', { filiere_id: Number(filtres.filiere), noms: nomsLus }, { signal: controleur.signal })
-      .then(({ data }) => {
+    reconnaitreSalles({ filiere_id: Number(filtres.filiere), noms: nomsLus }, controleur.signal)
+      .then((data) => {
         const reconnues = new Map((data?.data ?? []).filter((l) => l.salle).map((l) => [cleSalle(l.nom), l.salle]));
 
-        setSalles((prev) => {
+        setSallesSupplementaires((prev) => {
           const connues = new Set(prev.map((s) => s.id));
           return [...prev, ...[...reconnues.values()].filter((s) => !connues.has(s.id))];
         });
@@ -275,10 +282,10 @@ export default function ScheduleValidationPage() {
     setInfoSalle('');
 
     try {
-      const { data: res } = await api.post('/admin/salles/depuis-nom', { filiere_id: Number(filtres.filiere), nom });
+      const res = await creerSalleDepuisNom({ filiere_id: Number(filtres.filiere), nom });
       const salle = res.data;
 
-      setSalles((prev) => (prev.some((s) => s.id === salle.id) ? prev : [...prev, salle]));
+      setSallesSupplementaires((prev) => (prev.some((s) => s.id === salle.id) ? prev : [...prev, salle]));
       appliquerChoix(idx, String(salle.id));
       setInfoSalle(res.message || `Salle « ${salle.nom} » créée.`);
     } catch (err) {
@@ -371,7 +378,7 @@ export default function ScheduleValidationPage() {
     setError('');
 
     try {
-      const { data: res } = await api.post('/admin/import/schedule/verifier', {
+      const res = await verifierImportEmploiDuTemps({
         creneaux: toSave,
         filiere_id: Number(filtres.filiere),
         annee_id: Number(filtres.annee),
@@ -402,7 +409,7 @@ export default function ScheduleValidationPage() {
     setError('');
 
     try {
-      const { data: res } = await api.post('/admin/import/schedule/confirmer', {
+      const res = await confirmerImportEmploiDuTemps({
         creneaux: toSave,
         filiere_id: Number(filtres.filiere),
         annee_id: Number(filtres.annee),

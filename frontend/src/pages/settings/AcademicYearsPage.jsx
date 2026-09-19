@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiCalendar, FiArrowRight, FiLoader, FiCopy, FiAlertTriangle, FiInfo, FiCheckCircle } from 'react-icons/fi';
 import Modal from '../../components/ui/Modal';
-import useApi from '../../hooks/useApi';
-import api from '../../api/axios';
+import { listerAnnees } from '../../api/resources/reference';
+import { activerAnnee } from '../../api/resources/anneesAcademiques';
 import { useToastCtx } from '../../context/ToastContext';
 import PreparationAnnee from './PreparationAnnee';
 import AlerteCalendrier from '../../components/ui/AlerteCalendrier';
@@ -54,24 +55,28 @@ function alerteAnnee(active, suivante) {
 }
 
 export default function AcademicYearsPage() {
-  const { data: years, loading, refetch } = useApi('/admin/annees-academiques');
+  const anneesQuery = useQuery({ queryKey: ['annees-academiques'], queryFn: () => listerAnnees() });
   const [cible, setCible] = useState(null);
   const [activation, setActivation] = useState(false);
   const [aPreparer, setAPreparer] = useState(null);
   const { addToast } = useToastCtx();
+  const queryClient = useQueryClient();
 
-  const annees = years || [];
+  const loading = anneesQuery.isLoading;
+  const annees = anneesQuery.data?.data ?? [];
   const activeYear = annees.find((y) => y.active);
   const suivantes = anneesApres(annees, activeYear);
   const alerte = loading ? null : alerteAnnee(activeYear, suivantes[0]);
 
+  const rafraichir = () => queryClient.invalidateQueries({ queryKey: ['annees-academiques'] });
+
   const activer = async () => {
     setActivation(true);
     try {
-      const { data } = await api.patch(`/admin/annees-academiques/${cible.id}/activate`);
+      const data = await activerAnnee(cible.id);
       addToast?.(data?.message || `${cible.libelle} est désormais l'année active.`, 'success');
       setCible(null);
-      refetch();
+      rafraichir();
     } catch (err) {
       addToast?.(err.response?.data?.message || "Le changement d'année a échoué.", 'error');
     } finally {
@@ -194,7 +199,7 @@ export default function AcademicYearsPage() {
       )}
 
       {aPreparer && activeYear && (
-        <PreparationAnnee cible={aPreparer} source={activeYear} onClose={() => setAPreparer(null)} onPreparee={refetch} />
+        <PreparationAnnee cible={aPreparer} source={activeYear} onClose={() => setAPreparer(null)} onPreparee={rafraichir} />
       )}
 
       <Modal isOpen={!!cible} onClose={() => !activation && setCible(null)} title={cible ? `Passer sur ${cible.libelle} ?` : ''}>

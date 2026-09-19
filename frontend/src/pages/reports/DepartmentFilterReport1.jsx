@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { FiDownload, FiLoader } from 'react-icons/fi';
-import api from '../../api/axios';
+import { rapportFiliereStats, exporterRapportDepartementPdf } from '../../api/resources/rapports';
 
 /**
  * Sert aussi bien « /reports/department » (liste complète) que
@@ -15,39 +16,30 @@ export default function DepartmentFilterReport1() {
   const { id } = useParams();
   const idPreselectionne = id ? Number(id) : null;
 
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(idPreselectionne);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // /admin/reports/filiere-stats et non /admin/filieres : le second ne
-        // renvoie que la liste des filieres, sans aucune presence. La page
-        // affichait donc un taux de 85 % ECRIT EN DUR et un nombre de presents
-        // calcule comme « etudiants x 0,85 » — des chiffres fabriques, presentes
-        // comme des statistiques.
-        const { data: res } = await api.get('/admin/reports/filiere-stats');
-        const filieres = res.data || res;
-        if (Array.isArray(filieres)) {
-          setData(filieres.map(f => ({
-            id: f.id,
-            code: f.code,
-            department: f.intitule || f.code,
-            students: f.etudiants_count || 0,
-            present: f.total_presences ?? 0,
-            rate: f.taux ?? 0,
-            evenements: f.total_evenements ?? 0,
-          })));
-        }
-      } catch {
-        setData([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+  // /admin/reports/filiere-stats et non /admin/filieres : le second ne
+  // renvoie que la liste des filieres, sans aucune presence. La page
+  // affichait donc un taux de 85 % ECRIT EN DUR et un nombre de presents
+  // calcule comme « etudiants x 0,85 » — des chiffres fabriques, presentes
+  // comme des statistiques.
+  const filiereStatsQuery = useQuery({
+    queryKey: ['rapport-filiere-stats'],
+    queryFn: ({ signal }) => rapportFiliereStats(undefined, signal),
+  });
+  const loading = filiereStatsQuery.isLoading;
+  const filieresBrutes = filiereStatsQuery.data?.data ?? filiereStatsQuery.data;
+  const data = Array.isArray(filieresBrutes)
+    ? filieresBrutes.map(f => ({
+        id: f.id,
+        code: f.code,
+        department: f.intitule || f.code,
+        students: f.etudiants_count || 0,
+        present: f.total_presences ?? 0,
+        rate: f.taux ?? 0,
+        evenements: f.total_evenements ?? 0,
+      }))
+    : [];
 
   const [exportEnCours, setExportEnCours] = useState(false);
 
@@ -55,10 +47,7 @@ export default function DepartmentFilterReport1() {
     if (!selected) return;
     setExportEnCours(true);
     try {
-      const { data: blob } = await api.get(`/admin/reports/department/${selected}`, {
-        params: { format: 'pdf' },
-        responseType: 'blob',
-      });
+      const { data: blob } = await exporterRapportDepartementPdf(selected);
       const lien = document.createElement('a');
       lien.href = URL.createObjectURL(new Blob([blob]));
       lien.download = `rapport_filiere_${selected}_${Date.now()}.pdf`;

@@ -1,72 +1,61 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiBell, FiCheck, FiTrash2, FiRefreshCw, FiAlertTriangle, FiCheckCircle, FiInfo, FiAlertCircle } from 'react-icons/fi';
-import api from '../../api/axios';
+import {
+  listerNotifications, compterNotificationsNonLues, marquerNotificationLue,
+  marquerToutesNotificationsLues, supprimerNotification,
+} from '../../api/resources/notifications';
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [pagination, setPagination] = useState({ currentPage: 1, lastPage: 1 });
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all'); // 'all' | 'unread'
-  const [unreadCount, setUnreadCount] = useState(0);
-
-
 
   // La page affichée pilote le chargement, ce qui remplace l'appel direct des
   // boutons de pagination : il n'y a plus qu'un endroit qui émet la requête.
   const [page, setPage] = useState(1);
 
-  // Annulable : en enchaînant les pages, la réponse de la précédente pouvait
-  // arriver après celle de la suivante et réafficher l'ancienne liste.
-  useEffect(() => {
-    let annule = false;
+  const queryClient = useQueryClient();
 
-    (async () => {
-      setLoading(true);
-      setError('');
-
-      try {
-        const params = { page, per_page: 20 };
-        if (filter === 'unread') params.unread_only = true;
-
-        const [liste, compteur] = await Promise.all([
-          api.get('/admin/notifications', { params }),
-          api.get('/admin/notifications/unread-count').catch(() => null),
-        ]);
-
-        if (annule) return;
-
-        if (liste.data.success && liste.data.data) {
-          setNotifications(liste.data.data);
-          setPagination({
-            currentPage: liste.data.pagination?.current_page || page,
-            lastPage: liste.data.pagination?.last_page || 1,
-          });
-        }
-
-        if (compteur?.data?.success && compteur.data.data) {
-          setUnreadCount(compteur.data.data.count ?? 0);
-        }
-      } catch (err) {
-        if (!annule) {
-          setError('Erreur lors du chargement des notifications.');
-          console.error('[Notifications]', err);
-        }
-      } finally {
-        if (!annule) setLoading(false);
-      }
-    })();
-
-    return () => { annule = true; };
+  const parametresListe = useMemo(() => {
+    const params = { page, per_page: 20 };
+    if (filter === 'unread') params.unread_only = true;
+    return params;
   }, [page, filter]);
+
+  const notificationsQuery = useQuery({
+    queryKey: ['notifications', parametresListe],
+    queryFn: async ({ signal }) => {
+      const result = await listerNotifications(parametresListe, signal);
+      if (!result.success) throw new Error(result.message || 'Erreur lors du chargement des notifications.');
+      return result;
+    },
+  });
+
+  // Requête indépendante : le compteur ne dépend ni de la page, ni du filtre,
+  // et son échec reste silencieux — la vitrine des notifications reste
+  // consultable même si ce compteur est momentanément indisponible.
+  const unreadCountQuery = useQuery({
+    queryKey: ['notifications-unread-count'],
+    queryFn: () => compterNotificationsNonLues(),
+  });
+
+  const notifications = notificationsQuery.data?.data ?? [];
+  const pagination = {
+    currentPage: notificationsQuery.data?.pagination?.current_page || page,
+    lastPage: notificationsQuery.data?.pagination?.last_page || 1,
+  };
+  const unreadCount = unreadCountQuery.data?.data?.count ?? 0;
+  const loading = notificationsQuery.isLoading;
+
+  const rafraichir = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+  }, [queryClient]);
 
   const handleMarkRead = async (id) => {
     try {
-      await api.post(`/admin/notifications/${id}/read`);
-      setNotifications(prev =>
-        prev.map(n => n.id === id ? { ...n, is_read: true } : n)
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      await marquerNotificationLue(id);
+      rafraichir();
     } catch {
       setError('Erreur lors du marquage de la notification.');
     }
@@ -74,12 +63,9 @@ export default function NotificationsPage() {
 
   const handleMarkAllRead = async () => {
     try {
-      const { data } = await api.post('/admin/notifications/read-all');
+      const data = await marquerToutesNotificationsLues();
       if (data.success) {
-        setNotifications(prev =>
-          prev.map(n => ({ ...n, is_read: true }))
-        );
-        setUnreadCount(0);
+        rafraichir();
       }
     } catch {
       setError('Erreur lors du marquage de toutes les notifications.');
@@ -89,8 +75,11 @@ export default function NotificationsPage() {
   const handleDelete = async (id) => {
     if (!window.confirm('Supprimer cette notification ?')) return;
     try {
-      await api.delete(`/admin/notifications/${id}`);
-      setNotifications(prev => prev.filter(n => n.id !== id));
+      await supprimerNotification(id);
+      // Contrairement au marquage lu, la suppression ne touche pas le
+      // compteur de non-lues : une notification déjà lue peut être
+      // supprimée sans que ce compteur change.
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     } catch {
       setError('Erreur lors de la suppression.');
     }
@@ -160,10 +149,10 @@ export default function NotificationsPage() {
       </div>
 
       {/* État d'erreur */}
-      {error && (
+      {(error || notificationsQuery.isError) && (
         <div className="flex items-center gap-2 p-3 mb-6 bg-error-container/30 rounded-xl text-on-error-container text-sm">
           <FiAlertTriangle size={16} className="flex-shrink-0" />
-          <span>{error}</span>
+          <span>{error || 'Erreur lors du chargement des notifications.'}</span>
           <button onClick={() => setError('')} className="ml-auto text-on-error-container/60 hover:text-on-error-container">&times;</button>
         </div>
       )}

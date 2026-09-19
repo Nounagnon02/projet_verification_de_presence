@@ -1,68 +1,56 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { FiLoader, FiAlertCircle } from 'react-icons/fi';
 import BarChart from '../../components/charts/BarChart';
-import api from '../../api/axios';
+import { listerAnnees } from '../../api/resources/reference';
+import { rapportSemestre } from '../../api/resources/rapports';
+
+const donnees = (reponse) => reponse?.data ?? reponse ?? [];
 
 export default function AcademicYearComparison() {
-  const [years, setYears] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  // Une seule requête : la liste des années, puis le rapport de chacune
+  // (2 GET indépendants par année, non filtrables séparément par l'écran).
+  const yearsQuery = useQuery({
+    queryKey: ['rapport-annees-comparaison'],
+    queryFn: async () => {
+      const anneeList = donnees(await listerAnnees());
+      if (!Array.isArray(anneeList) || anneeList.length === 0) return [];
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Charger les années académiques
-        const { data: anneeRes } = await api.get('/admin/annees-academiques');
-        const anneeList = anneeRes.data || anneeRes;
-        if (!Array.isArray(anneeList) || anneeList.length === 0) {
-          setYears([]);
-          setLoading(false);
-          return;
-        }
+      return Promise.all(
+        anneeList.map(async (a) => {
+          try {
+            const stats = donnees(await rapportSemestre(a.id));
+            return {
+              id: a.id,
+              year: a.libelle || 'N/A',
+              label: a.libelle || 'N/A',
+              rate: stats.taux_presence || 0,
+              students: stats.total_etudiants || 0,
+              presences: stats.total_presences || 0,
+              evenements: stats.total_evenements || 0,
+              value: stats.taux_presence || 0,
+              active: a.active || false,
+            };
+          } catch {
+            return {
+              id: a.id,
+              year: a.libelle || 'N/A',
+              label: a.libelle || 'N/A',
+              rate: 0,
+              students: 0,
+              presences: 0,
+              evenements: 0,
+              value: 0,
+              active: a.active || false,
+            };
+          }
+        })
+      );
+    },
+  });
 
-        // Pour chaque année, récupérer les stats via semesterReport
-        const yearData = await Promise.all(
-          anneeList.map(async (a) => {
-            try {
-              const { data: res } = await api.get(`/admin/reports/semester/${a.id}`);
-              const stats = res.data || res;
-              return {
-                id: a.id,
-                year: a.libelle || 'N/A',
-                label: a.libelle || 'N/A',
-                rate: stats.taux_presence || 0,
-                students: stats.total_etudiants || 0,
-                presences: stats.total_presences || 0,
-                evenements: stats.total_evenements || 0,
-                value: stats.taux_presence || 0,
-                active: a.active || false,
-              };
-            } catch {
-              return {
-                id: a.id,
-                year: a.libelle || 'N/A',
-                label: a.libelle || 'N/A',
-                rate: 0,
-                students: 0,
-                presences: 0,
-                evenements: 0,
-                value: 0,
-                active: a.active || false,
-              };
-            }
-          })
-        );
-
-        setYears(yearData);
-      } catch {
-        setError('Impossible de charger les données.');
-        setYears([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+  const loading = yearsQuery.isLoading;
+  const error = yearsQuery.isError ? 'Impossible de charger les données.' : '';
+  const years = yearsQuery.data ?? [];
 
   if (loading) return <div className="flex justify-center p-12"><FiLoader className="animate-spin text-primary w-8 h-8" /></div>;
 
@@ -154,7 +142,7 @@ export default function AcademicYearComparison() {
                     <td className="p-4 text-right text-on-surface-variant">{d.students}</td>
                     <td className="p-4 text-right text-on-surface-variant">{d.evenements}</td>
                     <td className="p-4 text-right text-on-surface-variant">{d.presences}</td>
-                    <td className="p-4 text-right font-bold" style={{ color: d.rate >= 80 ? '#2E7D32' : d.rate >= 50 ? '#F57F17' : '#C62828' }}>
+                    <td className="p-4 text-right font-bold" style={{ color: d.rate >= 80 ? '#2E7D32' : d.rate >= 50 ? '#A65207' : '#C62828' }}>
                       {d.rate}%
                     </td>
                     <td className="p-4 text-right">{d.active ? '✓' : '—'}</td>

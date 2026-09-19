@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { FiAlertTriangle, FiLoader, FiTrash2 } from 'react-icons/fi';
-import api from '../../api/axios';
+import { listerEcs, listerSallesDisponibles } from '../../api/resources/reference';
+import { creerCreneau, modifierCreneau, supprimerCreneau } from '../../api/resources/emploiDuTemps';
 import Modal from '../ui/Modal';
 import SelecteurHeure from '../ui/SelecteurHeure';
 import SelecteurSalle from '../ui/SelecteurSalle';
@@ -42,8 +44,6 @@ const depuisCreneau = (c) => ({
  */
 export default function FormulaireCreneau({ ouvert, creneau = null, anneeId = '', filiereId = '', semestre = '', onFermer, onEnregistre }) {
   const [form, setForm] = useState(VIDE);
-  const [ecs, setEcs] = useState([]);
-  const [salles, setSalles] = useState([]);
   const [erreur, setErreur] = useState('');
   const [enCours, setEnCours] = useState(false);
 
@@ -57,31 +57,25 @@ export default function FormulaireCreneau({ ouvert, creneau = null, anneeId = ''
     }
   }
 
-  useEffect(() => {
-    if (!ouvert) return undefined;
-    let annule = false;
-    Promise.all([api.get('/admin/ecs'), api.get('/admin/salles/disponibles')])
-      .then(([reponseEcs, reponseSalles]) => {
-        if (annule) return;
-        const listeEcs = reponseEcs.data?.data ?? reponseEcs.data;
-        const listeSalles = reponseSalles.data?.data ?? reponseSalles.data;
-        setEcs(Array.isArray(listeEcs) ? listeEcs : []);
-        setSalles(Array.isArray(listeSalles) ? listeSalles : []);
-      })
-      .catch(() => { /* listes laissées vides : le serveur tranche */ });
-    return () => { annule = true; };
-  }, [ouvert]);
+  // Listes laissées vides en cas d'échec : le serveur tranche à l'enregistrement.
+  const ecsQuery = useQuery({ queryKey: ['ecs'], queryFn: () => listerEcs(), enabled: ouvert });
+  const sallesQuery = useQuery({ queryKey: ['salles-disponibles'], queryFn: () => listerSallesDisponibles(), enabled: ouvert });
+  const salles = Array.isArray(sallesQuery.data?.data ?? sallesQuery.data) ? (sallesQuery.data?.data ?? sallesQuery.data) : [];
 
   // Les cours de l'année, que suit la filière choisie (cours communs compris),
   // du semestre choisi ; celui du créneau modifié, toujours.
-  const cours = useMemo(() => ecs
-    .filter((ec) => String(ec.id) === String(creneau?.ec_id ?? '') || (
-      (!anneeId || String(ec.ue?.annee_id) === String(anneeId))
-      && (!filiereId || String(ec.ue?.filiere_id) === String(filiereId)
-        || (ec.ue?.filieres || []).some((f) => String(f.id) === String(filiereId)))
-      && (!semestre || String(ec.ue?.semestre) === String(semestre))
-    ))
-    .sort((a, b) => String(a.code).localeCompare(String(b.code), 'fr')), [ecs, creneau, anneeId, filiereId, semestre]);
+  const cours = useMemo(() => {
+    const ecs = Array.isArray(ecsQuery.data?.data ?? ecsQuery.data) ? (ecsQuery.data?.data ?? ecsQuery.data) : [];
+
+    return ecs
+      .filter((ec) => String(ec.id) === String(creneau?.ec_id ?? '') || (
+        (!anneeId || String(ec.ue?.annee_id) === String(anneeId))
+        && (!filiereId || String(ec.ue?.filiere_id) === String(filiereId)
+          || (ec.ue?.filieres || []).some((f) => String(f.id) === String(filiereId)))
+        && (!semestre || String(ec.ue?.semestre) === String(semestre))
+      ))
+      .sort((a, b) => String(a.code).localeCompare(String(b.code), 'fr'));
+  }, [ecsQuery.data, creneau, anneeId, filiereId, semestre]);
 
   const champ = (cle) => (e) => setForm((f) => ({ ...f, [cle]: e.target.value }));
   const choisirGroupe = useCallback((groupe_id) => setForm((f) => ({ ...f, groupe_id })), []);
@@ -101,9 +95,9 @@ export default function FormulaireCreneau({ ouvert, creneau = null, anneeId = ''
       valide_au: form.valide_au || null,
     };
     try {
-      const { data } = creneau
-        ? await api.put(`/admin/emploi-du-temps/${creneau.id}`, corps)
-        : await api.post('/admin/emploi-du-temps', corps);
+      const data = creneau
+        ? await modifierCreneau(creneau.id, corps)
+        : await creerCreneau(corps);
       onEnregistre?.(data?.message || 'Créneau enregistré.');
     } catch (err) {
       setErreur(messageErreur(err, "Le créneau n'a pas été enregistré."));
@@ -116,7 +110,7 @@ export default function FormulaireCreneau({ ouvert, creneau = null, anneeId = ''
     if (!creneau || !window.confirm('Supprimer ce créneau ? Ses séances à venir, jamais ouvertes et sans présence, sont retirées avec lui.')) return;
     setEnCours(true);
     try {
-      const { data } = await api.delete(`/admin/emploi-du-temps/${creneau.id}`);
+      const data = await supprimerCreneau(creneau.id);
       onEnregistre?.(data?.message || 'Créneau supprimé.');
     } catch (err) {
       setErreur(messageErreur(err, "Le créneau n'a pas été supprimé."));

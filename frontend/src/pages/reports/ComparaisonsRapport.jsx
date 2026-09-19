@@ -1,41 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { FiLoader } from 'react-icons/fi';
-import api from '../../api/axios';
 import BarreTaux from '../../components/charts/BarreTaux';
 import { couleurTaux, libelleTaux } from '../../utils/taux';
+import { rapportFiliereStats, rapportComparaisonSemestres, rapportAnneeStats } from '../../api/resources/rapports';
 
 const CARTE = 'bg-surface-container-lowest rounded-2xl border border-outline-variant/10 p-5';
-
-const estAnnulation = (e) => e?.name === 'CanceledError' || e?.code === 'ERR_CANCELED';
-
-/**
- * Requête annulable, relancée quand ses paramètres changent ; params à null :
- * rien à charger. L'état retient la clé de la requête dont il vient, si bien
- * que le chargement se DÉDUIT de l'écart avec la clé courante, sans état posé
- * au début de l'effet.
- */
-function useRequete(url, params) {
-  const cle = params ? `${url}?${new URLSearchParams(params)}` : null;
-  const [etat, setEtat] = useState({ cle: null, donnees: null, erreur: false });
-
-  useEffect(() => {
-    if (!cle) return undefined;
-
-    const controleur = new AbortController();
-
-    api.get(url, { params, signal: controleur.signal })
-      .then(({ data }) => setEtat({ cle, donnees: data?.data ?? null, erreur: false }))
-      .catch((e) => { if (!estAnnulation(e)) setEtat({ cle, donnees: null, erreur: true }); });
-
-    return () => controleur.abort();
-    // La clé résume l'URL et les paramètres, recréés à chaque rendu.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cle]);
-
-  const aJour = etat.cle === cle;
-
-  return { chargement: Boolean(cle) && !aJour, donnees: aJour ? etat.donnees : null, erreur: aJour && etat.erreur };
-}
 
 const Chargement = () => (
   <div className="flex justify-center py-8"><FiLoader className="animate-spin text-primary w-6 h-6" aria-label="Chargement" /></div>
@@ -81,12 +50,24 @@ const LigneTaux = ({ rang, libelle, detail, taux, presents, attendus, surlignee 
  * reste de la page : présences valides ÷ présences attendues, séances terminées.
  */
 export default function ComparaisonsRapport({ anneeId, anneeLibelle, filiereId }) {
-  const classement = useRequete('/admin/reports/filiere-stats', anneeId ? { annee_id: anneeId } : null);
-  const semestres = useRequete(
-    '/admin/reports/semester-comparison',
-    anneeId && filiereId ? { annee_id: anneeId, filiere_id: filiereId } : null,
-  );
-  const annees = useRequete('/admin/reports/annee-stats', {});
+  const classementQuery = useQuery({
+    queryKey: ['rapport-filiere-stats', anneeId],
+    queryFn: ({ signal }) => rapportFiliereStats({ annee_id: anneeId }, signal),
+    enabled: Boolean(anneeId),
+  });
+  const semestresQuery = useQuery({
+    queryKey: ['rapport-comparaison-semestres', anneeId, filiereId],
+    queryFn: ({ signal }) => rapportComparaisonSemestres({ annee_id: anneeId, filiere_id: filiereId }, signal),
+    enabled: Boolean(anneeId && filiereId),
+  });
+  const anneesQuery = useQuery({
+    queryKey: ['rapport-annee-stats'],
+    queryFn: ({ signal }) => rapportAnneeStats(signal),
+  });
+
+  const classement = { chargement: classementQuery.isLoading, donnees: classementQuery.data?.data ?? null, erreur: classementQuery.isError };
+  const semestres = { chargement: semestresQuery.isLoading, donnees: semestresQuery.data?.data ?? null, erreur: semestresQuery.isError };
+  const annees = { chargement: anneesQuery.isLoading, donnees: anneesQuery.data?.data ?? null, erreur: anneesQuery.isError };
 
   // Les filières sans séance terminée ferment la marche, sans rang.
   const filieres = Array.isArray(classement.donnees)

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 
 import { server } from './msw/server';
@@ -34,12 +35,15 @@ const SALLES = [
   { id: 1, nom: 'Amphi A', code: 'AMPHI-A', etablissement_id: 7, latitude: 6.36, longitude: 2.43, rayon_geofence_m: 50, hors_reseau: false, actif: true },
 ];
 
+// Un client neuf par montage : pas de cache qui fuite d'un test au suivant.
 const monter = () => render(
-  <MemoryRouter>
-    <ToastProvider>
-      <SallesPage />
-    </ToastProvider>
-  </MemoryRouter>,
+  <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 0 } } })}>
+    <MemoryRouter>
+      <ToastProvider>
+        <SallesPage />
+      </ToastProvider>
+    </MemoryRouter>
+  </QueryClientProvider>,
 );
 
 let mouchard;

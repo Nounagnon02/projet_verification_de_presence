@@ -1,7 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiPlus, FiEdit2, FiTrash2, FiSave, FiRefreshCw, FiBook, FiBookOpen, FiChevronDown, FiChevronRight, FiAlertTriangle, FiSearch, FiUpload, FiFileText, FiLoader } from 'react-icons/fi';
-import api from '../../api/axios';
+import {
+  listerUes, creerUe, modifierUe, supprimerUe,
+  creerEc, modifierEc, supprimerEc,
+  importerMaquettePdf, importerMaquetteCsv,
+} from '../../api/resources/maquette';
 import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 import BandeauAnneeClose from '../../components/ui/BandeauAnneeClose';
 import Modal from '../../components/ui/Modal';
@@ -14,9 +19,8 @@ const INITIAL_EC = { code: '', intitule: '', volume_cm: 0, volume_td: 0, volume_
 
 export default function UEManagementPage() {
   const navigate = useNavigate();
-  const [ues, setUes] = useState([]);
+  const queryClient = useQueryClient();
 
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [search, setSearch] = useState('');
@@ -80,9 +84,7 @@ export default function UEManagementPage() {
     try {
       const formData = new FormData();
       formData.append('file', importFile);
-      const { data } = await api.post('/admin/import/csv/courses', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const data = await importerMaquetteCsv(formData);
       const d = data?.data ?? data;
       setImportResultat({
         crees: d.created ?? d.success ?? 0,
@@ -105,9 +107,7 @@ export default function UEManagementPage() {
     try {
       const formData = new FormData();
       formData.append('file', importFile);
-      const { data } = await api.post('/admin/import/courses', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const data = await importerMaquettePdf(formData);
       // L'API repond { success, message, data: { analysis_id, status } }.
       // On lisait « data.data.id » puis « data.analysis_id » a la racine :
       // aucune des deux n'existe, si bien que l'identifiant etait TOUJOURS
@@ -152,39 +152,22 @@ export default function UEManagementPage() {
   };
 
 
-  // Compteur de rechargement : les actions qui modifient les données
-  // l'incrémentent au lieu d'appeler une seconde fonction de chargement. La
-  // requête n'est émise qu'à un seul endroit, et l'annulation y est
-  // systématique — une réponse tardive ne peut plus écraser un état plus récent.
-  const [rechargement, setRechargement] = useState(0);
-  const rafraichir = useCallback(() => setRechargement((n) => n + 1), []);
+  // Les listes de référence sont chargées par useFiltresAcademiques : les
+  // redemander ici les aurait figées à leur version non filtrée.
+  const parametresListe = {};
+  if (filtres.annee) parametresListe.annee_id = filtres.annee;
+  if (filtres.filiere) parametresListe.filiere_id = filtres.filiere;
+  if (filtres.niveau) parametresListe.niveau = filtres.niveau;
 
-  useEffect(() => {
-    let annule = false;
+  const uesQuery = useQuery({
+    queryKey: ['ues', parametresListe],
+    queryFn: ({ signal }) => listerUes(parametresListe, signal),
+  });
+  const ues = uesQuery.data?.data ?? uesQuery.data ?? [];
+  const loading = uesQuery.isLoading;
+  const erreurChargement = uesQuery.isError ? 'Erreur lors du chargement des données.' : '';
 
-    (async () => {
-      try {
-        setLoading(true);
-        if (!annule) setError('');
-        const params = {};
-        if (filtres.annee) params.annee_id = filtres.annee;
-        if (filtres.filiere) params.filiere_id = filtres.filiere;
-        if (filtres.niveau) params.niveau = filtres.niveau;
-        // Les listes de référence sont chargées par useFiltresAcademiques :
-        // les redemander ici les aurait figées à leur version non filtrée.
-        const uesRes = await api.get('/admin/ues', { params });
-        if (!annule) setUes(uesRes.data?.data ?? uesRes.data ?? []);
-      } catch (err) {
-        if (!annule) setError('Erreur lors du chargement des données.');
-        console.error('[UE]', err);
-      } finally {
-        if (!annule) setLoading(false);
-      }
-  
-    })();
-
-    return () => { annule = true; };
-  }, [filtres.annee, filtres.filiere, filtres.niveau, rechargement]);
+  const rafraichir = () => queryClient.invalidateQueries({ queryKey: ['ues'] });
 
   const filteredUes = ues.filter(ue =>
     !search || ue.code?.toLowerCase().includes(search.toLowerCase()) ||
@@ -238,10 +221,10 @@ export default function UEManagementPage() {
     setSuccess('');
     try {
       if (ueModal.editing) {
-        await api.put(`/admin/ues/${ueModal.id}`, ueModal.data);
+        await modifierUe(ueModal.id, ueModal.data);
         setSuccess('UE mise à jour avec succès.');
       } else {
-        await api.post('/admin/ues', ueModal.data);
+        await creerUe(ueModal.data);
         setSuccess('UE créée avec succès.');
       }
       setUeModal({ open: false, editing: false, id: null, data: INITIAL_UE, saving: false });
@@ -256,7 +239,7 @@ export default function UEManagementPage() {
   const handleDeleteUe = async (ue) => {
     if (!window.confirm(`Supprimer l'UE "${ue.code} — ${ue.intitule}" ? Cette action est irréversible.`)) return;
     try {
-      await api.delete(`/admin/ues/${ue.id}`);
+      await supprimerUe(ue.id);
       setSuccess('UE supprimée.');
       rafraichir();
     } catch {
@@ -279,10 +262,10 @@ export default function UEManagementPage() {
       if (ecModal.editing) {
         // Par son identifiant : retrouvé par son code, un EC dont on changeait
         // le code n'était pas modifié, et l'écran annonçait pourtant un succès.
-        await api.put(`/admin/ecs/${ecModal.id}`, payload);
+        await modifierEc(ecModal.id, payload);
         setSuccess('EC mis à jour avec succès.');
       } else {
-        await api.post('/admin/ecs', payload);
+        await creerEc(payload);
         setSuccess('EC créé avec succès.');
       }
       setEcModal({ open: false, editing: false, ueId: null, data: INITIAL_EC, saving: false });
@@ -297,7 +280,7 @@ export default function UEManagementPage() {
   const handleDeleteEc = async (ec) => {
     if (!window.confirm(`Supprimer l'EC "${ec.code} — ${ec.intitule}" ?`)) return;
     try {
-      await api.delete(`/admin/ecs/${ec.id}`);
+      await supprimerEc(ec.id);
       setSuccess('EC supprimé.');
       rafraichir();
     } catch {
@@ -386,10 +369,10 @@ export default function UEManagementPage() {
       {filtres.anneeClose && <BandeauAnneeClose annee={filtres.anneeChoisie} />}
 
       {/* Alertes */}
-      {error && (
+      {(error || erreurChargement) && (
         <div className="flex items-center gap-2 p-3 bg-error-container/30 rounded-xl text-on-error-container text-sm">
           <FiAlertTriangle size={16} className="flex-shrink-0" />
-          <span className="flex-1">{error}</span>
+          <span className="flex-1">{error || erreurChargement}</span>
           <button onClick={() => setError('')} className="text-on-error-container/60 hover:text-on-error-container">&times;</button>
         </div>
       )}
@@ -439,7 +422,12 @@ export default function UEManagementPage() {
               {/* En-tête UE */}
               <div className="p-4 flex items-center gap-3 cursor-pointer hover:bg-surface-container-low/50 transition-colors"
                 onClick={() => toggleExpand(ue.id)}>
-                <button className="p-1 text-outline hover:text-primary transition-colors">
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleExpand(ue.id); }}
+                  aria-expanded={Boolean(expanded[ue.id])}
+                  aria-label={expanded[ue.id] ? `Masquer les détails de ${ue.code}` : `Afficher les détails de ${ue.code}`}
+                  className="p-1 text-outline hover:text-primary transition-colors"
+                >
                   {expanded[ue.id] ? <FiChevronDown size={18} /> : <FiChevronRight size={18} />}
                 </button>
                 <div className="flex-1 min-w-0">

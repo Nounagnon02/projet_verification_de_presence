@@ -1,14 +1,19 @@
-import { useState, useEffect , useMemo} from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   FiFilter, FiLoader, FiRefreshCw, FiBarChart2, FiCalendar, FiUsers,
   FiCheckCircle, FiAlertTriangle, FiDownload, FiFileText, FiChevronDown, FiChevronUp,
   FiChevronLeft, FiChevronRight
 } from 'react-icons/fi';
-import api from '../../api/axios';
 import { enregistrer, nomFichierServeur } from '../../utils/telechargement';
 import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 import BarChart from '../../components/charts/BarChart';
 import GaugeChart from '../../components/charts/GaugeChart';
+import { listerAnnees } from '../../api/resources/reference';
+import {
+  listerUes, rapportFiltre, rapportSemestre, rapportComparaisonSemestres, rapportFiliereStats,
+  exporterPresencesCsv, exporterRapportDepartementPdf,
+} from '../../api/resources/rapports';
 
 const TRIMESTRES = [
   { value: 1, label: 'T1 (Sep-Nov)' },
@@ -38,19 +43,12 @@ const SectionToggle = ({ open, setOpen, title, badge }) => (
 );
 
 export default function FilteredReportsPage() {
-  //Filtres
-  const [ues, setUes] = useState([]);
-
   // Filtres en cascade. Les noms locaux sont conservés : ils sont lus par les
   // paramètres de requête, les exports et les libellés de l'écran.
   const filtres = useFiltresAcademiques({ preselectionnerAnneeActive: true });
   const { annees, filieres } = filtres;
   const { annee: anneeId, filiere: filiereId, semestre } = filtres;
   const { setAnnee: setAnneeId, setFiliere: setFiliereId, setSemestre } = filtres;
-
-  // Compteur de rechargement : le bouton « actualiser » l'incrémente, ce qui
-  // relance l'effet. La requête n'est émise qu'à un seul endroit.
-  const [rechargement, setRechargement] = useState(0);
 
   const [trimestre, setTrimestre] = useState('');
   const [ueId, setUeId] = useState('');
@@ -60,19 +58,9 @@ export default function FilteredReportsPage() {
   const [dateFin, setDateFin] = useState('');
 
   //Données principales
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [exporting, setExporting] = useState(null);
   const [exportError, setExportError] = useState('');
-
-  //Données comparaisons
-  const [semComp, setSemComp] = useState(null);
-  const [filiereStats, setFiliereStats] = useState(null);
-  const [yearStats, setYearStats] = useState(null);
-  const [loadingSem, setLoadingSem] = useState(false);
-  const [loadingFiliere, setLoadingFiliere] = useState(false);
-  const [loadingYear, setLoadingYear] = useState(false);
 
   //Sections repliables
   const [showSemComp, setShowSemComp] = useState(false);
@@ -88,7 +76,7 @@ export default function FilteredReportsPage() {
     const init = async () => {
       try {
         // Filières et années viennent de useFiltresAcademiques ; les UEs, de
-        // l'effet qui suit l'année et la filière. Il ne reste rien à charger
+        // la requête qui suit l'année et la filière. Il ne reste rien à charger
         // ici, mais l'écran doit sortir de son état initial.
         await Promise.resolve();
       } catch {
@@ -103,23 +91,24 @@ export default function FilteredReportsPage() {
   // UEs de l'année et de la filière choisies. L'endpoint honore annee_id et
   // filiere_id depuis toujours ; la page ne les lui transmettait pas, si bien
   // que la liste des UEs mélangeait toutes les années.
-  useEffect(() => {
-    // Tant que le hook n'a pas arrêté son année — il présélectionne l'année
-    // active — interroger le serveur enverrait une requête sans filtre, aussitôt
-    // remplacée par la bonne.
-    if (filtres.chargement) return undefined;
-
-    const controleur = new AbortController();
-    const parametres = {};
-    if (anneeId) parametres.annee_id = anneeId;
-    if (filiereId) parametres.filiere_id = filiereId;
-
-    api.get('/admin/ues', { params: parametres, signal: controleur.signal })
-      .then(({ data }) => setUes(data?.data ?? data ?? []))
-      .catch(() => { /* la liste précédente reste affichée */ });
-
-    return () => controleur.abort();
-  }, [anneeId, filiereId, filtres.chargement]);
+  //
+  // Tant que le hook n'a pas arrêté son année — il présélectionne l'année
+  // active — interroger le serveur enverrait une requête sans filtre, aussitôt
+  // remplacée par la bonne : la requête reste désactivée jusque-là.
+  const uesQuery = useQuery({
+    queryKey: ['ues', anneeId, filiereId],
+    queryFn: ({ signal }) => {
+      const params = {};
+      if (anneeId) params.annee_id = anneeId;
+      if (filiereId) params.filiere_id = filiereId;
+      return listerUes(params, signal);
+    },
+    enabled: !filtres.chargement,
+  });
+  // Mémoïsé : `?? []` recréerait un tableau à chaque rendu tant que la requête
+  // n'a pas répondu, et invaliderait les useMemo qui en dépendent.
+  const uesBrutes = uesQuery.data;
+  const ues = useMemo(() => uesBrutes?.data ?? uesBrutes ?? [], [uesBrutes]);
 
   // ECs de l'UE choisie : une valeur calculée, pas un état à synchroniser.
   const ecs = useMemo(() => {
@@ -146,145 +135,90 @@ export default function FilteredReportsPage() {
   }
 
   //Chargement stats filtrées
+  //
+  // Les filtres de cette page ne s'appliquent que sur demande (bouton
+  // « Appliquer ») : les modifier ne relance rien. Les paramètres réellement
+  // appliqués sont donc figés dans leur propre état, avec un numéro de version
+  // qui garantit qu'un nouveau clic — même sans changement de filtre — relance
+  // quand même la requête.
+  const [appliedFiltres, setAppliedFiltres] = useState({ params: {}, version: 0 });
 
-  // Chargement du rapport. Annulable : en enchaînant les filtres, la réponse
-  // d'une requête précédente pouvait arriver en dernier et réafficher un rapport
-  // que l'utilisateur venait de quitter.
-  useEffect(() => {
-    if (initialLoading) return;
+  const construireParamsFiltres = () => {
+    const params = {};
+    if (filiereId) params.filiere_id = filiereId;
+    if (anneeId) params.annee_id = anneeId;
+    if (semestre) params.semestre = semestre;
+    if (trimestre) params.trimestre = trimestre;
+    if (ueId) params.ue_id = ueId;
+    if (ecId) params.ec_id = ecId;
+    if (jours) params.jours = jours;
+    if (dateDebut) params.date_debut = dateDebut;
+    if (dateFin) params.date_fin = dateFin;
+    return params;
+  };
 
-    let annule = false;
-
-    (async () => {
-      setLoading(true);
-
-      try {
-        const params = {};
-        if (filiereId) params.filiere_id = filiereId;
-        if (anneeId) params.annee_id = anneeId;
-        if (semestre) params.semestre = semestre;
-        if (trimestre) params.trimestre = trimestre;
-        if (ueId) params.ue_id = ueId;
-        if (ecId) params.ec_id = ecId;
-        if (jours) params.jours = jours;
-        if (dateDebut) params.date_debut = dateDebut;
-        if (dateFin) params.date_fin = dateFin;
-
-        const { data: res } = await api.get('/admin/reports/filtered', { params });
-        if (!annule) setData(res.data || res);
-      } catch {
-        if (!annule) setData(null);
-      } finally {
-        if (!annule) setLoading(false);
-      }
-    })();
-
-    return () => { annule = true; };
-    // Le rechargement est déclenché explicitement par le bouton « actualiser »,
-    // les filtres n'étant appliqués que sur demande dans cette page.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialLoading, rechargement]);
-
-  //Chargement comparaison semestres
-
-  //Chargement comparaison filières
+  const rapportQuery = useQuery({
+    queryKey: ['rapport-filtre', appliedFiltres],
+    queryFn: ({ signal }) => rapportFiltre(appliedFiltres.params, signal),
+    enabled: !initialLoading,
+  });
+  const loading = rapportQuery.isFetching;
+  const data = rapportQuery.isError ? null : (rapportQuery.data?.data ?? rapportQuery.data ?? null);
 
   //Chargement comparaison années (au montage)
-  useEffect(() => {
-    const fetch = async () => {
-      setLoadingYear(true);
-      try {
-        const { data: anRes } = await api.get('/admin/annees-academiques');
-        const anList = anRes.data || anRes;
-        if (!Array.isArray(anList)) { setYearStats([]); setLoadingYear(false); return; }
+  const yearStatsQuery = useQuery({
+    queryKey: ['rapport-annees-comparaison'],
+    queryFn: async () => {
+      const anRes = await listerAnnees();
+      const anList = anRes?.data ?? anRes;
+      if (!Array.isArray(anList)) return [];
 
-        const yearData = await Promise.all(
-          anList.map(async (a) => {
-            try {
-              const { data: res } = await api.get(`/admin/reports/semester/${a.id}`);
-              const stats = res.data || res;
-              return {
-                id: a.id,
-                year: a.libelle || 'N/A',
-                rate: stats.taux_presence ?? stats.taux_global ?? 0,
-                students: stats.total_etudiants || 0,
-                presences: stats.total_presences || 0,
-                evenements: stats.total_evenements || 0,
-                active: a.active || false,
-              };
-            } catch {
-              return {
-                id: a.id, year: a.libelle || 'N/A',
-                rate: 0, students: 0, presences: 0, evenements: 0, active: a.active || false,
-              };
-            }
-          })
-        );
-        setYearStats(yearData);
-      } catch {
-        setYearStats([]);
-      } finally {
-        setLoadingYear(false);
-      }
-    };
-    fetch();
-  }, []);
+      return Promise.all(
+        anList.map(async (a) => {
+          try {
+            const stats = (await rapportSemestre(a.id))?.data ?? {};
+            return {
+              id: a.id,
+              year: a.libelle || 'N/A',
+              rate: stats.taux_presence ?? stats.taux_global ?? 0,
+              students: stats.total_etudiants || 0,
+              presences: stats.total_presences || 0,
+              evenements: stats.total_evenements || 0,
+              active: a.active || false,
+            };
+          } catch {
+            return {
+              id: a.id, year: a.libelle || 'N/A',
+              rate: 0, students: 0, presences: 0, evenements: 0, active: a.active || false,
+            };
+          }
+        })
+      );
+    },
+  });
+  const yearStats = yearStatsQuery.data ?? null;
+  const loadingYear = yearStatsQuery.isLoading;
 
-  // Comparaison par semestre, chargée à l'ouverture de la section. Les gardes
-  // « pas déjà chargé, pas en cours » ont disparu : les dépendances étant les
-  // entrées réelles du chargement, l'effet ne se relance qu'à bon escient.
-  useEffect(() => {
-    if (!showSemComp || !filiereId || !anneeId) return;
-
-    let annule = false;
-
-    (async () => {
-      setLoadingSem(true);
-
-      try {
-        const { data: res } = await api.get('/admin/reports/semester-comparison', {
-          params: { filiere_id: filiereId, annee_id: anneeId },
-        });
-        if (!annule) setSemComp(res.data || res);
-      } catch {
-        if (!annule) setSemComp(null);
-      } finally {
-        if (!annule) setLoadingSem(false);
-      }
-    })();
-
-    return () => { annule = true; };
-  }, [showSemComp, filiereId, anneeId]);
+  // Comparaison par semestre, chargée à l'ouverture de la section.
+  const semCompQuery = useQuery({
+    queryKey: ['rapport-comparaison-semestres', filiereId, anneeId],
+    queryFn: ({ signal }) => rapportComparaisonSemestres({ filiere_id: filiereId, annee_id: anneeId }, signal),
+    enabled: showSemComp && Boolean(filiereId) && Boolean(anneeId),
+  });
+  const semComp = semCompQuery.data?.data ?? semCompQuery.data ?? null;
+  const loadingSem = semCompQuery.isFetching;
 
   // Comparaison par filière, même principe.
-  useEffect(() => {
-    if (!showFiliereComp || !anneeId) return;
-
-    let annule = false;
-
-    (async () => {
-      setLoadingFiliere(true);
-
-      try {
-        const { data: res } = await api.get('/admin/reports/filiere-stats', {
-          params: { annee_id: anneeId },
-        });
-        const list = res.data || res;
-
-        if (!annule) {
-          setFiliereStats(Array.isArray(list)
-            ? list.sort((a, b) => (b.taux || 0) - (a.taux || 0)).map((f, i) => ({ ...f, rank: i + 1 }))
-            : []);
-        }
-      } catch {
-        if (!annule) setFiliereStats([]);
-      } finally {
-        if (!annule) setLoadingFiliere(false);
-      }
-    })();
-
-    return () => { annule = true; };
-  }, [showFiliereComp, anneeId]);
+  const filiereStatsQuery = useQuery({
+    queryKey: ['rapport-filiere-stats', anneeId],
+    queryFn: ({ signal }) => rapportFiliereStats({ annee_id: anneeId }, signal),
+    enabled: showFiliereComp && Boolean(anneeId),
+  });
+  const filiereStatsBrutes = filiereStatsQuery.data?.data ?? filiereStatsQuery.data;
+  const filiereStats = Array.isArray(filiereStatsBrutes)
+    ? [...filiereStatsBrutes].sort((a, b) => (b.taux || 0) - (a.taux || 0)).map((f, i) => ({ ...f, rank: i + 1 }))
+    : null;
+  const loadingFiliere = filiereStatsQuery.isFetching;
 
   //Exports
   //
@@ -297,20 +231,18 @@ export default function FilteredReportsPage() {
     setExporting(type);
     setExportError('');
     try {
-      let url = '';
-      let params = {};
       let filename = '';
+      let requete;
 
       switch (type) {
         case 'presences-csv':
-          url = '/admin/reports/excel/export';
+          filename = `presences_${Date.now()}.csv`;
           // Le backend n'honore que ces trois filtres sur cet export.
-          params = {
+          requete = exporterPresencesCsv({
             filiere_id: filiereId || undefined,
             date_debut: dateDebut || undefined,
             date_fin: dateFin || undefined,
-          };
-          filename = `presences_${Date.now()}.csv`;
+          });
           break;
 
         case 'filiere-pdf':
@@ -318,16 +250,15 @@ export default function FilteredReportsPage() {
             setExportError('Sélectionnez une filière avant d\'exporter son rapport.');
             return;
           }
-          url = `/admin/reports/department/${filiereId}`;
-          params = { format: 'pdf' };
           filename = `rapport_filiere_${Date.now()}.pdf`;
+          requete = exporterRapportDepartementPdf(filiereId);
           break;
 
         default:
           return;
       }
 
-      const { data: blobData, headers } = await api.get(url, { params, responseType: 'blob' });
+      const { data: blobData, headers } = await requete;
       // Le nom donné par le serveur résume les filtres ; le nom local n'est qu'un repli.
       enregistrer(blobData, nomFichierServeur(headers, filename));
     } catch {
@@ -386,7 +317,9 @@ export default function FilteredReportsPage() {
             className="px-3 py-2 text-xs font-semibold text-on-surface-variant bg-surface-container-high rounded-xl hover:bg-surface-container-higher transition-all">
             Réinitialiser
           </button>
-          <button onClick={() => setRechargement((n) => n + 1)} disabled={loading}
+          <button
+            onClick={() => setAppliedFiltres((prev) => ({ params: construireParamsFiltres(), version: prev.version + 1 }))}
+            disabled={loading}
             className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-xl text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-50">
             {loading ? <FiLoader className="animate-spin" /> : <FiRefreshCw />}
             Appliquer
@@ -484,7 +417,7 @@ export default function FilteredReportsPage() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10">
               <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider mb-1">Taux Global</p>
-              <p className="text-2xl font-bold font-headline" style={{ color: d.taux_global >= 80 ? '#2E7D32' : d.taux_global >= 50 ? '#F57F17' : '#C62828' }}>
+              <p className="text-2xl font-bold font-headline" style={{ color: d.taux_global >= 80 ? '#2E7D32' : d.taux_global >= 50 ? '#A65207' : '#C62828' }}>
                 {d.taux_global ?? '—'}%
               </p>
             </div>
@@ -592,7 +525,7 @@ export default function FilteredReportsPage() {
                         <td className="p-3 text-right text-on-surface-variant">S{ue.semestre}</td>
                         <td className="p-3 text-right">{ue.total_evenements}</td>
                         <td className="p-3 text-right">{ue.total_presences}</td>
-                        <td className="p-3 text-right font-bold" style={{ color: ue.taux >= 80 ? '#2E7D32' : ue.taux >= 50 ? '#F57F17' : '#C62828' }}>
+                        <td className="p-3 text-right font-bold" style={{ color: ue.taux >= 80 ? '#2E7D32' : ue.taux >= 50 ? '#A65207' : '#C62828' }}>
                           {ue.taux}%
                         </td>
                       </tr>
@@ -700,7 +633,7 @@ export default function FilteredReportsPage() {
                         </td>
                         <td className="p-2 font-medium">{f.intitule || f.code}</td>
                         <td className="p-2 text-right text-on-surface-variant">{f.niveau}</td>
-                        <td className="p-2 text-right font-bold" style={{ color: f.taux >= 80 ? '#2E7D32' : f.taux >= 50 ? '#F57F17' : '#C62828' }}>
+                        <td className="p-2 text-right font-bold" style={{ color: f.taux >= 80 ? '#2E7D32' : f.taux >= 50 ? '#A65207' : '#C62828' }}>
                           {f.taux}%
                         </td>
                         <td className="p-2 text-right text-on-surface-variant">{f.total_presences}</td>

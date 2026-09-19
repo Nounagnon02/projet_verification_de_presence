@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } 
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { http } from 'msw'
 import { server } from './msw/server'
 import { succes, echec } from './msw/handlers'
@@ -70,7 +71,12 @@ afterEach(() => {
 
 async function afficher() {
   const user = userEvent.setup()
-  render(<MemoryRouter><ScheduleValidationPage /></MemoryRouter>)
+  // Un client neuf par montage : pas de cache qui fuite d'un test au suivant.
+  render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 0 } } })}>
+      <MemoryRouter><ScheduleValidationPage /></MemoryRouter>
+    </QueryClientProvider>,
+  )
   await screen.findByText(/Destination/)
   return user
 }

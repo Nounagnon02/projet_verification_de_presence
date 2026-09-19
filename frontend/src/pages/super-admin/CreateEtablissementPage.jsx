@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MdArrowBack, MdBusiness, MdEmail, MdPhone, MdLocationOn, MdCheck, MdWarning } from 'react-icons/md';
-import api from '../../api/axios';
+import { creerEtablissement } from '../../api/resources/etablissements';
 
 export default function CreateEtablissementPage() {
   const navigate = useNavigate();
@@ -32,7 +32,7 @@ export default function CreateEtablissementPage() {
 
     setLoading(true);
     try {
-      const { data } = await api.post('/super-admin/etablissements', form);
+      const data = await creerEtablissement(form);
       if (data.success) {
         const etab = data.data?.etablissement || data.data;
         const credentials = data.data?.credentials;

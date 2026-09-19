@@ -1,24 +1,22 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { FiDownload, FiRefreshCw, FiChevronDown, FiInfo } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import { useToastCtx } from '../../context/ToastContext';
 import DataTable from '../../components/ui/DataTable';
 import SearchInput from '../../components/ui/SearchInput';
 import Badge from '../../components/ui/Badge';
-import api from '../../api/axios';
+import { listerHistoriquePresences, exporterHistoriquePresences } from '../../api/resources/presences';
 import { enregistrer, nomFichierServeur } from '../../utils/telechargement';
 import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 
 
 const PresenceHistoryPage = () => {
-  const [records, setRecords] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [page, setPage] = useState(1);
   // Tri demandé au serveur : il porte sur toute la sélection, pas sur la page.
   const [tri, setTri] = useState({ champ: 'date', sens: 'desc' });
-  const [pagination, setPagination] = useState(null);
   const { addToast } = useToastCtx();
 
   // Filtres supplémentaires
@@ -33,45 +31,32 @@ const PresenceHistoryPage = () => {
   const [exporting, setExporting] = useState(false);
   const exportRef = useRef(null);
 
-
-  // Chargement intégré à l'effet, son unique appelant, et annulable : neuf
-  // filtres pilotent cette liste, et deux changements rapprochés faisaient
-  // partir deux requêtes dont l'ordre de retour n'était pas garanti.
-  useEffect(() => {
-    let annule = false;
-
-    (async () => {
-      setLoading(true);
-      try {
-        const params = { page, per_page: 20 };
-        if (search.trim()) params.search = search;
-        if (filter !== 'all') params.statut = filter;
-        if (filtres.annee) params.annee_id = filtres.annee;
-        if (filtres.filiere) params.filiere_id = filtres.filiere;
-        if (filtres.niveau) params.niveau = filtres.niveau;
-        if (filtres.semestre) params.semestre = filtres.semestre;
-        if (dateDebut) params.date_debut = dateDebut;
-        if (dateFin) params.date_fin = dateFin;
-        params.tri = tri.champ;
-        params.sens = tri.sens;
-
-        const { data } = await api.get('/admin/presence/history', { params });
-        if (data.success) {
-          if (!annule) setRecords(data.data || []);
-          if (!annule) setPagination(data.meta || null);
-        } else {
-          if (!annule) setRecords(data.data || []);
-        }
-      } catch {
-        if (!annule) setRecords([]);
-      } finally {
-        if (!annule) setLoading(false);
-      }
-  
-    })();
-
-    return () => { annule = true; };
+  // Neuf filtres pilotent cette liste : une clé de requête par combinaison,
+  // pour que TanStack Query annule/ignore les réponses qui ne correspondent
+  // plus aux filtres courants, plutôt qu'un AbortController manuel.
+  const parametresListe = useMemo(() => {
+    const params = { page, per_page: 20 };
+    if (search.trim()) params.search = search;
+    if (filter !== 'all') params.statut = filter;
+    if (filtres.annee) params.annee_id = filtres.annee;
+    if (filtres.filiere) params.filiere_id = filtres.filiere;
+    if (filtres.niveau) params.niveau = filtres.niveau;
+    if (filtres.semestre) params.semestre = filtres.semestre;
+    if (dateDebut) params.date_debut = dateDebut;
+    if (dateFin) params.date_fin = dateFin;
+    params.tri = tri.champ;
+    params.sens = tri.sens;
+    return params;
   }, [page, search, filter, filtres.annee, filtres.filiere, filtres.niveau, filtres.semestre, dateDebut, dateFin, tri.champ, tri.sens]);
+
+  const historiqueQuery = useQuery({
+    queryKey: ['historique-presences', parametresListe],
+    queryFn: () => listerHistoriquePresences(parametresListe),
+  });
+
+  const records = historiqueQuery.data?.data ?? [];
+  const pagination = historiqueQuery.data?.meta ?? null;
+  const loading = historiqueQuery.isFetching;
 
   const resetFilters = () => {
     // Remettre l'année à zéro suffit : le hook en cascade vide filière,
@@ -114,10 +99,7 @@ const PresenceHistoryPage = () => {
       params.sens = tri.sens;
       params.format = format;
 
-      const { data, headers } = await api.get('/admin/presence/export', {
-        params,
-        responseType: 'blob',
-      });
+      const { data, headers } = await exporterHistoriquePresences(params);
 
       const ext = format === 'pdf' ? 'pdf' : format === 'xlsx' ? 'xlsx' : 'csv';
       // Le nom donné par le serveur résume les filtres appliqués.

@@ -1,15 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiUser, FiSave, FiMail, FiRefreshCw, FiAlertTriangle } from 'react-icons/fi';
-import api from '../../api/axios';
+import { obtenirProfil, modifierProfil } from '../../api/resources/profil';
 import SecuriteCompte from '../../components/profile/SecuriteCompte';
 import ActiveSessionsPanel from '../../components/settings/ActiveSessionsPanel';
 import { libelleRole } from '../../utils/roles';
 
 export default function ProfilePage() {
   const [searchParams] = useSearchParams();
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   // Le super admin sans 2FA est redirigé ici (?securite=requise, voir
   // src/api/axios.js) : le groupe /super-admin l'exige désormais, et cette
@@ -25,37 +24,38 @@ export default function ProfilePage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
 
-  // Déclarée avant l'effet qui l'appelle : l'ordre inverse fonctionnait, la
-  // fonction étant définie au moment où l'effet s'exécute, mais il masquait
-  // la dépendance et l'analyse statique le signalait à juste titre.
+  const queryClient = useQueryClient();
 
+  const profilQuery = useQuery({
+    queryKey: ['profil'],
+    queryFn: async ({ signal }) => {
+      const result = await obtenirProfil(signal);
+      if (!result.success) throw new Error(result.message || 'Erreur lors du chargement du profil.');
+      return result.data;
+    },
+  });
 
-  // Chargement intégré à l'effet, son unique appelant, et annulable.
-  useEffect(() => {
-    let annule = false;
+  const profile = profilQuery.data ?? null;
+  const loading = profilQuery.isLoading;
 
-    (async () => {
-      try {
-        setLoading(true);
-        const { data } = await api.get('/admin/profile');
-        if (data.success && data.data) {
-          if (!annule) setProfile(data.data);
-          if (!annule) setName(data.data.name || '');
-          if (!annule) setEmail(data.data.email || '');
-        }
-      } catch (err) {
-        if (!annule) setError('Erreur lors du chargement du profil.');
-        console.error('[Profile]', err);
-      } finally {
-        if (!annule) setLoading(false);
-      }
-  
-    })();
+  // Reflète l'échec de chargement dans la bannière d'erreur, sans écraser un
+  // message déjà affiché (ex. après un enregistrement) et sans passer par un
+  // effet — ajusté PENDANT LE RENDU, motif du projet (voir FilieresPage).
+  const [erreurChargementVue, setErreurChargementVue] = useState(profilQuery.error);
+  if (profilQuery.error !== erreurChargementVue) {
+    setErreurChargementVue(profilQuery.error);
+    if (profilQuery.error) setError('Erreur lors du chargement du profil.');
+  }
 
-    return () => { annule = true; };
-  }, []);
-
-
+  // Initialise le formulaire une fois le profil arrivé, sans écraser une
+  // saisie en cours — même motif : ajusté pendant le rendu plutôt que dans un
+  // effet.
+  const [profilVu, setProfilVu] = useState(null);
+  if (profilQuery.data && profilQuery.data !== profilVu) {
+    setProfilVu(profilQuery.data);
+    setName(profilQuery.data.name || '');
+    setEmail(profilQuery.data.email || '');
+  }
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
@@ -63,10 +63,10 @@ export default function ProfilePage() {
     setError('');
     setSuccess('');
     try {
-      const { data } = await api.put('/admin/profile', { name, email });
+      const data = await modifierProfil({ name, email });
       if (data.success) {
         setSuccess('Profil mis à jour avec succès.');
-        setProfile(prev => ({ ...prev, name, email }));
+        queryClient.setQueryData(['profil'], (prev) => (prev ? { ...prev, name, email } : prev));
       } else {
         setError(data.message || 'Erreur lors de la mise à jour.');
       }
@@ -172,7 +172,7 @@ export default function ProfilePage() {
           l'établissement ; elle concerne la personne connectée. */}
       <SecuriteCompte
         deuxFacteursActive={Boolean(profile?.two_factor_enabled)}
-        onDeuxFacteursChange={(actif) => setProfile((prev) => ({ ...prev, two_factor_enabled: actif }))}
+        onDeuxFacteursChange={(actif) => queryClient.setQueryData(['profil'], (prev) => (prev ? { ...prev, two_factor_enabled: actif } : prev))}
       />
 
       {/* Sessions actives : révoquer les autres appareils connectés. */}

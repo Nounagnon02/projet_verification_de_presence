@@ -1,72 +1,56 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { FiLoader, FiAlertCircle } from 'react-icons/fi';
 import ProgressBar from '../../components/charts/ProgressBar';
 import Badge from '../../components/ui/Badge';
-import api from '../../api/axios';
+import { listerAnnees } from '../../api/resources/reference';
+import { rapportFiliereStats } from '../../api/resources/rapports';
 
 export default function ProgramComparison() {
-  const [annees, setAnnees] = useState([]);
   const [selectedAnnee, setSelectedAnnee] = useState('');
-  const [programs, setPrograms] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
-  // Charger les années disponibles
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const { data: anneeRes } = await api.get('/admin/annees-academiques');
-        const anneeList = anneeRes.data || anneeRes;
-        if (Array.isArray(anneeList)) {
-          setAnnees(anneeList);
-          const active = anneeList.find(y => y.active);
-          setSelectedAnnee(String(active?.id || anneeList[anneeList.length - 1]?.id || ''));
-        }
-      } catch {
-        setError('Impossible de charger les années académiques.');
-      }
-    };
-    init();
-  }, []);
+  const anneesQuery = useQuery({ queryKey: ['annees-academiques'], queryFn: () => listerAnnees() });
+  const annees = anneesQuery.data?.data ?? [];
 
-  // Charger les stats réelles des filières
-  useEffect(() => {
-    if (!selectedAnnee) return;
+  // Présélectionne l'année active dès que la liste arrive, sans écraser un
+  // choix déjà fait par l'utilisateur. Ajusté pendant le rendu (pas un
+  // effet) : la donnée est déjà là quand ce composant s'affiche.
+  const [anneesVues, setAnneesVues] = useState(null);
+  if (annees.length > 0 && annees !== anneesVues) {
+    setAnneesVues(annees);
+    if (!selectedAnnee) {
+      const active = annees.find(y => y.active);
+      setSelectedAnnee(String(active?.id || annees[annees.length - 1]?.id || ''));
+    }
+  }
 
-    const fetchData = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const { data: res } = await api.get('/admin/reports/filiere-stats', {
-          params: { annee_id: selectedAnnee },
-        });
-        const list = res.data || res;
-        if (Array.isArray(list)) {
-          const sorted = list
-            .sort((a, b) => (b.taux || 0) - (a.taux || 0))
-            .map((f, i) => ({
-              name: f.intitule || f.code,
-              code: f.code,
-              niveau: f.niveau || '',
-              rate: f.taux || 0,
-              presences: f.total_presences || 0,
-              evenements: f.total_evenements || 0,
-              students: f.etudiants_count || 0,
-              rank: i + 1,
-            }));
-          setPrograms(sorted);
-        } else {
-          setPrograms([]);
-        }
-      } catch {
-        setError('Impossible de charger les statistiques.');
-        setPrograms([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [selectedAnnee]);
+  const statsQuery = useQuery({
+    queryKey: ['rapport-filiere-stats', selectedAnnee],
+    queryFn: ({ signal }) => rapportFiliereStats({ annee_id: selectedAnnee }, signal),
+    enabled: Boolean(selectedAnnee),
+  });
+  const statsBrutes = statsQuery.data?.data ?? statsQuery.data;
+  const programs = Array.isArray(statsBrutes)
+    ? [...statsBrutes]
+        .sort((a, b) => (b.taux || 0) - (a.taux || 0))
+        .map((f, i) => ({
+          name: f.intitule || f.code,
+          code: f.code,
+          niveau: f.niveau || '',
+          rate: f.taux || 0,
+          presences: f.total_presences || 0,
+          evenements: f.total_evenements || 0,
+          students: f.etudiants_count || 0,
+          rank: i + 1,
+        }))
+    : [];
+
+  const loading = anneesQuery.isLoading || statsQuery.isFetching;
+  const error = anneesQuery.isError
+    ? 'Impossible de charger les années académiques.'
+    : statsQuery.isError
+      ? 'Impossible de charger les statistiques.'
+      : '';
 
   return (
     <div>
@@ -122,7 +106,7 @@ export default function ProgramComparison() {
                   </td>
                   <td className="p-4 font-medium">{p.name}</td>
                   <td className="p-4 text-right font-mono text-xs text-on-surface-variant">{p.niveau}</td>
-                  <td className="p-4 text-right font-bold" style={{ color: p.rate >= 80 ? '#2E7D32' : p.rate >= 50 ? '#F57F17' : '#C62828' }}>
+                  <td className="p-4 text-right font-bold" style={{ color: p.rate >= 80 ? '#2E7D32' : p.rate >= 50 ? '#A65207' : '#C62828' }}>
                     {p.rate}%
                   </td>
                   <td className="p-4">

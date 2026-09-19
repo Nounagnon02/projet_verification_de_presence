@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { FiShield, FiLock, FiCheck, FiCopy, FiAlertTriangle, FiEye, FiEyeOff } from 'react-icons/fi';
-import api from '../../api/axios';
+import {
+  modifierMotDePasse, activerDeuxFacteurs, confirmerDeuxFacteurs, desactiverDeuxFacteurs,
+} from '../../api/resources/comptes';
 import Modal from '../ui/Modal';
 import { useToastCtx } from '../../context/ToastContext';
 
@@ -79,7 +81,7 @@ export default function SecuriteCompte({ deuxFacteursActive = false, onDeuxFacte
       return;
     }
     try {
-      await api.put('/admin/profile/password', passwordForm);
+      await modifierMotDePasse(passwordForm);
       setSaved(true);
       addToast?.('Mot de passe modifié avec succès', 'success');
       setPasswordForm({ current_password: '', password: '', password_confirmation: '' });
@@ -97,7 +99,7 @@ export default function SecuriteCompte({ deuxFacteursActive = false, onDeuxFacte
     setTwoFALoading(true);
     setTwoFAError('');
     try {
-      const { data } = await api.post('/admin/profile/2fa/enable');
+      const data = await activerDeuxFacteurs();
       setQrCodeSvg(data.data.qr_code);
       setTwoFASecret(data.data.secret);
       setTwoFAStep('qr');
@@ -117,7 +119,7 @@ export default function SecuriteCompte({ deuxFacteursActive = false, onDeuxFacte
     setTwoFALoading(true);
     setTwoFAError('');
     try {
-      const { data } = await api.post('/admin/profile/2fa/confirm', { code: twoFACode });
+      const data = await confirmerDeuxFacteurs(twoFACode);
       setRecoveryCodes(data.data.recovery_codes);
       setTwoFAStep('done');
       onDeuxFacteursChange?.(true);
@@ -154,7 +156,7 @@ export default function SecuriteCompte({ deuxFacteursActive = false, onDeuxFacte
     setTwoFALoading(true);
     setDisableError('');
     try {
-      await api.post('/admin/profile/2fa/disable', { current_password: disablePassword });
+      await desactiverDeuxFacteurs(disablePassword);
       onDeuxFacteursChange?.(false);
       setShowDisableConfirm(false);
       setDisablePassword('');

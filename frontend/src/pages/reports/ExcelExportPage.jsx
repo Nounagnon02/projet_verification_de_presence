@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FiDownload, FiFileText } from 'react-icons/fi';
-import api from '../../api/axios';
+import { exporterPresencesCsv } from '../../api/resources/rapports';
 import { enregistrer, nomFichierServeur } from '../../utils/telechargement';
 
 // « Ce semestre » et « Cette année » ont disparu : aucune date sûre ne les
@@ -59,10 +59,7 @@ export default function ExcelExportPage() {
         : bornes(dateRange);
       params.colonnes = colonnesChoisies.join(',');
 
-      const { data, headers } = await api.get('/admin/reports/excel/export', {
-        params,
-        responseType: 'blob',
-      });
+      const { data, headers } = await exporterPresencesCsv(params);
 
       // Le nom donné par le serveur résume la période exportée.
       enregistrer(data, nomFichierServeur(headers, 'presences.csv'));

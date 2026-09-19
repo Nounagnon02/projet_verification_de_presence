@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiAlertTriangle, FiLoader, FiUpload, FiPlus, FiFileText, FiX, FiCalendar } from 'react-icons/fi';
-import api from '../../api/axios';
+import {
+  listerCreneauxEmploiDuTemps, listerConflitsEmploiDuTemps, importerEmploiDuTempsCsv, importerEmploiDuTempsPdf,
+} from '../../api/resources/imports';
 import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 import BandeauAnneeClose from '../../components/ui/BandeauAnneeClose';
 import Modal from '../../components/ui/Modal';
@@ -42,8 +45,6 @@ export default function WeeklySchedulePage() {
   const filtres = useFiltresAcademiques();
   const { annees, filieres } = filtres;
 
-  const [rechargement, setRechargement] = useState(0);
-  const [etat, setEtat] = useState({ cle: '', creneaux: [], erreur: '' });
   const [formulaire, setFormulaire] = useState({ ouvert: false, creneau: null });
   const [rapport, setRapport] = useState({ chargement: false, donnees: null, erreur: '' });
 
@@ -58,27 +59,32 @@ export default function WeeklySchedulePage() {
   const [importError, setImportError] = useState('');
   const importFileRef = useRef(null);
 
-  const cle = [filtres.annee, filtres.filiere, filtres.semestre, rechargement].join('|');
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    let annule = false;
+  const parametresListe = useMemo(() => {
     const params = {};
     if (filtres.annee) params.annee_id = filtres.annee;
     if (filtres.filiere) params.filiere_id = filtres.filiere;
     if (filtres.semestre) params.semestre = filtres.semestre;
+    return params;
+  }, [filtres.annee, filtres.filiere, filtres.semestre]);
 
-    api.get('/admin/emploi-du-temps', { params })
-      .then(({ data }) => { if (!annule) setEtat({ cle, creneaux: Array.isArray(data?.data) ? data.data : [], erreur: '' }); })
-      .catch((err) => { if (!annule) setEtat({ cle, creneaux: [], erreur: err.response?.data?.message || "L'emploi du temps n'a pas pu être chargé." }); });
+  const creneauxQuery = useQuery({
+    queryKey: ['emploi-du-temps', parametresListe],
+    queryFn: ({ signal }) => listerCreneauxEmploiDuTemps(parametresListe, signal),
+  });
 
-    return () => { annule = true; };
-  }, [cle, filtres.annee, filtres.filiere, filtres.semestre]);
-
-  const charge = etat.cle === cle;
-  const { creneaux } = etat;
+  const charge = !creneauxQuery.isLoading;
+  const creneaux = useMemo(
+    () => (Array.isArray(creneauxQuery.data?.data) ? creneauxQuery.data.data : []),
+    [creneauxQuery.data],
+  );
+  const erreurChargement = creneauxQuery.isError
+    ? (creneauxQuery.error?.response?.data?.message || "L'emploi du temps n'a pas pu être chargé.")
+    : '';
   const anneeActive = annees.find((a) => a.active) ?? null;
   const anneeId = filtres.annee || (anneeActive ? String(anneeActive.id) : '');
-  const rafraichir = () => setRechargement((n) => n + 1);
+  const rafraichir = () => queryClient.invalidateQueries({ queryKey: ['emploi-du-temps'] });
 
   // ─── La grille ─────────────────────────────────────────────
   const jours = useMemo(() => (creneaux.some((c) => c.jour_semaine === 7) ? [1, 2, 3, 4, 5, 6, 7] : [1, 2, 3, 4, 5, 6]), [creneaux]);
@@ -113,7 +119,7 @@ export default function WeeklySchedulePage() {
   const chargerRapport = async () => {
     setRapport({ chargement: true, donnees: null, erreur: '' });
     try {
-      const { data } = await api.get('/admin/emploi-du-temps/conflits', { params: anneeId ? { annee_id: anneeId } : {} });
+      const data = await listerConflitsEmploiDuTemps(anneeId ? { annee_id: anneeId } : {});
       setRapport({ chargement: false, donnees: data?.data ?? null, erreur: '' });
     } catch (err) {
       setRapport({ chargement: false, donnees: null, erreur: err.response?.data?.message || 'Le rapport des conflits a échoué.' });
@@ -147,7 +153,7 @@ export default function WeeklySchedulePage() {
     try {
       const formData = new FormData();
       formData.append('file', importFile);
-      const { data } = await api.post('/admin/import/csv/schedule', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const data = await importerEmploiDuTempsCsv(formData);
       const d = data?.data ?? data;
       setImportResultat({
         crees: d.created ?? d.success ?? 0,
@@ -173,7 +179,7 @@ export default function WeeklySchedulePage() {
     try {
       const formData = new FormData();
       formData.append('file', importFile);
-      const { data } = await api.post('/admin/import/schedule', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const data = await importerEmploiDuTempsPdf(formData);
       const charge = data?.data ?? data;
       const analysisId = charge?.analysis_id ?? charge?.id ?? null;
       if (!analysisId) {
@@ -251,9 +257,9 @@ export default function WeeklySchedulePage() {
 
       {filtres.anneeClose && <div className="mb-6"><BandeauAnneeClose annee={filtres.anneeChoisie} /></div>}
 
-      {etat.erreur && (
+      {erreurChargement && (
         <p role="alert" className="mb-6 flex items-start gap-2 p-3 bg-error/10 text-error rounded-lg text-sm">
-          <FiAlertTriangle className="mt-0.5 shrink-0" aria-hidden="true" /> {etat.erreur}
+          <FiAlertTriangle className="mt-0.5 shrink-0" aria-hidden="true" /> {erreurChargement}
         </p>
       )}
 

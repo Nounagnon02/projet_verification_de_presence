@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { FiDownload, FiFileText } from 'react-icons/fi';
 import { useToastCtx } from '../../context/ToastContext';
 import Button from '../ui/Button';
-import api from '../../api/axios';
+import { telechargerModeleCsv } from '../../api/resources/imports';
 
 /**
  * Modèles réellement servis par GET /admin/import/csv/template/{type}.
@@ -65,10 +65,7 @@ const CsvTemplateDownload = ({ types, avecColonnes = true, className = '' }) => 
   const telecharger = async (modele) => {
     setEnCours(modele.type);
     try {
-      const { data, headers } = await api.get(
-        `/admin/import/csv/template/${modele.type}`,
-        { responseType: 'blob' }
-      );
+      const { data, headers } = await telechargerModeleCsv(modele.type);
 
       // Créer un lien de téléchargement
       const url = window.URL.createObjectURL(new Blob([data], { type: 'text/csv;charset=utf-8' }));

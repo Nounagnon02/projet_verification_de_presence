@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { FiChevronRight, FiArrowRight, FiShield, FiSmartphone, FiBarChart2, FiDownload, FiLock, FiMenu, FiX, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import { MdAccountBalance, MdQrCodeScanner, MdAutoAwesome, MdGroups, MdCalendarMonth, MdCloudDone } from 'react-icons/md';
-import api from '../api/axios';
+import { obtenirStatistiquesPubliques } from '../api/resources/landing';
 import { assets } from '../utils/assets';
 
 const ALL_FEATURES = [
@@ -139,25 +140,17 @@ function Footer() {
 export default function LandingPage() {
   const navigate = useNavigate();
   const [showAllFeatures, setShowAllFeatures] = useState(false);
-  const [stats, setStats] = useState(null);
-  // Seul le setter est utilisé : l'état de chargement des statistiques n'est
-  // pas rendu, la page affichant des valeurs par défaut en attendant.
-  const [, setStatsLoading] = useState(true);
   const displayedFeatures = showAllFeatures ? ALL_FEATURES : ALL_FEATURES.slice(0, 3);
 
-  // Chargement dynamique des statistiques depuis l'API
-  useEffect(() => {
-    api.get('/landing/stats')
-      .then(res => {
-        if (res.data?.success && res.data?.data) {
-          setStats(res.data.data);
-        }
-      })
-      .catch(() => {
-        console.warn('Impossible de charger les statistiques — le backend est peut-être indisponible.');
-      })
-      .finally(() => setStatsLoading(false));
-  }, []);
+  // Chargement dynamique des statistiques depuis l'API. La page affiche des
+  // valeurs par défaut (section masquée) en attendant, et silencieusement en
+  // cas d'échec — le backend peut être indisponible sans empêcher l'affichage
+  // de la vitrine publique.
+  const statsQuery = useQuery({
+    queryKey: ['landing-stats'],
+    queryFn: ({ signal }) => obtenirStatistiquesPubliques(signal),
+  });
+  const stats = (statsQuery.data?.success && statsQuery.data?.data) ? statsQuery.data.data : null;
 
   // Construit le tableau STATS à partir des données API
   const STATS = stats ? [

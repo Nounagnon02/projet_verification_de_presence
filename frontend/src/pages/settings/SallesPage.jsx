@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { FiPlus, FiEdit2, FiTrash2, FiMapPin, FiWifi, FiAlertTriangle, FiSearch, FiLoader, FiCrosshair, FiCalendar } from 'react-icons/fi';
-import api from '../../api/axios';
 import Modal from '../../components/ui/Modal';
+import { listerSalles, creerSalle, modifierSalle, supprimerSalle, utilisateurConnecte } from '../../api/resources/salles';
 import { useToastCtx } from '../../context/ToastContext';
 
 // La plage IP a quitté le formulaire : enregistrée et comparée au scan, elle
@@ -78,8 +79,6 @@ const Compteur = ({ valeur, libelle, alerte = false }) => (
 
 export default function SallesPage() {
   const { addToast } = useToastCtx() ?? {};
-  const [salles, setSalles] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null); // null = create, object = edit
@@ -88,7 +87,6 @@ export default function SallesPage() {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
   const [showDelete, setShowDelete] = useState(null);
-  const [userEntity, setUserEntity] = useState(null);
   const [localisation, setLocalisation] = useState({ etat: 'repos', message: '' });
 
   // Le filtre vit dans l'adresse : les imports renvoient directement sur
@@ -97,44 +95,22 @@ export default function SallesPage() {
   const filtre = FILTRES.some((f) => f.id === params.get('filtre')) ? params.get('filtre') : 'toutes';
   const choisirFiltre = (id) => setParams(id === 'toutes' ? {} : { filtre: id }, { replace: true });
 
-  // Chargement en un seul endroit : dans l'effet. Les actions qui doivent
-  // rafraîchir la liste incrémentent `rechargement` plutôt que d'appeler une
-  // fonction de fetch. L'annulation évite qu'une réponse tardive écrive dans
-  // une page quittée.
-  const [rechargement, setRechargement] = useState(0);
-  const rafraichir = useCallback(() => setRechargement((n) => n + 1), []);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const controleur = new AbortController();
-
-    // Toutes les salles de l'entité, puis recherche et filtres à l'écran : le
-    // bandeau d'état doit compter toutes les salles, pas le résultat d'une
-    // recherche.
-    api.get('/admin/salles', { signal: controleur.signal })
-      .then(({ data }) => {
-        if (controleur.signal.aborted) return;
-        setSalles(Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []));
-      })
-      .catch(() => { /* liste laissée en l'état */ })
-      .finally(() => { if (!controleur.signal.aborted) setLoading(false); });
-
-    return () => controleur.abort();
-  }, [rechargement]);
+  // Toutes les salles de l'entité, puis recherche et filtres à l'écran : le
+  // bandeau d'état doit compter toutes les salles, pas le résultat d'une
+  // recherche.
+  const sallesQuery = useQuery({ queryKey: ['salles'], queryFn: ({ signal }) => listerSalles(signal) });
+  const salles = Array.isArray(sallesQuery.data?.data) ? sallesQuery.data.data : (Array.isArray(sallesQuery.data) ? sallesQuery.data : []);
+  const loading = sallesQuery.isLoading;
+  const rafraichir = () => queryClient.invalidateQueries({ queryKey: ['salles'] });
 
   // Rattachement de l'utilisateur à son entité, pour préremplir le formulaire.
-  useEffect(() => {
-    let annule = false;
-
-    // L'etablissement de rattachement vient de /user, qui le charge avec la
-    // relation. L'ancienne version interrogeait /admin/etablissements — une
-    // route qui n'existe pas : l'appel partait en 404 avalé en silence.
-    api.get('/user').then(({ data: user }) => {
-      if (annule) return;
-      if (user?.etablissement) setUserEntity(user.etablissement);
-    }).catch(() => {});
-
-    return () => { annule = true; };
-  }, []);
+  // L'etablissement de rattachement vient de /user, qui le charge avec la
+  // relation. L'ancienne version interrogeait /admin/etablissements — une
+  // route qui n'existe pas : l'appel partait en 404 avalé en silence.
+  const utilisateurQuery = useQuery({ queryKey: ['utilisateur-connecte'], queryFn: () => utilisateurConnecte() });
+  const userEntity = utilisateurQuery.data?.etablissement ?? null;
 
   const openCreate = () => {
     setEditing(null);
@@ -216,10 +192,10 @@ export default function SallesPage() {
       };
 
       if (editing) {
-        await api.put(`/admin/salles/${editing.id}`, payload);
+        await modifierSalle(editing.id, payload);
         addToast?.('Salle mise à jour.', 'success');
       } else {
-        await api.post('/admin/salles', payload);
+        await creerSalle(payload);
         addToast?.('Salle créée avec succès.', 'success');
       }
       setShowModal(false);
@@ -236,7 +212,7 @@ export default function SallesPage() {
     if (!showDelete) return;
     setDeleting(true);
     try {
-      await api.delete(`/admin/salles/${showDelete.id}`);
+      await supprimerSalle(showDelete.id);
       addToast?.('Salle supprimée.', 'success');
       setShowDelete(null);
       rafraichir();

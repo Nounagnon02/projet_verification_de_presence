@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   FiAlertTriangle, FiCheckCircle, FiClock, FiMapPin,
   FiRefreshCw, FiSmartphone, FiXCircle,
 } from 'react-icons/fi';
-import api from '../../api/axios';
+import { listerFilePresences, validerPresence } from '../../api/resources/presences';
+import { listerFilieres } from '../../api/resources/reference';
 import useDebounce from '../../hooks/useDebounce';
 import { useToastCtx } from '../../context/ToastContext';
 import Button from '../../components/ui/Button';
@@ -97,109 +99,73 @@ export default function PresenceQueuePage() {
   const { addToast } = useToastCtx();
   const idMotif = useId();
 
-  const [presences, setPresences] = useState([]);
-  const [pagination, setPagination] = useState(null);
-  const [chargement, setChargement] = useState(true);
-  const [erreur, setErreur] = useState('');
-
   // Filtres envoyés au serveur (les seuls que le contrôleur accepte).
   const [page, setPage] = useState(1);
   const [filtreFiliere, setFiltreFiliere] = useState('');
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
-  const [rechargement, setRechargement] = useState(0);
 
   // Recherche envoyée au serveur après une courte pause de frappe : elle porte
   // sur toute la file, et non plus sur la seule page affichée.
   const [recherche, setRecherche] = useState('');
   const rechercheServeur = useDebounce(recherche.trim(), 300);
 
-  const [filieres, setFilieres] = useState([]);
   const [cible, setCible] = useState(null);
   const [motif, setMotif] = useState('');
   const [envoi, setEnvoi] = useState(false);
 
-  const controleursActions = useRef(new Set());
   const monte = useRef(true);
-
-  const rafraichir = useCallback(() => setRechargement((n) => n + 1), []);
-
-  // Les requêtes d'action (valider / rejeter) sont abandonnées au démontage,
-  // comme le chargement de la liste.
   useEffect(() => {
-    const controleurs = controleursActions.current;
     monte.current = true;
-    return () => {
-      monte.current = false;
-      controleurs.forEach((controleur) => controleur.abort());
-      controleurs.clear();
-    };
+    return () => { monte.current = false; };
   }, []);
+
+  const queryClient = useQueryClient();
+
+  const rafraichir = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ['presences-file'] }),
+    [queryClient],
+  );
 
   // Liste des filières pour le filtre. Son échec n'empêche pas de travailler.
-  useEffect(() => {
-    const controleur = new AbortController();
+  const filieresQuery = useQuery({ queryKey: ['filieres'], queryFn: () => listerFilieres() });
+  const filieres = Array.isArray(filieresQuery.data?.data) ? filieresQuery.data.data : [];
 
-    (async () => {
-      try {
-        const { data } = await api.get('/admin/filieres', { signal: controleur.signal });
-        setFilieres(Array.isArray(data?.data) ? data.data : []);
-      } catch {
-        // Filtre secondaire : on reste silencieux plutôt que d'alarmer.
-      }
-    })();
+  const parametresListe = useMemo(() => {
+    const params = { page, per_page: PAR_PAGE };
+    if (filtreFiliere) params.filiere_id = filtreFiliere;
+    if (dateDebut) params.date_from = dateDebut;
+    if (dateFin) params.date_to = dateFin;
+    if (rechercheServeur) params.search = rechercheServeur;
+    return params;
+  }, [page, filtreFiliere, dateDebut, dateFin, rechercheServeur]);
 
-    return () => controleur.abort();
-  }, []);
+  // Chargement de la file : une clé de requête par combinaison filtres+page.
+  // pendingValidations renvoie le paginateur Laravel brut dans « data » :
+  // { current_page, data: [...], from, to, last_page, per_page, total }.
+  const fileQuery = useQuery({
+    queryKey: ['presences-file', parametresListe],
+    queryFn: ({ signal }) => listerFilePresences(parametresListe, signal),
+  });
 
-  // Chargement de la file, intégré à l'effet et annulable : quatre entrées le
-  // pilotent, et deux changements rapprochés feraient partir deux requêtes dont
-  // l'ordre de retour n'est pas garanti.
-  useEffect(() => {
-    const controleur = new AbortController();
-    let annule = false;
+  const chargement = fileQuery.isFetching;
+  const erreur = fileQuery.isError
+    ? (fileQuery.error?.response?.data?.message
+      || 'Impossible de charger les présences à valider. Vérifiez votre connexion puis réessayez.')
+    : '';
 
-    (async () => {
-      setChargement(true);
-      setErreur('');
-
-      try {
-        const params = { page, per_page: PAR_PAGE };
-        if (filtreFiliere) params.filiere_id = filtreFiliere;
-        if (dateDebut) params.date_from = dateDebut;
-        if (dateFin) params.date_to = dateFin;
-        if (rechercheServeur) params.search = rechercheServeur;
-
-        const { data } = await api.get('/admin/presence/pending', {
-          params,
-          signal: controleur.signal,
-        });
-
-        if (annule) return;
-
-        // pendingValidations renvoie le paginateur Laravel brut dans « data » :
-        // { current_page, data: [...], from, to, last_page, per_page, total }.
-        const paginateur = data?.data ?? {};
-        setPresences(Array.isArray(paginateur.data) ? paginateur.data : []);
-        setPagination(paginateur.current_page ? paginateur : null);
-      } catch (err) {
-        if (annule || err.name === 'CanceledError' || err.name === 'AbortError') return;
-        setPresences([]);
-        setPagination(null);
-        setErreur(
-          err.response?.data?.message
-          || 'Impossible de charger les présences à valider. Vérifiez votre connexion puis réessayez.'
-        );
-      } finally {
-        if (!annule) setChargement(false);
-      }
-    })();
-
-    return () => {
-      annule = true;
-      controleur.abort();
-    };
-  }, [page, filtreFiliere, dateDebut, dateFin, rechercheServeur, rechargement]);
+  // Copie locale de la page affichée : les actions de validation/rejet la
+  // modifient de façon optimiste (retrait immédiat, restauration si l'appel
+  // échoue) avant que la prochaine réponse du serveur ne la remplace.
+  const [presences, setPresences] = useState([]);
+  const [pagination, setPagination] = useState(null);
+  const [derniereReponse, setDerniereReponse] = useState(undefined);
+  if (fileQuery.data !== undefined && fileQuery.data !== derniereReponse) {
+    setDerniereReponse(fileQuery.data);
+    const paginateur = fileQuery.data?.data ?? {};
+    setPresences(Array.isArray(paginateur.data) ? paginateur.data : []);
+    setPagination(paginateur.current_page ? paginateur : null);
+  }
 
   const filtresServeurActifs = Boolean(filtreFiliere || dateDebut || dateFin);
   const rechercheActive = Boolean(rechercheServeur);
@@ -245,8 +211,6 @@ export default function PresenceQueuePage() {
     const position = presences.findIndex((ligne) => ligne.id === presence.id);
     const derniereLigne = presences.length <= 1;
 
-    const controleur = new AbortController();
-    controleursActions.current.add(controleur);
     setEnvoi(true);
 
     // Retrait optimiste : la ligne quitte la file immédiatement et n'y revient
@@ -260,9 +224,7 @@ export default function PresenceQueuePage() {
       const corps = { action: type };
       if (motifNettoye) corps.motif = motifNettoye;
 
-      const { data } = await api.patch(`/admin/presence/${presence.id}/validate`, corps, {
-        signal: controleur.signal,
-      });
+      const data = await validerPresence(presence.id, corps);
 
       if (!monte.current) return;
 
@@ -274,7 +236,6 @@ export default function PresenceQueuePage() {
       // La page vient de se vider : on recharge pour reprendre la suite de la file.
       if (derniereLigne) rafraichir();
     } catch (err) {
-      if (err.name === 'CanceledError' || err.name === 'AbortError') return;
       if (!monte.current) return;
 
       const statut = err.response?.status;
@@ -301,7 +262,6 @@ export default function PresenceQueuePage() {
         fermer = false;
       }
     } finally {
-      controleursActions.current.delete(controleur);
       if (monte.current) {
         setEnvoi(false);
         if (fermer) {

@@ -1,7 +1,7 @@
-import { Fragment, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Fragment, useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { FiLoader, FiRefreshCw, FiDownload, FiChevronDown, FiSearch, FiArrowUp, FiArrowDown } from 'react-icons/fi';
-import api from '../../api/axios';
 import { enregistrer, nomFichierServeur } from '../../utils/telechargement';
 import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 import useDebounce from '../../hooks/useDebounce';
@@ -9,6 +9,10 @@ import TauxHebdomadaireChart from '../../components/charts/TauxHebdomadaireChart
 import BarreTaux from '../../components/charts/BarreTaux';
 import { couleurTaux, libelleTaux } from '../../utils/taux';
 import ComparaisonsRapport from './ComparaisonsRapport';
+import {
+  listerUes, rapportFiltre, rapportEtudiantsAbsents,
+  exporterPresencesCsv, exporterEtudiantsAbsentsCsv, exporterRapportDepartementPdf,
+} from '../../api/resources/rapports';
 
 /** « 2026-09-14 » à partir d'une date locale. */
 const iso = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -359,7 +363,6 @@ const ReportsPage = () => {
   const filtres = useFiltresAcademiques({ preselectionnerAnneeActive: true });
   const { annee: anneeId, filiere: filiereId, semestre } = filtres;
 
-  const [ues, setUes] = useState([]);
   const [ueId, setUeId] = useState('');
   const [ecId, setEcId] = useState('');
   // Une seule période, qui s'applique à tout : compteurs, UE, évolution,
@@ -368,20 +371,20 @@ const ReportsPage = () => {
   const [dateFin, setDateFin] = useState(() => periodeParDefaut().fin);
 
   // UEs de l'année et de la filière choisies ; le semestre se filtre ici.
-  useEffect(() => {
-    if (filtres.chargement) return undefined;
-
-    const controleur = new AbortController();
-    const params = {};
-    if (anneeId) params.annee_id = anneeId;
-    if (filiereId) params.filiere_id = filiereId;
-
-    api.get('/admin/ues', { params, signal: controleur.signal })
-      .then(({ data }) => setUes(data?.data ?? data ?? []))
-      .catch(() => { /* la liste précédente reste proposée */ });
-
-    return () => controleur.abort();
-  }, [anneeId, filiereId, filtres.chargement]);
+  const uesQuery = useQuery({
+    queryKey: ['ues', anneeId, filiereId],
+    queryFn: ({ signal }) => {
+      const params = {};
+      if (anneeId) params.annee_id = anneeId;
+      if (filiereId) params.filiere_id = filiereId;
+      return listerUes(params, signal);
+    },
+    enabled: !filtres.chargement,
+  });
+  // Mémoïsé : `?? []` recréerait un tableau à chaque rendu tant que la requête
+  // n'a pas répondu, et invaliderait les useMemo qui en dépendent.
+  const uesBrutes = uesQuery.data;
+  const ues = useMemo(() => uesBrutes?.data ?? uesBrutes ?? [], [uesBrutes]);
 
   const uesProposees = useMemo(
     () => (semestre ? ues.filter((u) => String(u.semestre) === String(semestre)) : ues),
@@ -425,37 +428,23 @@ const ReportsPage = () => {
   // l'année active : on attend qu'elle les rattrape.
   const aJour = parametres === parametresCourants;
 
-  const [rechargement, setRechargement] = useState(0);
-  const [data, setData] = useState(null);
-  const [absents, setAbsents] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // Annulable : en enchaînant les filtres, la réponse d'un filtre quitté
-  // pouvait arriver en dernier et réafficher un rapport périmé.
-  useEffect(() => {
-    if (filtres.chargement || !aJour) return undefined;
-
-    let annule = false;
-    const params = JSON.parse(parametres);
-
-    (async () => {
-      setLoading(true);
-
-      // Le rapport et la liste des absents portent sur les mêmes filtres.
-      const [rapport, liste] = await Promise.allSettled([
-        api.get('/admin/reports/filtered', { params }),
-        api.get('/admin/reports/etudiants-absents', { params }),
-      ]);
-
-      if (annule) return;
-
-      setData(rapport.status === 'fulfilled' ? rapport.value.data?.data ?? null : null);
-      setAbsents(liste.status === 'fulfilled' ? liste.value.data?.data ?? null : null);
-      setLoading(false);
-    })();
-
-    return () => { annule = true; };
-  }, [parametres, rechargement, filtres.chargement, aJour]);
+  // Le rapport et la liste des absents portent sur les mêmes filtres, mais
+  // chacun a sa propre clé : une requête peut échouer sans faire disparaître
+  // l'autre (Promise.allSettled avant, la tolérance de TanStack Query
+  // maintenant).
+  const rapportQuery = useQuery({
+    queryKey: ['rapport-filtre', parametres],
+    queryFn: ({ signal }) => rapportFiltre(JSON.parse(parametres), signal),
+    enabled: !filtres.chargement && aJour,
+  });
+  const absentsQuery = useQuery({
+    queryKey: ['rapport-etudiants-absents', parametres],
+    queryFn: ({ signal }) => rapportEtudiantsAbsents(JSON.parse(parametres), signal),
+    enabled: !filtres.chargement && aJour,
+  });
+  const loading = rapportQuery.isFetching || absentsQuery.isFetching;
+  const data = rapportQuery.isError ? null : (rapportQuery.data?.data ?? null);
+  const absents = absentsQuery.isError ? null : (absentsQuery.data?.data ?? null);
 
   const statsParUe = useMemo(() => (Array.isArray(data?.stats_par_ue) ? data.stats_par_ue : []), [data]);
   const evolution = useMemo(() => (Array.isArray(data?.evolution) ? data.evolution : []), [data]);
@@ -498,19 +487,19 @@ const ReportsPage = () => {
 
     // Les filtres affichés, et non ceux du dernier chargement.
     const params = construireParams();
-    const cibles = {
-      'presences-csv': { url: '/admin/reports/excel/export', params, repli: 'presences.csv' },
-      'absents-csv': { url: '/admin/reports/etudiants-absents', params: { ...params, format: 'csv' }, repli: 'etudiants_absents.csv' },
-      'filiere-pdf': { url: `/admin/reports/department/${filiereId}`, params: { format: 'pdf' }, repli: 'rapport_filiere.pdf' },
+    const exportateurs = {
+      'presences-csv': { fn: () => exporterPresencesCsv(params), repli: 'presences.csv' },
+      'absents-csv': { fn: () => exporterEtudiantsAbsentsCsv(params), repli: 'etudiants_absents.csv' },
+      'filiere-pdf': { fn: () => exporterRapportDepartementPdf(filiereId), repli: 'rapport_filiere.pdf' },
     };
-    const cible = cibles[type];
+    const cible = exportateurs[type];
 
     if (!cible || (type === 'filiere-pdf' && !filiereId)) return;
 
     setExportEnCours(type);
 
     try {
-      const { data: contenu, headers } = await api.get(cible.url, { params: cible.params, responseType: 'blob' });
+      const { data: contenu, headers } = await cible.fn();
       // Le nom donné par le serveur résume les filtres ; le nom local n'est qu'un repli.
       enregistrer(contenu, nomFichierServeur(headers, cible.repli));
     } catch {
@@ -571,7 +560,7 @@ const ReportsPage = () => {
         <div className="flex gap-2 shrink-0">
           <button
             type="button"
-            onClick={() => setRechargement((n) => n + 1)}
+            onClick={() => { rapportQuery.refetch(); absentsQuery.refetch(); }}
             disabled={loading}
             className="flex items-center gap-2 px-3 py-2 bg-surface-container-high text-on-surface rounded-xl text-xs font-semibold hover:bg-surface-container-highest transition-all disabled:opacity-50"
           >
@@ -701,7 +690,7 @@ const ReportsPage = () => {
                 <Chiffre
                   libelle="Suspects à arbitrer"
                   valeur={d.presences_suspectes ?? 0}
-                  couleur={(d.presences_suspectes ?? 0) > 0 ? '#F57F17' : undefined}
+                  couleur={(d.presences_suspectes ?? 0) > 0 ? '#A65207' : undefined}
                   action={<Link to="/attendance/queue" className="text-primary hover:underline">File d'attente →</Link>}
                 />
                 <Chiffre className="col-span-2 md:col-span-1" libelle="Rejetés" valeur={d.presences_rejetees ?? 0} />

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FiLock, FiMail, FiArrowLeft, FiCheckCircle, FiAlertTriangle, FiLoader } from 'react-icons/fi';
-import api from '../../api/axios';
+import { reinitialiserMotDePasse } from '../../api/resources/auth';
 import { assets } from '../../utils/assets';
 
 export default function ResetPasswordPage() {
@@ -26,7 +26,7 @@ export default function ResetPasswordPage() {
     setLoading(true);
     setError('');
     try {
-      const { data } = await api.post('/reset-password', {
+      const data = await reinitialiserMotDePasse({
         token, email, password,
         password_confirmation: passwordConfirmation,
       });

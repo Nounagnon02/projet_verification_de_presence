@@ -1,8 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiAlertTriangle, FiLoader, FiTrash2 } from 'react-icons/fi';
-import api from '../../api/axios';
 import { invalidateApiCache } from '../../api/cache';
-import useApi from '../../hooks/useApi';
+import { listerAnnees } from '../../api/resources/reference';
+import {
+  calendrier as recupererCalendrier,
+  enregistrerPeriode as apiEnregistrerPeriode,
+  retirerPeriode as apiRetirerPeriode,
+  declarerFermeture as apiDeclarerFermeture,
+  retirerFermeture as apiRetirerFermeture,
+} from '../../api/resources/calendrier';
 import { useToastCtx } from '../../context/ToastContext';
 import { datesLisibles, questionRetrait } from '../../utils/calendrier';
 
@@ -35,26 +42,30 @@ const messageErreur = (err, defaut) => {
  * s'y tient ; sans période déclarée, elle ne crée rien.
  */
 export default function CalendrierPage() {
-  const { data: annees } = useApi('/admin/annees-academiques');
+  const anneesQuery = useQuery({ queryKey: ['annees-academiques'], queryFn: () => listerAnnees() });
+  const annees = anneesQuery.data?.data ?? [];
   const { addToast } = useToastCtx() ?? {};
   const [anneeId, setAnneeId] = useState('');
-  const [rechargement, setRechargement] = useState(0);
-  const [etat, setEtat] = useState({ cle: '', donnees: null, erreur: '' });
   const [saisie, setSaisie] = useState({ cle: '', valeurs: {} });
   const [fermeture, setFermeture] = useState(FERMETURE_VIDE);
   const [enCours, setEnCours] = useState('');
+  const queryClient = useQueryClient();
 
-  const cle = `${anneeId}|${rechargement}`;
+  const calendrierQuery = useQuery({
+    queryKey: ['calendrier', anneeId],
+    queryFn: ({ signal }) => recupererCalendrier(anneeId, signal),
+  });
 
-  useEffect(() => {
-    let annule = false;
-    api.get('/admin/calendrier', { params: anneeId ? { annee_id: anneeId } : {} })
-      .then(({ data }) => { if (!annule) setEtat({ cle, donnees: data?.data ?? null, erreur: '' }); })
-      .catch((err) => { if (!annule) setEtat({ cle, donnees: null, erreur: messageErreur(err, "Le calendrier n'a pas pu être chargé.") }); });
-    return () => { annule = true; };
-  }, [cle, anneeId]);
+  // Une « version » du calendrier chargé : la saisie en cours n'est reprise que
+  // si elle porte sur cette même année et ce même chargement — `dataUpdatedAt`
+  // change à chaque réponse fraîche, comme le faisait l'ancien compteur de
+  // rechargement.
+  const cle = `${anneeId}|${calendrierQuery.dataUpdatedAt}`;
+  const donnees = calendrierQuery.data?.data ?? null;
+  const erreurChargement = calendrierQuery.isError
+    ? messageErreur(calendrierQuery.error, "Le calendrier n'a pas pu être chargé.")
+    : '';
 
-  const { donnees } = etat;
   const annee = donnees?.annee ?? null;
   const close = Boolean(annee?.close);
   const periodes = Object.fromEntries((donnees?.periodes ?? []).map((p) => [p.parite, p]));
@@ -69,13 +80,13 @@ export default function CalendrierPage() {
   // Le tableau de bord et les Années académiques lisent aussi le calendrier.
   const rafraichir = () => {
     invalidateApiCache();
-    setRechargement((n) => n + 1);
+    queryClient.invalidateQueries({ queryKey: ['calendrier'] });
   };
 
   const agir = async (action, requete, echec) => {
     setEnCours(action);
     try {
-      const { data } = await requete();
+      const data = await requete();
       addToast?.(data?.message || 'Enregistré.', 'success');
       rafraichir();
       return true;
@@ -89,7 +100,7 @@ export default function CalendrierPage() {
 
   const enregistrerPeriode = (e, parite) => {
     e.preventDefault();
-    agir(`periode-${parite}`, () => api.put('/admin/calendrier/periodes', {
+    agir(`periode-${parite}`, () => apiEnregistrerPeriode({
       annee_id: annee.id, parite, date_debut: valeur(parite, 'date_debut'), date_fin: valeur(parite, 'date_fin'),
     }), "La période n'a pas été enregistrée.");
   };
@@ -97,7 +108,7 @@ export default function CalendrierPage() {
   const retirerPeriode = (parite, label) => {
     const periode = periodes[parite];
     if (!periode || !window.confirm(`Retirer la période des ${label.toLowerCase()} ? Leurs séances ne seront plus générées depuis l'emploi du temps.`)) return;
-    agir(`periode-${parite}`, () => api.delete(`/admin/calendrier/periodes/${periode.id}`), "La période n'a pas été retirée.");
+    agir(`periode-${parite}`, () => apiRetirerPeriode(periode.id), "La période n'a pas été retirée.");
   };
 
   // Le serveur annonce d'abord ce que la fermeture retirerait : on ne retire
@@ -107,7 +118,7 @@ export default function CalendrierPage() {
     const corps = { ...fermeture, annee_id: annee.id, date_fin: fermeture.date_fin || fermeture.date_debut };
     setEnCours('fermeture');
     try {
-      const { data } = await api.post('/admin/calendrier/fermetures', { ...corps, apercu: true });
+      const data = await apiDeclarerFermeture({ ...corps, apercu: true });
       const n = Number(data?.data?.seances_a_retirer ?? 0);
       if (n > 0 && !window.confirm(questionRetrait(n, corps.libelle))) return;
     } catch (err) {
@@ -117,14 +128,14 @@ export default function CalendrierPage() {
       setEnCours('');
     }
 
-    if (await agir('fermeture', () => api.post('/admin/calendrier/fermetures', corps), "La fermeture n'a pas été déclarée.")) {
+    if (await agir('fermeture', () => apiDeclarerFermeture(corps), "La fermeture n'a pas été déclarée.")) {
       setFermeture(FERMETURE_VIDE);
     }
   };
 
   const retirerFermeture = (f) => {
     if (!window.confirm(`Retirer « ${f.libelle} » ? La génération planifiée recréera les séances de ces jours.`)) return;
-    agir(`fermeture-${f.id}`, () => api.delete(`/admin/calendrier/fermetures/${f.id}`), "La fermeture n'a pas été retirée.");
+    agir(`fermeture-${f.id}`, () => apiRetirerFermeture(f.id), "La fermeture n'a pas été retirée.");
   };
 
   return (
@@ -147,13 +158,13 @@ export default function CalendrierPage() {
         </div>
       </div>
 
-      {etat.erreur && (
+      {erreurChargement && (
         <p role="alert" className="flex items-start gap-2 p-3 bg-error/10 text-error rounded-lg text-sm">
-          <FiAlertTriangle className="mt-0.5 shrink-0" aria-hidden="true" /> {etat.erreur}
+          <FiAlertTriangle className="mt-0.5 shrink-0" aria-hidden="true" /> {erreurChargement}
         </p>
       )}
 
-      {!donnees && !etat.erreur && (
+      {!donnees && !erreurChargement && (
         <div className="py-12 text-center text-on-surface-variant"><FiLoader className="animate-spin mx-auto" aria-label="Chargement" /></div>
       )}
 

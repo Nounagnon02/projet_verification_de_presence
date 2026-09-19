@@ -1,12 +1,12 @@
 import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiMonitor, FiSmartphone, FiGlobe, FiLogOut, FiAlertTriangle, FiClock, FiRefreshCw } from 'react-icons/fi';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
 import EmptyState from '../ui/EmptyState';
 import LoadingSkeleton from '../ui/LoadingSkeleton';
-import useApi from '../../hooks/useApi';
-import api from '../../api/axios';
+import { listerSessions, revoquerAutresSessions } from '../../api/resources/comptes';
 import { useToastCtx } from '../../context/ToastContext';
 import { formatDateTime } from '../../utils/formatters';
 
@@ -83,21 +83,33 @@ const SessionRow = ({ session }) => {
  * une action, ce qui déconnecte réellement les appareils concernés.
  */
 export default function ActiveSessionsPanel() {
-  const { data: sessions, loading, error, refetch } = useApi('/admin/sessions', {}, { defaultData: [] });
+  const queryClient = useQueryClient();
+  const sessionsQuery = useQuery({
+    queryKey: ['sessions'],
+    queryFn: async ({ signal }) => {
+      const result = await listerSessions(signal);
+      if (!result.success) throw new Error(result.message || 'Une erreur est survenue');
+      return result;
+    },
+  });
   const [showConfirm, setShowConfirm] = useState(false);
   const [revoking, setRevoking] = useState(false);
   const { addToast } = useToastCtx();
 
-  const liste = sessions || [];
+  const liste = sessionsQuery.data?.data ?? [];
+  const loading = sessionsQuery.isLoading;
+  const error = sessionsQuery.isError
+    ? (sessionsQuery.error?.response?.data?.message || sessionsQuery.error?.message || 'Erreur de connexion')
+    : null;
   const nbAutres = liste.filter((s) => !s.is_current).length;
 
   const handleRevoke = async () => {
     setRevoking(true);
     try {
-      const { data } = await api.delete('/admin/sessions/others');
+      const data = await revoquerAutresSessions();
       setShowConfirm(false);
       addToast?.(data?.message || 'Les autres appareils ont été déconnectés.', 'success');
-      await refetch();
+      await queryClient.invalidateQueries({ queryKey: ['sessions'] });
     } catch (err) {
       addToast?.(
         err.response?.data?.message || 'Erreur lors de la déconnexion des autres appareils',
@@ -144,7 +156,7 @@ export default function ActiveSessionsPanel() {
             <FiAlertTriangle size={16} aria-hidden="true" />
             {error}
           </p>
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-3 rounded-xl font-semibold">
+          <Button variant="outline" size="sm" onClick={() => sessionsQuery.refetch()} className="mt-3 rounded-xl font-semibold">
             <FiRefreshCw size={14} aria-hidden="true" />
             Réessayer
           </Button>

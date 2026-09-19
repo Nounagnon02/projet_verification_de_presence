@@ -6,7 +6,7 @@ import {
 } from 'react-icons/fi';
 import { MdVerified } from 'react-icons/md';
 import { useSearchParams } from 'react-router-dom';
-import api from '../../api/axios';
+import { recupererCoursParToken } from '../../api/resources/presences';
 import apiEtudiant, { enregistrerJetonEtudiant, effacerJetonEtudiant, aUnJetonEtudiant } from '../../api/etudiant';
 import { useFingerprint } from '../../hooks/useFingerprint';
 
@@ -69,7 +69,7 @@ const PresenceValidationPage = () => {
       }
 
       try {
-        const { data } = await api.get(`/presence/course-by-token/${qrToken}`);
+        const data = await recupererCoursParToken(qrToken);
 
         if (annule) return;
 

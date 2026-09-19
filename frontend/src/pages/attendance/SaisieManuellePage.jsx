@@ -1,6 +1,9 @@
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useId, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiAlertTriangle, FiCheckCircle, FiClock, FiRefreshCw, FiUsers } from 'react-icons/fi';
-import api from '../../api/axios';
+import { listerEtudiantsPourSaisieManuelle, saisirPresenceManuelle } from '../../api/resources/presences';
+import { listerFilieres } from '../../api/resources/reference';
+import { listerEvenements } from '../../api/resources/evenements';
 import { useToastCtx } from '../../context/ToastContext';
 import { aujourdhuiIso } from '../../utils/formatters';
 import Button from '../../components/ui/Button';
@@ -50,12 +53,7 @@ export default function SaisieManuellePage() {
 
   const [date, setDate] = useState(aujourdhuiIso());
   const [filtreFiliere, setFiltreFiliere] = useState('');
-  const [filieres, setFilieres] = useState([]);
-  const [seances, setSeances] = useState({ chargement: true, liste: [], erreur: '' });
   const [seanceId, setSeanceId] = useState(null);
-
-  const [liste, setListe] = useState({ chargement: false, seance: null, etudiants: [], erreur: '' });
-  const [rechargement, setRechargement] = useState(0);
   const [recherche, setRecherche] = useState('');
 
   const [cible, setCible] = useState(null);
@@ -63,79 +61,56 @@ export default function SaisieManuellePage() {
   const [envoi, setEnvoi] = useState(false);
   const [erreurModale, setErreurModale] = useState('');
 
-  const rafraichir = useCallback(() => setRechargement((n) => n + 1), []);
+  const queryClient = useQueryClient();
+  const rafraichir = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ['etudiants-manuelle', seanceId] }),
+    [queryClient, seanceId],
+  );
 
   // Filières pour le filtre. Leur échec n'empêche pas de travailler.
-  useEffect(() => {
-    const controleur = new AbortController();
-    (async () => {
-      try {
-        const { data } = await api.get('/admin/filieres', { signal: controleur.signal });
-        setFilieres(Array.isArray(data?.data) ? data.data : []);
-      } catch {
-        // Filtre secondaire : on reste silencieux plutôt que d'alarmer.
-      }
-    })();
-    return () => controleur.abort();
-  }, []);
+  const filieresQuery = useQuery({ queryKey: ['filieres'], queryFn: () => listerFilieres() });
+  const filieres = Array.isArray(filieresQuery.data?.data) ? filieresQuery.data.data : [];
 
   // Séances de la date choisie.
-  useEffect(() => {
-    const controleur = new AbortController();
-    let annule = false;
-
-    (async () => {
-      setSeances((precedent) => ({ ...precedent, chargement: true, erreur: '' }));
-      try {
-        const params = { date_debut: date, date_fin: date };
-        if (filtreFiliere) params.filiere_id = filtreFiliere;
-        const { data } = await api.get('/admin/evenements', { params, signal: controleur.signal });
-        if (annule) return;
-        const brutes = data?.data ?? data ?? [];
-        const triees = (Array.isArray(brutes) ? brutes : [])
-          .slice()
-          .sort((a, b) => hhmm(a.heure_debut).localeCompare(hhmm(b.heure_debut)));
-        setSeances({ chargement: false, liste: triees, erreur: '' });
-      } catch (err) {
-        if (annule || err.name === 'CanceledError' || err.name === 'AbortError') return;
-        setSeances({ chargement: false, liste: [], erreur: 'Impossible de charger les séances de cette date.' });
-      }
-    })();
-
-    return () => {
-      annule = true;
-      controleur.abort();
-    };
+  const parametresSeances = useMemo(() => {
+    const params = { date_debut: date, date_fin: date };
+    if (filtreFiliere) params.filiere_id = filtreFiliere;
+    return params;
   }, [date, filtreFiliere]);
 
+  const seancesQuery = useQuery({
+    queryKey: ['seances-manuelle', parametresSeances],
+    queryFn: ({ signal }) => listerEvenements(parametresSeances, signal),
+  });
+
+  const listeSeances = useMemo(() => {
+    const brutes = seancesQuery.data?.data ?? seancesQuery.data ?? [];
+    return (Array.isArray(brutes) ? brutes : [])
+      .slice()
+      .sort((a, b) => hhmm(a.heure_debut).localeCompare(hhmm(b.heure_debut)));
+  }, [seancesQuery.data]);
+
+  const seances = {
+    chargement: seancesQuery.isFetching,
+    liste: listeSeances,
+    erreur: seancesQuery.isError ? 'Impossible de charger les séances de cette date.' : '',
+  };
+
   // Étudiants attendus à la séance choisie.
-  useEffect(() => {
-    if (!seanceId) return undefined;
-    const controleur = new AbortController();
-    let annule = false;
+  const etudiantsQuery = useQuery({
+    queryKey: ['etudiants-manuelle', seanceId],
+    queryFn: ({ signal }) => listerEtudiantsPourSaisieManuelle(seanceId, signal),
+    enabled: Boolean(seanceId),
+  });
 
-    (async () => {
-      setListe((precedent) => ({ ...precedent, chargement: true, erreur: '' }));
-      try {
-        const { data } = await api.get(`/admin/presence/manuelle/${seanceId}/etudiants`, { signal: controleur.signal });
-        if (annule) return;
-        setListe({
-          chargement: false,
-          seance: data?.data?.seance ?? null,
-          etudiants: Array.isArray(data?.data?.etudiants) ? data.data.etudiants : [],
-          erreur: '',
-        });
-      } catch (err) {
-        if (annule || err.name === 'CanceledError' || err.name === 'AbortError') return;
-        setListe({ chargement: false, seance: null, etudiants: [], erreur: err.response?.data?.message || 'Impossible de charger les étudiants de cette séance.' });
-      }
-    })();
-
-    return () => {
-      annule = true;
-      controleur.abort();
-    };
-  }, [seanceId, rechargement]);
+  const liste = {
+    chargement: etudiantsQuery.isFetching,
+    seance: etudiantsQuery.data?.data?.seance ?? null,
+    etudiants: Array.isArray(etudiantsQuery.data?.data?.etudiants) ? etudiantsQuery.data.data.etudiants : [],
+    erreur: etudiantsQuery.isError
+      ? (etudiantsQuery.error?.response?.data?.message || 'Impossible de charger les étudiants de cette séance.')
+      : '',
+  };
 
   const choisirDate = (valeur) => {
     setDate(valeur);
@@ -189,18 +164,24 @@ export default function SaisieManuellePage() {
     setEnvoi(true);
     setErreurModale('');
     try {
-      const { data } = await api.post('/admin/presence/manuelle', {
+      const data = await saisirPresenceManuelle({
         evenement_id: seanceId,
         etudiant_id: cible.id,
         motif: motifNettoye,
       });
       const presence = data?.data?.presence;
-      setListe((precedent) => ({
-        ...precedent,
-        etudiants: precedent.etudiants.map((e) => (e.id === cible.id
-          ? { ...e, presence: { id: presence?.id, statut: 'valide' } }
-          : e)),
-      }));
+      queryClient.setQueryData(['etudiants-manuelle', seanceId], (precedent) => {
+        if (!precedent?.data) return precedent;
+        return {
+          ...precedent,
+          data: {
+            ...precedent.data,
+            etudiants: (precedent.data.etudiants ?? []).map((e) => (e.id === cible.id
+              ? { ...e, presence: { id: presence?.id, statut: 'valide' } }
+              : e)),
+          },
+        };
+      });
       addToast?.(data?.message || 'Présence enregistrée.', 'success');
       setCible(null);
       setMotif('');

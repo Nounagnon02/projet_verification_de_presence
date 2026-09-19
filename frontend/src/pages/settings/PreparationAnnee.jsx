@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { FiLoader, FiCheckCircle, FiAlertTriangle } from 'react-icons/fi';
 import Modal from '../../components/ui/Modal';
-import api from '../../api/axios';
+import { previsualiserPreparation, preparerAnnee } from '../../api/resources/anneesAcademiques';
 import { pluriel } from '../../utils/annees';
 
 const decompte = ({ ues, ecs, creneaux }) =>
@@ -14,28 +15,30 @@ const decompte = ({ ues, ecs, creneaux }) =>
  * séance générée.
  */
 export default function PreparationAnnee({ cible, source, onClose, onPreparee }) {
-  const [filieres, setFilieres] = useState(null);
-  const [erreur, setErreur] = useState('');
+  const apercuQuery = useQuery({
+    queryKey: ['preparation-annee', cible.id, source.id],
+    queryFn: ({ signal }) => previsualiserPreparation(cible.id, source.id, signal),
+  });
+  const filieres = apercuQuery.data?.data?.filieres ?? null;
+  const [erreurEnvoi, setErreurEnvoi] = useState('');
   const [choix, setChoix] = useState(() => new Set());
   const [avecEdt, setAvecEdt] = useState(true);
   const [envoi, setEnvoi] = useState(false);
   const [bilan, setBilan] = useState(null);
 
-  useEffect(() => {
-    let annule = false;
+  // Cochées d'office, une fois l'aperçu chargé : ce qui a une maquette à
+  // copier et n'en a pas déjà une. Ajusté pendant le rendu (pas un effet) :
+  // la donnée est déjà là quand ce composant s'affiche.
+  const [filieresVues, setFilieresVues] = useState(null);
+  if (filieres && filieres !== filieresVues) {
+    setFilieresVues(filieres);
+    setChoix(new Set(filieres.filter((f) => !f.deja_preparee && f.source.ues > 0).map((f) => f.id)));
+  }
 
-    api.get(`/admin/annees-academiques/${cible.id}/preparation`, { params: { source: source.id } })
-      .then(({ data }) => {
-        if (annule) return;
-        const liste = data?.data?.filieres ?? [];
-        setFilieres(liste);
-        // Cochées d'office : ce qui a une maquette à copier et n'en a pas déjà une.
-        setChoix(new Set(liste.filter((f) => !f.deja_preparee && f.source.ues > 0).map((f) => f.id)));
-      })
-      .catch((err) => { if (!annule) setErreur(err.response?.data?.message || "L'aperçu n'a pas pu être chargé."); });
-
-    return () => { annule = true; };
-  }, [cible.id, source.id]);
+  const erreurChargement = apercuQuery.isError
+    ? (apercuQuery.error?.response?.data?.message || "L'aperçu n'a pas pu être chargé.")
+    : '';
+  const erreur = erreurEnvoi || erreurChargement;
 
   const basculer = (id) => setChoix((actuel) => {
     const suivant = new Set(actuel);
@@ -45,9 +48,9 @@ export default function PreparationAnnee({ cible, source, onClose, onPreparee })
 
   const preparer = async () => {
     setEnvoi(true);
-    setErreur('');
+    setErreurEnvoi('');
     try {
-      const { data } = await api.post(`/admin/annees-academiques/${cible.id}/preparer`, {
+      const data = await preparerAnnee(cible.id, {
         source_annee_id: source.id,
         filiere_ids: [...choix],
         avec_edt: avecEdt,
@@ -55,7 +58,7 @@ export default function PreparationAnnee({ cible, source, onClose, onPreparee })
       setBilan({ message: data?.message, filieres: data?.data?.filieres ?? [] });
       onPreparee?.();
     } catch (err) {
-      setErreur(err.response?.data?.message || 'La préparation a échoué.');
+      setErreurEnvoi(err.response?.data?.message || 'La préparation a échoué.');
     } finally {
       setEnvoi(false);
     }

@@ -1,83 +1,44 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { FiLoader, FiAlertCircle } from 'react-icons/fi';
 import BarChart from '../../components/charts/BarChart';
-import api from '../../api/axios';
+import { listerFilieres, listerAnnees } from '../../api/resources/reference';
+import { rapportComparaisonSemestres } from '../../api/resources/rapports';
 
 export default function SemesterComparison() {
-  const [filieres, setFilieres] = useState([]);
   const [selectedFiliere, setSelectedFiliere] = useState('');
-  const [annees, setAnnees] = useState([]);
   const [selectedAnnee, setSelectedAnnee] = useState('');
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
-  // Charger la liste des filières et années au montage
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const [filRes, anneeRes] = await Promise.all([
-          api.get('/admin/filieres'),
-          api.get('/admin/annees-academiques'),
-        ]);
+  const filieresQuery = useQuery({ queryKey: ['filieres'], queryFn: () => listerFilieres() });
+  const anneesQuery = useQuery({ queryKey: ['annees-academiques'], queryFn: () => listerAnnees() });
+  const filieres = filieresQuery.data?.data ?? filieresQuery.data ?? [];
+  const annees = anneesQuery.data?.data ?? anneesQuery.data ?? [];
 
-        const filList = filRes.data?.data || filRes.data || [];
-        const anneeList = anneeRes.data?.data || anneeRes.data || [];
+  // Sélectionne l'année active par défaut dès que la liste arrive, sans
+  // écraser un choix déjà fait par l'utilisateur. Ajusté pendant le rendu
+  // (pas un effet) : la donnée est déjà là quand ce composant s'affiche.
+  const [anneesVues, setAnneesVues] = useState(null);
+  if (annees.length > 0 && annees !== anneesVues) {
+    setAnneesVues(annees);
+    if (!selectedAnnee) {
+      const active = annees.find(y => y.active);
+      setSelectedAnnee(String(active?.id || annees[annees.length - 1]?.id || ''));
+    }
+  }
 
-        if (Array.isArray(filList)) setFilieres(filList);
-        if (Array.isArray(anneeList)) {
-          setAnnees(anneeList);
-          if (anneeList.length > 0) {
-            // Sélectionner l'année active par défaut
-            const active = anneeList.find(y => y.active);
-            setSelectedAnnee(String(active?.id || anneeList[anneeList.length - 1]?.id || ''));
-          }
-        }
-      } catch {
-        setError('Impossible de charger les filtres.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    init();
-  }, []);
+  const comparaisonQuery = useQuery({
+    queryKey: ['rapport-comparaison-semestres', selectedFiliere, selectedAnnee],
+    queryFn: ({ signal }) => rapportComparaisonSemestres({ filiere_id: selectedFiliere, annee_id: selectedAnnee }, signal),
+    enabled: Boolean(selectedFiliere && selectedAnnee),
+  });
 
-  // Chargement de la comparaison, annulable : en changeant de filière ou d'année,
-  // la réponse de la sélection précédente pouvait arriver en dernier et afficher
-  // les données de la mauvaise promotion.
-  //
-  // La remise à zéro quand la sélection est incomplète se fait dans le corps
-  // asynchrone, et non avant : placée en tête de l'effet, c'était une écriture
-  // d'état synchrone provoquant un rendu de plus à chaque passage.
-  useEffect(() => {
-    let annule = false;
-
-    (async () => {
-      if (!selectedFiliere || !selectedAnnee) {
-        if (!annule) setData(null);
-        return;
-      }
-
-      setLoading(true);
-      setError('');
-
-      try {
-        const { data: res } = await api.get('/admin/reports/semester-comparison', {
-          params: { filiere_id: selectedFiliere, annee_id: selectedAnnee },
-        });
-        if (!annule) setData(res.data || res);
-      } catch {
-        if (!annule) {
-          setError('Impossible de charger les données de comparaison.');
-          setData(null);
-        }
-      } finally {
-        if (!annule) setLoading(false);
-      }
-    })();
-
-    return () => { annule = true; };
-  }, [selectedFiliere, selectedAnnee]);
+  const loading = filieresQuery.isLoading || anneesQuery.isLoading || comparaisonQuery.isFetching;
+  const error = filieresQuery.isError || anneesQuery.isError
+    ? 'Impossible de charger les filtres.'
+    : comparaisonQuery.isError
+      ? 'Impossible de charger les données de comparaison.'
+      : '';
+  const data = comparaisonQuery.isError ? null : (comparaisonQuery.data?.data ?? comparaisonQuery.data ?? null);
 
   if (loading && !data) {
     return <div className="flex justify-center p-12"><FiLoader className="animate-spin text-primary w-8 h-8" /></div>;

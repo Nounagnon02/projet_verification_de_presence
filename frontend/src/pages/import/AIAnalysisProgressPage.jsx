@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { FiLoader, FiCheck, FiFileText, FiCpu, FiAlertTriangle, FiRefreshCw } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
-import api from '../../api/axios';
+import { recupererStatutAnalyseIa } from '../../api/resources/imports';
 
 const POLL_INTERVAL = 2000; // 2 secondes entre chaque poll
+const MAX_RETRIES = 60; // 2 minutes max (60 × 2s)
 
 const STAGES = [
   { key: 'extraction', label: 'Extraction du fichier', icon: FiFileText },
@@ -52,119 +54,97 @@ function lireAnalyseEnSession() {
   return { id, type: stored.type };
 }
 
+function getStageFromStatus(status) {
+  const map = {
+    pending: 0,
+    processing: 1,
+    completed: 2,
+    failed: 2,
+  };
+  return map[status] ?? 0;
+}
+
 export default function AIAnalysisProgressPage() {
   // Lecture une seule fois, à l'initialisation.
   const [initial] = useState(lireAnalyseEnSession);
-  const [currentStage, setCurrentStage] = useState(0);
-  const [error, setError] = useState(() => initial.erreur ?? null);
-  const [analysisId] = useState(() => initial.id ?? null);
-  const [analysisType] = useState(() => initial.type ?? null);
+  const analysisId = initial.id ?? null;
+  const analysisType = initial.type ?? null;
 
   // La section « Imports » a ete supprimee : chaque import vit desormais dans
   // l'ecran qui gere les donnees qu'il alimente. Le retour mene donc la, selon
   // le type de document analyse.
   const retourVersLOrigine = analysisType === 'courses' ? '/courses' : '/schedules/weekly';
-  const [pollCount, setPollCount] = useState(0);
   const navigate = useNavigate();
 
-  const getStageFromStatus = (status) => {
-    const map = {
-      pending: 0,
-      processing: 1,
-      completed: 2,
-      failed: 2,
-    };
-    return map[status] ?? 0;
-  };
+  // Compteur de tentatives : une ref, pour que la decision de refetchInterval
+  // (ci-dessous) lise toujours la valeur la plus recente sans dependre de la
+  // fraicheur d'une fermeture React. pollCount, lui, n'existe que pour
+  // l'affichage « Requête #n ».
+  const tentatives = useRef(0);
+  const [pollCount, setPollCount] = useState(0);
+  // Message du bouton Réessayer quand l'analyse n'est plus disponible : ecrit
+  // uniquement depuis ce gestionnaire de clic, jamais depuis un effet.
+  const [erreurRelance, setErreurRelance] = useState(null);
 
-  const pollAnalysisStatus = useCallback(async (id) => {
-    try {
-      const { data } = await api.get(`/admin/import/analysis-status/${id}`);
-      if (data.success && data.data) {
-        const { status } = data.data;
-        setCurrentStage(getStageFromStatus(status));
-
-        if (status === 'completed') {
-          // Analyse terminée — stocker le résultat et naviguer
-          const type = data.data.type || analysisType;
-          if (type === 'courses') {
-            sessionStorage.setItem('import_courses_analysis', JSON.stringify(data.data));
-            navigate('/import/validate-courses');
-          } else {
-            sessionStorage.setItem('import_analysis', JSON.stringify(data.data));
-            navigate('/import/validate-schedule');
-          }
-          return true; // Arrêter le polling
-        }
-
-        if (status === 'failed') {
-          setError(data.data.error_message || 'L\'analyse a échoué. Veuillez réessayer.');
-          return true; // Arrêter le polling
-        }
-
-        // Encore en cours — continuer le polling
-        return false;
+  const statutQuery = useQuery({
+    queryKey: ['analyse-ia-statut', analysisId],
+    enabled: Boolean(analysisId) && !initial.erreur,
+    queryFn: async ({ signal }) => {
+      tentatives.current += 1;
+      setPollCount(tentatives.current);
+      try {
+        return await recupererStatutAnalyseIa(analysisId, signal);
+      } catch (err) {
+        // Erreur réseau temporaire — on continue le polling, comme avant.
+        console.warn('[AIAnalysis] Erreur de polling:', err);
+        return { success: false, data: null };
       }
-      return false;
-    } catch (err) {
-      // Erreur réseau temporaire — on continue le polling
-      console.warn('[AIAnalysis] Erreur de polling:', err);
-      return false;
-    }
-  }, [navigate, analysisType]);
+    },
+    // Remplacement idiomatique du setInterval/setTimeout répété : on repolle
+    // toutes les POLL_INTERVAL ms tant que le statut n'est ni terminé ni en
+    // échec, et jusqu'à MAX_RETRIES tentatives (2 minutes).
+    refetchInterval: (query) => {
+      const status = query.state.data?.data?.status;
+      if (status === 'completed' || status === 'failed') return false;
+      return tentatives.current >= MAX_RETRIES ? false : POLL_INTERVAL;
+    },
+  });
 
-  // Seule l'interrogation périodique du statut reste un effet : c'est une
-  // souscription à un système extérieur, ce à quoi les effets servent.
+  const status = statutQuery.data?.data?.status;
+  const currentStage = getStageFromStatus(status);
+  const isFailed = status === 'failed';
+  const delaiDepasse = !isFailed && status !== 'completed' && pollCount >= MAX_RETRIES;
+
+  // Redirection vers l'écran de validation : une action sur l'extérieur (la
+  // navigation, l'écriture en session), jamais un setState — le seul type
+  // d'effet qui reste légitime ici.
   useEffect(() => {
-    if (!analysisId) return;
+    if (status !== 'completed' || !statutQuery.data) return;
+    const data = statutQuery.data.data;
+    const type = data.type || analysisType;
+    if (type === 'courses') {
+      sessionStorage.setItem('import_courses_analysis', JSON.stringify(data));
+      navigate('/import/validate-courses');
+    } else {
+      sessionStorage.setItem('import_analysis', JSON.stringify(data));
+      navigate('/import/validate-schedule');
+    }
+  }, [status, statutQuery.data, analysisType, navigate]);
 
-    const id = analysisId;
-    let cancelled = false;
-    let retries = 0;
-    const MAX_RETRIES = 60; // 2 minutes max (60 × 2s)
-
-    const poll = async () => {
-      if (cancelled) return;
-      setPollCount(prev => prev + 1);
-
-      const done = await pollAnalysisStatus(id);
-      if (done || cancelled) return;
-
-      retries++;
-      if (retries >= MAX_RETRIES) {
-        setError('L\'analyse a pris trop de temps. Veuillez réessayer.');
-        return;
-      }
-
-      setTimeout(poll, POLL_INTERVAL);
-    };
-
-    // Premier poll immédiat, puis intervalle
-    const initialTimer = setTimeout(poll, 500);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(initialTimer);
-    };
-  }, [analysisId, pollAnalysisStatus]);
+  const error = erreurRelance
+    ?? initial.erreur
+    ?? (isFailed ? (statutQuery.data?.data?.error_message || 'L\'analyse a échoué. Veuillez réessayer.') : null)
+    ?? (delaiDepasse ? 'L\'analyse a pris trop de temps. Veuillez réessayer.' : null);
 
   const handleRetry = () => {
-    if (!analysisId || isNaN(Number(analysisId))) {
-      setError("Impossible de réessayer : l'analyse n'est plus disponible. Veuillez réimporter le fichier.");
+    if (!analysisId) {
+      setErreurRelance("Impossible de réessayer : l'analyse n'est plus disponible. Veuillez réimporter le fichier.");
       return;
     }
-    setError(null);
-    setCurrentStage(0);
+    tentatives.current = 0;
     setPollCount(0);
-
-    // Re-poller immédiatement
-    const poll = async () => {
-      const done = await pollAnalysisStatus(analysisId);
-      if (!done) {
-        setTimeout(poll, POLL_INTERVAL);
-      }
-    };
-    setTimeout(poll, 500);
+    setErreurRelance(null);
+    statutQuery.refetch();
   };
 
   const isComplete = currentStage >= STAGES.length;

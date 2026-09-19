@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   FiAlertTriangle,
   FiBookOpen,
@@ -7,7 +8,9 @@ import {
   FiRefreshCw,
   FiTrash2,
 } from 'react-icons/fi';
-import api from '../../api/axios';
+import {
+  listerEcsInscrits, listerEcsDisponibles, inscrireEc, desinscrireEc, reinitialiserInscriptions,
+} from '../../api/resources/inscriptions';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
@@ -106,17 +109,13 @@ function ColonneEcs({ titre, ecs, vide, children }) {
  */
 export default function EnrollmentDrawer({ student, open, onClose, onChange }) {
   const { addToast } = useToastCtx();
+  const queryClient = useQueryClient();
 
-  const [inscrits, setInscrits] = useState([]);
-  const [disponibles, setDisponibles] = useState([]);
-  const [chargement, setChargement] = useState(false);
-  const [erreur, setErreur] = useState(null);
   const [recherche, setRecherche] = useState('');
   // Identifiant de l'EC en cours de traitement, ou 'reset' : une seule écriture
   // à la fois, ce qui évite deux appels concurrents sur les mêmes inscriptions.
   const [actionEnCours, setActionEnCours] = useState(null);
   const [confirmationReset, setConfirmationReset] = useState(false);
-  const [rechargement, setRechargement] = useState(0);
 
   const studentId = student?.id ?? null;
   const ouvert = Boolean(open && studentId);
@@ -132,38 +131,36 @@ export default function EnrollmentDrawer({ student, open, onClose, onChange }) {
     };
   }, []);
 
-  const rafraichir = useCallback(() => setRechargement((n) => n + 1), []);
-
   // Les deux listes sont chargées ensemble : elles décrivent le même état et
   // les afficher désynchronisées laisserait un EC dans les deux colonnes.
-  useEffect(() => {
-    if (!ouvert) return undefined;
+  const inscritsQuery = useQuery({
+    queryKey: ['ecs-inscrits', studentId],
+    queryFn: ({ signal }) => listerEcsInscrits(studentId, signal),
+    enabled: ouvert,
+  });
+  const disponiblesQuery = useQuery({
+    queryKey: ['ecs-disponibles', studentId],
+    queryFn: ({ signal }) => listerEcsDisponibles(studentId, signal),
+    enabled: ouvert,
+  });
 
-    const controleur = new AbortController();
+  const inscrits = useMemo(
+    () => (Array.isArray(inscritsQuery.data?.data) ? inscritsQuery.data.data : []),
+    [inscritsQuery.data],
+  );
+  const disponibles = useMemo(
+    () => (Array.isArray(disponiblesQuery.data?.data) ? disponiblesQuery.data.data : []),
+    [disponiblesQuery.data],
+  );
+  const chargement = inscritsQuery.isFetching || disponiblesQuery.isFetching;
+  const erreur = inscritsQuery.isError || disponiblesQuery.isError
+    ? messageErreur(inscritsQuery.error ?? disponiblesQuery.error, 'Erreur lors du chargement des inscriptions.')
+    : null;
 
-    (async () => {
-      setChargement(true);
-      setErreur(null);
-      try {
-        const [reponseInscrits, reponseDisponibles] = await Promise.all([
-          api.get(`/admin/students/${studentId}/ecs`, { signal: controleur.signal }),
-          api.get(`/admin/students/${studentId}/ecs-available`, { signal: controleur.signal }),
-        ]);
-        if (!monteRef.current) return;
-        setInscrits(Array.isArray(reponseInscrits.data?.data) ? reponseInscrits.data.data : []);
-        setDisponibles(Array.isArray(reponseDisponibles.data?.data) ? reponseDisponibles.data.data : []);
-      } catch (err) {
-        if (estAnnulation(err) || !monteRef.current) return;
-        setErreur(messageErreur(err, 'Erreur lors du chargement des inscriptions.'));
-        setInscrits([]);
-        setDisponibles([]);
-      } finally {
-        if (monteRef.current && !controleur.signal.aborted) setChargement(false);
-      }
-    })();
-
-    return () => controleur.abort();
-  }, [ouvert, studentId, rechargement]);
+  const rafraichir = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['ecs-inscrits', studentId] });
+    queryClient.invalidateQueries({ queryKey: ['ecs-disponibles', studentId] });
+  }, [queryClient, studentId]);
 
   /**
    * Exécute une écriture puis recharge les deux listes : le serveur reste la
@@ -176,7 +173,7 @@ export default function EnrollmentDrawer({ student, open, onClose, onChange }) {
     abortEcritureRef.current = controleur;
     setActionEnCours(cle);
     try {
-      const { data } = await envoyer(controleur.signal);
+      const data = await envoyer(controleur.signal);
       if (!monteRef.current) return;
       onChange?.(data?.data ?? null);
       rafraichir();
@@ -192,7 +189,7 @@ export default function EnrollmentDrawer({ student, open, onClose, onChange }) {
   const inscrire = useCallback(async (ec) => {
     const data = await ecrire(
       ec.id,
-      (signal) => api.post(`/admin/students/${studentId}/ecs`, { ec_ids: [ec.id] }, { signal }),
+      (signal) => inscrireEc(studentId, [ec.id], signal),
       `Erreur lors de l'inscription à ${ec.code}.`,
     );
     if (!data) return;
@@ -212,7 +209,7 @@ export default function EnrollmentDrawer({ student, open, onClose, onChange }) {
   const desinscrire = useCallback(async (ec) => {
     const data = await ecrire(
       ec.id,
-      (signal) => api.delete(`/admin/students/${studentId}/ecs/${ec.id}`, { signal }),
+      (signal) => desinscrireEc(studentId, ec.id, signal),
       `Erreur lors de la désinscription de ${ec.code}.`,
     );
     if (!data) return;
@@ -222,7 +219,7 @@ export default function EnrollmentDrawer({ student, open, onClose, onChange }) {
   const reinitialiser = useCallback(async () => {
     const data = await ecrire(
       'reset',
-      (signal) => api.post(`/admin/students/${studentId}/ecs/reset`, {}, { signal }),
+      (signal) => reinitialiserInscriptions(studentId, signal),
       'Erreur lors de la réinitialisation des inscriptions.',
     );
     if (!data) return;
@@ -234,7 +231,6 @@ export default function EnrollmentDrawer({ student, open, onClose, onChange }) {
   const fermer = useCallback(() => {
     setRecherche('');
     setConfirmationReset(false);
-    setErreur(null);
     onClose?.();
   }, [onClose]);
 

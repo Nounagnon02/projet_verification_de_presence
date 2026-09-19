@@ -1,41 +1,23 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { MdAdd, MdSchool, MdSearch, MdChevronRight, MdRefresh } from 'react-icons/md';
-import api from '../../api/axios';
+import { listerEtablissements } from '../../api/resources/etablissements';
 
 export default function EtablissementManagementPage() {
-  const [etablissements, setEtablissements] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  // Un seul chemin de chargement : l'effet. Le bouton « rafraîchir »
-  // l'invalide en incrémentant ce compteur, plutôt qu'en appelant une seconde
-  // fonction de chargement qu'il faudrait garder synchronisée avec la première.
-  const [rechargement, setRechargement] = useState(0);
-  const rafraichir = useCallback(() => setRechargement((n) => n + 1), []);
-
-  useEffect(() => {
-    let annule = false;
-
-    // Annulation : une réponse qui arrive après le démontage ne doit pas écrire
-    // dans un composant disparu, et un rafraîchissement rapproché ne doit pas
-    // être écrasé par la réponse de la requête précédente.
-    (async () => {
-      setLoading(true);
-
-      try {
-        const { data } = await api.get('/super-admin/etablissements');
-        if (!annule && data.success) setEtablissements(data.data || []);
-      } catch (err) {
-        if (!annule) console.error('Erreur chargement facultés:', err);
-      } finally {
-        if (!annule) setLoading(false);
-      }
-    })();
-
-    return () => { annule = true; };
-  }, [rechargement]);
+  const etablissementsQuery = useQuery({
+    queryKey: ['etablissements'],
+    queryFn: ({ signal }) => listerEtablissements(signal),
+  });
+  const etablissements = etablissementsQuery.data?.data ?? [];
+  const loading = etablissementsQuery.isLoading;
+  const rafraichir = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ['etablissements'] }),
+    [queryClient],
+  );
 
   const filtered = etablissements.filter(
     (e) =>
@@ -96,10 +78,10 @@ export default function EtablissementManagementPage() {
           {filtered.length > 0 ? (
             <div className="divide-y divide-slate-50">
               {filtered.map((etablissement) => (
-                <div
+                <Link
                   key={etablissement.id}
-                  onClick={() => navigate(`/super-admin/etablissements/${etablissement.id}`)}
-                  className="flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors cursor-pointer"
+                  to={`/super-admin/etablissements/${etablissement.id}`}
+                  className="flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-[#011549]/5 rounded-xl flex items-center justify-center text-[#011549]">
@@ -120,13 +102,13 @@ export default function EtablissementManagementPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     {etablissement.actif ? (
-                      <span className="text-xs bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full font-medium">Actif</span>
+                      <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Actif</span>
                     ) : (
-                      <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">Inactif</span>
+                      <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">Inactif</span>
                     )}
                     <MdChevronRight className="text-on-surface-variant" />
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           ) : (

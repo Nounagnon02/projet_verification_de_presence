@@ -1,30 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { FiPrinter, FiLoader } from 'react-icons/fi';
 import { formatDate } from '../../utils/formatters';
-import api from '../../api/axios';
+import { rapportPresenceStats } from '../../api/resources/rapports';
 
 export default function ReportPrintPreview() {
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const statsQuery = useQuery({
+    queryKey: ['rapport-presence-stats'],
+    queryFn: ({ signal }) => rapportPresenceStats(signal),
+  });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const { data: res } = await api.get('/admin/presence/stats');
-        const s = res.data || res;
-        setStats(s);
-      } catch {
-        setStats(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+  if (statsQuery.isLoading) return <div className="flex justify-center p-12"><FiLoader className="animate-spin text-primary w-8 h-8" /></div>;
 
-  if (loading) return <div className="flex justify-center p-12"><FiLoader className="animate-spin text-primary w-8 h-8" /></div>;
-
-  const s = stats || {};
+  const s = statsQuery.isError ? {} : (statsQuery.data?.data || statsQuery.data || {});
   const totalEtudiants = s.total_etudiants || 0;
   const totalPresences = s.total_presences || 0;
   const tauxGlobal = s.taux_global !== undefined ? `${s.taux_global}%` : '—';

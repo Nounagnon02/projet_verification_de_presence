@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import api from '../../api/axios';
+import { useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { listerGroupesPourEc } from '../../api/resources/emploiDuTemps';
 
 // Seuls les TD et les TP se font par groupe : un CM ou une évaluation réunit
 // toute la promotion.
@@ -14,21 +15,14 @@ const TYPES_A_GROUPES = ['td', 'tp'];
  */
 export default function SelecteurGroupe({ id, ecId, type, value, onChange, className = '', labelClassName = '', wrapperClassName = '' }) {
   const actif = Boolean(ecId) && TYPES_A_GROUPES.includes(type);
-  const cle = actif ? `${ecId}|${type}` : '';
-  const [groupes, setGroupes] = useState({ cle: '', liste: [] });
 
-  useEffect(() => {
-    if (!cle) return undefined;
-    let annule = false;
-    const [ec_id, typeSeance] = cle.split('|');
-    api.get('/admin/groupes', { params: { ec_id, type: typeSeance } })
-      .then(({ data }) => { if (!annule) setGroupes({ cle, liste: data?.data ?? [] }); })
-      .catch(() => { if (!annule) setGroupes({ cle, liste: [] }); });
-    return () => { annule = true; };
-  }, [cle]);
-
-  const charge = groupes.cle === cle;
-  const liste = useMemo(() => (charge ? groupes.liste : []), [charge, groupes.liste]);
+  const groupesQuery = useQuery({
+    queryKey: ['groupes-ec', ecId, type],
+    queryFn: ({ signal }) => listerGroupesPourEc(ecId, type, signal),
+    enabled: actif,
+  });
+  const charge = actif && !groupesQuery.isLoading;
+  const liste = useMemo(() => (charge ? (groupesQuery.data?.data ?? []) : []), [charge, groupesQuery.data]);
 
   useEffect(() => {
     if (!value) return;

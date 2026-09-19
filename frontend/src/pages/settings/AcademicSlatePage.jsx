@@ -1,52 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { FiRefreshCw, FiBook, FiUsers, FiCalendar, FiCheckCircle } from 'react-icons/fi';
-import api from '../../api/axios';
+import { listerAnnees, listerFilieres } from '../../api/resources/reference';
+import { listerUes } from '../../api/resources/maquette';
+import { listerEtudiants } from '../../api/resources/etudiants';
 
 export default function AcademicSlatePage() {
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Quatre lectures indépendantes, chacune sa clé : la plus lente ne retarde
+  // plus la mise en cache des trois autres.
+  const anneesQuery = useQuery({ queryKey: ['annees-academiques'], queryFn: () => listerAnnees() });
+  const filieresQuery = useQuery({ queryKey: ['filieres'], queryFn: () => listerFilieres() });
+  const uesQuery = useQuery({ queryKey: ['ues'], queryFn: () => listerUes() });
+  // Seul le total importe ici : une page suffit.
+  const etudiantsQuery = useQuery({ queryKey: ['etudiants', { per_page: 1 }], queryFn: () => listerEtudiants({ per_page: 1 }) });
 
-  // Déclarée avant l'effet qui l'appelle : l'ordre inverse fonctionnait, la
-  // fonction étant définie au moment où l'effet s'exécute, mais il masquait
-  // la dépendance et l'analyse statique le signalait à juste titre.
-
-
-  // Chargement intégré à l'effet, son unique appelant, et annulable : les quatre
-  // requêtes peuvent aboutir après un départ de la page.
-  useEffect(() => {
-    let annule = false;
-
-    (async () => {
-      try {
-        setLoading(true);
-        const [anneesRes, filieresRes, uesRes, etudiantsRes] = await Promise.all([
-          api.get('/admin/annees-academiques'),
-          api.get('/admin/filieres'),
-          api.get('/admin/ues'),
-          api.get('/admin/students', { params: { per_page: 1 } }),
-        ]);
-        const annees = anneesRes.data?.data ?? anneesRes.data ?? [];
-        const filieres = filieresRes.data?.data ?? filieresRes.data ?? [];
-        const ues = uesRes.data?.data ?? uesRes.data ?? [];
-        if (!annule) setStats({
-          anneeActive: annees.find(a => a.active) || annees[0] || null,
-          totalAnnees: annees.length,
-          totalFilieres: filieres.length,
-          totalUes: ues.length,
-          totalEtudiants: etudiantsRes.data?.pagination?.total || etudiantsRes.data?.meta?.total || '...',
-        });
-      } catch (err) {
-        console.error('[Slate]', err);
-      } finally {
-        if (!annule) setLoading(false);
-      }
-  
-    })();
-
-    return () => { annule = true; };
-  }, []);
-
-
+  const loading = anneesQuery.isLoading || filieresQuery.isLoading || uesQuery.isLoading || etudiantsQuery.isLoading;
 
   if (loading) {
     return (
@@ -56,6 +23,18 @@ export default function AcademicSlatePage() {
       </div>
     );
   }
+
+  const annees = anneesQuery.data?.data ?? [];
+  const filieres = filieresQuery.data?.data ?? [];
+  const ues = uesQuery.data?.data ?? [];
+
+  const stats = {
+    anneeActive: annees.find(a => a.active) || annees[0] || null,
+    totalAnnees: annees.length,
+    totalFilieres: filieres.length,
+    totalUes: ues.length,
+    totalEtudiants: etudiantsQuery.data?.pagination?.total || etudiantsQuery.data?.meta?.total || '...',
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">

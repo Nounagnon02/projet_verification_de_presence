@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { FiSend, FiAlertCircle, FiCheck, FiMail } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
-import api from '../../api/axios';
+import { creerTicket } from '../../api/resources/support';
 
 export default function ContactFormPage() {
   const [form, setForm] = useState({ subject: '', message: '', priority: 'moyenne' });
@@ -26,8 +26,8 @@ export default function ContactFormPage() {
 
     setSending(true);
     try {
-      const res = await api.post('/admin/tickets', form);
-      setTicketId(res.data.data?.id);
+      const result = await creerTicket(form);
+      setTicketId(result.data?.id);
       setSubmitted(true);
     } catch (err) {
       alert(err.response?.data?.message || "Erreur lors de l'envoi");

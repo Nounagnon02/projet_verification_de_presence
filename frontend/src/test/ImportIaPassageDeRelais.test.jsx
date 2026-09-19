@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } 
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { http } from 'msw'
 import { server } from './msw/server'
 import { succes } from './msw/handlers'
@@ -43,7 +44,12 @@ afterEach(() => server.resetHandlers())
 async function lancerAnalyse() {
   const user = userEvent.setup()
 
-  render(<MemoryRouter><UEManagementPage /></MemoryRouter>)
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 0 } } })
+  render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter><UEManagementPage /></MemoryRouter>
+    </QueryClientProvider>,
+  )
 
   await user.click(await screen.findByRole('button', { name: /Import en masse/i }))
 

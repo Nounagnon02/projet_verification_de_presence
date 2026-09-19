@@ -1,16 +1,33 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiArrowLeft, FiSend, FiUser, FiClock, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import Badge from '../../components/ui/Badge';
-import useApi from '../../hooks/useApi';
-import api from '../../api/axios';
+import { obtenirTicket, repondreTicket, changerStatutTicket } from '../../api/resources/support';
 
 const statusMap = { ouvert: 'success', en_cours: 'warning', resolu: 'info', ferme: 'neutral' };
 const statusLabels = { ouvert: 'Ouvert', en_cours: 'En cours', resolu: 'Résolu', ferme: 'Fermé' };
 
 export default function TicketDetailPage() {
   const { id } = useParams();
-  const { data: ticket, loading, refetch } = useApi(`/admin/tickets/${id}`);
+  const queryClient = useQueryClient();
+
+  const ticketQuery = useQuery({
+    queryKey: ['tickets', id],
+    queryFn: async ({ signal }) => {
+      const result = await obtenirTicket(id, signal);
+      if (result.success !== undefined) {
+        if (!result.success) throw new Error(result.message || 'Une erreur est survenue');
+        return result.data;
+      }
+      return result.data ?? result;
+    },
+    enabled: Boolean(id),
+  });
+  const ticket = ticketQuery.data;
+  const loading = ticketQuery.isLoading;
+  const refetch = () => queryClient.invalidateQueries({ queryKey: ['tickets', id] });
+
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
 
@@ -19,7 +36,7 @@ export default function TicketDetailPage() {
     if (!reply.trim() || sending) return;
     setSending(true);
     try {
-      await api.post(`/admin/tickets/${id}/reply`, { message: reply });
+      await repondreTicket(id, { message: reply });
       setReply('');
       refetch();
     } catch (err) {
@@ -31,7 +48,7 @@ export default function TicketDetailPage() {
 
   const updateStatus = async (status) => {
     try {
-      await api.patch(`/admin/tickets/${id}/status`, { status });
+      await changerStatutTicket(id, status);
       refetch();
     } catch (err) {
       alert(err.response?.data?.message || "Erreur lors du changement de statut");
