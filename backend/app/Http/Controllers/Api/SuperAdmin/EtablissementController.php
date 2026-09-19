@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\EtablissementResource;
 use App\Models\Etablissement;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -23,7 +24,7 @@ class EtablissementController extends Controller
             'users' => fn ($q) => $q->where('role', 'faculte_admin'),
         ])->orderBy('nom')->get();
 
-        return $this->successResponse($etablissements);
+        return $this->successResponse(EtablissementResource::collection($etablissements));
     }
 
     public function store(Request $request): JsonResponse
@@ -76,7 +77,7 @@ class EtablissementController extends Controller
         }
 
         return $this->createdResponse([
-            'etablissement' => $etablissement,
+            'etablissement' => new EtablissementResource($etablissement),
             'admin'         => [
                 'email'    => $admin->email,
                 'password' => $password, // Uniquement à la création
@@ -87,18 +88,16 @@ class EtablissementController extends Controller
     public function show(Etablissement $etablissement): JsonResponse
     {
         $etablissement->loadCount(['filieres', 'users']);
-        $stats = [
-            'total_etudiants' => \App\Models\Etudiant::whereIn('filiere_id',
+        $etablissement->setAttribute('total_etudiants', \App\Models\Etudiant::whereIn('filiere_id',
+            $etablissement->filieres()->pluck('id')
+        )->count());
+        $etablissement->setAttribute('total_presences', \App\Models\Presence::whereIn('evenement_id',
+            \App\Models\Evenement::whereIn('filiere_id',
                 $etablissement->filieres()->pluck('id')
-            )->count(),
-            'total_presences' => \App\Models\Presence::whereIn('evenement_id',
-                \App\Models\Evenement::whereIn('filiere_id',
-                    $etablissement->filieres()->pluck('id')
-                )->pluck('id')
-            )->count(),
-        ];
+            )->pluck('id')
+        )->count());
 
-        return $this->successResponse(array_merge($etablissement->toArray(), $stats));
+        return $this->successResponse(new EtablissementResource($etablissement));
     }
 
     public function update(Request $request, Etablissement $etablissement): JsonResponse
@@ -131,7 +130,7 @@ class EtablissementController extends Controller
                 ->update(['email' => $validated['email']]);
         }
 
-        return $this->successResponse($etablissement, 'Faculté mise à jour.');
+        return $this->successResponse(new EtablissementResource($etablissement), 'Faculté mise à jour.');
     }
 
     public function destroy(Etablissement $etablissement): JsonResponse

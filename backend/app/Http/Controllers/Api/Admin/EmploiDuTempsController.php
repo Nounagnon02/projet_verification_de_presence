@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\EmploiDuTempsResource;
 use App\Models\AnneeAcademique;
 use App\Models\Ec;
 use App\Models\EmploiDuTemps;
@@ -59,7 +60,7 @@ class EmploiDuTempsController extends Controller
         $liste = $tous
             ->filter(fn (EmploiDuTemps $c) => (!$filiereId || $c->ec?->ue?->filieres->contains('id', $filiereId))
                 && (!$semestre || (int) $c->ec?->ue?->semestre === $semestre))
-            ->map(fn (EmploiDuTemps $c) => $this->presenter($c, $conflits[$c->id] ?? []))
+            ->map(fn (EmploiDuTemps $c) => new EmploiDuTempsResource($c->setAttribute('conflits', $conflits[$c->id] ?? [])))
             ->values();
 
         return $this->successResponse($liste);
@@ -82,7 +83,7 @@ class EmploiDuTempsController extends Controller
         $cree = EmploiDuTemps::create($this->attributs($ec, $creneau));
 
         return $this->createdResponse(
-            $this->presenter($this->recharger($cree)),
+            new EmploiDuTempsResource($this->recharger($cree)),
             "Créneau ajouté : {$ec->code}, " . mb_strtolower(EmploiDuTemps::JOURS[$cree->jour_semaine]) . " de {$creneau['heure_debut']} à {$creneau['heure_fin']}."
         );
     }
@@ -115,7 +116,7 @@ class EmploiDuTempsController extends Controller
         $creneau->update($this->attributs($ec, $verifie));
 
         return $this->successResponse(
-            $this->presenter($this->recharger($creneau)),
+            new EmploiDuTempsResource($this->recharger($creneau)),
             'Créneau modifié.' . ($retirees > 0
                 ? " {$retirees} séance(s) à venir de l'ancienne version retirée(s) : la génération de cette nuit recrée celles de la nouvelle."
                 : '')
@@ -306,29 +307,4 @@ class EmploiDuTempsController extends Controller
         return $c->fresh([...Conflits::CHARGEMENTS, 'salle:id,nom']);
     }
 
-    /** @return array<string, mixed> */
-    private function presenter(EmploiDuTemps $c, array $conflits = []): array
-    {
-        return [
-            'id'           => $c->id,
-            'ec_id'        => $c->ec_id,
-            'ec'           => ['id' => $c->ec?->id, 'code' => $c->ec?->code, 'intitule' => $c->ec?->intitule],
-            'ue'           => ['code' => $c->ec?->ue?->code, 'semestre' => $c->ec?->ue?->semestre],
-            'filieres'     => $c->ec?->ue?->filieres->pluck('code')->values()->all() ?? [],
-            'filiere_id'   => $c->filiere_id,
-            'annee_id'     => $c->annee_id,
-            'jour_semaine' => $c->jour_semaine,
-            'heure_debut'  => substr((string) $c->heure_debut, 0, 5),
-            'heure_fin'    => substr((string) $c->heure_fin, 0, 5),
-            'type_cours'   => $c->type_cours,
-            'salle_id'     => $c->salle_id,
-            'salle'        => $c->salle?->nom ?? $c->salle_libelle,
-            'groupe_id'    => $c->groupe_id,
-            'groupe'       => $c->groupe?->libelle,
-            'enseignant'   => $c->enseignant,
-            'valide_du'    => $c->valide_du?->toDateString(),
-            'valide_au'    => $c->valide_au?->toDateString(),
-            'conflits'     => $conflits,
-        ];
-    }
 }

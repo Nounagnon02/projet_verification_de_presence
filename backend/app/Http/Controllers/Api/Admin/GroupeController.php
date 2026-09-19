@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\GroupeResource;
 use App\Models\Ec;
 use App\Models\Etudiant;
 use App\Models\Filiere;
@@ -51,7 +52,7 @@ class GroupeController extends Controller
             }
         }
 
-        return $this->successResponse($query->get());
+        return $this->successResponse(GroupeResource::collection($query->get()));
     }
 
     /** POST /api/admin/groupes */
@@ -72,7 +73,7 @@ class GroupeController extends Controller
             return $this->errorResponse("Le groupe {$valeurs['libelle']} existe déjà dans cette promotion.", 422);
         }
 
-        return $this->createdResponse(Groupe::create($valeurs)->loadCount('etudiants'), "Groupe {$valeurs['libelle']} créé.");
+        return $this->createdResponse(new GroupeResource(Groupe::create($valeurs)->loadCount('etudiants')), "Groupe {$valeurs['libelle']} créé.");
     }
 
     /**

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ProgrammeResource;
 use App\Models\Programme;
 use App\Traits\ScopedByEtablissement;
 use Illuminate\Http\JsonResponse;
@@ -27,7 +28,7 @@ class ProgrammeController extends Controller
 
         $this->scopeQuery($query, $request);
 
-        return $this->successResponse($query->get(['id', 'etablissement_id', 'code', 'intitule']));
+        return $this->successResponse(ProgrammeResource::collection($query->get(['id', 'etablissement_id', 'code', 'intitule'])));
     }
 
     /**

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\EcResource;
 use App\Models\Ec;
 use App\Models\Evenement;
 use App\Services\RegleSeanceService;
@@ -64,7 +65,7 @@ class EcController extends Controller
         // Avancement calculé depuis les séances terminées, pour toute la liste.
         app(\App\Services\AvancementCours::class)->appliquer($ecs);
 
-        return $this->successResponse($ecs);
+        return $this->successResponse(EcResource::collection($ecs));
     }
 
     public function store(Request $request): JsonResponse
@@ -94,7 +95,7 @@ class EcController extends Controller
 
         $ec = Ec::create(array_filter($validated, fn ($v) => $v !== null));
         $ec->load('ue.filiere');
-        return $this->createdResponse($ec, 'EC créé avec succès.');
+        return $this->createdResponse(new EcResource($ec), 'EC créé avec succès.');
     }
 
     public function update(Request $request, Ec $ec): JsonResponse
@@ -130,7 +131,7 @@ class EcController extends Controller
 
         $ec->update(array_filter($validated, fn ($v) => $v !== null));
         $ec->load('ue.filiere');
-        return $this->successResponse($ec, 'EC mis à jour.');
+        return $this->successResponse(new EcResource($ec), 'EC mis à jour.');
     }
 
     public function destroy(Request $request, Ec $ec): JsonResponse

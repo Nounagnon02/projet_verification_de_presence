@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\FermetureResource;
 use App\Models\AnneeAcademique;
 use App\Models\Fermeture;
 use App\Models\PeriodeSemestre;
@@ -37,15 +38,11 @@ class CalendrierController extends Controller
             return $this->successResponse(['annee' => null, 'periodes' => [], 'fermetures' => [], 'alertes' => []]);
         }
 
-        $fermetures = Fermeture::where('annee_id', $annee->id)
+        $fermetures = FermetureResource::collection(Fermeture::where('annee_id', $annee->id)
             ->where(fn ($q) => $q->whereNull('etablissement_id')
                 ->when($etablissementId, fn ($q) => $q->orWhere('etablissement_id', $etablissementId)))
             ->orderBy('date_debut')
-            ->get()
-            ->map(fn (Fermeture $f) => $f->toArray() + [
-                'type_libelle' => Fermeture::LIBELLES[$f->type] ?? $f->type,
-                'portee'       => $f->etablissement_id === null ? 'universite' : 'faculte',
-            ]);
+            ->get());
 
         return $this->successResponse([
             'annee'      => [

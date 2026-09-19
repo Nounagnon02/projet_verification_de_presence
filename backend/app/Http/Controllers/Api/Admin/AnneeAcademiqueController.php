@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\AnneeAcademiqueEtablissementResource;
 use App\Models\AnneeAcademique;
 use App\Services\BasculeAnnee;
 use App\Services\PreparationAnnee;
@@ -142,12 +143,12 @@ class AnneeAcademiqueController extends Controller
                 }
             });
 
-        return $this->successResponse($annees);
+        return $this->successResponse(AnneeAcademiqueEtablissementResource::collection($annees));
     }
 
     public function show(AnneeAcademique $anneeAcademique): JsonResponse
     {
-        return $this->successResponse($anneeAcademique);
+        return $this->successResponse(new AnneeAcademiqueEtablissementResource($anneeAcademique));
     }
 
     /**

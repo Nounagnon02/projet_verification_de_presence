@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\FiliereResource;
 use App\Models\AnneeAcademique;
 use App\Models\Filiere;
 use App\Models\Programme;
@@ -77,7 +78,7 @@ class FiliereController extends Controller
             });
         }
 
-        return $this->successResponse($filieres);
+        return $this->successResponse(FiliereResource::collection($filieres));
     }
 
     /**
@@ -147,7 +148,7 @@ class FiliereController extends Controller
 
         $filiere->load('programme:id,code,intitule')->loadCount(['etudiants', 'ues']);
 
-        return $this->createdResponse($filiere, 'Filière créée avec succès.');
+        return $this->createdResponse(new FiliereResource($filiere), 'Filière créée avec succès.');
     }
 
     public function show(Request $request, Filiere $filiere): JsonResponse
@@ -156,7 +157,7 @@ class FiliereController extends Controller
 
         $filiere->loadCount(['etudiants', 'ues']);
         $filiere->load(['programme:id,code,intitule', 'ues.ecs']);
-        return $this->successResponse($filiere);
+        return $this->successResponse(new FiliereResource($filiere));
     }
 
     public function update(Request $request, Filiere $filiere): JsonResponse
@@ -192,7 +193,7 @@ class FiliereController extends Controller
         $filiere->update($validated);
         $filiere->load('programme:id,code,intitule')->loadCount(['etudiants', 'ues']);
 
-        return $this->successResponse($filiere, 'Filière mise à jour.');
+        return $this->successResponse(new FiliereResource($filiere), 'Filière mise à jour.');
     }
 
     public function destroy(Request $request, Filiere $filiere): JsonResponse

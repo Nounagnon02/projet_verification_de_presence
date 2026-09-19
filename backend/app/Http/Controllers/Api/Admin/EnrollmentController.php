@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\EcResource;
 use App\Models\Ec;
 use App\Models\Etudiant;
 use App\Traits\ScopedByEtablissement;
@@ -27,7 +28,7 @@ class EnrollmentController extends Controller
         $ecs = $student->ecs()->with(['ue'])->get();
         app(\App\Services\AvancementCours::class)->appliquer($ecs);
 
-        return $this->successResponse($ecs, 'Liste des ECs de l\'étudiant.');
+        return $this->successResponse(EcResource::collection($ecs), 'Liste des ECs de l\'étudiant.');
     }
 
     /**
@@ -44,7 +45,7 @@ class EnrollmentController extends Controller
         $available = $allEcs->filter(fn ($ec) => !in_array($ec->id, $enrolledIds))->values();
         app(\App\Services\AvancementCours::class)->appliquer($available);
 
-        return $this->successResponse($available, 'ECs disponibles pour inscription.');
+        return $this->successResponse(EcResource::collection($available), 'ECs disponibles pour inscription.');
     }
 
     /**

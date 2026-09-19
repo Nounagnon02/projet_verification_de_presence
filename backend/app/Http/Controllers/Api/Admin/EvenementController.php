@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\EvenementResource;
 use App\Models\Ec;
 use App\Models\Evenement;
 use App\Models\Salle;
@@ -229,7 +230,7 @@ class EvenementController extends Controller
         }
 
         $evenement = Evenement::create($validated);
-        return $this->createdResponse($evenement, 'Événement créé avec succès.');
+        return $this->createdResponse(new EvenementResource($evenement), 'Événement créé avec succès.');
     }
 
     public function show(Request $request, Evenement $evenement): JsonResponse
@@ -241,7 +242,7 @@ class EvenementController extends Controller
         }
 
         $evenement->load(['ec.ue', 'filiere', 'presences.etudiant', 'qrCode', 'salleRef']);
-        return $this->successResponse($evenement);
+        return $this->successResponse(new EvenementResource($evenement));
     }
 
     public function update(Request $request, Evenement $evenement, RegleSeanceService $volumes): JsonResponse
@@ -368,7 +369,7 @@ class EvenementController extends Controller
         }
 
         $evenement->update($validated);
-        return $this->successResponse($evenement, 'Événement mis à jour.');
+        return $this->successResponse(new EvenementResource($evenement), 'Événement mis à jour.');
     }
 
     public function destroy(Request $request, Evenement $evenement): JsonResponse

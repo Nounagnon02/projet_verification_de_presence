@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\SalleResource;
 use App\Models\Etablissement;
 use App\Models\Filiere;
 use App\Models\Salle;
@@ -45,14 +46,9 @@ class SalleController extends Controller
             $query->where('actif', $request->boolean('actif'));
         }
 
-        // Ce que la salle vérifie réellement au scan, selon la même règle que le
-        // scan lui-même : l'écran n'a pas à la réinventer.
-        $salles = $query->orderBy('nom')->get()->each(function (Salle $s) {
-            $s->setAttribute('verifie_gps', $s->verifieGps());
-            $s->setAttribute('verifie_wifi', $s->verifieWifi());
-        });
+        $salles = $query->orderBy('nom')->get();
 
-        return $this->successResponse($salles);
+        return $this->successResponse(SalleResource::collection($salles));
     }
 
     public function store(Request $request): JsonResponse
@@ -90,7 +86,7 @@ class SalleController extends Controller
 
         $salle = Salle::create($validated);
 
-        return $this->createdResponse($salle, 'Salle créée avec succès.');
+        return $this->createdResponse(new SalleResource($salle), 'Salle créée avec succès.');
     }
 
     public function show(Request $request, Salle $salle): JsonResponse
@@ -102,7 +98,7 @@ class SalleController extends Controller
 
         $salle->load(['etablissement', 'evenements' => fn ($q) => $q->with('ec')->orderBy('date', 'desc')->limit(10)]);
 
-        return $this->successResponse($salle);
+        return $this->successResponse(new SalleResource($salle));
     }
 
     public function update(Request $request, Salle $salle): JsonResponse
@@ -127,7 +123,7 @@ class SalleController extends Controller
 
         $salle->update($validated);
 
-        return $this->successResponse($salle, 'Salle mise à jour.');
+        return $this->successResponse(new SalleResource($salle), 'Salle mise à jour.');
     }
 
     public function destroy(Request $request, Salle $salle): JsonResponse

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\SessionResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -23,15 +24,10 @@ class SessionController extends Controller
     {
         $currentId = optional($request->user()->currentAccessToken())->id;
 
-        $sessions = $request->user()->tokens()->latest()->get()->map(fn ($t) => [
-            'id'          => $t->id,
-            'name'        => $t->name,
-            'is_current'  => $t->id === $currentId,
-            'last_active' => $t->last_used_at ? $t->last_used_at->diffForHumans() : 'jamais utilisé',
-            'created_at'  => $t->created_at?->format('Y-m-d H:i'),
-        ]);
+        $sessions = $request->user()->tokens()->latest()->get()
+            ->each(fn ($t) => $t->setAttribute('is_current', $t->id === $currentId));
 
-        return $this->successResponse($sessions);
+        return $this->successResponse(SessionResource::collection($sessions));
     }
 
     public function destroyOthers(Request $request): JsonResponse

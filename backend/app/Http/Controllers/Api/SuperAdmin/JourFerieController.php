@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\FermetureResource;
 use App\Models\Fermeture;
 use App\Services\Planning\Calendrier;
 use Illuminate\Http\JsonResponse;
@@ -27,7 +28,7 @@ class JourFerieController extends Controller
             ->orderBy('date_debut')
             ->get();
 
-        return $this->successResponse($feries);
+        return $this->successResponse(FermetureResource::collection($feries));
     }
 
     /**

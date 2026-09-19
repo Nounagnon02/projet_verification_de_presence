@@ -211,49 +211,19 @@ parameters:
 			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$code\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$filiere_id\.$#'
 			identifier: property.notFound
 			count: 2
 			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$intitule\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$libelle\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$nom\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$ue\.$#'
 			identifier: property.notFound
-			count: 5
+			count: 2
 			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
 
 		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: array\<string, mixed\>, Closure\(App\\Models\\EmploiDuTemps\)\: array\<string, mixed\> given\.$#'
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: App\\Http\\Resources\\EmploiDuTempsResource, Closure\(App\\Models\\EmploiDuTemps\)\: App\\Http\\Resources\\EmploiDuTempsResource given\.$#'
 			identifier: argument.type
 			count: 1
 			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
@@ -279,12 +249,6 @@ parameters:
 		-
 			message: '#^Parameter \#1 \$modeles of method App\\Services\\Planning\\Conflits\:\:paires\(\) expects Illuminate\\Support\\Collection\<int, App\\Models\\EmploiDuTemps\|App\\Models\\Evenement\>, Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\> given\.$#'
 			identifier: argument.type
-			count: 1
-			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>nom" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Http/Controllers/Api/Admin/EmploiDuTempsController.php
 
@@ -835,6 +799,60 @@ parameters:
 			path: app/Http/Requests/Auth/LoginRequest.php
 
 		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeAcademiqueEtablissementResource\:\:\$active\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeAcademiqueEtablissementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeAcademiqueEtablissementResource\:\:\$close\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeAcademiqueEtablissementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeAcademiqueEtablissementResource\:\:\$date_debut\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeAcademiqueEtablissementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeAcademiqueEtablissementResource\:\:\$date_fin\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeAcademiqueEtablissementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeAcademiqueEtablissementResource\:\:\$en_cours_universite\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeAcademiqueEtablissementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeAcademiqueEtablissementResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeAcademiqueEtablissementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeAcademiqueEtablissementResource\:\:\$libelle\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeAcademiqueEtablissementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeAcademiqueEtablissementResource\:\:\$seances_a_venir_count\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeAcademiqueEtablissementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeAcademiqueEtablissementResource\:\:\$statut\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeAcademiqueEtablissementResource.php
+
+		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeAcademiqueResource\:\:\$active\.$#'
 			identifier: property.notFound
 			count: 1
@@ -871,6 +889,60 @@ parameters:
 			path: app/Http/Resources/AnneeAcademiqueResource.php
 
 		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeUniversitaireResource\:\:\$active\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeUniversitaireResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeUniversitaireResource\:\:\$date_debut\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeUniversitaireResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeUniversitaireResource\:\:\$date_fin\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeUniversitaireResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeUniversitaireResource\:\:\$etablissements\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeUniversitaireResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeUniversitaireResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeUniversitaireResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeUniversitaireResource\:\:\$libelle\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeUniversitaireResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeUniversitaireResource\:\:\$seances_a_venir_count\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeUniversitaireResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeUniversitaireResource\:\:\$seances_retirees\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeUniversitaireResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnneeUniversitaireResource\:\:\$statut\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnneeUniversitaireResource.php
+
+		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\EcResource\:\:\$code\.$#'
 			identifier: property.notFound
 			count: 1
@@ -878,6 +950,36 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\EcResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EcResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EcResource\:\:\$duree_max_seance\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EcResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EcResource\:\:\$heures_faites\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EcResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EcResource\:\:\$heures_reservees\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EcResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EcResource\:\:\$heures_restantes\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EcResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EcResource\:\:\$heures_restantes_par_type\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/EcResource.php
@@ -905,6 +1007,186 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/EcResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EmploiDuTempsResource\:\:\$annee_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EmploiDuTempsResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EmploiDuTempsResource\:\:\$conflits\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EmploiDuTempsResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EmploiDuTempsResource\:\:\$ec\.$#'
+			identifier: property.notFound
+			count: 6
+			path: app/Http/Resources/EmploiDuTempsResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EmploiDuTempsResource\:\:\$ec_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EmploiDuTempsResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EmploiDuTempsResource\:\:\$enseignant\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EmploiDuTempsResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EmploiDuTempsResource\:\:\$filiere_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EmploiDuTempsResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EmploiDuTempsResource\:\:\$groupe\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EmploiDuTempsResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EmploiDuTempsResource\:\:\$groupe_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EmploiDuTempsResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EmploiDuTempsResource\:\:\$heure_debut\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EmploiDuTempsResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EmploiDuTempsResource\:\:\$heure_fin\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EmploiDuTempsResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EmploiDuTempsResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EmploiDuTempsResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EmploiDuTempsResource\:\:\$jour_semaine\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EmploiDuTempsResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EmploiDuTempsResource\:\:\$salle_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EmploiDuTempsResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EmploiDuTempsResource\:\:\$salle_libelle\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EmploiDuTempsResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EmploiDuTempsResource\:\:\$type_cours\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EmploiDuTempsResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EmploiDuTempsResource\:\:\$valide_au\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EmploiDuTempsResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EmploiDuTempsResource\:\:\$valide_du\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EmploiDuTempsResource.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>nom" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Resources/EmploiDuTempsResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtablissementResource\:\:\$actif\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtablissementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtablissementResource\:\:\$adresse\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtablissementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtablissementResource\:\:\$annee_active_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtablissementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtablissementResource\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtablissementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtablissementResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtablissementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtablissementResource\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtablissementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtablissementResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtablissementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtablissementResource\:\:\$logo\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtablissementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtablissementResource\:\:\$nom\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtablissementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtablissementResource\:\:\$telephone\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtablissementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtablissementResource\:\:\$total_etudiants\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtablissementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EtablissementResource\:\:\$total_presences\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EtablissementResource.php
 
 		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\EtudiantResource\:\:\$annee_id\.$#'
@@ -967,6 +1249,12 @@ parameters:
 			path: app/Http/Resources/EtudiantResource.php
 
 		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EvenementResource\:\:\$annee_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EvenementResource.php
+
+		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\EvenementResource\:\:\$created_at\.$#'
 			identifier: property.notFound
 			count: 1
@@ -974,6 +1262,24 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\EvenementResource\:\:\$date\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EvenementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EvenementResource\:\:\$ec_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EvenementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EvenementResource\:\:\$filiere_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EvenementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EvenementResource\:\:\$groupe_id\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/EvenementResource.php
@@ -1003,10 +1309,70 @@ parameters:
 			path: app/Http/Resources/EvenementResource.php
 
 		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EvenementResource\:\:\$salle_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EvenementResource.php
+
+		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\EvenementResource\:\:\$statut\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/EvenementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EvenementResource\:\:\$type_cours\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EvenementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FermetureResource\:\:\$annee_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FermetureResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FermetureResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FermetureResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FermetureResource\:\:\$date_debut\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FermetureResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FermetureResource\:\:\$date_fin\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FermetureResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FermetureResource\:\:\$etablissement_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Resources/FermetureResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FermetureResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FermetureResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FermetureResource\:\:\$libelle\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FermetureResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FermetureResource\:\:\$type\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Resources/FermetureResource.php
 
 		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\FiliereResource\:\:\$code\.$#'
@@ -1016,6 +1382,24 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\FiliereResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FiliereResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FiliereResource\:\:\$etablissement_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FiliereResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FiliereResource\:\:\$etudiants_total\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FiliereResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FiliereResource\:\:\$evenements_total\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/FiliereResource.php
@@ -1037,6 +1421,180 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/FiliereResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FiliereResource\:\:\$programme\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Resources/FiliereResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FiliereResource\:\:\$programme_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FiliereResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FiliereResource\:\:\$semestres\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FiliereResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FiliereResource\:\:\$ues_par_semestre\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FiliereResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FiliereResource\:\:\$ues_total\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FiliereResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GroupeResource\:\:\$annee_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GroupeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GroupeResource\:\:\$filiere_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GroupeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GroupeResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GroupeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GroupeResource\:\:\$libelle\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GroupeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GroupeResource\:\:\$responsables_count\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GroupeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GroupeResource\:\:\$type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GroupeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PresenceResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PresenceResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PresenceResource\:\:\$device_fingerprint\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PresenceResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PresenceResource\:\:\$etudiant_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PresenceResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PresenceResource\:\:\$evenement_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PresenceResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PresenceResource\:\:\$heure_scan\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PresenceResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PresenceResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PresenceResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PresenceResource\:\:\$ip_address\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PresenceResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PresenceResource\:\:\$latitude\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PresenceResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PresenceResource\:\:\$longitude\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PresenceResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PresenceResource\:\:\$meme_appareil\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PresenceResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PresenceResource\:\:\$statut\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PresenceResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PresenceResource\:\:\$validated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PresenceResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PresenceResource\:\:\$validated_by\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PresenceResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PresenceResource\:\:\$validation_motif\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PresenceResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ProgrammeResource\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ProgrammeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ProgrammeResource\:\:\$etablissement_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ProgrammeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ProgrammeResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ProgrammeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ProgrammeResource\:\:\$intitule\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ProgrammeResource.php
 
 		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\QrCodeResource\:\:\$actif\.$#'
@@ -1073,6 +1631,126 @@ parameters:
 			identifier: method.notFound
 			count: 1
 			path: app/Http/Resources/QrCodeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SalleResource\:\:\$actif\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SalleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SalleResource\:\:\$bssid_attendu\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SalleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SalleResource\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SalleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SalleResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SalleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SalleResource\:\:\$creneaux_count\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SalleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SalleResource\:\:\$etablissement_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SalleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SalleResource\:\:\$hors_reseau\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SalleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SalleResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SalleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SalleResource\:\:\$ip_range\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SalleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SalleResource\:\:\$latitude\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SalleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SalleResource\:\:\$longitude\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SalleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SalleResource\:\:\$nom\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SalleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SalleResource\:\:\$rayon_geofence_m\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SalleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SalleResource\:\:\$seances_a_venir\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SalleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SalleResource\:\:\$ssid_attendu\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SalleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionResource\:\:\$is_current\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionResource\:\:\$last_used_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionResource.php
 
 		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\UeResource\:\:\$annee_id\.$#'

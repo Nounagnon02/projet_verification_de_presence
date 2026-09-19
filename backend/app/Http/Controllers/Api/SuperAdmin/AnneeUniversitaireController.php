@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\AnneeUniversitaireResource;
 use App\Models\AnneeAcademique;
 use App\Models\Etablissement;
 use App\Services\BasculeAnnee;
@@ -50,7 +51,7 @@ class AnneeUniversitaireController extends Controller
                 }
             });
 
-        return $this->successResponse($annees);
+        return $this->successResponse(AnneeUniversitaireResource::collection($annees));
     }
 
     /** POST /api/super-admin/annees-academiques */
@@ -65,7 +66,7 @@ class AnneeUniversitaireController extends Controller
             $annee->update(['active' => true]);
         }
 
-        return $this->createdResponse($annee->fresh(), "Année {$annee->libelle} créée.");
+        return $this->createdResponse(new AnneeUniversitaireResource($annee->fresh()), "Année {$annee->libelle} créée.");
     }
 
     /** PUT /api/super-admin/annees-academiques/{annee} */
@@ -73,7 +74,7 @@ class AnneeUniversitaireController extends Controller
     {
         $annee->update($this->valider($request, $annee));
 
-        return $this->successResponse($annee->fresh(), "Année {$annee->libelle} mise à jour.");
+        return $this->successResponse(new AnneeUniversitaireResource($annee->fresh()), "Année {$annee->libelle} mise à jour.");
     }
 
     /**
@@ -130,7 +131,7 @@ class AnneeUniversitaireController extends Controller
             $message .= " {$retirees} séance(s) déjà planifiée(s) de l'année précédente ont été retirées chez les autres.";
         }
 
-        return $this->successResponse($annee->fresh()->setAttribute('seances_retirees', $retirees), $message);
+        return $this->successResponse(new AnneeUniversitaireResource($annee->fresh()->setAttribute('seances_retirees', $retirees)), $message);
     }
 
     /**
