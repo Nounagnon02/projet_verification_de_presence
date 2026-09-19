@@ -75,7 +75,9 @@ class AppServiceProvider extends ServiceProvider
 
 
         // Rate Limiting pour le scan de présence (CDC 9.2.4)
-        // Limite : 3 requêtes par minute par étudiant authentifié ET par IP.
+        // Limite : 3 requêtes par minute par étudiant authentifié, et un plafond
+        // large par IP (config/presence.php, « limites » : pourquoi l'IP ne peut
+        // pas être limitée à 3).
         //
         // Indexée sur « device_fingerprint » auparavant — une valeur fournie
         // par le client, qu'une empreinte aléatoire par requête suffisait à
@@ -94,8 +96,10 @@ class AppServiceProvider extends ServiceProvider
             };
 
             return [
-                Limit::perMinute(3)->by('scan:etudiant:' . $request->user()?->id)->response($reponseSaturee),
-                Limit::perMinute(3)->by('scan:ip:' . $request->ip())->response($reponseSaturee),
+                Limit::perMinute((int) config('presence.limites.scan_par_etudiant'))
+                    ->by('scan:etudiant:' . $request->user()?->id)->response($reponseSaturee),
+                Limit::perMinute((int) config('presence.limites.scan_par_ip'))
+                    ->by('scan:ip:' . $request->ip())->response($reponseSaturee),
             ];
         });
 

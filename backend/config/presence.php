@@ -80,4 +80,37 @@ return [
         'duree_max_heures' => (float) env('PRESENCE_SEANCE_DUREE_MAX', 5),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Limites de débit du scan (CDC 9.2.4)
+    |--------------------------------------------------------------------------
+    |
+    | Par étudiant : trois scans par minute. C'est la règle qui compte — le
+    | scan est authentifié, l'appelant est donc garanti par le serveur.
+    |
+    | Par adresse IP : un plafond LARGE, un filet contre l'inondation, pas une
+    | règle anti-fraude. Il a été fixé à trois par minute, comme la limite par
+    | étudiant, et c'était un défaut : une salle, un campus derrière un même NAT
+    | ou un opérateur mobile (CGNAT) font apparaître des dizaines, voire des
+    | centaines d'étudiants sous une seule adresse — le cas nominal du produit,
+    | puisque la vérification de réseau attend justement des étudiants sur le
+    | même réseau que la salle. À trois par minute, 497 étudiants sur 500 se
+    | seraient vu répondre 429.
+    |
+    | Cette clé ne protège d'ailleurs pas du bourrage d'identifiants :
+    | l'authentification (auth:sanctum) s'exécute AVANT le limiteur, un jeton
+    | invalide est refusé en 401 sans le compter. Elle doit rester très au-dessus
+    | de l'hypothèse H3 (500 scans simultanés) : à 600, une rafale de 500 étudiants
+    | suivie de quelques retardataires dans la même minute suffisait à refuser des
+    | scans légitimes — mesuré en enchaînant deux campagnes. Le serveur absorbe
+    | de l'ordre de 300 requêtes par seconde : 2 000 par minute n'est un filet
+    | que contre un flot anormal.
+    |
+    */
+
+    'limites' => [
+        'scan_par_etudiant' => (int) env('PRESENCE_SCAN_MAX_PAR_ETUDIANT', 3),
+        'scan_par_ip'       => (int) env('PRESENCE_SCAN_MAX_PAR_IP', 2000),
+    ],
+
 ];
