@@ -85,6 +85,19 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Configuration Apache
 RUN a2enmod rewrite headers
+
+# Apache prefork (mod_php) : une connexion persistante monopolise un worker
+# pendant KeepAliveTimeout (5 s par défaut) après la réponse. Quand une salle
+# scanne en même temps, les nouveaux arrivants attendent qu'un worker se libère :
+# p95 de 6 s à 50 utilisateurs et de 20 s à 500, contre 0,55 s et 3,4 s sans
+# connexion persistante (mesures du 2026-09-19, tests/load/RESULTATS.md). Rouvrir
+# une connexion TCP interne à chaque requête, derrière le répartiteur de Render,
+# ne coûte presque rien.
+COPY <<'EOF' /etc/apache2/conf-available/keepalive.conf
+KeepAlive Off
+EOF
+RUN a2enconf keepalive
+
 COPY <<EOF /etc/apache2/sites-available/000-default.conf
 <VirtualHost *:80>
     ServerAdmin webmaster@localhost
