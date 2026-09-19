@@ -32,6 +32,8 @@ class CsvImportController extends Controller
      */
     private array $filieresCache = [];
     private array $anneesCache = [];
+    private array $uesCache = [];
+    private array $ecsCache = [];
 
     /**
      * Mapping des noms de jours en français vers leur numéro (1-7).
@@ -351,17 +353,16 @@ class CsvImportController extends Controller
                 }
 
                 // L'UE que suit la filière cette année, cours communs compris :
-                // on ne cherchait que parmi celles qu'elle porte.
-                $ue = Ue::whereRaw('lower(code) = ?', [mb_strtolower(trim($row['ue_code']))])
-                    ->where('annee_id', $annee->id)
-                    ->whereHas('filieres', fn ($f) => $f->where('filieres.id', $filiere->id))
-                    ->first();
+                // on ne cherchait que parmi celles qu'elle porte. Mémoïsée comme
+                // filière et année : un emploi du temps répète la même UE sur
+                // toutes ses séances hebdomadaires, souvent des dizaines de lignes.
+                $ue = $this->resoudreUe($row['ue_code'], $annee->id, $filiere->id);
                 if (!$ue) {
                     $results['errors'][] = ['line' => $lineNum, 'error' => "UE '{$row['ue_code']}' introuvable pour la filière/année."];
                     continue;
                 }
 
-                $ec = Ec::whereRaw('lower(code) = ?', [mb_strtolower(trim($row['ec_code']))])->where('ue_id', $ue->id)->first();
+                $ec = $this->resoudreEc($row['ec_code'], $ue->id);
                 if (!$ec) {
                     $results['errors'][] = ['line' => $lineNum, 'error' => "EC '{$row['ec_code']}' introuvable dans l'UE '{$row['ue_code']}'."];
                     continue;
@@ -642,6 +643,27 @@ class CsvImportController extends Controller
     private function resoudreAnnee(string $libelle): ?AnneeAcademique
     {
         return $this->anneesCache[$libelle] ??= AnneeAcademique::where('libelle', $libelle)->first();
+    }
+
+    /** UE d'une filière et d'une année, mémoïsée (voir $uesCache). */
+    private function resoudreUe(string $code, int $anneeId, int $filiereId): ?Ue
+    {
+        $cle = mb_strtolower(trim($code)) . '|' . $anneeId . '|' . $filiereId;
+
+        return $this->uesCache[$cle] ??= Ue::whereRaw('lower(code) = ?', [mb_strtolower(trim($code))])
+            ->where('annee_id', $anneeId)
+            ->whereHas('filieres', fn ($f) => $f->where('filieres.id', $filiereId))
+            ->first();
+    }
+
+    /** EC d'une UE, mémoïsé (voir $ecsCache). */
+    private function resoudreEc(string $code, int $ueId): ?Ec
+    {
+        $cle = mb_strtolower(trim($code)) . '|' . $ueId;
+
+        return $this->ecsCache[$cle] ??= Ec::whereRaw('lower(code) = ?', [mb_strtolower(trim($code))])
+            ->where('ue_id', $ueId)
+            ->first();
     }
 
     /**
