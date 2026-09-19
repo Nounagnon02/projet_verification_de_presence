@@ -6,7 +6,7 @@ export default function GaugeChart({ value, max = 100, size = 140, label, classN
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - pct);
 
-  const color = pct >= 0.8 ? '#2E7D32' : pct >= 0.5 ? '#F57F17' : '#C62828';
+  const color = pct >= 0.8 ? '#2E7D32' : pct >= 0.5 ? '#A65207' : '#C62828';
 
   return (
     <div className={cn('relative inline-flex items-center justify-center', className)}>

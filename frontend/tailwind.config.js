@@ -30,6 +30,7 @@ module.exports = {
         warning: 'rgb(var(--warning) / <alpha-value>)',
         'on-warning': 'rgb(var(--on-warning) / <alpha-value>)',
         'warning-container': 'rgb(var(--warning-container) / <alpha-value>)',
+        'on-warning-container': 'rgb(var(--on-warning-container) / <alpha-value>)',
         tertiary: 'rgb(var(--tertiary) / <alpha-value>)',
         'on-tertiary': 'rgb(var(--on-tertiary) / <alpha-value>)',
         'tertiary-container': 'rgb(var(--tertiary-container) / <alpha-value>)',

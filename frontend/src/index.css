@@ -32,7 +32,12 @@
   --warning: 252 209 22;
   --on-warning: 74 60 0;
   --warning-container: 255 244 206;
-  
+  /* Manquant : les usages qui associaient un texte à warning-container
+     retombaient sur du hexadécimal en dur, hors contraste AA (2,5:1). Même
+     valeur que --on-tertiary-container, --tertiary partageant déjà les mêmes
+     couleurs que --warning partout dans ce fichier. */
+  --on-warning-container: 38 31 0;
+
   --tertiary: 252 209 22;
   --on-tertiary: 74 60 0;
   --tertiary-container: 255 244 206;
@@ -86,7 +91,8 @@
     --warning: 251 191 36;
     --on-warning: 56 44 0;
     --warning-container: 92 73 0;
-    
+    --on-warning-container: 253 230 138;
+
     --tertiary: 251 191 36;
     --on-tertiary: 56 44 0;
     --tertiary-container: 92 73 0;

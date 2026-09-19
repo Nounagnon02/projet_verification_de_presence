@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FiMail, FiLock, FiAlertTriangle, FiLoader, FiArrowLeft } from 'react-icons/fi';
 import { MdQrCodeScanner, MdAutoAwesome, MdGroups } from 'react-icons/md';
 import { useAuth } from '../../context/AuthContext';
@@ -222,7 +222,7 @@ function LoginPage() {
 
             <p className="text-center text-xs text-on-surface-variant/70 mt-6">
               En vous connectant, vous acceptez les{' '}
-              <span className="underline hover:text-primary cursor-pointer" onClick={() => navigate('/terms')}>Conditions d'Utilisation</span>.
+              <Link to="/terms" className="underline hover:text-primary">Conditions d'Utilisation</Link>.
             </p>
           </div>
         </main>

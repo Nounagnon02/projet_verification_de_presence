@@ -5,7 +5,7 @@ export default function ProgressBar({ value, max = 100, label, showValue = true,
   const colors = {
     primary: 'bg-primary',
     success: 'bg-[#2E7D32]',
-    warning: 'bg-[#F57F17]',
+    warning: 'bg-[#A65207]',
     error: 'bg-[#C62828]',
   };
   const heights = { sm: 'h-1.5', md: 'h-2.5', lg: 'h-4' };

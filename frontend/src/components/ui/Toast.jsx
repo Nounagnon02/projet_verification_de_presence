@@ -11,7 +11,7 @@ const icons = {
 const colors = {
   success: 'bg-[#E8F5E9] border-l-4 border-[#2E7D32] text-[#2E7D32]',
   error: 'bg-[#FFEBEE] border-l-4 border-[#C62828] text-[#C62828]',
-  warning: 'bg-[#FFF8E1] border-l-4 border-[#F57F17] text-[#F57F17]',
+  warning: 'bg-[#FFF8E1] border-l-4 border-[#A65207] text-[#A65207]',
   info: 'bg-[#E3F2FD] border-l-4 border-[#1565C0] text-[#1565C0]',
 };
 
