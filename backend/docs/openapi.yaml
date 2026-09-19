@@ -81,6 +81,10 @@ paths:
       description: |
         Endpoint de monitoring pour vérifier la disponibilité de l'API et de la base de données.
         Utilisé par les load balancers et outils de monitoring (Prometheus, Datadog, etc.).
+
+        Route publique, donc volontairement muette : elle répond « oui » (200) ou « non »
+        (503, base de données injoignable), sans détail sur les composants, la version ou
+        l'heure du serveur.
       responses:
         '200':
           description: Service opérationnel
@@ -91,17 +95,15 @@ paths:
               example:
                 success: true
                 status: healthy
-                timestamp: "2026-07-09T10:30:00.000000Z"
-                services:
-                  database: connected
-                  app: running
-                  version: "1.0.0"
         '503':
-          description: Service indisponible
+          description: Service indisponible (base de données injoignable)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                success: false
+                status: unavailable
 
   # ========================================================================
   # AUTHENTICATION
@@ -2244,27 +2246,14 @@ components:
 
     HealthResponse:
       type: object
+      required: [success, status]
       properties:
         success:
           type: boolean
           example: true
         status:
           type: string
-          enum: [healthy, degraded, unhealthy]
-        timestamp:
-          type: string
-          format: date-time
-        services:
-          type: object
-          properties:
-            database:
-              type: string
-              enum: [connected, disconnected]
-            app:
-              type: string
-              enum: [running, stopped]
-            version:
-              type: string
+          enum: [healthy, unavailable]
 
     # ========================================================================
     # AUTH SCHEMAS

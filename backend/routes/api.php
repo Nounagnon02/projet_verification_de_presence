@@ -40,24 +40,21 @@ use App\Http\Controllers\Api\SuperAdmin\EtablissementController;
 Route::get('/landing/stats', [LandingPageController::class, 'stats']);
 
 // Health check — monitoring de disponibilité (CDC 12)
+//
+// Route publique : elle ne dit que « oui » ou « non ». Elle annonçait l'état de
+// la base, la version de l'application et l'heure du serveur à qui la
+// demandait, et répondait « healthy » avec un code 200 même base coupée — un
+// moniteur ne pouvait donc jamais s'en servir pour alerter. La base
+// injoignable donne désormais 503, code que la spécification OpenAPI documentait
+// déjà ; l'exception n'est ni journalisée ici ni renvoyée.
 Route::get('/health', function () {
     try {
         \Illuminate\Support\Facades\DB::connection()->getPdo();
-        $dbStatus = 'connected';
-    } catch (\Exception $e) {
-        $dbStatus = 'disconnected';
+    } catch (\Throwable) {
+        return response()->json(['success' => false, 'status' => 'unavailable'], 503);
     }
 
-    return response()->json([
-        'success' => true,
-        'status' => 'healthy',
-        'timestamp' => now()->toIso8601String(),
-        'services' => [
-            'database' => $dbStatus,
-            'app' => 'running',
-            'version' => '1.0.0',
-        ],
-    ]);
+    return response()->json(['success' => true, 'status' => 'healthy']);
 });
 
 // ============================================================

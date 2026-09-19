@@ -12,9 +12,13 @@ test.describe('API Health & Public Endpoints', () => {
     const body = await res.json();
     expect(body.success).toBe(true);
     expect(body.status).toBe('healthy');
-    expect(body.services).toBeDefined();
-    expect(body.services.database).toBe('connected');
-    expect(body.services.app).toBe('running');
+  });
+
+  test('GET /health — ne révèle ni composants, ni version, ni heure', async ({ request, baseURL }) => {
+    const res = await request.get(`${baseURL}/health`);
+    const body = await res.json();
+
+    expect(Object.keys(body).sort()).toEqual(['status', 'success']);
   });
 
   test('GET /landing/stats — les stats publiques sont accessibles', async ({ request, baseURL }) => {
@@ -27,18 +31,15 @@ test.describe('API Health & Public Endpoints', () => {
     expect(body.data).toBeDefined();
   });
 
-  test('GET /docs — la documentation API est accessible', async ({ request, baseURL }) => {
-    const res = await request.get(`${baseURL}/docs`);
+  // L'interface Swagger UI (/docs) n'est servie que hors production ; la
+  // spécification, elle, l'est partout.
+  test('GET /docs/json — la spécification OpenAPI est accessible', async ({ request, baseURL }) => {
+    const res = await request.get(`${baseURL}/docs/json`);
     expect(res.ok()).toBeTruthy();
 
-    const text = await res.text();
-    // La doc peut être du HTML (Swagger UI) ou du JSON selon le moteur
-    expect(
-      text.includes('swagger') ||
-      text.includes('openapi') ||
-      text.includes('<!DOCTYPE html>') ||
-      text.includes('success')
-    ).toBeTruthy();
+    const spec = await res.json();
+    expect(spec.openapi).toBeDefined();
+    expect(spec.paths['/health']).toBeDefined();
   });
 
 });

@@ -49,6 +49,27 @@ class SecurityHeaders
             ];
         }
 
+        // Interface Swagger (hors production, voir ApiDocumentationController::index) :
+        // elle charge sa feuille de style et ses scripts depuis unpkg.com, avec
+        // contrôle d'intégrité, et démarre par un script en ligne. La politique
+        // générale ci-dessus la laissait vide — mesuré dans un navigateur. Cette
+        // dérogation ne vaut que pour cette route, et pas en production : la page
+        // n'y est pas servie, la réponse y est un 404 qui n'a rien à autoriser.
+        if (! app()->environment('production') && $request->routeIs('api.docs')) {
+            $cspDirectives = [
+                "default-src 'self'",
+                "script-src 'self' 'unsafe-inline' https://unpkg.com",
+                "style-src 'self' 'unsafe-inline' https://unpkg.com",
+                "img-src 'self' data:",
+                "font-src 'self' data: https://unpkg.com",
+                "connect-src 'self'",
+                "frame-ancestors 'none'",
+                "base-uri 'self'",
+                "form-action 'self'",
+                "object-src 'none'",
+            ];
+        }
+
         $response->headers->set('Content-Security-Policy', implode('; ', $cspDirectives));
 
         // HSTS (HTTP Strict Transport Security) - Force HTTPS pendant 1 an
@@ -65,7 +86,10 @@ class SecurityHeaders
         // Referrer policy - strict pour la confidentialité
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-        // Permissions-Policy (anciennement Feature-Policy) - Bloquer APIs sensibles
+        // Permissions-Policy (anciennement Feature-Policy) - Bloquer APIs sensibles.
+        // Ne figurent ici que des directives que les navigateurs reconnaissent :
+        // Chromium journalise « Unrecognized feature » pour chacune des autres
+        // (bluetooth, battery, document-domain, web-share…), sans aucun effet.
         // camera, microphone, geolocation non utilisés par l'app
         // payment, usb, bluetooth, etc. bloqués par défaut
         $response->headers->set('Permissions-Policy', implode(', ', [
@@ -75,19 +99,13 @@ class SecurityHeaders
             'microphone=()',
             'payment=()',
             'usb=()',
-            'bluetooth=()',
             'magnetometer=()',
             'gyroscope=()',
             'accelerometer=()',
-            'ambient-light-sensor=()',
             'autoplay=()',
-            'battery=()',
             'cross-origin-isolated=()',
             'display-capture=()',
-            'document-domain=()',
             'encrypted-media=()',
-            'execution-while-not-rendered=()',
-            'execution-while-out-of-viewport=()',
             'fullscreen=()',
             'gamepad=()',
             'hid=()',
@@ -99,10 +117,7 @@ class SecurityHeaders
             'publickey-credentials-get=()',
             'screen-wake-lock=()',
             'serial=()',
-            'speaker-selection=()',
             'sync-xhr=()',
-            'trust-token=()',
-            'web-share=()',
             'window-management=()',
             'xr-spatial-tracking=()',
         ]));

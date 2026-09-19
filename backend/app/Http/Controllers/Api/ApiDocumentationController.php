@@ -14,10 +14,22 @@ class ApiDocumentationController extends Controller
     /**
      * Affiche l'interface Swagger UI pour la documentation API
      *
+     * Réservée hors production. Elle charge Swagger UI depuis un CDN tiers, et la
+     * CSP de production (script-src 'self') interdisait déjà ce chargement : la
+     * page s'y affichait vide, tout en restant une surface publique qui
+     * dépend d'un domaine extérieur. La spécification, elle, reste servie par
+     * /docs/json et /docs/yaml.
+     *
+     * Hors production, chaque ressource tierce porte son empreinte (SRI) : une
+     * version épinglée n'empêche pas un CDN compromis de servir autre chose.
+     * Empreintes de swagger-ui-dist@5.9.0, à recalculer si la version change.
+     *
      * GET /api/docs
      */
     public function index(): Response
     {
+        abort_if(app()->isProduction(), 404, 'Ressource non trouvée.');
+
         $html = <<<'HTML'
 <!DOCTYPE html>
 <html lang="fr">
@@ -25,7 +37,8 @@ class ApiDocumentationController extends Controller
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>API Documentation - Système Vérification Présence UAC</title>
-    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" />
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css"
+          integrity="sha384-ZJ2d83jl4Lvr6GKYzXpvQUmu+8us6T5frIryNHoLuypLK61jUnnCWZWyyrnifLda" crossorigin="anonymous" />
     <style>
         html, body { margin: 0; padding: 0; height: 100%; }
         .swagger-ui .topbar { display: none; }
@@ -36,8 +49,10 @@ class ApiDocumentationController extends Controller
 </head>
 <body>
     <div id="swagger-ui"></div>
-    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
-    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"
+            integrity="sha384-yrdF3mlUytUBwQyEVFAdwuUKEC9Qqrf+IUCgFgho4O5O6irf77pMjv36FN4eTpQD" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"
+            integrity="sha384-azzkurII4f+bjmZvm3hWhj7JezshyXtwobwneRyWCCIksK61Xi0Ry3xA2am9/TWp" crossorigin="anonymous"></script>
     <script>
         window.onload = function() {
             const ui = SwaggerUIBundle({
@@ -52,6 +67,9 @@ class ApiDocumentationController extends Controller
                     SwaggerUIBundle.plugins.DownloadUrl
                 ],
                 layout: "StandaloneLayout",
+                // Sans cela, Swagger UI interroge validator.swagger.io avec l'adresse
+                // de la spécification : une fuite vers un tiers, pour un badge.
+                validatorUrl: null,
                 tryItOutEnabled: true,
                 requestInterceptor: (req) => {
                     // Ajouter le token CSRF pour les requêtes try-it-out
