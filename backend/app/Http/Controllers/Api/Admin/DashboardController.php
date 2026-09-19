@@ -182,24 +182,34 @@ class DashboardController extends Controller
         $attenduSeance = $attenduA('ev');
         $attenduPresence = $attenduA('ev2');
 
+        // « ev.date < now() » comparait une date locale (Africa/Porto-Novo) à
+        // l'horloge de session de Postgres, en UTC. Pendant l'heure qui suit
+        // minuit heure locale (00h00–01h00 WAT), la date du jour, une fois
+        // convertie à minuit UTC par Postgres, se trouve encore DEVANT l'heure
+        // UTC réelle (23h00–24h00 la veille) : les séances du jour sortaient du
+        // décompte, alors que le commentaire ci-dessus les y range dès
+        // aujourd'hui, quelle que soit l'heure. La borne est donc la date
+        // locale, liée en paramètre, jamais l'horloge de la base.
+        $aujourdHui = today()->toDateString();
+
         $seancesPassees = "(SELECT COUNT(*) FROM evenements ev
                               WHERE {$attenduSeance}
                                 AND ev.deleted_at IS NULL
-                                AND ev.date < now())";
+                                AND ev.date <= ?)";
 
         $presencesRetenues = "(SELECT COUNT(*) FROM presences p
                                  JOIN evenements ev2 ON ev2.id = p.evenement_id
                                 WHERE p.etudiant_id = etudiants.id
                                   AND {$attenduPresence}
                                   AND ev2.deleted_at IS NULL
-                                  AND ev2.date < now())";
+                                  AND ev2.date <= ?)";
 
         $topAbsences = $this->scopeEtudiant(Etudiant::with('filiere')
             ->select('etudiants.id', 'etudiants.nom', 'etudiants.prenom', 'etudiants.matricule', 'filieres.code as filiere_code')
             ->join('filieres', 'etudiants.filiere_id', '=', 'filieres.id'), $etablissementId)
-            ->selectRaw("COALESCE({$presencesRetenues}, 0) as total_presences")
-            ->selectRaw("COALESCE({$seancesPassees}, 0) - COALESCE({$presencesRetenues}, 0) as absences")
-            ->orderByRaw("COALESCE({$seancesPassees}, 0) - COALESCE({$presencesRetenues}, 0) DESC")
+            ->selectRaw("COALESCE({$presencesRetenues}, 0) as total_presences", [$aujourdHui])
+            ->selectRaw("COALESCE({$seancesPassees}, 0) - COALESCE({$presencesRetenues}, 0) as absences", [$aujourdHui, $aujourdHui])
+            ->orderByRaw("COALESCE({$seancesPassees}, 0) - COALESCE({$presencesRetenues}, 0) DESC", [$aujourdHui, $aujourdHui])
             ->take(10)
             ->get();
 

@@ -70,6 +70,13 @@ class DashboardControllerTest extends TestCase
     {
         parent::setUp();
 
+        // Les fixtures placent un cours « aujourd'hui, 08:00-10:00 » et le
+        // comptent comme terminé (des présences y sont enregistrées). Lancée
+        // entre minuit et 8h heure locale, cette hypothèse est fausse : le
+        // cours est encore à venir, et le classement des absences change.
+        // Constaté à 00h15 (Africa/Porto-Novo) le 2026-09-20.
+        Carbon::setTestNow(today()->setTime(12, 0));
+
         $this->sfx   = Str::random(6);
         $this->annee = $this->anneeActive();
 
@@ -131,6 +138,15 @@ class DashboardControllerTest extends TestCase
         $this->creerPresence($this->etudiantsB[1], $coursJ3B, today()->subDays(3)->setTime(9, 0), 'valide');
 
         $this->creerAnomalie($this->etudiantsB[1], 'Refus de B', today()->setTime(7, 0));
+    }
+
+    protected function tearDown(): void
+    {
+        // Sans ce retrait, l'horloge gelée par setUp() fuit sur les tests
+        // suivants du même processus PHPUnit.
+        Carbon::setTestNow();
+
+        parent::tearDown();
     }
 
     // ── GET /admin/dashboard ──────────────────────────────────────────────

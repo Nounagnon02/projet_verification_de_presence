@@ -59,11 +59,18 @@ class EvenementFactory extends Factory
      */
     public function fenetreOuverte(): static
     {
+        // Evenement::finCours() suppose que « date » est le jour de DEBUT du
+        // cours (elle ajoute elle-même un jour si heure_fin <= heure_debut).
+        // Poser « date » sur le jour de FIN fait ajouter un jour EN TROP près
+        // de minuit heure locale : la fenêtre calculée tombe le lendemain soir,
+        // et tout test lancé entre minuit et ~2h du matin échoue. Constaté sur
+        // QrCodeDelegueTest et FactoriesTest, la nuit du 2026-09-20.
         $fin = Carbon::now()->addMinutes(5);
+        $debut = $fin->copy()->subHours(2);
 
         return $this->state(fn () => [
-            'date'        => $fin->toDateString(),
-            'heure_debut' => $fin->copy()->subHours(2)->format('H:i:s'),
+            'date'        => $debut->toDateString(),
+            'heure_debut' => $debut->format('H:i:s'),
             'heure_fin'   => $fin->format('H:i:s'),
         ]);
     }
