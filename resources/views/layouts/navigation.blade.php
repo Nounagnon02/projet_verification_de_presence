@@ -51,15 +51,14 @@
                             <x-dropdown-link :href="route('comparaison.periodes')">
                                 Comparaison périodes
                             </x-dropdown-link>
-                            <x-dropdown-link :href="route('qr.generate')">
-                                Générer QR Code
-                            </x-dropdown-link>
                             <x-dropdown-link :href="route('rgpd.index')">
                                 RGPD
                             </x-dropdown-link>
-                            <x-dropdown-link :href="route('alerts.index')">
-                                Alertes & Rappels
-                            </x-dropdown-link>
+                            @if(auth()->user()->groupsLed->isNotEmpty())
+                                <x-dropdown-link :href="route('alerts.index', auth()->user()->groupsLed->first())">
+                                    Alertes & Rappels
+                                </x-dropdown-link>
+                            @endif
                         </x-slot>
                     </x-dropdown>
                 </div>
@@ -169,19 +168,21 @@
                 Comparaison périodes
             </x-responsive-nav-link>
             
-            <x-responsive-nav-link :href="route('qr.generate')" :active="request()->routeIs('qr.*')" class="flex items-center py-3 px-4 rounded-lg">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
-                </svg>
-                Générer QR Code
-            </x-responsive-nav-link>
-            
             <x-responsive-nav-link :href="route('rgpd.index')" :active="request()->routeIs('rgpd.*')" class="flex items-center py-3 px-4 rounded-lg">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                 </svg>
                 RGPD
             </x-responsive-nav-link>
+
+            @if(auth()->user()->groupsLed->isNotEmpty())
+                <x-responsive-nav-link :href="route('alerts.index', auth()->user()->groupsLed->first())" :active="request()->routeIs('alerts.*')" class="flex items-center py-3 px-4 rounded-lg">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                    </svg>
+                    Alertes & Rappels
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->

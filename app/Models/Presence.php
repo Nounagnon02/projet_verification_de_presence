@@ -13,30 +13,30 @@ class Presence extends Model
 
     protected $fillable = [
         'member_id',
+        'attendance_session_id',
+        'scanned_by',
         'date',
         'time',
-        'status',
-        'qr_code_id',
         'verification_method',
-        'signature',
-        'signed_at',
-        'location_data',
-        'ip_address',
-        'user_agent'
     ];
 
     protected $casts = [
         'date' => 'date',
         'time' => 'datetime:H:i:s',
-        'signed_at' => 'datetime',
-        'latitude' => 'decimal:8',
-        'longitude' => 'decimal:8',
-        'location_verified' => 'boolean',
-        'location_data' => 'array'
     ];
 
     public function member(): BelongsTo
     {
-        return $this->belongsTo(member::class);
+        return $this->belongsTo(Member::class);
+    }
+
+    public function attendanceSession(): BelongsTo
+    {
+        return $this->belongsTo(AttendanceSession::class);
+    }
+
+    public function scannedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'scanned_by');
     }
 }

@@ -34,7 +34,7 @@
 
             <!-- Formulaire de configuration -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-                <form method="POST" action="{{ route('alerts.update') }}">
+                <form method="POST" action="{{ route('alerts.update', $group) }}">
                     @csrf
                     @method('PUT')
 
@@ -188,7 +188,7 @@
 
     <script>
         function checkAbsences() {
-            fetch('{{ route("alerts.check-now") }}', {
+            fetch('{{ route("alerts.check-now", $group) }}', {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',

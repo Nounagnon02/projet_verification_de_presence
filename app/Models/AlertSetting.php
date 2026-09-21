@@ -9,7 +9,7 @@ class AlertSetting extends Model
 {
     protected $fillable = [
         'user_id',
-        'group',
+        'group_id',
         'is_active',
         'absence_alerts_enabled',
         'alert_after_minutes',
@@ -42,13 +42,18 @@ class AlertSetting extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(Group::class);
+    }
+
     /**
      * Récupère ou crée les paramètres pour un groupe
      */
-    public static function getOrCreateForGroup(int $userId, string $group): self
+    public static function getOrCreateForGroup(int $userId, int $groupId): self
     {
         return self::firstOrCreate(
-            ['user_id' => $userId, 'group' => $group],
+            ['user_id' => $userId, 'group_id' => $groupId],
             [
                 'is_active' => true,
                 'absence_alerts_enabled' => true,

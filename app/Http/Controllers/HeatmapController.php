@@ -4,9 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Presence;
 use App\Models\Member;
-use App\Models\QrCode;
+use App\Models\AttendanceSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class HeatmapController extends Controller
@@ -16,30 +17,25 @@ class HeatmapController extends Controller
      */
     public function index(Request $request)
     {
-        $userGroup = Auth::user()->group;
-        
         // Période par défaut: 30 derniers jours
         $startDate = $request->get('start_date', Carbon::now()->subDays(30)->format('Y-m-d'));
         $endDate = $request->get('end_date', Carbon::now()->format('Y-m-d'));
-        
+
         // Récupérer les données de présence
-        $heatmapData = $this->generateHeatmapData($userGroup, $startDate, $endDate);
-        
+        $heatmapData = $this->generateHeatmapData($startDate, $endDate);
+
         // Statistiques globales
-        $stats = $this->calculateStats($userGroup, $startDate, $endDate);
-        
+        $stats = $this->calculateStats($startDate, $endDate);
+
         return view('heatmap.index', compact('heatmapData', 'stats', 'startDate', 'endDate'));
     }
 
     /**
-     * Génère les données pour la heatmap
+     * Génère les données pour la heatmap, sur l'ensemble des groupes dirigés par l'utilisateur
      */
-    private function generateHeatmapData(string $group, string $startDate, string $endDate): array
+    private function generateHeatmapData(string $startDate, string $endDate): array
     {
-        // Récupérer toutes les présences du groupe dans la période
-        $presences = Presence::whereHas('member', function ($query) use ($group) {
-                $query->where('group', $group);
-            })
+        $presences = Presence::whereHas('member', fn ($q) => $q->ledBy(Auth::user()))
             ->whereBetween('date', [$startDate, $endDate])
             ->get()
             ->groupBy(function ($presence) {
@@ -72,7 +68,7 @@ class HeatmapController extends Controller
         while ($start <= $end) {
             $dateKey = $start->format('Y-m-d');
             $dayData = $presences[$dateKey] ?? ['total' => 0, 'hourly' => []];
-            
+
             $heatmapData[] = [
                 'date' => $dateKey,
                 'dayOfWeek' => $start->dayOfWeek,
@@ -82,7 +78,7 @@ class HeatmapController extends Controller
                 'hourly' => $dayData['hourly'],
                 'intensity' => $this->calculateIntensity($dayData['total'])
             ];
-            
+
             $start->addDay();
         }
 
@@ -102,43 +98,36 @@ class HeatmapController extends Controller
     }
 
     /**
-     * Calcule les statistiques globales
+     * Calcule les statistiques globales, sur l'ensemble des groupes dirigés par l'utilisateur
      */
-    private function calculateStats(string $group, string $startDate, string $endDate): array
+    private function calculateStats(string $startDate, string $endDate): array
     {
-        $totalMembers = Member::where('group', $group)->count();
-        
-        $totalPresences = Presence::whereHas('member', function ($query) use ($group) {
-                $query->where('group', $group);
-            })
+        $groupIds = Auth::user()->groupsLed()->pluck('groups.id');
+
+        $totalMembers = Member::ledBy(Auth::user())->count();
+
+        $totalPresences = Presence::whereHas('member', fn ($q) => $q->ledBy(Auth::user()))
             ->whereBetween('date', [$startDate, $endDate])
             ->count();
 
-        $totalEvents = QrCode::where('group', $group)
+        $totalEvents = AttendanceSession::whereIn('group_id', $groupIds)
             ->whereBetween('event_date', [$startDate, $endDate])
             ->distinct('event_date')
             ->count('event_date');
 
         // Jour avec le plus de présences
-        $bestDay = Presence::whereHas('member', function ($query) use ($group) {
-                $query->where('group', $group);
-            })
+        $bestDay = Presence::whereHas('member', fn ($q) => $q->ledBy(Auth::user()))
             ->whereBetween('date', [$startDate, $endDate])
             ->selectRaw('date, COUNT(*) as count')
             ->groupBy('date')
             ->orderByDesc('count')
             ->first();
 
-            // Heure la plus active
-        $driver = \DB::connection()->getDriverName();
+        // Heure la plus active
+        $driver = DB::connection()->getDriverName();
         $hourExtraction = $driver === 'sqlite' ? "strftime('%H', time)" : "EXTRACT(HOUR FROM time)";
-        
-        // Si c'est MySQL, c'est HOUR(time), mais EXTRACT(HOUR FROM time) est standard SQL
-        // Pour Postgres: EXTRACT(HOUR FROM time)
-        
-        $bestHour = Presence::whereHas('member', function ($query) use ($group) {
-                $query->where('group', $group);
-            })
+
+        $bestHour = Presence::whereHas('member', fn ($q) => $q->ledBy(Auth::user()))
             ->whereBetween('date', [$startDate, $endDate])
             ->whereNotNull('time')
             ->selectRaw("$hourExtraction as hour, COUNT(*) as count")
@@ -163,13 +152,12 @@ class HeatmapController extends Controller
      */
     public function getData(Request $request)
     {
-        $userGroup = Auth::user()->group;
         $startDate = $request->get('start_date', Carbon::now()->subDays(30)->format('Y-m-d'));
         $endDate = $request->get('end_date', Carbon::now()->format('Y-m-d'));
-        
-        $heatmapData = $this->generateHeatmapData($userGroup, $startDate, $endDate);
-        $stats = $this->calculateStats($userGroup, $startDate, $endDate);
-        
+
+        $heatmapData = $this->generateHeatmapData($startDate, $endDate);
+        $stats = $this->calculateStats($startDate, $endDate);
+
         return response()->json([
             'heatmapData' => $heatmapData,
             'stats' => $stats

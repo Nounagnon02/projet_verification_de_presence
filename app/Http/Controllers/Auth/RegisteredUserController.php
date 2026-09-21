@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Group;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -31,17 +32,19 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'group' => ['required', 'string', 'max:255', 'unique:users,group'],
+            'group_name' => ['required', 'string', 'max:255', 'unique:groups,name'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
         $user = User::create([
             'name' => $request->name,
-            'group' => $request->group,
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
+
+        $group = Group::create(['name' => $request->group_name]);
+        $group->leaders()->attach($user->id);
 
         event(new Registered($user));
 

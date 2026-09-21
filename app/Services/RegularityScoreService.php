@@ -2,21 +2,22 @@
 
 namespace App\Services;
 
+use App\Models\AttendanceSession;
 use App\Models\Member;
 use App\Models\Presence;
-use App\Models\QrCode;
-use Illuminate\Support\Facades\DB;
 
 class RegularityScoreService
 {
     /**
      * Calcule le score de régularité d'un membre
-     * Score = (nombre de présences / nombre d'événements programmés) × 100
+     * Score = (nombre de présences / nombre de sessions programmées) × 100
      */
     public function calculateScore(Member $member): array
     {
-        // Récupérer le nombre total d'événements (QR codes générés) pour le groupe du membre
-        $totalEvents = QrCode::where('group', $member->group)
+        // Récupérer le nombre total de sessions pour les groupes du membre
+        $groupIds = $member->groups->pluck('id');
+
+        $totalEvents = AttendanceSession::whereIn('group_id', $groupIds)
             ->distinct('event_date')
             ->count('event_date');
 
@@ -24,8 +25,8 @@ class RegularityScoreService
         $totalPresences = Presence::where('member_id', $member->id)->count();
 
         // Calculer le score
-        $score = $totalEvents > 0 
-            ? round(($totalPresences / $totalEvents) * 100, 1) 
+        $score = $totalEvents > 0
+            ? round(($totalPresences / $totalEvents) * 100, 1)
             : 0;
 
         // Déterminer le niveau
@@ -44,9 +45,9 @@ class RegularityScoreService
     /**
      * Calcule les scores pour tous les membres d'un groupe
      */
-    public function calculateScoresForGroup(string $group): array
+    public function calculateScoresForGroup(int $groupId): array
     {
-        $members = Member::where('group', $group)->get();
+        $members = Member::whereHas('groups', fn ($q) => $q->where('groups.id', $groupId))->get();
         $scores = [];
 
         foreach ($members as $member) {
@@ -59,9 +60,9 @@ class RegularityScoreService
     /**
      * Retourne le classement des membres par score
      */
-    public function getRanking(string $group, int $limit = 10): array
+    public function getRanking(int $groupId, int $limit = 10): array
     {
-        $members = Member::where('group', $group)->get();
+        $members = Member::whereHas('groups', fn ($q) => $q->where('groups.id', $groupId))->get();
         $ranking = [];
 
         foreach ($members as $member) {

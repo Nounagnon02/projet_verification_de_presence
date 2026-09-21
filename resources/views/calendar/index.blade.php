@@ -54,6 +54,18 @@
                         <form method="POST" action="{{ route('calendar.store') }}" class="space-y-4">
                             @csrf
 
+                            <!-- Groupe concerné -->
+                            <div>
+                                <label for="group_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Groupe *
+                                </label>
+                                <select name="group_id" id="group_id" class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+                                    @foreach($groups as $group)
+                                        <option value="{{ $group->id }}" {{ old('group_id') == $group->id ? 'selected' : '' }}>{{ $group->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
                             <!-- Nom de l'événement -->
                             <div>
                                 <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

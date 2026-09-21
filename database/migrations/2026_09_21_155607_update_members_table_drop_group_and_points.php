@@ -6,21 +6,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::table('members', function (Blueprint $table) {
-            if (!Schema::hasColumn('members', 'points')) {
-                $table->integer('points')->default(0)->after('email');
-            }
+            $table->dropColumn('group');
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::table('members', function (Blueprint $table) {
-            if (Schema::hasColumn('members', 'points')) {
-                $table->dropColumn('points');
-            }
+            $table->string('group')->nullable();
         });
     }
 };

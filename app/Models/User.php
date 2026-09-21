@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -13,7 +14,6 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
-        'group',
         'password',
     ];
 
@@ -38,5 +38,10 @@ class User extends Authenticatable
     public function presences()
     {
         return $this->hasManyThrough(Presence::class, Member::class);
+    }
+
+    public function groupsLed(): BelongsToMany
+    {
+        return $this->belongsToMany(Group::class, 'group_leaders');
     }
 }

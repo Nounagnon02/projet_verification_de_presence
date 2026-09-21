@@ -16,6 +16,7 @@
 /node_modules
 /public/build/*
 !/public/build/manifest.json
+!/public/build/.vite
 !/public/build/assets
 
 /public/hot

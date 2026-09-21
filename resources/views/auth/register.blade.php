@@ -24,16 +24,16 @@
 
         <!-- Group -->
         <div>
-            <x-input-label for="group" :value="__('Nom du groupe')" class="text-sm font-semibold text-gray-700 mb-2" />
-            <x-text-input id="group" 
-                class="block w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-all text-sm sm:text-base" 
-                type="text" 
-                name="group" 
-                :value="old('group')" 
+            <x-input-label for="group_name" :value="__('Nom du groupe')" class="text-sm font-semibold text-gray-700 mb-2" />
+            <x-text-input id="group_name"
+                class="block w-full py-3 px-4 border-2 border-gray-200 rounded-lg focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-all text-sm sm:text-base"
+                type="text"
+                name="group_name"
+                :value="old('group_name')"
                 placeholder="Ex: Groupe de prière, Chorale..."
                 required />
-            <x-input-error :messages="$errors->get('group')" class="mt-2" />
-            <p class="text-xs sm:text-sm text-gray-500 mt-1">Le nom de votre groupe ou organisation</p>
+            <x-input-error :messages="$errors->get('group_name')" class="mt-2" />
+            <p class="text-xs sm:text-sm text-gray-500 mt-1">Le nom de votre groupe ou organisation. Vous pourrez ajouter d'autres co-responsables ensuite.</p>
         </div>
 
         <!-- Email Address -->

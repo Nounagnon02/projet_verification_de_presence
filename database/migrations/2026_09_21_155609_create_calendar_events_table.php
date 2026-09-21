@@ -11,14 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('device_verifications', function (Blueprint $table) {
+        Schema::create('calendar_events', function (Blueprint $table) {
             $table->id();
-            $table->string('device_fingerprint');
-            $table->string('ip_address');
-            $table->timestamp('last_verification');
+            $table->string('google_event_id')->unique();
+            $table->foreignId('group_id')->constrained()->onDelete('cascade');
+            $table->foreignId('created_by')->constrained('users');
             $table->timestamps();
-            
-            $table->index(['device_fingerprint', 'last_verification']);
         });
     }
 
@@ -27,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('device_verifications');
+        Schema::dropIfExists('calendar_events');
     }
 };

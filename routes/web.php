@@ -4,9 +4,8 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PresenceController;
 use App\Http\Controllers\LanguageController;
-use App\Http\Controllers\QrCodeController;
+use App\Http\Controllers\AttendanceSessionController;
 use App\Http\Controllers\GoogleCalendarController;
-use Illuminate\Support\Facades\DB;
 
 Route::get('/', function () {
     return view('welcome');
@@ -52,39 +51,12 @@ Route::get('/features', function () {
     return view('features');
 })->name('features');
 
-/*Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
-Route::get('/dashboardV', function () {
-    return view('dashboardV');
-})->middleware(['auth', 'verified'])->name('dashboardV');*/
-
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [PresenceController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboardV', [PresenceController::class, 'dashboardV'])->name('dashboardV');
-    Route::post('/ajout', [PresenceController::class, 'ajout'])->name('ajout');
     Route::post('/ajout-multiple', [PresenceController::class, 'ajoutMultiple'])->name('ajout.multiple');
-    Route::post('/verif', [PresenceController::class, 'verif'])->name('verif');
+    Route::post('/groupes/{group}/verif', [PresenceController::class, 'verif'])->name('verif');
     Route::get('/statistiques', [PresenceController::class, 'statistiques'])->name('statistiques');
-
-// Route de debug pour vérifier la DB (à supprimer en production)
-// Route::get('/debug-db', function () {
-//     try {
-//         $dbPath = config('database.connections.sqlite.database');
-//         $exists = file_exists($dbPath);
-//         $size = $exists ? filesize($dbPath) : 0;
-//
-//         return response()->json([
-//             'db_path' => $dbPath,
-//             'exists' => $exists,
-//             'size' => $size . ' bytes',
-//             'tables' => $exists ? DB::select("SELECT name FROM sqlite_master WHERE type='table'") : []
-//         ]);
-//     } catch (\Exception $e) {
-//         return response()->json(['error' => $e->getMessage()]);
-//     }
-// });
     Route::get('/statistiques-avancees', [PresenceController::class, 'statistiquesAvancees'])->name('statistiques.avancees');
 
     // Gestion des membres
@@ -92,14 +64,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/membres/{id}/edit', [PresenceController::class, 'editMembre'])->name('membres.edit');
     Route::put('/membres/{id}', [PresenceController::class, 'updateMembre'])->name('membres.update');
     Route::delete('/membres/{id}', [PresenceController::class, 'deleteMembre'])->name('membres.delete');
+    Route::get('/membres/{member}/carte', [PresenceController::class, 'printCard'])->name('membres.print-card');
 
     // Comparaison de périodes
     Route::get('/comparaison-periodes', [PresenceController::class, 'comparaisonPeriodes'])->name('comparaison.periodes');
 
-    // QR Code
-    Route::get('/qr/generate', [QrCodeController::class, 'generate'])->name('qr.generate');
-    Route::post('/qr/generate', [QrCodeController::class, 'generate']);
-    Route::get('/qr/refresh', [QrCodeController::class, 'refresh'])->name('qr.refresh');
+    // Sessions de présence (scan QR par le responsable)
+    Route::post('/groupes/{group}/sessions', [AttendanceSessionController::class, 'open'])->name('sessions.open');
+    Route::post('/sessions/{session}/fermer', [AttendanceSessionController::class, 'close'])->name('sessions.close');
+    Route::get('/sessions/{session}', [AttendanceSessionController::class, 'showScan'])->name('sessions.scan');
+    Route::post('/sessions/{session}/scan', [AttendanceSessionController::class, 'scan'])->name('sessions.scan.submit');
 
     // RGPD
     Route::get('/rgpd', [\App\Http\Controllers\RgpdController::class, 'index'])->name('rgpd.index');
@@ -115,10 +89,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/heatmap', [\App\Http\Controllers\HeatmapController::class, 'index'])->name('heatmap.index');
     Route::get('/heatmap/data', [\App\Http\Controllers\HeatmapController::class, 'getData'])->name('heatmap.data');
 
-    // Alertes & Notifications
-    Route::get('/alerts', [\App\Http\Controllers\AlertController::class, 'index'])->name('alerts.index');
-    Route::put('/alerts', [\App\Http\Controllers\AlertController::class, 'update'])->name('alerts.update');
-    Route::post('/alerts/check-now', [\App\Http\Controllers\AlertController::class, 'checkNow'])->name('alerts.check-now');
+    // Alertes & Notifications (par groupe)
+    Route::get('/groupes/{group}/alerts', [\App\Http\Controllers\AlertController::class, 'index'])->name('alerts.index');
+    Route::put('/groupes/{group}/alerts', [\App\Http\Controllers\AlertController::class, 'update'])->name('alerts.update');
+    Route::post('/groupes/{group}/alerts/check-now', [\App\Http\Controllers\AlertController::class, 'checkNow'])->name('alerts.check-now');
+    Route::get('/groupes/{group}/alerts/absents', [\App\Http\Controllers\AlertController::class, 'getAbsentMembers'])->name('alerts.absent-members');
 });
 
 // Route pour changer de langue
@@ -126,10 +101,6 @@ Route::get('/language/{locale}', [LanguageController::class, 'switch'])->name('l
 
 // Route offline PWA
 Route::view('/offline', 'offline');
-
-// Routes QR Code publiques
-Route::get('/qr/{code}', [QrCodeController::class, 'scan'])->name('qr.scan');
-Route::post('/qr/{code}/presence', [QrCodeController::class, 'markPresence'])->name('qr.presence');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

@@ -54,11 +54,11 @@ php artisan config:cache || echo "Config cache failed, continuing..."
 php artisan route:cache || echo "Route cache failed, continuing..."
 php artisan view:cache || echo "View cache failed, continuing..."
 
-# Vérifier les assets Vite
-if [ -f public/build/manifest.json ]; then
+# Vérifier les assets Vite (laravel-vite-plugin récent : manifest sous .vite/)
+if [ -f public/build/manifest.json ] || [ -f public/build/.vite/manifest.json ]; then
     echo "✓ Vite assets found successfully"
 else
-    echo "WARNING: Vite manifest not found at public/build/manifest.json"
+    echo "WARNING: Vite manifest not found"
     ls -la public/build/ || echo "Build directory not found"
 fi
 

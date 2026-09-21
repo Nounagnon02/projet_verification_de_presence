@@ -2,73 +2,45 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Auth\LoginRequest;
-use App\Models\member;
+use App\Models\Member;
+use App\Models\Group;
+use App\Models\MemberQrCode;
+use App\Models\Presence;
+use App\Models\AttendanceSession;
+use App\Models\AuditLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\View\View;
-use Illuminate\Http\Response;
-use Illuminate\Auth\Events\Registered;
-use App\Models\Presence;
 use Barryvdh\DomPDF\Facade\Pdf;
-use App\Services\SmsService;
 use App\Services\RegularityScoreService;
 
 class PresenceController extends Controller
 {
     public function dashboard()
     {
-        $userGroup = Auth::user()->group;
-        $members = member::where('group', $userGroup)->get();
+        $members = Member::ledBy(Auth::user())->get();
+        $groups = Auth::user()->groupsLed()->withCount('members')->get();
+        $activeSessions = AttendanceSession::whereIn('group_id', $groups->pluck('id'))
+            ->where('is_active', true)
+            ->get()
+            ->keyBy('group_id');
 
-        return view('dashboard', compact('members'));
+        return view('dashboard', compact('members', 'groups', 'activeSessions'));
     }
 
     public function dashboardV()
     {
-        $userGroup = Auth::user()->group;
-        $members = Member::where('group', $userGroup)->orderBy('name')->get();
-        
-        // Récupérer les présences du jour
+        $groups = Auth::user()->groupsLed()->with(['members' => function ($q) {
+            $q->orderBy('name');
+        }])->get();
+
         $today = now()->toDateString();
         $presencesToday = Presence::whereDate('date', $today)
-            ->whereHas('member', function($query) use ($userGroup) {
-                $query->where('group', $userGroup);
-            })
+            ->whereHas('member', fn ($q) => $q->ledBy(Auth::user()))
             ->pluck('member_id')
             ->toArray();
 
-        return view('dashboardV', compact('userGroup', 'members', 'presencesToday'));
-    }
-    public function ajout(Request $request): RedirectResponse
-    {
-        try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'phone' => 'required|string|max:20|unique:members,phone',
-            ]);
-
-            // Récupérer le groupe de l'utilisateur connecté
-            $userGroup = Auth::user()->group;
-
-            $member = Member::create([
-                'name' => $validated['name'],
-                'phone' => $validated['phone'],
-                'group' => $userGroup,
-                'users_id' => Auth::id()
-            ]);
-
-            event(new Registered($member));
-
-            return redirect()->route('dashboard')->with('success', 'Membre ajouté avec succès!');
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return redirect()->back()->withErrors($e->errors())->withInput();
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Erreur lors de l\'ajout du membre: ' . $e->getMessage())->withInput();
-        }
+        return view('dashboardV', compact('groups', 'presencesToday'));
     }
 
     public function ajoutMultiple(Request $request): RedirectResponse
@@ -78,61 +50,90 @@ class PresenceController extends Controller
             'members.*.name' => 'required|string|max:255',
             'members.*.phone' => 'required|string|max:20|unique:members,phone|regex:/^[\+0-9]+$/',
             'members.*.rgpd_consent' => 'required|accepted',
+            'group_ids' => 'required|array|min:1',
+            'group_ids.*' => 'exists:groups,id',
         ], [
             'members.*.phone.regex' => 'Le numéro de téléphone ne peut contenir que des chiffres et le symbole +',
         ]);
 
-        $userGroup = Auth::user()->group;
+        // Restreindre aux groupes réellement dirigés par le responsable connecté
+        $groupIds = Auth::user()->groupsLed()->whereIn('groups.id', $request->group_ids)->pluck('groups.id');
+
+        abort_if($groupIds->isEmpty(), 403);
+
         $count = 0;
 
         foreach ($request->members as $memberData) {
-            // Créer le membre
             $member = Member::create([
                 'name' => $memberData['name'],
                 'phone' => $memberData['phone'],
-                'group' => $userGroup,
                 'users_id' => Auth::id(),
                 'rgpd_consent' => true,
                 'rgpd_consent_at' => now(),
                 'consent_method' => 'oral'
             ]);
-            
+
+            $member->groups()->attach($groupIds);
+
+            // Émission automatique du QR personnel du membre (règle de gestion §4)
+            MemberQrCode::create([
+                'member_id' => $member->id,
+                'token' => MemberQrCode::generateToken(),
+            ]);
+
             $count++;
         }
 
         return redirect()->route('dashboard')->with('success', $count . ' membre(s) ajouté(s) avec succès!');
     }
 
-    public function verif(Request $request): RedirectResponse
+    /**
+     * Pointage manuel (sans scan QR) pour un groupe, sur sa session active.
+     */
+    public function verif(Request $request, Group $group): RedirectResponse
     {
+        abort_unless($group->leaders->contains(Auth::id()), 403);
+
         $request->validate([
             'presences' => 'array',
             'presences.*' => 'exists:members,id',
-            'signature' => 'nullable|string'
         ]);
 
-        $userGroup = Auth::user()->group;
+        $session = AttendanceSession::where('group_id', $group->id)->where('is_active', true)->first();
+
+        if (!$session) {
+            return redirect()->back()->with('error', "Aucune session active pour ce groupe.");
+        }
+
         $memberIds = $request->input('presences', []);
-        $signature = $request->input('signature');
-        $today = now()->toDateString();
-        $currentTime = now()->toTimeString();
-        
         $count = 0;
+
         foreach ($memberIds as $memberId) {
-            // Vérifier que le membre appartient au groupe
-            $member = Member::where('id', $memberId)->where('group', $userGroup)->first();
-            if ($member) {
-                Presence::updateOrCreate([
-                    'member_id' => $memberId,
-                    'date' => $today,
-                ], [
-                    'time' => $currentTime,
-                    'signature' => $signature,
-                    'verification_method' => 'manual',
-                    'signed_at' => $signature ? now() : null
-                ]);
-                $count++;
+            $member = Member::whereHas('groups', fn ($q) => $q->where('groups.id', $group->id))
+                ->where('id', $memberId)
+                ->first();
+
+            if (!$member) {
+                continue;
             }
+
+            $exists = Presence::where('member_id', $member->id)
+                ->where('attendance_session_id', $session->id)
+                ->exists();
+
+            if ($exists) {
+                continue;
+            }
+
+            Presence::create([
+                'member_id' => $member->id,
+                'attendance_session_id' => $session->id,
+                'scanned_by' => Auth::id(),
+                'date' => $session->event_date,
+                'time' => now(),
+                'verification_method' => 'manual',
+            ]);
+            $count++;
         }
 
         return redirect()->route('dashboardV')->with('verification_result', $count . ' présence(s) enregistrée(s) avec succès!');
@@ -140,78 +141,65 @@ class PresenceController extends Controller
 
     public function statistiques(Request $request)
     {
-        $userGroup = Auth::user()->group;
         $date = $request->input('date', now()->toDateString());
         $search = $request->input('search');
         $export = $request->input('export');
 
-        // Récupérer les présences pour le groupe de l'utilisateur
-        $query = Presence::with(['member' => function($query) use ($userGroup) {
-                $query->where('group', $userGroup);
-            }])
-            ->whereHas('member', function($query) use ($userGroup) {
-                $query->where('group', $userGroup);
-            })
+        $query = Presence::with('member')
+            ->whereHas('member', fn ($q) => $q->ledBy(Auth::user()))
             ->whereDate('date', $date)
             ->orderBy('time', 'desc');
 
         if ($search) {
-            $query->whereHas('member', function($q) use ($search) {
+            $query->whereHas('member', function ($q) use ($search) {
                 $q->where('name', 'like', '%' . $search . '%')
-                ->orWhere('phone', 'like', '%' . $search . '%');
+                    ->orWhere('phone', 'like', '%' . $search . '%');
             });
         }
 
         $presences = $query->get();
 
-        // Total des membres pour le groupe
-        $totalMembres = Member::where('group', $userGroup)->count();
+        $totalMembres = Member::ledBy(Auth::user())->count();
         $totalPresent = $presences->count();
         $tauxPresence = $totalMembres > 0 ? round(($totalPresent / $totalMembres) * 100, 2) : 0;
 
         // Si export PDF demandé
         if ($export === 'pdf') {
-            $pdf = Pdf::loadView('pdf.statistiques', compact('presences', 'totalPresent', 'totalMembres', 'tauxPresence', 'date', 'search', 'userGroup'));
+            $pdf = Pdf::loadView('pdf.statistiques', compact('presences', 'totalPresent', 'totalMembres', 'tauxPresence', 'date', 'search'));
             return $pdf->download('statistiques-presence-' . $date . '.pdf');
         }
 
         // Audit trail récent
-        $auditLogs = \App\Models\AuditLog::with('user')
+        $auditLogs = AuditLog::with('user')
             ->where('model_type', 'App\\Models\\Presence')
             ->latest()
             ->take(5)
             ->get();
-            
+
         return view('statistiques', compact('presences', 'totalPresent', 'totalMembres', 'tauxPresence', 'date', 'search', 'auditLogs'));
     }
 
     public function statistiquesAvancees(Request $request)
     {
-        $userGroup = Auth::user()->group;
         $periode = $request->input('periode', '30'); // 7, 30, 90 jours
         $dateDebut = now()->subDays($periode)->toDateString();
         $dateFin = now()->toDateString();
 
-        // Statistiques générales
-        $totalMembres = Member::where('group', $userGroup)->count();
-        
-        // Présences par jour sur la période
+        $totalMembres = Member::ledBy(Auth::user())->count();
+
         $presencesParJour = Presence::selectRaw('DATE(date) as jour, COUNT(DISTINCT member_id) as total')
-            ->whereHas('member', function($query) use ($userGroup) {
-                $query->where('group', $userGroup);
-            })
+            ->whereHas('member', fn ($q) => $q->ledBy(Auth::user()))
             ->whereBetween('date', [$dateDebut, $dateFin])
             ->groupBy('jour')
             ->orderBy('jour')
             ->get();
 
-        // Taux de présence par membre
-        $membresStats = Member::where('group', $userGroup)
-            ->withCount(['presences as total_presences' => function($query) use ($dateDebut, $dateFin) {
+        $membresStats = Member::ledBy(Auth::user())
+            ->withCount(['presences as total_presences' => function ($query) use ($dateDebut, $dateFin) {
                 $query->whereBetween('date', [$dateDebut, $dateFin]);
             }])
             ->get()
-            ->map(function($member) use ($periode) {
+            ->map(function ($member) use ($periode) {
                 $tauxPresence = $periode > 0 ? round(($member->total_presences / $periode) * 100, 1) : 0;
                 return [
                     'name' => $member->name,
@@ -221,28 +209,23 @@ class PresenceController extends Controller
             })
             ->sortByDesc('taux_presence');
 
-        // Tendance (comparaison avec période précédente)
         $periodePrec = now()->subDays($periode * 2)->toDateString();
         $dateDebutPrec = $periodePrec;
         $dateFinPrec = now()->subDays($periode)->toDateString();
-        
-        $presencesActuelles = Presence::whereHas('member', function($query) use ($userGroup) {
-                $query->where('group', $userGroup);
-            })
+
+        $presencesActuelles = Presence::whereHas('member', fn ($q) => $q->ledBy(Auth::user()))
             ->whereBetween('date', [$dateDebut, $dateFin])
             ->count();
-            
-        $presencesPrecedentes = Presence::whereHas('member', function($query) use ($userGroup) {
-                $query->where('group', $userGroup);
-            })
+
+        $presencesPrecedentes = Presence::whereHas('member', fn ($q) => $q->ledBy(Auth::user()))
             ->whereBetween('date', [$dateDebutPrec, $dateFinPrec])
             ->count();
-            
-        $tendance = $presencesPrecedentes > 0 ? 
+
+        $tendance = $presencesPrecedentes > 0 ?
             round((($presencesActuelles - $presencesPrecedentes) / $presencesPrecedentes) * 100, 1) : 0;
 
         return view('statistiques-avancees', compact(
-            'totalMembres', 'presencesParJour', 'membresStats', 'tendance', 
+            'totalMembres', 'presencesParJour', 'membresStats', 'tendance',
             'periode', 'presencesActuelles', 'presencesPrecedentes'
         ));
     }
@@ -250,68 +233,119 @@ class PresenceController extends Controller
     // Gestion des membres
     public function listeMembres()
     {
-        $userGroup = Auth::user()->group;
-        $membres = Member::where('group', $userGroup)
-                        ->orderBy('name')
-                        ->paginate(10);
+        $membres = Member::ledBy(Auth::user())
+            ->orderBy('name')
+            ->paginate(10);
 
-        // Calculer les scores de régularité
         $scoreService = new RegularityScoreService();
-        $scores = $scoreService->calculateScoresForGroup($userGroup);
-        $ranking = $scoreService->getRanking($userGroup, 5);
+
+        $scores = [];
+        foreach ($membres as $membre) {
+            $scores[$membre->id] = $scoreService->calculateScore($membre);
+        }
+
+        $ranking = Member::ledBy(Auth::user())->get()
+            ->map(function ($membre) use ($scoreService) {
+                $data = $scoreService->calculateScore($membre);
+                return [
+                    'member' => $membre,
+                    'score' => $data['score'],
+                    'level' => $data['level'],
+                    'presences' => $data['total_presences'],
+                    'events' => $data['total_events'],
+                ];
+            })
+            ->sortByDesc('score')
+            ->take(5)
+            ->values()
+            ->all();
 
         return view('membres.index', compact('membres', 'scores', 'ranking'));
     }
 
     public function editMembre($id)
     {
-        $userGroup = Auth::user()->group;
-        $membre = Member::where('id', $id)
-                       ->where('group', $userGroup)
-                       ->firstOrFail();
+        $membre = Member::ledBy(Auth::user())->where('id', $id)->firstOrFail();
+        $groups = Auth::user()->groupsLed;
+        $membreGroupIds = $membre->groups->pluck('id');
 
-        return view('membres.edit', compact('membre'));
+        return view('membres.edit', compact('membre', 'groups', 'membreGroupIds'));
     }
 
     public function updateMembre(Request $request, $id)
     {
-        $userGroup = Auth::user()->group;
-        $membre = Member::where('id', $id)
-                       ->where('group', $userGroup)
-                       ->firstOrFail();
+        $membre = Member::ledBy(Auth::user())->where('id', $id)->firstOrFail();
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'phone' => 'required|string|max:20|unique:members,phone,' . $id,
+            'group_ids' => 'required|array|min:1',
+            'group_ids.*' => 'exists:groups,id',
         ]);
 
-        $membre->update($validated);
+        $membre->update([
+            'name' => $validated['name'],
+            'phone' => $validated['phone'],
+        ]);
+
+        // Ne (dé)synchroniser que les groupes dirigés par le responsable connecté :
+        // ses appartenances à d'autres groupes qu'il ne dirige pas restent inchangées.
+        $ledGroupIds = Auth::user()->groupsLed()->pluck('groups.id');
+        $selectedLedGroupIds = collect($validated['group_ids'])->intersect($ledGroupIds);
+        $otherGroupIds = $membre->groups()->pluck('groups.id')->diff($ledGroupIds);
+        $membre->groups()->sync($otherGroupIds->merge($selectedLedGroupIds));
 
         return redirect()->route('membres')->with('success', 'Membre modifié avec succès!');
     }
 
     public function deleteMembre($id)
     {
-        $userGroup = Auth::user()->group;
-        $membre = Member::where('id', $id)
-                       ->where('group', $userGroup)
-                       ->firstOrFail();
+        $membre = Member::ledBy(Auth::user())->where('id', $id)->firstOrFail();
 
-        // Supprimer aussi les présences associées
-        Presence::where('member_id', $id)->delete();
-        $membre->delete();
+        // Retire le membre uniquement des groupes dirigés par le responsable connecté.
+        $ledGroupIds = Auth::user()->groupsLed()->pluck('groups.id');
+        $membre->groups()->detach($ledGroupIds);
+
+        // S'il ne reste plus rattaché à aucun groupe, on supprime le membre et son historique.
+        if ($membre->groups()->count() === 0) {
+            Presence::where('member_id', $id)->delete();
+            $membre->qrCodes()->delete();
+            $membre->delete();
+        }
 
         return redirect()->route('membres')->with('success', 'Membre supprimé avec succès!');
     }
 
+    public function printCard(Member $member)
+    {
+        abort_unless($member->groups->pluck('id')->intersect(Auth::user()->groupsLed()->pluck('groups.id'))->isNotEmpty(), 403);
+
+        $qrCode = $member->qrCode;
+        abort_if(!$qrCode, 404, "Ce membre n'a pas de QR personnel actif.");
+
+        // PNG (pas SVG) : DomPDF ne rend pas correctement le SVG généré par les
+        // librairies QR courantes, et imagick n'est pas disponible pour du PNG
+        // via bacon/simple-qrcode — chillerlan/php-qrcode fonctionne en pur GD.
+        $qrOptions = new \chillerlan\QRCode\QROptions([
+            'outputInterface' => \chillerlan\QRCode\Output\QRGdImagePNG::class,
+            'scale' => 6,
+            'outputBase64' => false,
+        ]);
+        $qrPng = (new \chillerlan\QRCode\QRCode($qrOptions))->render($qrCode->token);
+        $qrImageBase64 = 'data:image/png;base64,' . base64_encode($qrPng);
+
+        $pdf = Pdf::loadView('pdf.carte-membre', compact('member', 'qrImageBase64'));
+
+        return $pdf->stream('carte-' . $member->id . '.pdf');
+    }
+
     public function comparaisonPeriodes(Request $request)
     {
-        $userGroup = Auth::user()->group;
         $type = $request->input('type', 'mois'); // mois, semaine, annee
-        
+
         $dateActuelle = now();
-        
-        switch($type) {
+
+        switch ($type) {
             case 'semaine':
                 $debutActuel = $dateActuelle->startOfWeek()->toDateString();
                 $finActuel = $dateActuelle->endOfWeek()->toDateString();
@@ -330,26 +364,22 @@ class PresenceController extends Controller
                 $debutPrecedent = $dateActuelle->subMonth()->startOfMonth()->toDateString();
                 $finPrecedent = $dateActuelle->endOfMonth()->toDateString();
         }
-        
-        $presencesActuelles = Presence::whereHas('member', function($query) use ($userGroup) {
-                $query->where('group', $userGroup);
-            })
+
+        $presencesActuelles = Presence::whereHas('member', fn ($q) => $q->ledBy(Auth::user()))
             ->whereBetween('date', [$debutActuel, $finActuel])
             ->count();
-            
-        $presencesPrecedentes = Presence::whereHas('member', function($query) use ($userGroup) {
-                $query->where('group', $userGroup);
-            })
+
+        $presencesPrecedentes = Presence::whereHas('member', fn ($q) => $q->ledBy(Auth::user()))
             ->whereBetween('date', [$debutPrecedent, $finPrecedent])
             ->count();
-            
-        $evolution = $presencesPrecedentes > 0 ? 
+
+        $evolution = $presencesPrecedentes > 0 ?
             round((($presencesActuelles - $presencesPrecedentes) / $presencesPrecedentes) * 100, 1) : 0;
-            
-        $totalMembres = Member::where('group', $userGroup)->count();
+
+        $totalMembres = Member::ledBy(Auth::user())->count();
         $tauxActuel = $totalMembres > 0 ? round(($presencesActuelles / $totalMembres) * 100, 1) : 0;
         $tauxPrecedent = $totalMembres > 0 ? round(($presencesPrecedentes / $totalMembres) * 100, 1) : 0;
-        
+
         return view('comparaison-periodes', compact(
             'type', 'presencesActuelles', 'presencesPrecedentes', 'evolution',
             'tauxActuel', 'tauxPrecedent', 'debutActuel', 'finActuel'

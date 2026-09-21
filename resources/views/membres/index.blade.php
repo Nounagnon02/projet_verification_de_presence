@@ -46,6 +46,9 @@
                                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                                     Téléphone
                                                 </th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                    Groupes
+                                                </th>
                                                 <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                                     Régularité
                                                 </th>
@@ -78,6 +81,9 @@
                                                     <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                                                         {{ $membre->phone }}
                                                     </td>
+                                                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                                                        {{ $membre->groups->pluck('name')->implode(', ') }}
+                                                    </td>
                                                     <td class="px-4 py-4 whitespace-nowrap">
                                                         <div class="flex flex-col items-center">
                                                             <!-- Score et étoiles -->
@@ -98,7 +104,15 @@
                                                         </div>
                                                     </td>
                                                     <td class="px-4 py-4 whitespace-nowrap text-center">
-                                                        <a href="{{ route('membres.edit', $membre->id) }}" 
+                                                        <a href="{{ route('membres.print-card', $membre->id) }}"
+                                                           target="_blank"
+                                                           class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white mr-3"
+                                                           title="Carte QR">
+                                                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 16h4.01M9 12h.01M12 16h.01M9 16h.01M4 12h.01M4 16h.01M4 4h4v4H4V4zm12 0h4v4h-4V4zM4 16h4v4H4v-4z"/>
+                                                            </svg>
+                                                        </a>
+                                                        <a href="{{ route('membres.edit', $membre->id) }}"
                                                            class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 mr-3"
                                                            title="Modifier">
                                                             <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">

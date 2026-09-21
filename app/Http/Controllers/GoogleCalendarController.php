@@ -2,14 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CalendarEvent;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Spatie\GoogleCalendar\Event;
 use Carbon\Carbon;
 
 class GoogleCalendarController extends Controller
 {
     /**
-     * Affiche la liste des événements et le formulaire de création
+     * Affiche la liste des événements et le formulaire de création.
+     *
+     * Un seul calendrier Google est partagé par toute l'application : l'isolement
+     * par groupe se fait via la table locale calendar_events, pas via plusieurs
+     * calendriers Google. Les événements Google sans ligne correspondante
+     * (créés avant cet isolement) restent visibles pour ne rien faire disparaître.
      */
     public function index()
     {
@@ -20,19 +27,29 @@ class GoogleCalendarController extends Controller
                 Carbon::now()->addDays(30)
             );
 
-            // Trier par date de début
-            $events = collect($events)->sortBy(function ($event) {
+            $ledGroupIds = Auth::user()->groupsLed()->pluck('groups.id');
+            $mappings = CalendarEvent::whereIn('google_event_id', collect($events)->pluck('id'))
+                ->get()
+                ->keyBy('google_event_id');
+
+            $events = collect($events)->filter(function ($event) use ($mappings, $ledGroupIds) {
+                $mapping = $mappings->get($event->id);
+                // Événement non rattaché à un groupe (créé avant l'isolement) : toujours visible.
+                return !$mapping || $ledGroupIds->contains($mapping->group_id);
+            })->sortBy(function ($event) {
                 return $event->startDateTime ?? $event->startDate;
             });
 
             return view('calendar.index', [
                 'events' => $events,
-                'error' => null
+                'error' => null,
+                'groups' => Auth::user()->groupsLed,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return view('calendar.index', [
                 'events' => collect(),
-                'error' => 'Erreur de connexion à Google Calendar: ' . $e->getMessage()
+                'error' => 'Erreur de connexion à Google Calendar: ' . $e->getMessage(),
+                'groups' => Auth::user()->groupsLed,
             ]);
         }
     }
@@ -49,7 +66,11 @@ class GoogleCalendarController extends Controller
             'start_time' => 'required',
             'end_date' => 'required|date',
             'end_time' => 'required',
+            'group_id' => 'required|exists:groups,id',
         ]);
+
+        $ledGroupIds = Auth::user()->groupsLed()->pluck('groups.id');
+        abort_unless($ledGroupIds->contains((int) $request->group_id), 403);
 
         try {
             $startDateTime = Carbon::parse($request->start_date . ' ' . $request->start_time);
@@ -100,11 +121,17 @@ class GoogleCalendarController extends Controller
 
             $event->save();
 
+            CalendarEvent::create([
+                'google_event_id' => $event->id,
+                'group_id' => $request->group_id,
+                'created_by' => Auth::id(),
+            ]);
+
             return redirect()
                 ->route('calendar.index')
                 ->with('success', 'Événement "' . $request->name . '" créé avec succès !');
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return back()
                 ->withErrors(['error' => 'Erreur lors de la création: ' . $e->getMessage()])
                 ->withInput();
@@ -116,13 +143,21 @@ class GoogleCalendarController extends Controller
      */
     public function destroy($eventId)
     {
+        $mapping = CalendarEvent::where('google_event_id', $eventId)->first();
+
+        if ($mapping) {
+            $ledGroupIds = Auth::user()->groupsLed()->pluck('groups.id');
+            abort_unless($ledGroupIds->contains($mapping->group_id), 403);
+        }
+
         try {
             $event = Event::find($eventId);
-            
+
             if ($event) {
                 $eventName = $event->name;
                 $event->delete();
-                
+                $mapping?->delete();
+
                 return redirect()
                     ->route('calendar.index')
                     ->with('success', 'Événement "' . $eventName . '" supprimé avec succès !');
@@ -132,7 +167,7 @@ class GoogleCalendarController extends Controller
                 ->route('calendar.index')
                 ->withErrors(['error' => 'Événement non trouvé']);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return redirect()
                 ->route('calendar.index')
                 ->withErrors(['error' => 'Erreur lors de la suppression: ' . $e->getMessage()]);

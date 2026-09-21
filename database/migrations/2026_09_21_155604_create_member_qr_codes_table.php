@@ -11,18 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('qr_codes', function (Blueprint $table) {
+        Schema::create('member_qr_codes', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique();
-            $table->date('event_date');
-            $table->string('event_name')->nullable();
+            $table->foreignId('member_id')->constrained()->onDelete('cascade');
+            $table->string('token')->unique();
             $table->boolean('is_active')->default(true);
-            $table->timestamp('expires_at')->nullable();
-            $table->unsignedBigInteger('created_by');
+            $table->timestamp('revoked_at')->nullable();
             $table->timestamps();
-            
-            $table->index('event_date');
-            $table->index('is_active');
         });
     }
 
@@ -31,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('qr_codes');
+        Schema::dropIfExists('member_qr_codes');
     }
 };

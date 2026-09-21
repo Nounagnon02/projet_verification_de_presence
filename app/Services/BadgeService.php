@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\AttendanceSession;
 use App\Models\Badge;
 use App\Models\Member;
 use App\Models\Presence;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class BadgeService
 {
@@ -88,9 +88,10 @@ class BadgeService
         $startOfMonth = $lastMonth->copy()->startOfMonth();
         $endOfMonth = $lastMonth->copy()->endOfMonth();
 
-        // Compter les événements du mois dernier pour le groupe
-        $totalEvents = DB::table('qr_codes')
-            ->where('group', $member->group)
+        // Compter les sessions du mois dernier pour les groupes du membre
+        $groupIds = $member->groups->pluck('id');
+
+        $totalEvents = AttendanceSession::whereIn('group_id', $groupIds)
             ->whereBetween('event_date', [$startOfMonth, $endOfMonth])
             ->distinct('event_date')
             ->count('event_date');

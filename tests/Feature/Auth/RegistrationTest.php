@@ -20,6 +20,7 @@ class RegistrationTest extends TestCase
     {
         $response = $this->post('/register', [
             'name' => 'Test User',
+            'group_name' => 'Groupe Test',
             'email' => 'test@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
@@ -27,5 +28,9 @@ class RegistrationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));
+
+        $group = \App\Models\Group::where('name', 'Groupe Test')->first();
+        $this->assertNotNull($group);
+        $this->assertTrue($group->leaders->contains(auth()->id()));
     }
 }

@@ -5,27 +5,26 @@ namespace App\Models;
 use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Member extends Model
 {
     use Auditable;
+
     protected $fillable = [
         'name',
         'phone',
-        'group',
         'users_id',
         'rgpd_consent',
         'rgpd_consent_at',
         'consent_method',
-        'points'
     ];
-    
+
     protected $casts = [
         'rgpd_consent_at' => 'datetime',
         'rgpd_consent' => 'boolean',
-        'points' => 'integer'
     ];
 
     public function presences(): HasMany
@@ -35,7 +34,7 @@ class Member extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'users_id');
     }
 
     public function badges(): BelongsToMany
@@ -45,16 +44,29 @@ class Member extends Model
             ->withTimestamps();
     }
 
-    public function redemptions(): HasMany
+    public function groups(): BelongsToMany
     {
-        return $this->hasMany(Redemption::class);
+        return $this->belongsToMany(Group::class, 'group_member');
     }
 
-    // Scope pour filtrer par groupe utilisateur
-    public function scopeForUserGroup($query, $userId)
+    public function qrCodes(): HasMany
     {
-        $userGroup = User::find($userId)->group;
-        return $query->where('group', $userGroup);
+        return $this->hasMany(MemberQrCode::class);
+    }
+
+    public function qrCode(): HasOne
+    {
+        return $this->hasOne(MemberQrCode::class)->where('is_active', true);
+    }
+
+    /**
+     * Membres des groupes dirigés par cet utilisateur (co-responsable).
+     */
+    public function scopeLedBy($query, User $user)
+    {
+        return $query->whereHas('groups.leaders', function ($q) use ($user) {
+            $q->where('users.id', $user->id);
+        });
     }
 
     /**
@@ -65,4 +77,3 @@ class Member extends Model
         return $this->badges->sum('points');
     }
 }
-

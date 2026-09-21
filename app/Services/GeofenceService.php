@@ -2,34 +2,34 @@
 
 namespace App\Services;
 
-use App\Models\QrCode;
+use App\Models\AttendanceSession;
 
 class GeofenceService
 {
     /**
-     * Vérifie si la position de l'utilisateur est valide pour l'événement
+     * Vérifie si la position du responsable est valide pour la session
      */
-    public function isLocationValid(QrCode $qrCode, float $userLat, float $userLng): array
+    public function isLocationValid(AttendanceSession $session, float $userLat, float $userLng): array
     {
-        // Si l'événement n'a pas de géolocalisation définie, on accepte
-        if (!$qrCode->latitude || !$qrCode->longitude) {
+        // Si la session n'a pas de géolocalisation définie, on accepte
+        if (!$session->latitude || !$session->longitude) {
             return ['valid' => true, 'distance' => 0];
         }
 
         $distance = $this->calculateDistance(
-            $qrCode->latitude,
-            $qrCode->longitude,
+            $session->latitude,
+            $session->longitude,
             $userLat,
             $userLng
         );
 
-        $isValid = $distance <= $qrCode->radius;
+        $isValid = $distance <= $session->radius;
 
         return [
             'valid' => $isValid,
             'distance' => round($distance),
-            'radius' => $qrCode->radius,
-            'location_name' => $qrCode->location_name
+            'radius' => $session->radius,
+            'location_name' => $session->location_name
         ];
     }
 

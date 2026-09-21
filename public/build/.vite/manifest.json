@@ -1,6 +1,6 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-CN4W7Cg1.css",
+    "file": "assets/app-ilrjVfYx.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "names": [
@@ -11,6 +11,12 @@
     "file": "assets/app-DtCVKgHt.js",
     "name": "app",
     "src": "resources/js/app.js",
+    "isEntry": true
+  },
+  "resources/js/scanner.js": {
+    "file": "assets/scanner-CaKSL5P3.js",
+    "name": "scanner",
+    "src": "resources/js/scanner.js",
     "isEntry": true
   }
 }

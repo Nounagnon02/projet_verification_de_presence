@@ -90,7 +90,7 @@
 <body>
     <div class="header">
         <h1>Statistiques de Présence</h1>
-        <p>Groupe: {{ $userGroup }}</p>
+        <p>Groupe(s): {{ auth()->user()->groupsLed->pluck('name')->implode(', ') }}</p>
     </div>
 
     <div class="info">

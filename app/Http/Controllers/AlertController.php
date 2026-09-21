@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AlertSetting;
+use App\Models\Group;
 use App\Services\AlertService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,24 +18,27 @@ class AlertController extends Controller
     }
 
     /**
-     * Affiche la page de configuration des alertes
+     * Affiche la page de configuration des alertes pour un groupe
      */
-    public function index()
+    public function index(Group $group)
     {
-        $userGroup = Auth::user()->group;
-        $settings = AlertSetting::getOrCreateForGroup(Auth::id(), $userGroup);
-        
+        abort_unless($group->leaders->contains(Auth::id()), 403);
+
+        $settings = AlertSetting::getOrCreateForGroup(Auth::id(), $group->id);
+
         // Statistiques d'alertes
-        $stats = $this->alertService->getAlertStats($userGroup);
-        
-        return view('alerts.index', compact('settings', 'stats'));
+        $stats = $this->alertService->getAlertStats($group->id);
+
+        return view('alerts.index', compact('settings', 'stats', 'group'));
     }
 
     /**
-     * Met à jour les paramètres d'alertes
+     * Met à jour les paramètres d'alertes d'un groupe
      */
-    public function update(Request $request)
+    public function update(Request $request, Group $group)
     {
+        abort_unless($group->leaders->contains(Auth::id()), 403);
+
         $validated = $request->validate([
             'is_active' => 'boolean',
             'absence_alerts_enabled' => 'boolean',
@@ -49,10 +53,8 @@ class AlertController extends Controller
             'admin_email' => 'nullable|email|max:255'
         ]);
 
-        $userGroup = Auth::user()->group;
-        
-        $settings = AlertSetting::updateOrCreate(
-            ['user_id' => Auth::id(), 'group' => $userGroup],
+        AlertSetting::updateOrCreate(
+            ['user_id' => Auth::id(), 'group_id' => $group->id],
             array_merge($validated, [
                 'is_active' => $request->boolean('is_active'),
                 'absence_alerts_enabled' => $request->boolean('absence_alerts_enabled'),
@@ -62,28 +64,30 @@ class AlertController extends Controller
             ])
         );
 
-        return redirect()->route('alerts.index')
+        return redirect()->route('alerts.index', $group)
             ->with('success', 'Paramètres d\'alertes mis à jour avec succès !');
     }
 
     /**
-     * Déclenche une vérification manuelle des absences
+     * Déclenche une vérification manuelle des absences pour un groupe
      */
-    public function checkNow()
+    public function checkNow(Group $group)
     {
-        $userGroup = Auth::user()->group;
-        $result = $this->alertService->checkAndSendAbsenceAlerts($userGroup);
+        abort_unless($group->leaders->contains(Auth::id()), 403);
+
+        $result = $this->alertService->checkAndSendAbsenceAlerts($group->id);
 
         return response()->json($result);
     }
 
     /**
-     * Affiche les membres absents du jour
+     * Affiche les membres absents du jour pour un groupe
      */
-    public function getAbsentMembers()
+    public function getAbsentMembers(Group $group)
     {
-        $userGroup = Auth::user()->group;
-        $absentMembers = $this->alertService->getAbsentMembers($userGroup, today()->format('Y-m-d'));
+        abort_unless($group->leaders->contains(Auth::id()), 403);
+
+        $absentMembers = $this->alertService->getAbsentMembers($group->id, today()->format('Y-m-d'));
 
         return response()->json([
             'date' => today()->format('d/m/Y'),

@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 use App\Models\AlertSetting;
 use App\Models\Member;
-use App\Models\QrCode;
+use App\Models\AttendanceSession;
 use App\Services\AlertService;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
@@ -46,8 +46,8 @@ class SendReminderJob implements ShouldQueue
         // Si on veut rappeler 24h avant, on cherche les événements de demain
         $targetDate = Carbon::now()->addHours($setting->reminder_hours_before)->format('Y-m-d');
 
-        // Chercher un événement pour ce groupe à la date cible
-        $event = QrCode::where('group', $setting->group)
+        // Chercher une session pour ce groupe à la date cible
+        $event = AttendanceSession::where('group_id', $setting->group_id)
             ->where('event_date', $targetDate)
             ->first();
 
@@ -56,7 +56,7 @@ class SendReminderJob implements ShouldQueue
         }
 
         // Récupérer les membres du groupe
-        $members = Member::where('group', $setting->group)->get();
+        $members = Member::whereHas('groups', fn ($q) => $q->where('groups.id', $setting->group_id))->get();
 
         foreach ($members as $member) {
             // Vérifier si le membre a un téléphone

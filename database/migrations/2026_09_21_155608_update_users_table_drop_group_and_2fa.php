@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('qr_codes', function (Blueprint $table) {
-            $table->string('group')->nullable()->after('created_by');
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('group');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('qr_codes', function (Blueprint $table) {
-            $table->dropColumn('group');
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('group')->nullable();
         });
     }
 };

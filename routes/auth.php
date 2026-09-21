@@ -9,7 +9,6 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
-use App\Http\Controllers\PresenceController as Pre;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -39,12 +38,6 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-
-    // Move verif to guest middleware since it's for verification
-    /*Route::post('verif', [Pre::class, 'verif'])->name('verif');
-
-    // Move ajout route here since dashboard requires authentication
-    Route::post('ajout', [Pre::class, 'ajout'])->name('ajout');*/
 
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
