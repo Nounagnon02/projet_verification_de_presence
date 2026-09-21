@@ -16,6 +16,10 @@ class Presence extends Model
         'date',
         'time',
         'status',
+        'qr_code_id',
+        'verification_method',
+        'signature',
+        'signed_at',
         'location_data',
         'ip_address',
         'user_agent'

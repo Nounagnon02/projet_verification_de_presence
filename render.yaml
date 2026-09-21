@@ -10,6 +10,8 @@ services:
         value: production
       - key: APP_DEBUG
         value: false
+      - key: SESSION_SECURE_COOKIE
+        value: true
       - key: APP_URL
         value: https://your-app.onrender.com
       - key: DB_CONNECTION

@@ -12,6 +12,11 @@ class DatabaseQuery extends Command
 
     public function handle()
     {
+        if (!app()->environment('local')) {
+            $this->error('Cette commande est désactivée en dehors de l\'environnement local.');
+            return 1;
+        }
+
         $query = $this->argument('query');
 
         if (!$query) {

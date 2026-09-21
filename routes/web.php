@@ -28,11 +28,11 @@ Route::get('/terms', function () {
 })->name('terms');
 Route::get('/security', function () {
     return view('legal.security', ['securityInfo' => [
-        'encryption' => 'AES-256',
+        'encryption' => 'Chiffrement en transit (HTTPS/TLS)',
         'hosting' => 'Render',
         'database' => 'PostgreSQL',
         'backup' => 'Automatique',
-        'compliance' => ['RGPD', 'HTTPS'],
+        'compliance' => ['HTTPS'],
         'last_audit' => date('Y-m-d')
     ]]);
 })->name('security');
@@ -135,31 +135,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
-
-// Routes temporaires pour accéder à la DB
-Route::get('/db-admin', function () {
-    if (request('password') !== 'SECRET_PURGE') return 'Access denied';
-
-    $tables = DB::select("SELECT name FROM sqlite_master WHERE type='table'");
-    $html = '<h1>Database Tables</h1>';
-
-    foreach ($tables as $table) {
-        if ($table->name !== 'sqlite_sequence') {
-            $count = DB::table($table->name)->count();
-            $html .= "<h3>{$table->name} ({$count} records)</h3>";
-            $html .= "<a href='/db-table/{$table->name}?password=admin123'>View Data</a><br><br>";
-        }
-    }
-
-    return $html;
-});
-
-Route::get('/db-table/{table}', function ($table) {
-    if (request('password') !== 'SECRET_PURGE') return 'Access denied';
-
-    $data = DB::table($table)->limit(50)->get();
-    return response()->json($data, JSON_PRETTY_PRINT);
 });
 
 require __DIR__.'/auth.php';

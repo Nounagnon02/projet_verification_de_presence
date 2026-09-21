@@ -11,9 +11,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        /*$middleware->web(append: [
+        // Render termine le TLS à son edge et transmet en HTTP interne :
+        // sans ça, $request->secure() reste toujours false et ForceHttps boucle en redirection.
+        $middleware->trustProxies(at: '*');
+        $middleware->web(append: [
             \App\Http\Middleware\ForceHttps::class,
-        ]);*/
+        ]);
         $middleware->alias([
             'locale' => \App\Http\Middleware\SetLocale::class,
         ]);
