@@ -11,10 +11,14 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
+        <!-- Icônes -->
+        <link rel="icon" href="/favicon.ico" sizes="any">
+        <link rel="icon" type="image/svg+xml" href="/images/app-icon.svg">
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
         <!-- PWA -->
         <link rel="manifest" href="/manifest.json">
-        <meta name="theme-color" content="#3b82f6">
-        <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/942/942751.png">
+        <meta name="theme-color" content="#A6472A">
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])

@@ -7,6 +7,11 @@
 
         <title>{{ config('app.name', 'Laravel') }}</title>
 
+        <!-- Icônes -->
+        <link rel="icon" href="/favicon.ico" sizes="any">
+        <link rel="icon" type="image/svg+xml" href="/images/app-icon.svg">
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
@@ -18,7 +23,7 @@
         <div class="min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 md:px-8 py-6 sm:py-12 bg-gray-100">
             <!-- Logo/Brand -->
             <div class="mb-6 sm:mb-8 text-center">
-                <x-application-logo class="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-4" />
+                <x-application-logo class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4" />
                 <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Système de Présence</h1>
             </div>
             

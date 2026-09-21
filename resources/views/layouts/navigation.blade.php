@@ -6,7 +6,7 @@
                 <!-- Logo/Brand -->
                 <div class="flex-shrink-0">
                     <a href="{{ route('dashboard') }}" class="flex items-center">
-                        <x-application-logo class="w-8 h-8 md:w-10 md:h-10 rounded-lg mr-2 md:mr-3" />
+                        <x-application-logo class="w-8 h-8 md:w-10 md:h-10 mr-2 md:mr-3" />
                         <span class="text-lg md:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white hidden sm:block transition-colors duration-300">Présence</span>
                     </a>
                 </div>

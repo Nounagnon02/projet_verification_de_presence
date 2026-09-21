@@ -11,6 +11,9 @@
     <meta property="og:description" content="Solution moderne et sécurisée pour la gestion des présences">
     <meta property="og:type" content="website">
     <title>Système de Vérification de Présence - Solution moderne et sécurisée</title>
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/svg+xml" href="/images/app-icon.svg">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
