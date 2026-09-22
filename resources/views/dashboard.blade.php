@@ -1,169 +1,101 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Ajouter des Membres') }}
-        </h2>
+        <h1 class="text-2xl md:text-[28px] text-ink">Tableau de bord</h1>
+        <p class="text-ink-soft text-base mt-1">
+            @if($groups->count() > 0)
+                Vous encadrez {{ $groups->count() }} {{ Str::plural('groupe', $groups->count()) }}.
+            @else
+                Vous ne dirigez aucun groupe pour le moment.
+            @endif
+        </p>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
-            <!-- Liens rapides -->
-            <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4 mx-2 md:mx-0">
-                <a href="{{ route('comparaison.periodes') }}" class="bg-green-500 hover:bg-green-600 text-white p-4 rounded-lg text-center transition-colors">
-                    <div class="text-2xl mb-2">Stats</div>
-                    <div class="font-semibold">Comparaisons</div>
-                    <div class="text-sm opacity-90">Analyser les tendances</div>
-                </a>
-                <a href="{{ route('dashboardV') }}" class="bg-purple-500 hover:bg-purple-600 text-white p-4 rounded-lg text-center transition-colors">
-                    <div class="text-2xl mb-2">✓</div>
-                    <div class="font-semibold">Vérifier présence</div>
-                    <div class="text-sm opacity-90">Marquer les présents manuellement</div>
-                </a>
-            </div>
-
-            <!-- Mes groupes : ouverture/scan de session -->
-            <div class="mb-6 bg-white overflow-hidden shadow-sm sm:rounded-lg mx-2 md:mx-0">
-                <div class="p-6 text-gray-900">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Mes groupes</h3>
-                    @forelse($groups as $group)
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border rounded-lg p-4 mb-3 bg-gray-50">
-                            <div>
-                                <span class="font-semibold">{{ $group->name }}</span>
-                                <span class="text-sm text-gray-500">({{ $group->members_count }} membre(s))</span>
-                            </div>
-                            @if($activeSessions->has($group->id))
-                                <div class="flex gap-2 mt-2 sm:mt-0">
-                                    <a href="{{ route('sessions.scan', $activeSessions[$group->id]) }}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded">
-                                        Scanner les présences
-                                    </a>
-                                    <form method="POST" action="{{ route('sessions.close', $activeSessions[$group->id]) }}">
-                                        @csrf
-                                        <button type="submit" class="bg-gray-500 hover:bg-gray-600 text-white text-sm font-semibold py-2 px-4 rounded">
-                                            Fermer la session
-                                        </button>
-                                    </form>
-                                </div>
-                            @else
-                                <form method="POST" action="{{ route('sessions.open', $group) }}" class="mt-2 sm:mt-0">
-                                    @csrf
-                                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-2 px-4 rounded">
-                                        Ouvrir une session
-                                    </button>
-                                </form>
-                            @endif
-                        </div>
-                    @empty
-                        <p class="text-gray-500">Vous ne dirigez aucun groupe pour le moment.</p>
-                    @endforelse
-                </div>
-            </div>
-
-            @if(session('success'))
-                <div class="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-                    {{ session('success') }}
-                </div>
-            @endif
-
-            @if($errors->any())
-                <div class="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                    <ul>
-                        @foreach($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Ajouter des membres</h3>
-                    
-                    <form method="POST" action="{{ route('ajout.multiple') }}" id="membersForm">
-                        @csrf
-
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Groupe(s)</label>
-                            <div class="flex flex-wrap gap-3">
-                                @forelse($groups as $group)
-                                    <label class="flex items-center bg-gray-50 border rounded px-3 py-2">
-                                        <input type="checkbox" name="group_ids[]" value="{{ $group->id }}" class="rounded border-gray-300 text-blue-600" required>
-                                        <span class="ml-2 text-sm text-gray-700">{{ $group->name }}</span>
-                                    </label>
-                                @empty
-                                    <p class="text-sm text-gray-500">Vous ne dirigez aucun groupe.</p>
-                                @endforelse
-                            </div>
-                        </div>
-
-                        <div id="membersContainer">
-                            <div class="member-row border rounded-lg p-4 mb-4 bg-gray-50">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Nom et Prénoms</label>
-                                        <input type="text" name="members[0][name]" class="w-full border-gray-300 rounded-md" required>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
-                                        <input type="text" name="members[0][phone]" class="w-full border-gray-300 rounded-md" required>
-                                    </div>
-                                </div>
-                                <div class="mt-3">
-                                    <label class="flex items-center">
-                                        <input type="checkbox" name="members[0][rgpd_consent]" class="rounded border-gray-300 text-blue-600" required>
-                                        <span class="ml-2 text-sm text-gray-700">Consentement RGPD obtenu (oral/écrit)</span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-6 gap-4">
-                            <button type="button" id="addMemberBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                </svg>
-                                Ajouter un membre
-                            </button>
-                            
-                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded">
-                                Enregistrer tous les membres
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+    @if(session('success'))
+        <div class="mb-6 bg-confirm-tint border border-confirm/30 text-confirm font-semibold px-4 py-3 rounded-lg">
+            {{ session('success') }}
         </div>
+    @endif
+
+    @if($errors->any())
+        <div class="mb-6 bg-red-50 border border-red-200 text-red-700 font-semibold px-4 py-3 rounded-lg">
+            <ul class="list-disc list-inside space-y-1">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <!-- Liens rapides -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <a href="{{ route('dashboardV') }}" class="flex items-center gap-4 p-5 rounded-xl border border-line bg-card hover:border-line-strong transition-colors">
+            <div class="w-11 h-11 flex-shrink-0 rounded-lg bg-confirm-tint flex items-center justify-center text-confirm">
+                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="8.4"/></svg>
+            </div>
+            <div>
+                <div class="font-display font-semibold text-ink">Vérifier la présence</div>
+                <div class="text-sm text-ink-soft">Marquer les présents manuellement</div>
+            </div>
+        </a>
+        <a href="{{ route('membres') }}" class="flex items-center gap-4 p-5 rounded-xl border border-line bg-card hover:border-line-strong transition-colors">
+            <div class="w-11 h-11 flex-shrink-0 rounded-lg bg-accent-tint flex items-center justify-center text-accent">
+                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.3 19c0-3.3 2.6-5.6 5.7-5.6s5.7 2.3 5.7 5.6" stroke-linecap="round"/><path d="M16 8h4M18 6v4" stroke-linecap="round"/></svg>
+            </div>
+            <div>
+                <div class="font-display font-semibold text-ink">Ajouter un membre</div>
+                <div class="text-sm text-ink-soft">Enregistrer un ou plusieurs nouveaux membres</div>
+            </div>
+        </a>
+        <a href="{{ route('statistiques.avancees') }}" class="flex items-center gap-4 p-5 rounded-xl border border-line bg-card hover:border-line-strong transition-colors">
+            <div class="w-11 h-11 flex-shrink-0 rounded-lg bg-accent-tint flex items-center justify-center text-accent">
+                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V11M12 19V5M19 19v-7"/></svg>
+            </div>
+            <div>
+                <div class="font-display font-semibold text-ink">Analyses avancées</div>
+                <div class="text-sm text-ink-soft">Tendances, classement et comparaison de périodes</div>
+            </div>
+        </a>
     </div>
 
-    <script>
-        let memberIndex = 1;
-        
-        document.getElementById('addMemberBtn').addEventListener('click', function() {
-            const container = document.getElementById('membersContainer');
-            const newMemberRow = document.createElement('div');
-            newMemberRow.className = 'member-row border rounded-lg p-4 mb-4 bg-gray-50';
-            newMemberRow.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nom et Prénoms</label>
-                        <input type="text" name="members[${memberIndex}][name]" class="w-full border-gray-300 rounded-md" required>
+    <!-- Mes groupes : ouverture/scan de session -->
+    <div class="mb-8">
+        <h2 class="text-xl text-ink mb-4">Mes groupes</h2>
+
+        <div class="flex flex-col border border-line rounded-xl bg-card overflow-hidden">
+            @forelse($groups as $group)
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-6 py-6 {{ !$loop->last ? 'border-b border-line' : '' }}">
+                    <div class="flex flex-col gap-1.5">
+                        <span class="font-display font-semibold text-lg text-ink">{{ $group->name }}</span>
+                        @if($activeSessions->has($group->id))
+                            <div class="flex items-center gap-2 text-[15px]">
+                                <span class="w-2 h-2 rounded-full bg-confirm inline-block"></span>
+                                <span class="font-bold text-confirm">Session en cours</span>
+                                <span class="text-ink-faint">· {{ $group->members_count }} membre(s)</span>
+                            </div>
+                        @else
+                            <span class="text-[15px] text-ink-faint">{{ $group->members_count }} membre(s)</span>
+                        @endif
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
-                        <input type="text" name="members[${memberIndex}][phone]" class="w-full border-gray-300 rounded-md" required>
-                    </div>
+                    @if($activeSessions->has($group->id))
+                        <div class="flex flex-wrap gap-3">
+                            <a href="{{ route('sessions.scan', $activeSessions[$group->id]) }}" class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-accent font-bold text-base text-white hover:bg-accent-hover transition-colors">
+                                Scanner les présences
+                            </a>
+                            <form method="POST" action="{{ route('sessions.close', $activeSessions[$group->id]) }}">
+                                @csrf
+                                <x-secondary-button type="submit">Fermer la session</x-secondary-button>
+                            </form>
+                        </div>
+                    @else
+                        <form method="POST" action="{{ route('sessions.open', $group) }}">
+                            @csrf
+                            <x-primary-button type="submit">Ouvrir une session</x-primary-button>
+                        </form>
+                    @endif
                 </div>
-                <div class="mt-3">
-                    <label class="flex items-center">
-                        <input type="checkbox" name="members[${memberIndex}][rgpd_consent]" class="rounded border-gray-300 text-blue-600" required>
-                        <span class="ml-2 text-sm text-gray-700">Consentement RGPD obtenu (oral/écrit)</span>
-                    </label>
-                </div>
-                <button type="button" class="remove-member mt-2 text-red-600 hover:text-red-800 text-sm" onclick="this.parentElement.remove()">
-                    Supprimer ce membre
-                </button>
-            `;
-            container.appendChild(newMemberRow);
-            memberIndex++;
-        });
-    </script>
+            @empty
+                <p class="text-ink-soft px-6 py-6">Vous ne dirigez aucun groupe pour le moment.</p>
+            @endforelse
+        </div>
+    </div>
 </x-app-layout>

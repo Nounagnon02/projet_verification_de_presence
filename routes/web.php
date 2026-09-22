@@ -5,7 +5,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PresenceController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\AttendanceSessionController;
-use App\Http\Controllers\GoogleCalendarController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -66,9 +65,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/membres/{id}', [PresenceController::class, 'deleteMembre'])->name('membres.delete');
     Route::get('/membres/{member}/carte', [PresenceController::class, 'printCard'])->name('membres.print-card');
 
-    // Comparaison de périodes
-    Route::get('/comparaison-periodes', [PresenceController::class, 'comparaisonPeriodes'])->name('comparaison.periodes');
-
     // Sessions de présence (scan QR par le responsable)
     Route::post('/groupes/{group}/sessions', [AttendanceSessionController::class, 'open'])->name('sessions.open');
     Route::post('/sessions/{session}/fermer', [AttendanceSessionController::class, 'close'])->name('sessions.close');
@@ -80,11 +76,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/rgpd/consent', [\App\Http\Controllers\RgpdController::class, 'consent'])->name('rgpd.consent');
     Route::post('/rgpd/withdraw', [\App\Http\Controllers\RgpdController::class, 'withdraw'])->name('rgpd.withdraw');
 
-    // Google Calendar
-    Route::get('/calendar', [GoogleCalendarController::class, 'index'])->name('calendar.index');
-    Route::post('/calendar', [GoogleCalendarController::class, 'store'])->name('calendar.store');
-    Route::delete('/calendar/{eventId}', [GoogleCalendarController::class, 'destroy'])->name('calendar.destroy');
-
     // Heatmap
     Route::get('/heatmap', [\App\Http\Controllers\HeatmapController::class, 'index'])->name('heatmap.index');
     Route::get('/heatmap/data', [\App\Http\Controllers\HeatmapController::class, 'getData'])->name('heatmap.data');
@@ -92,7 +83,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Alertes & Notifications (par groupe)
     Route::get('/groupes/{group}/alerts', [\App\Http\Controllers\AlertController::class, 'index'])->name('alerts.index');
     Route::put('/groupes/{group}/alerts', [\App\Http\Controllers\AlertController::class, 'update'])->name('alerts.update');
-    Route::post('/groupes/{group}/alerts/check-now', [\App\Http\Controllers\AlertController::class, 'checkNow'])->name('alerts.check-now');
     Route::get('/groupes/{group}/alerts/absents', [\App\Http\Controllers\AlertController::class, 'getAbsentMembers'])->name('alerts.absent-members');
 });
 

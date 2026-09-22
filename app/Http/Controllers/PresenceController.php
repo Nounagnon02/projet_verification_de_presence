@@ -84,7 +84,7 @@ class PresenceController extends Controller
             $count++;
         }
 
-        return redirect()->route('dashboard')->with('success', $count . ' membre(s) ajouté(s) avec succès!');
+        return redirect()->route('membres')->with('success', $count . ' membre(s) ajouté(s) avec succès!');
     }
 
     /**
@@ -181,9 +181,12 @@ class PresenceController extends Controller
 
     public function statistiquesAvancees(Request $request)
     {
-        $periode = $request->input('periode', '30'); // 7, 30, 90 jours
+        $periode = (int) $request->input('periode', '30'); // 7, 30, 90, 365 jours
+
         $dateDebut = now()->subDays($periode)->toDateString();
         $dateFin = now()->toDateString();
+        $dateDebutPrec = now()->subDays($periode * 2)->toDateString();
+        $dateFinPrec = now()->subDays($periode)->toDateString();
 
         $totalMembres = Member::ledBy(Auth::user())->count();
 
@@ -209,10 +212,6 @@ class PresenceController extends Controller
             })
             ->sortByDesc('taux_presence');
 
-        $periodePrec = now()->subDays($periode * 2)->toDateString();
-        $dateDebutPrec = $periodePrec;
-        $dateFinPrec = now()->subDays($periode)->toDateString();
-
         $presencesActuelles = Presence::whereHas('member', fn ($q) => $q->ledBy(Auth::user()))
             ->whereBetween('date', [$dateDebut, $dateFin])
             ->count();
@@ -224,15 +223,21 @@ class PresenceController extends Controller
         $tendance = $presencesPrecedentes > 0 ?
             round((($presencesActuelles - $presencesPrecedentes) / $presencesPrecedentes) * 100, 1) : 0;
 
+        $tauxActuel = $totalMembres > 0 ? round(($presencesActuelles / $totalMembres) * 100, 1) : 0;
+        $tauxPrecedent = $totalMembres > 0 ? round(($presencesPrecedentes / $totalMembres) * 100, 1) : 0;
+
         return view('statistiques-avancees', compact(
             'totalMembres', 'presencesParJour', 'membresStats', 'tendance',
-            'periode', 'presencesActuelles', 'presencesPrecedentes'
+            'periode', 'presencesActuelles', 'presencesPrecedentes',
+            'tauxActuel', 'tauxPrecedent'
         ));
     }
 
     // Gestion des membres
     public function listeMembres()
     {
+        $groups = Auth::user()->groupsLed;
+
         $membres = Member::ledBy(Auth::user())
             ->orderBy('name')
             ->paginate(10);
@@ -260,7 +265,7 @@ class PresenceController extends Controller
             ->values()
             ->all();
 
-        return view('membres.index', compact('membres', 'scores', 'ranking'));
+        return view('membres.index', compact('membres', 'scores', 'ranking', 'groups'));
     }
 
     public function editMembre($id)
@@ -339,50 +344,4 @@ class PresenceController extends Controller
         return $pdf->stream('carte-' . $member->id . '.pdf');
     }
 
-    public function comparaisonPeriodes(Request $request)
-    {
-        $type = $request->input('type', 'mois'); // mois, semaine, annee
-
-        $dateActuelle = now();
-
-        switch ($type) {
-            case 'semaine':
-                $debutActuel = $dateActuelle->startOfWeek()->toDateString();
-                $finActuel = $dateActuelle->endOfWeek()->toDateString();
-                $debutPrecedent = $dateActuelle->subWeek()->startOfWeek()->toDateString();
-                $finPrecedent = $dateActuelle->endOfWeek()->toDateString();
-                break;
-            case 'annee':
-                $debutActuel = $dateActuelle->startOfYear()->toDateString();
-                $finActuel = $dateActuelle->endOfYear()->toDateString();
-                $debutPrecedent = $dateActuelle->subYear()->startOfYear()->toDateString();
-                $finPrecedent = $dateActuelle->endOfYear()->toDateString();
-                break;
-            default: // mois
-                $debutActuel = $dateActuelle->startOfMonth()->toDateString();
-                $finActuel = $dateActuelle->endOfMonth()->toDateString();
-                $debutPrecedent = $dateActuelle->subMonth()->startOfMonth()->toDateString();
-                $finPrecedent = $dateActuelle->endOfMonth()->toDateString();
-        }
-
-        $presencesActuelles = Presence::whereHas('member', fn ($q) => $q->ledBy(Auth::user()))
-            ->whereBetween('date', [$debutActuel, $finActuel])
-            ->count();
-
-        $presencesPrecedentes = Presence::whereHas('member', fn ($q) => $q->ledBy(Auth::user()))
-            ->whereBetween('date', [$debutPrecedent, $finPrecedent])
-            ->count();
-
-        $evolution = $presencesPrecedentes > 0 ?
-            round((($presencesActuelles - $presencesPrecedentes) / $presencesPrecedentes) * 100, 1) : 0;
-
-        $totalMembres = Member::ledBy(Auth::user())->count();
-        $tauxActuel = $totalMembres > 0 ? round(($presencesActuelles / $totalMembres) * 100, 1) : 0;
-        $tauxPrecedent = $totalMembres > 0 ? round(($presencesPrecedentes / $totalMembres) * 100, 1) : 0;
-
-        return view('comparaison-periodes', compact(
-            'type', 'presencesActuelles', 'presencesPrecedentes', 'evolution',
-            'tauxActuel', 'tauxPrecedent', 'debutActuel', 'finActuel'
-        ));
-    }
 }

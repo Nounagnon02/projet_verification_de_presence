@@ -69,18 +69,6 @@ class AlertController extends Controller
     }
 
     /**
-     * Déclenche une vérification manuelle des absences pour un groupe
-     */
-    public function checkNow(Group $group)
-    {
-        abort_unless($group->leaders->contains(Auth::id()), 403);
-
-        $result = $this->alertService->checkAndSendAbsenceAlerts($group->id);
-
-        return response()->json($result);
-    }
-
-    /**
      * Affiche les membres absents du jour pour un groupe
      */
     public function getAbsentMembers(Group $group)

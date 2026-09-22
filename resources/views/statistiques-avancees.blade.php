@@ -1,166 +1,157 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Statistiques Avancées') }}
-        </h2>
+        <h1 class="text-2xl md:text-[28px] text-ink">Analyses avancées</h1>
+        <p class="text-ink-soft text-base mt-1">Tendances, classement des membres et comparaison de périodes.</p>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <!-- Filtre de période -->
+    <div class="bg-card rounded-xl border border-line mb-8">
+        <div class="p-6">
+            <form method="GET" class="flex items-center gap-4">
+                <x-input-label for="periode" class="mb-0 flex-shrink-0">Période</x-input-label>
+                <select id="periode" name="periode" onchange="this.form.submit()"
+                    class="h-[52px] px-4 rounded-lg border-[1.5px] border-line bg-card text-ink text-base focus:border-accent">
+                    <option value="7" {{ $periode == 7 ? 'selected' : '' }}>7 derniers jours</option>
+                    <option value="30" {{ $periode == 30 ? 'selected' : '' }}>30 derniers jours</option>
+                    <option value="90" {{ $periode == 90 ? 'selected' : '' }}>3 derniers mois</option>
+                    <option value="365" {{ $periode == 365 ? 'selected' : '' }}>12 derniers mois</option>
+                </select>
+            </form>
+        </div>
+    </div>
 
-            <!-- Filtres -->
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
-                <div class="p-6">
-                    <form method="GET" class="flex items-center space-x-4">
-                        <label class="text-sm font-medium text-gray-700">Période:</label>
-                        <select name="periode" class="border-gray-300 rounded-md" onchange="this.form.submit()">
-                            <option value="7" {{ $periode == '7' ? 'selected' : '' }}>7 derniers jours</option>
-                            <option value="30" {{ $periode == '30' ? 'selected' : '' }}>30 derniers jours</option>
-                            <option value="90" {{ $periode == '90' ? 'selected' : '' }}>90 derniers jours</option>
-                            <option value="120" {{ $periode == '120' ? 'selected' : '' }}>120 derniers jours</option>
-                            <option value="385" {{ $periode == '385' ? 'selected' : '' }}>385 derniers jours</option>
-                            <option value="770" {{ $periode == '770' ? 'selected' : '' }}>770 derniers jours</option>
-                        </select>
-                    </form>
+    <!-- Cartes de statistiques -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+        <div class="p-6 rounded-xl border border-line bg-card">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-lg bg-accent-tint flex items-center justify-center text-accent flex-shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="font-display font-semibold text-ink">Total membres</h3>
+            </div>
+            <p class="text-3xl font-display font-semibold text-ink">{{ $totalMembres }}</p>
+        </div>
+
+        <div class="p-6 rounded-xl border border-line bg-card">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-lg bg-confirm-tint flex items-center justify-center text-confirm flex-shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="font-display font-semibold text-ink">Présences (période)</h3>
+            </div>
+            <p class="text-3xl font-display font-semibold text-ink">{{ $presencesActuelles }}</p>
+        </div>
+
+        <div class="p-6 rounded-xl border border-line bg-card">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-lg bg-accent-tint flex items-center justify-center text-accent flex-shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                </div>
+                <h3 class="font-display font-semibold text-ink">Moyenne / jour</h3>
+            </div>
+            <p class="text-3xl font-display font-semibold text-ink">{{ $periode > 0 ? round($presencesActuelles / $periode, 1) : 0 }}</p>
+        </div>
+    </div>
+
+    <!-- Comparaison avec la période précédente -->
+    <div class="bg-card rounded-xl border border-line mb-8">
+        <div class="p-6">
+            <h2 class="text-lg text-ink mb-5">Comparaison avec la période précédente</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div class="p-5 rounded-lg bg-accent-tint">
+                    <h3 class="font-display font-semibold text-accent">Période actuelle</h3>
+                    <p class="text-3xl font-display font-semibold text-accent mt-1">{{ $presencesActuelles }}</p>
+                    <p class="text-sm text-accent mt-1">Taux : {{ $tauxActuel }}%</p>
+                </div>
+
+                <div class="p-5 rounded-lg bg-paper">
+                    <h3 class="font-display font-semibold text-ink">Période précédente</h3>
+                    <p class="text-3xl font-display font-semibold text-ink mt-1">{{ $presencesPrecedentes }}</p>
+                    <p class="text-sm text-ink-soft mt-1">Taux : {{ $tauxPrecedent }}%</p>
+                </div>
+
+                <div class="p-5 rounded-lg {{ $tendance >= 0 ? 'bg-confirm-tint' : 'bg-red-50' }}">
+                    <h3 class="font-display font-semibold {{ $tendance >= 0 ? 'text-confirm' : 'text-red-700' }}">Évolution</h3>
+                    <p class="text-3xl font-display font-semibold {{ $tendance >= 0 ? 'text-confirm' : 'text-red-700' }} mt-1">
+                        {{ $tendance >= 0 ? '+' : '' }}{{ $tendance }}%
+                    </p>
+                    <p class="text-sm {{ $tendance >= 0 ? 'text-confirm' : 'text-red-700' }} mt-1">
+                        {{ $tendance >= 0 ? 'Amélioration' : 'Diminution' }}
+                    </p>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <!-- Cartes de statistiques -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                                    </svg>
+    <!-- Graphique des présences par jour -->
+    <div class="bg-card rounded-xl border border-line mb-8">
+        <div class="p-6">
+            <h2 class="text-lg text-ink mb-5">Évolution des présences</h2>
+            <canvas id="presencesChart" width="400" height="100"></canvas>
+        </div>
+    </div>
+
+    <!-- Classement des membres -->
+    <div class="bg-card rounded-xl border border-line overflow-hidden">
+        <div class="px-6 py-5 border-b border-line">
+            <h2 class="text-lg text-ink">Classement par taux de présence</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-paper">
+                    <tr>
+                        <th class="py-4 px-4 sm:px-6 text-left text-xs sm:text-sm font-semibold text-ink-soft uppercase tracking-wider">Rang</th>
+                        <th class="py-4 px-4 sm:px-6 text-left text-xs sm:text-sm font-semibold text-ink-soft uppercase tracking-wider">Membre</th>
+                        <th class="py-4 px-4 sm:px-6 text-left text-xs sm:text-sm font-semibold text-ink-soft uppercase tracking-wider">Présences</th>
+                        <th class="py-4 px-4 sm:px-6 text-left text-xs sm:text-sm font-semibold text-ink-soft uppercase tracking-wider">Taux</th>
+                        <th class="py-4 px-4 sm:px-6 text-left text-xs sm:text-sm font-semibold text-ink-soft uppercase tracking-wider">Progression</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-card divide-y divide-line">
+                    @forelse($membresStats as $index => $membre)
+                        <tr class="hover:bg-paper transition-colors">
+                            <td class="py-4 px-4 sm:px-6 text-sm sm:text-base font-medium text-ink">
+                                {{ $index + 1 }}
+                            </td>
+                            <td class="py-4 px-4 sm:px-6 text-sm sm:text-base text-ink">
+                                {{ $membre['name'] }}
+                            </td>
+                            <td class="py-4 px-4 sm:px-6 text-sm sm:text-base text-ink-soft">
+                                {{ $membre['total_presences'] }}/{{ $periode }}
+                            </td>
+                            <td class="py-4 px-4 sm:px-6">
+                                <div class="flex items-center">
+                                    <div class="w-16 bg-paper2 rounded-full h-2 mr-2">
+                                        <div class="bg-accent h-2 rounded-full" style="width: {{ min($membre['taux_presence'], 100) }}%"></div>
+                                    </div>
+                                    <span class="text-sm text-ink">{{ $membre['taux_presence'] }}%</span>
                                 </div>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-gray-500">Total Membres</p>
-                                <p class="text-2xl font-semibold text-gray-900">{{ $totalMembres }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-gray-500">Présences Totales</p>
-                                <p class="text-2xl font-semibold text-gray-900">{{ $presencesActuelles }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <div class="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
-                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-gray-500">Tendance</p>
-                                <p class="text-2xl font-semibold {{ $tendance >= 0 ? 'text-green-600' : 'text-red-600' }}">
-                                    {{ $tendance >= 0 ? '+' : '' }}{{ $tendance }}%
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-gray-500">Moyenne/Jour</p>
-                                <p class="text-2xl font-semibold text-gray-900">{{ $periode > 0 ? round($presencesActuelles / $periode, 1) : 0 }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Graphique des présences par jour -->
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
-                <div class="p-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Évolution des Présences</h3>
-                    <canvas id="presencesChart" width="400" height="100"></canvas>
-                </div>
-            </div>
-
-            <!-- Classement des membres -->
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Classement par Taux de Présence</h3>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rang</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Membre</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Présences</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Taux</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Progression</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach($membresStats as $index => $membre)
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            {{ $index + 1 }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {{ $membre['name'] }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ $membre['total_presences'] }}/{{ $periode }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                                                    <div class="bg-blue-600 h-2 rounded-full" style="width: {{ min($membre['taux_presence'], 100) }}%"></div>
-                                                </div>
-                                                <span class="text-sm text-gray-900">{{ $membre['taux_presence'] }}%</span>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                            @if($membre['taux_presence'] >= 80)
-                                                <span class="text-green-600">Excellent</span>
-                                            @elseif($membre['taux_presence'] >= 60)
-                                                <span class="text-yellow-600">Bon</span>
-                                            @else
-                                                <span class="text-red-600">À améliorer</span>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+                            </td>
+                            <td class="py-4 px-4 sm:px-6 text-sm">
+                                @if($membre['taux_presence'] >= 80)
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-confirm-tint text-confirm">Excellent</span>
+                                @elseif($membre['taux_presence'] >= 60)
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">Bon</span>
+                                @else
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">À améliorer</span>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="py-12 text-center">
+                                <p class="text-ink-faint text-lg font-medium">Aucune donnée pour cette période</p>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 

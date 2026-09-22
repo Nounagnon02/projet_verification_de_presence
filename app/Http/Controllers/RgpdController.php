@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Member;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -9,7 +10,12 @@ class RgpdController extends Controller
 {
     public function index()
     {
-        return view('rgpd.index');
+        $membres = Member::ledBy(Auth::user())
+            ->with('groups')
+            ->orderBy('name')
+            ->get();
+
+        return view('rgpd.index', compact('membres'));
     }
 
     public function consent(Request $request)

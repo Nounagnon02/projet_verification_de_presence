@@ -1,224 +1,97 @@
-<nav x-data="{ open: false }" class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 shadow-sm transition-colors duration-300">
-    <!-- Primary Navigation Menu -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12">
-        <div class="flex justify-between h-16 md:h-20 lg:h-24">
-            <div class="flex items-center">
-                <!-- Logo/Brand -->
-                <div class="flex-shrink-0">
-                    <a href="{{ route('dashboard') }}" class="flex items-center">
-                        <x-application-logo class="w-8 h-8 md:w-10 md:h-10 mr-2 md:mr-3" />
-                        <span class="text-lg md:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white hidden sm:block transition-colors duration-300">Présence</span>
-                    </a>
-                </div>
-
-                <!-- Navigation Links -->
-                <div class="hidden md:flex md:space-x-4 lg:space-x-8 md:ml-8 lg:ml-12">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="text-sm md:text-base lg:text-lg px-3 py-2">
-                        {{ __('messages.add') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('dashboardV')" :active="request()->routeIs('dashboardV')" class="text-sm md:text-base lg:text-lg px-3 py-2">
-                        {{ __('messages.verify') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('membres')" :active="request()->routeIs('membres*')" class="text-sm md:text-base lg:text-lg px-3 py-2">
-                        {{ __('messages.members') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('statistiques')" :active="request()->routeIs('statistiques')" class="text-sm md:text-base lg:text-lg px-3 py-2">
-                        {{ __('messages.statistics') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('statistiques.avancees')" :active="request()->routeIs('statistiques.avancees')" class="text-sm md:text-base lg:text-lg px-3 py-2">
-                        {{ __('messages.analytics') }}
-                    </x-nav-link>
-                    
-                    <!-- Dropdown pour nouvelles fonctionnalités -->
-                    <x-dropdown align="left" width="48">
-                        <x-slot name="trigger">
-                            <button class="inline-flex items-center px-3 py-2 text-sm md:text-base lg:text-lg font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition duration-150 ease-in-out">
-                                <div>Plus</div>
-                                <div class="ml-1">
-                                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                            </button>
-                        </x-slot>
-                        <x-slot name="content">
-                            <x-dropdown-link :href="route('calendar.index')">
-                                Agenda
-                            </x-dropdown-link>
-                            <x-dropdown-link :href="route('heatmap.index')">
-                                Heatmap
-                            </x-dropdown-link>
-                            <x-dropdown-link :href="route('comparaison.periodes')">
-                                Comparaison périodes
-                            </x-dropdown-link>
-                            <x-dropdown-link :href="route('rgpd.index')">
-                                RGPD
-                            </x-dropdown-link>
-                            @if(auth()->user()->groupsLed->isNotEmpty())
-                                <x-dropdown-link :href="route('alerts.index', auth()->user()->groupsLed->first())">
-                                    Alertes & Rappels
-                                </x-dropdown-link>
-                            @endif
-                        </x-slot>
-                    </x-dropdown>
-                </div>
-            </div>
-
-            <!-- Settings Dropdown -->
-            <div class="hidden md:flex md:items-center md:ml-6">
-                <x-dropdown align="right" width="56">
-                    <x-slot name="trigger">
-                        <button class="inline-flex items-center px-4 py-2 border border-transparent text-sm md:text-base leading-4 font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all duration-200">
-                            <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-2">
-                                <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ substr(Auth::user()->name, 0, 1) }}</span>
-                            </div>
-                            <div class="hidden lg:block">{{ Auth::user()->name }}</div>
-                            <div class="ml-1">
-                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </button>
-                    </x-slot>
-
-                    <x-slot name="content">
-                        <div class="px-4 py-2 border-b border-gray-100">
-                            <div class="font-medium text-base text-gray-800 dark:text-gray-200">{{ Auth::user()->name }}</div>
-                            <div class="font-medium text-sm text-gray-500 dark:text-gray-400">{{ Auth::user()->email }}</div>
-                        </div>
-                        <x-dropdown-link :href="route('profile.edit')" class="flex items-center px-4 py-3">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                            </svg>
-                            {{ __('messages.profile') }}
-                        </x-dropdown-link>
-
-                        <!-- Authentication -->
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <x-dropdown-link :href="route('logout')" class="flex items-center px-4 py-3 text-red-600 hover:bg-red-50"
-                                    onclick="event.preventDefault(); this.closest('form').submit();">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                                </svg>
-                                {{ __('messages.logout') }}
-                            </x-dropdown-link>
-                        </form>
-                    </x-slot>
-                </x-dropdown>
-            </div>
-
-            <!-- Hamburger -->
-            <div class="flex items-center md:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-3 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-200">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-        </div>
+<div x-data="{ sidebarOpen: false }" x-cloak>
+    <!-- Barre mobile -->
+    <div class="lg:hidden sticky top-0 z-30 flex items-center justify-between gap-3 h-16 px-4 bg-paper2 border-b border-line">
+        <a href="{{ route('dashboard') }}" class="flex items-center gap-2">
+            <x-application-logo class="w-7 h-7" />
+            <span class="text-xs font-bold uppercase tracking-widest text-ink-soft">Présence</span>
+        </a>
+        <button @click="sidebarOpen = true" class="p-2 rounded-lg text-ink-soft hover:bg-paper hover:text-ink transition-colors" aria-label="Ouvrir le menu">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </button>
     </div>
 
-    <!-- Responsive Navigation Menu -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden md:hidden bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 transition-colors duration-300">
-        <div class="pt-4 pb-3 space-y-2 px-4">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="flex items-center py-3 px-4 rounded-lg">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                </svg>
-                {{ __('Ajouter un membre') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('dashboardV')" :active="request()->routeIs('dashboardV')" class="flex items-center py-3 px-4 rounded-lg">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                {{ __('Vérifier la présence') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('membres')" :active="request()->routeIs('membres*')" class="flex items-center py-3 px-4 rounded-lg">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                </svg>
-                {{ __('Liste des membres') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('statistiques')" :active="request()->routeIs('statistiques')" class="flex items-center py-3 px-4 rounded-lg">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                </svg>
-                {{ __('Statistiques') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('statistiques.avancees')" :active="request()->routeIs('statistiques.avancees')" class="flex items-center py-3 px-4 rounded-lg">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                </svg>
-                {{ __('Analytics') }}
-            </x-responsive-nav-link>
-            
-            <x-responsive-nav-link :href="route('calendar.index')" :active="request()->routeIs('calendar.*')" class="flex items-center py-3 px-4 rounded-lg">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                </svg>
-                Agenda
-            </x-responsive-nav-link>
-            
-            <x-responsive-nav-link :href="route('comparaison.periodes')" :active="request()->routeIs('comparaison.periodes')" class="flex items-center py-3 px-4 rounded-lg">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                </svg>
-                Comparaison périodes
-            </x-responsive-nav-link>
-            
-            <x-responsive-nav-link :href="route('rgpd.index')" :active="request()->routeIs('rgpd.*')" class="flex items-center py-3 px-4 rounded-lg">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                </svg>
-                RGPD
-            </x-responsive-nav-link>
+    <!-- Fond assombri (mobile) -->
+    <div x-show="sidebarOpen" x-transition.opacity @click="sidebarOpen = false" class="lg:hidden fixed inset-0 z-40 bg-ink/50" style="display: none;"></div>
 
+    <!-- Sidebar -->
+    <aside
+        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+        class="fixed lg:sticky top-0 left-0 z-50 h-screen w-72 lg:w-64 flex-shrink-0 bg-paper2 border-r border-line flex flex-col px-4 py-6 overflow-y-auto transition-transform duration-200 ease-out">
+
+        <!-- En-tête -->
+        <div class="flex items-center justify-between gap-2 px-3 pb-5 mb-3 border-b border-line">
+            <a href="{{ route('dashboard') }}" class="flex items-center gap-2">
+                <x-application-logo class="w-7 h-7" />
+                <span class="text-xs font-bold uppercase tracking-widest text-ink-soft">Présence</span>
+            </a>
+            <button @click="sidebarOpen = false" class="lg:hidden p-1 text-ink-soft hover:text-ink" aria-label="Fermer le menu">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <nav class="flex flex-col gap-1">
+            <x-sidebar-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V19a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>
+                Tableau de bord
+            </x-sidebar-link>
+            <x-sidebar-link :href="route('dashboardV')" :active="request()->routeIs('dashboardV')">
+                <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="8.4"/></svg>
+                Vérifier la présence
+            </x-sidebar-link>
+            <x-sidebar-link :href="route('membres')" :active="request()->routeIs('membres*')">
+                <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.3 19c0-3.3 2.6-5.6 5.7-5.6s5.7 2.3 5.7 5.6" stroke-linecap="round"/><circle cx="17.3" cy="9" r="2.2"/><path d="M15.6 13.6c2.5.4 4.1 2.1 4.4 4.6" stroke-linecap="round"/></svg>
+                Membres
+            </x-sidebar-link>
+
+            <div class="mt-5 mb-1 px-4 text-xs font-bold uppercase tracking-widest text-ink-faint">Analyse</div>
+            <x-sidebar-link :href="route('statistiques')" :active="request()->routeIs('statistiques')">
+                <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V11M12 19V5M19 19v-7"/></svg>
+                Statistiques
+            </x-sidebar-link>
+            <x-sidebar-link :href="route('statistiques.avancees')" :active="request()->routeIs('statistiques.avancees')">
+                <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16l5-5 4 4 7-7" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 8h5v5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Analyses avancées
+            </x-sidebar-link>
+            <x-sidebar-link :href="route('heatmap.index')" :active="request()->routeIs('heatmap.*')">
+                <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
+                Assiduité (heatmap)
+            </x-sidebar-link>
+
+            <div class="mt-5 mb-1 px-4 text-xs font-bold uppercase tracking-widest text-ink-faint">Organisation</div>
             @if(auth()->user()->groupsLed->isNotEmpty())
-                <x-responsive-nav-link :href="route('alerts.index', auth()->user()->groupsLed->first())" :active="request()->routeIs('alerts.*')" class="flex items-center py-3 px-4 rounded-lg">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                    </svg>
-                    Alertes & Rappels
-                </x-responsive-nav-link>
+                <x-sidebar-link :href="route('alerts.index', auth()->user()->groupsLed->first())" :active="request()->routeIs('alerts.*')">
+                    <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.6 2H4.4z" stroke-linejoin="round"/><path d="M10 20a2 2 0 0 0 4 0" stroke-linecap="round"/></svg>
+                    Alertes &amp; rappels
+                </x-sidebar-link>
             @endif
-        </div>
+            <x-sidebar-link :href="route('rgpd.index')" :active="request()->routeIs('rgpd.*')">
+                <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.6-3 7.9-7 10-4-2.1-7-5.4-7-10V6z" stroke-linejoin="round"/><path d="M9.3 12.2l1.8 1.8 3.6-3.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Confidentialité (RGPD)
+            </x-sidebar-link>
+        </nav>
 
-        <!-- Responsive Settings Options -->
-        <div class="pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 transition-colors duration-300">
-            <div class="px-4 mb-4">
-                <div class="flex items-center">
-                    <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center mr-3">
-                        <span class="text-lg font-semibold text-gray-700 dark:text-gray-200">{{ substr(Auth::user()->name, 0, 1) }}</span>
-                    </div>
-                    <div>
-                        <div class="font-medium text-base text-gray-800 dark:text-gray-200">{{ Auth::user()->name }}</div>
-                        <div class="font-medium text-sm text-gray-500 dark:text-gray-400">{{ Auth::user()->email }}</div>
-                    </div>
+        <div class="flex-grow"></div>
+
+        <div class="border-t border-line pt-3 mt-4 flex flex-col gap-1">
+            <x-sidebar-link :href="route('profile.edit')" :active="request()->routeIs('profile.*')">
+                <div class="w-8 h-8 rounded-full bg-confirm text-white flex items-center justify-center font-display font-semibold text-sm flex-shrink-0">
+                    {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                 </div>
-            </div>
-
-            <div class="space-y-2 px-4">
-                <x-responsive-nav-link :href="route('profile.edit')" class="flex items-center py-3 px-4 rounded-lg">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                    </svg>
-                    {{ __('Profil') }}
-                </x-responsive-nav-link>
-
-                <!-- Authentication -->
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <x-responsive-nav-link :href="route('logout')" class="flex items-center py-3 px-4 rounded-lg text-red-600"
-                            onclick="event.preventDefault(); this.closest('form').submit();">
-                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                        </svg>
-                        {{ __('Déconnexion') }}
-                    </x-responsive-nav-link>
-                </form>
-            </div>
+                <span class="truncate">{{ Auth::user()->name }}</span>
+            </x-sidebar-link>
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <a href="{{ route('logout') }}"
+                    onclick="event.preventDefault(); this.closest('form').submit();"
+                    class="flex items-center gap-3.5 px-4 py-3 rounded-lg text-base font-bold leading-none text-ink-soft hover:bg-paper hover:text-accent transition-colors cursor-pointer">
+                    <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    Déconnexion
+                </a>
+            </form>
         </div>
-    </div>
-</nav>
+    </aside>
+</div>
