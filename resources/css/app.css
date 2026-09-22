@@ -1,3 +1,45 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+[x-cloak] {
+    display: none !important;
+}
+
+/*
+ * Fondations du design system "Présence église" :
+ * palette chaleureuse et sobre, typographie très lisible, un seul thème (pas de mode sombre).
+ * Voir tailwind.config.js pour les tokens de couleur/police.
+ */
+@layer base {
+    body {
+        @apply bg-paper text-ink;
+    }
+
+    h1, h2, h3, h4 {
+        @apply font-display font-semibold;
+    }
+
+    a {
+        @apply text-accent;
+    }
+
+    a:hover {
+        @apply text-accent-hover;
+    }
+
+    /* Halo de focus doux mais net, visible pour tout le monde (clavier, lecteurs d'écran, basse vision). */
+    button:focus-visible,
+    a:focus-visible,
+    [tabindex]:focus-visible {
+        outline: 3px solid theme('colors.accent.focus');
+        outline-offset: 2px;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+        outline: 3px solid theme('colors.accent.focus');
+        outline-offset: 1px;
+    }
+}

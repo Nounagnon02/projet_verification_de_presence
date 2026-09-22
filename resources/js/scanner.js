@@ -4,18 +4,44 @@ import { Html5Qrcode } from 'html5-qrcode';
  * Scanner de QR personnel pour le responsable : lit le jeton encodé dans le
  * QR de chaque membre et l'envoie à l'endpoint de scan de la session ouverte.
  */
-window.initAttendanceScanner = function (elementId, scanUrl, csrfToken, feedbackId) {
-    const feedback = document.getElementById(feedbackId);
+window.initAttendanceScanner = function (elementId, scanUrl, csrfToken) {
+    const waitingEl = document.getElementById('scan-waiting');
+    const successEl = document.getElementById('scan-success');
+    const successText = document.getElementById('scan-success-text');
+    const successBadge = document.getElementById('scan-success-badge');
+    const errorEl = document.getElementById('scan-error');
+    const errorText = document.getElementById('scan-error-text');
     const html5QrCode = new Html5Qrcode(elementId);
     let processing = false;
     let lastToken = null;
     let lastTokenAt = 0;
+    let revertTimer = null;
 
-    function showFeedback(message, type) {
-        feedback.textContent = message;
-        feedback.className = type === 'success'
-            ? 'mt-4 p-3 rounded bg-green-100 text-green-800'
-            : 'mt-4 p-3 rounded bg-red-100 text-red-800';
+    function showWaiting() {
+        clearTimeout(revertTimer);
+        waitingEl.style.display = 'flex';
+        successEl.style.display = 'none';
+        errorEl.style.display = 'none';
+    }
+
+    function scheduleRevertToWaiting() {
+        clearTimeout(revertTimer);
+        revertTimer = setTimeout(showWaiting, 4000);
+    }
+
+    function showFeedback(message, type, badges) {
+        waitingEl.style.display = 'none';
+        if (type === 'success') {
+            errorEl.style.display = 'none';
+            successText.textContent = message;
+            successBadge.textContent = badges && badges.length ? 'Badge obtenu : ' + badges.join(', ') : '';
+            successEl.style.display = 'flex';
+        } else {
+            successEl.style.display = 'none';
+            errorText.textContent = message;
+            errorEl.style.display = 'flex';
+        }
+        scheduleRevertToWaiting();
     }
 
     function onScanSuccess(decodedText) {
@@ -44,11 +70,7 @@ window.initAttendanceScanner = function (elementId, scanUrl, csrfToken, feedback
                 .then((response) => response.json().then((data) => ({ status: response.status, data })))
                 .then(({ status, data }) => {
                     if (status === 200 && data.success) {
-                        let message = data.message;
-                        if (data.new_badges && data.new_badges.length > 0) {
-                            message += ' — badge(s) : ' + data.new_badges.join(', ');
-                        }
-                        showFeedback(message, 'success');
+                        showFeedback(data.message, 'success', data.new_badges);
                     } else {
                         showFeedback(data.error || 'Erreur inconnue.', 'error');
                     }

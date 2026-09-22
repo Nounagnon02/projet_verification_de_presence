@@ -13,29 +13,28 @@
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
         <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet" />
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans text-gray-900 antialiased">
-        <div class="min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 md:px-8 py-6 sm:py-12 bg-gray-100">
-            <!-- Logo/Brand -->
-            <div class="mb-6 sm:mb-8 text-center">
-                <x-application-logo class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4" />
-                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Système de Présence</h1>
-            </div>
-            
-            <div class="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl bg-white shadow-xl rounded-xl border border-gray-200 overflow-hidden">
-                <div class="px-6 sm:px-8 md:px-10 py-6 sm:py-8 md:py-10">
-                    {{ $slot }}
+    <body class="font-sans text-ink antialiased bg-paper">
+        <div class="min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 py-10 sm:py-14">
+            <div class="w-full max-w-[440px] bg-card border border-line rounded-xl shadow-[0_1px_2px_rgba(42,36,31,0.05),0_12px_32px_rgba(42,36,31,0.08)] px-7 sm:px-11 py-9 sm:py-12">
+                <!-- Marque -->
+                <div class="flex items-center justify-center gap-2 mb-7">
+                    <x-application-logo class="w-7 h-7" />
+                    <span class="text-xs font-bold uppercase tracking-widest text-ink-soft">Présence</span>
                 </div>
+
+                {{ $slot }}
             </div>
-            
+
             <!-- Lien retour -->
-            <div class="mt-6 text-center">
-                <a href="{{ route('welcome') }}" class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors">
+            <div class="mt-7 text-center">
+                <a href="{{ route('welcome') }}" class="inline-flex items-center text-sm font-semibold text-ink-soft hover:text-ink transition-colors">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                     </svg>
@@ -43,7 +42,7 @@
                 </a>
             </div>
         </div>
-        
+
         <!-- Footer -->
         <x-footer />
     </body>

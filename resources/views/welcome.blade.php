@@ -14,94 +14,107 @@
     <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="icon" type="image/svg+xml" href="/images/app-icon.svg">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="font-sans text-gray-900 antialiased">
-    <div class="min-h-screen bg-gray-100">
-        <!-- Header -->
-        <header class="bg-white shadow-sm">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-4">
-                <div class="flex flex-col sm:flex-row md:flex-row lg:flex-row justify-between items-center gap-4">
-                    <h1 class="text-lg sm:text-xl md:text-2xl lg:text-2xl xl:text-3xl font-bold text-gray-900 text-center sm:text-left">Système de Vérification de Présence</h1>
-                    <div class="flex flex-col sm:flex-row gap-2 sm:gap-4">
-                        @auth
-                            <a href="{{ route('dashboard') }}" class="text-gray-600 hover:text-gray-800 text-center px-3 py-2">Dashboard</a>
-                        @else
+<body class="font-sans text-ink antialiased bg-paper">
 
-                            <a href="{{ route('login') }}" class="text-gray-600 hover:text-gray-800 text-center px-3 py-2">Connexion</a>
-                            <a href="{{ route('register') }}" class="bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-700 text-center transition-colors">S'inscrire</a>
-                        @endauth
+    <!-- En-tête -->
+    <header class="border-b border-line bg-card">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 h-20 flex items-center justify-between">
+            <a href="{{ route('welcome') }}" class="flex items-center gap-2.5">
+                <x-application-logo class="w-8 h-8" />
+                <span class="font-display font-semibold text-lg text-ink">Présence</span>
+            </a>
+            <nav class="flex items-center gap-3">
+                @auth
+                    <a href="{{ route('dashboard') }}" class="inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-accent text-white font-bold text-sm hover:bg-accent-hover transition-colors">
+                        Tableau de bord
+                    </a>
+                @else
+                    <a href="{{ route('login') }}" class="text-ink-soft hover:text-ink font-bold text-sm px-3 py-2 transition-colors">
+                        Connexion
+                    </a>
+                    <a href="{{ route('register') }}" class="inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-accent text-white font-bold text-sm hover:bg-accent-hover transition-colors">
+                        Créer un compte
+                    </a>
+                @endauth
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="max-w-4xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
+        <h1 class="font-display font-semibold text-ink text-3xl sm:text-4xl md:text-5xl leading-tight">
+            La présence de vos groupes, <span class="text-accent">simplement</span> suivie
+        </h1>
+        <p class="mt-6 text-lg text-ink-soft max-w-2xl mx-auto leading-relaxed">
+            Un carnet de présence numérique pour les groupes de l'église : un QR personnel par membre,
+            un scan par le responsable, un suivi qui se fait de lui-même.
+        </p>
+        <div class="mt-10 flex flex-col sm:flex-row justify-center gap-4">
+            @auth
+                <a href="{{ route('dashboard') }}" class="inline-flex items-center justify-center px-7 py-3.5 rounded-lg bg-accent text-white font-bold text-base hover:bg-accent-hover transition-colors">
+                    Accéder au tableau de bord
+                </a>
+            @else
+                <a href="{{ route('register') }}" class="inline-flex items-center justify-center px-7 py-3.5 rounded-lg bg-accent text-white font-bold text-base hover:bg-accent-hover transition-colors">
+                    Créer un compte
+                </a>
+                <a href="{{ route('login') }}" class="inline-flex items-center justify-center px-7 py-3.5 rounded-lg border-[1.5px] border-line-strong bg-card text-ink font-bold text-base hover:bg-paper2 transition-colors">
+                    Se connecter
+                </a>
+            @endauth
+        </div>
+    </section>
+
+    <!-- Comment ça marche -->
+    <section class="bg-paper2 border-y border-line py-16 sm:py-20">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6">
+            <h2 class="font-display font-semibold text-2xl sm:text-3xl text-ink text-center mb-12">Comment ça marche</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-card border border-line rounded-xl p-6">
+                    <div class="w-10 h-10 rounded-lg bg-accent-tint text-accent flex items-center justify-center mb-4">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.3 19c0-3.3 2.6-5.6 5.7-5.6s5.7 2.3 5.7 5.6" stroke-linecap="round"/><circle cx="17.3" cy="9" r="2.2"/><path d="M15.6 13.6c2.5.4 4.1 2.1 4.4 4.6" stroke-linecap="round"/></svg>
                     </div>
+                    <h3 class="font-display font-semibold text-ink mb-2">1. Chaque membre a un QR</h3>
+                    <p class="text-sm text-ink-soft leading-relaxed">Une carte personnelle et imprimable qui identifie le membre, sans qu'il ait besoin d'un téléphone.</p>
+                </div>
+                <div class="bg-card border border-line rounded-xl p-6">
+                    <div class="w-10 h-10 rounded-lg bg-accent-tint text-accent flex items-center justify-center mb-4">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
+                    </div>
+                    <h3 class="font-display font-semibold text-ink mb-2">2. Le responsable scanne</h3>
+                    <p class="text-sm text-ink-soft leading-relaxed">Une session est ouverte pour la réunion ; le responsable scanne chaque QR au fur et à mesure.</p>
+                </div>
+                <div class="bg-card border border-line rounded-xl p-6">
+                    <div class="w-10 h-10 rounded-lg bg-accent-tint text-accent flex items-center justify-center mb-4">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V11M12 19V5M19 19v-7"/></svg>
+                    </div>
+                    <h3 class="font-display font-semibold text-ink mb-2">3. Le suivi se fait seul</h3>
+                    <p class="text-sm text-ink-soft leading-relaxed">Statistiques, alertes d'absence et rappels sont générés automatiquement, groupe par groupe.</p>
                 </div>
             </div>
-        </header>
+        </div>
+    </section>
 
-        <!-- Hero Section -->
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-8 sm:py-12 md:py-16 lg:py-20">
-            <div class="text-center">
-                <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-extrabold text-gray-900 leading-tight">
-                    Gestion de Présence
-                    <span class="text-gray-700 block sm:inline">Simplifiée</span>
-                </h2>
-                <p class="mt-4 sm:mt-6 md:mt-8 text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600 max-w-4xl mx-auto px-2 sm:px-4">
-                    Un système moderne et efficace pour suivre et vérifier la présence.
-                    Gérez facilement les présences avec notre interface intuitive.
-                </p>
+    <!-- Invitation finale -->
+    <section class="max-w-4xl mx-auto px-4 sm:px-6 py-16 sm:py-20 text-center">
+        <h2 class="font-display font-semibold text-2xl sm:text-3xl text-ink mb-4">Prêt à commencer ?</h2>
+        <p class="text-ink-soft mb-8">La mise en place d'un groupe prend moins de deux minutes.</p>
+        @guest
+            <a href="{{ route('register') }}" class="inline-flex items-center justify-center px-7 py-3.5 rounded-lg bg-accent text-white font-bold text-base hover:bg-accent-hover transition-colors">
+                Créer un compte
+            </a>
+        @else
+            <a href="{{ route('dashboard') }}" class="inline-flex items-center justify-center px-7 py-3.5 rounded-lg bg-accent text-white font-bold text-base hover:bg-accent-hover transition-colors">
+                Accéder au tableau de bord
+            </a>
+        @endguest
+    </section>
 
-                <div class="mt-8 sm:mt-10 md:mt-12 flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 px-2 sm:px-4">
-                    @auth
-                        <a href="{{ route('dashboard') }}" class="bg-gray-800 text-white px-6 sm:px-8 md:px-10 py-3 md:py-4 rounded-lg text-base sm:text-lg md:text-xl font-medium hover:bg-gray-700 transition-all transform hover:scale-105">
-                            Accéder au Dashboard
-                        </a>
-                    @else
-                        <a href="{{ route('login') }}" class="bg-gray-800 text-white px-6 sm:px-8 md:px-10 py-3 md:py-4 rounded-lg text-base sm:text-lg md:text-xl font-medium hover:bg-gray-700 transition-all transform hover:scale-105">
-                            Se connecter
-                        </a>
-                        <a href="{{ route('register') }}" class="border-2 border-gray-800 text-gray-800 px-6 sm:px-8 md:px-10 py-3 md:py-4 rounded-lg text-base sm:text-lg md:text-xl font-medium hover:bg-gray-100 transition-all transform hover:scale-105">
-                            Créer un compte
-                        </a>
-                    @endauth
-                </div>
-            </div>
-
-            <!-- Features -->
-            <div class="mt-12 sm:mt-16 md:mt-20 lg:mt-24 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 md:gap-10 px-2 sm:px-4">
-                <div class="bg-white p-4 sm:p-6 md:p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow text-center">
-                    <div class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4 md:mb-6">
-                        <svg class="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 mb-2 md:mb-4">Vérification Rapide</h3>
-                    <p class="text-gray-600 text-sm sm:text-base md:text-lg leading-relaxed">Vérifiez la présence en quelques clics avec notre système optimisé.</p>
-                </div>
-
-                <div class="bg-white p-4 sm:p-6 md:p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow text-center">
-                    <div class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4 md:mb-6">
-                        <svg class="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 mb-2 md:mb-4">Statistiques</h3>
-                    <p class="text-gray-600 text-sm sm:text-base md:text-lg leading-relaxed">Consultez les statistiques détaillées de présence et d'absence.</p>
-                </div>
-
-                <div class="bg-white p-4 sm:p-6 md:p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow text-center sm:col-span-2 md:col-span-1">
-                    <div class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4 md:mb-6">
-                        <svg class="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 mb-2 md:mb-4">Gestion Utilisateurs</h3>
-                    <p class="text-gray-600 text-sm sm:text-base md:text-lg leading-relaxed">Interface simple pour gérer les utilisateurs et leurs présences.</p>
-                </div>
-            </div>
-        </main>
-
-        <!-- Footer -->
-        <x-footer />
-    </div>
+    <x-footer />
 </body>
 </html>

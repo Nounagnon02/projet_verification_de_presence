@@ -8,13 +8,14 @@ export default {
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
     ],
-    
-    darkMode: 'class',
 
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                // Corps de texte : très lisible, pensée pour les lecteurs peu à l'aise avec le numérique.
+                sans: ['Atkinson Hyperlegible', ...defaultTheme.fontFamily.sans],
+                // Titres et intitulés de marque : chaleureux, digne, jamais générique.
+                display: ['Spectral', 'Georgia', ...defaultTheme.fontFamily.serif],
             },
             screens: {
                 'xs': '475px',
@@ -34,11 +35,24 @@ export default {
                 'bounce-subtle': 'bounce-subtle 0.3s ease-in-out',
             },
             colors: {
-                primary: {
-                    50: '#eff6ff',
-                    500: '#3b82f6',
-                    600: '#2563eb',
-                    700: '#1d4ed8',
+                // Palette validée (direction "chaleureuse, sobre, très lisible") — un seul thème, pas de mode sombre.
+                paper: '#FAF5EC',      // fond de page
+                paper2: '#F3ECDF',     // fond secondaire (sidebar, blocs alternés)
+                card: '#FFFFFF',       // cartes, formulaires
+                line: '#E3D8C6',       // bordures discrètes
+                'line-strong': '#C7BBAA', // bordures de boutons secondaires
+                ink: '#2A241F',        // texte principal
+                'ink-soft': '#6B5F52', // texte secondaire
+                'ink-faint': '#9C8F80',// texte tertiaire / métadonnées
+                accent: {
+                    DEFAULT: '#A6472A',
+                    hover: '#8A3820',
+                    tint: '#F3DDD2',
+                    focus: '#E7B9A6',
+                },
+                confirm: {
+                    DEFAULT: '#3F6B52',
+                    tint: '#E1EBE4',
                 },
             },
         },
