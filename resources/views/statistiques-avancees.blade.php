@@ -160,9 +160,14 @@
         const ctx = document.getElementById('presencesChart').getContext('2d');
         const presencesData = @json($presencesParJour);
 
+        // Même locale de dates que côté serveur. On réutilise la clé « carbon »
+        // de config/locales.php : le fon n'a pas de données de format dans les
+        // navigateurs, elle le renvoie donc sur le français, comme Carbon.
+        const dateLocale = @json(config('locales.supported.'.app()->getLocale().'.carbon', 'fr'));
+
         const labels = presencesData.map(item => {
             const date = new Date(item.jour);
-            return date.toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' });
+            return date.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' });
         });
 
         const data = presencesData.map(item => item.total);

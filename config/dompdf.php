@@ -179,7 +179,10 @@ return [
          *
          * @var string
          */
-        'default_font' => 'serif',
+        // DejaVu Sans est livrée avec DomPDF et couvre les caractères du fon
+        // (ɖ ɛ ɔ ŋ) et du yoruba (ẹ ọ ṣ + tons), que la police « serif » par
+        // défaut (Times, métriques AFM) ne contient pas.
+        'default_font' => 'DejaVu Sans',
 
         /**
          * Image DPI setting

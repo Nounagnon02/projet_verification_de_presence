@@ -7,7 +7,7 @@
             <div>
                 <h1 class="text-lg text-ink">{{ $session->group->name }}</h1>
                 <p class="text-sm text-ink-soft">
-                    Session en cours · ouverte le {{ $session->opened_at->format('d/m/Y à H:i') }}
+                    Session en cours · ouverte le {{ $session->opened_at->translatedFormat(__('date.datetime')) }}
                     @if($session->event_name) — {{ $session->event_name }} @endif
                 </p>
             </div>

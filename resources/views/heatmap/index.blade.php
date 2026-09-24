@@ -95,7 +95,7 @@
                                                 @case(3) bg-confirm dark:bg-green-500 @break
                                                 @case(4) bg-green-700 dark:bg-green-400 @break
                                             @endswitch"
-                                            title="{{ \Carbon\Carbon::parse($dayData['date'])->translatedFormat('l d M Y') }} - {{ $dayData['total'] }} présence(s)"
+                                            title="{{ \Carbon\Carbon::parse($dayData['date'])->translatedFormat(__('date.long')) }} - {{ $dayData['total'] }} présence(s)"
                                             data-date="{{ $dayData['date'] }}"
                                             data-count="{{ $dayData['total'] }}">
                                         </div>

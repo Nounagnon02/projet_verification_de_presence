@@ -94,11 +94,11 @@
     </div>
 
     <div class="info">
-        <p><strong>Date:</strong> {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}</p>
+        <p><strong>Date:</strong> {{ \Carbon\Carbon::parse($date)->translatedFormat(__('date.short')) }}</p>
         @if($search)
             <p><strong>Recherche:</strong> {{ $search }}</p>
         @endif
-        <p><strong>Généré le:</strong> {{ now()->format('d/m/Y à H:i') }}</p>
+        <p><strong>Généré le:</strong> {{ now()->translatedFormat(__('date.datetime')) }}</p>
     </div>
 
     <div class="stats">
@@ -133,8 +133,8 @@
                     <tr>
                         <td>{{ $presence->member->name }}</td>
                         <td>{{ $presence->member->phone }}</td>
-                        <td>{{ \Carbon\Carbon::parse($presence->time)->format('H:i') }}</td>
-                        <td>{{ \Carbon\Carbon::parse($presence->date)->format('d/m/Y') }}</td>
+                        <td>{{ \Carbon\Carbon::parse($presence->time)->translatedFormat(__('date.time')) }}</td>
+                        <td>{{ \Carbon\Carbon::parse($presence->date)->translatedFormat(__('date.short')) }}</td>
                     </tr>
                 @endforeach
             </tbody>

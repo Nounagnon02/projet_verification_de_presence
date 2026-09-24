@@ -16,6 +16,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
         $middleware->web(append: [
             \App\Http\Middleware\ForceHttps::class,
+            // Ajouté en fin de groupe web, donc après StartSession : SetLocale
+            // lit la session, le cookie et l'utilisateur connecté. Tant qu'il
+            // n'était qu'un alias, il n'était attaché à aucune route et le
+            // sélecteur de langue n'avait aucun effet.
+            \App\Http\Middleware\SetLocale::class,
         ]);
         $middleware->alias([
             'locale' => \App\Http\Middleware\SetLocale::class,

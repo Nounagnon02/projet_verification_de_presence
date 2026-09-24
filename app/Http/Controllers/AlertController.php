@@ -78,7 +78,7 @@ class AlertController extends Controller
         $absentMembers = $this->alertService->getAbsentMembers($group->id, today()->format('Y-m-d'));
 
         return response()->json([
-            'date' => today()->format('d/m/Y'),
+            'date' => today()->translatedFormat(__('date.short')),
             'absent_count' => $absentMembers->count(),
             'members' => $absentMembers->map(fn($m) => [
                 'id' => $m->id,

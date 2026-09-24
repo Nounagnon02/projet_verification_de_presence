@@ -48,7 +48,7 @@
                                                 @endif
                                             </td>
                                             <td class="px-4 py-3 whitespace-nowrap text-sm text-ink-soft dark:text-gray-300">
-                                                {{ $membre->rgpd_consent_at?->format('d/m/Y à H:i') ?? '—' }}
+                                                {{ $membre->rgpd_consent_at?->translatedFormat(__('date.datetime')) ?? '—' }}
                                             </td>
                                             <td class="px-4 py-3 whitespace-nowrap text-sm text-ink-soft dark:text-gray-300">
                                                 {{ $membre->consent_method ?? '—' }}
@@ -106,7 +106,7 @@
                             @if(Auth::user()->gdpr_consent)
                                 <span class="text-confirm font-semibold inline-flex items-center gap-1.5"><x-icon name="check" class="w-4 h-4" /> Consentement accordé</span>
                                 <span class="text-xs text-ink-faint block">
-                                    Le {{ Auth::user()->gdpr_consent_at?->format('d/m/Y à H:i') }}
+                                    Le {{ Auth::user()->gdpr_consent_at?->translatedFormat(__('date.datetime')) }}
                                 </span>
                             @else
                                 <span class="text-red-600 font-semibold inline-flex items-center gap-1.5"><x-icon name="x" class="w-4 h-4" /> Consentement non accordé</span>

@@ -108,11 +108,11 @@
                                     </td>
                                     <td class="py-4 px-4 sm:px-6 text-sm sm:text-base text-center">
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-confirm-tint text-confirm">
-                                            {{ \Carbon\Carbon::parse($presence->time)->format('H:i') }}
+                                            {{ \Carbon\Carbon::parse($presence->time)->translatedFormat(__('date.time')) }}
                                         </span>
                                     </td>
                                     <td class="py-4 px-4 sm:px-6 text-sm sm:text-base text-center text-ink-soft">
-                                        {{ \Carbon\Carbon::parse($presence->date)->format('d/m/Y') }}
+                                        {{ \Carbon\Carbon::parse($presence->date)->translatedFormat(__('date.short')) }}
                                     </td>
                                 </tr>
                             @empty

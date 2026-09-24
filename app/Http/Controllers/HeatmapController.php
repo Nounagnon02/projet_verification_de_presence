@@ -72,7 +72,7 @@ class HeatmapController extends Controller
             $heatmapData[] = [
                 'date' => $dateKey,
                 'dayOfWeek' => $start->dayOfWeek,
-                'dayName' => $start->translatedFormat('D'),
+                'dayName' => $start->translatedFormat(__('date.weekday_short')),
                 'week' => $start->weekOfYear,
                 'total' => $dayData['total'],
                 'hourly' => $dayData['hourly'],
@@ -140,7 +140,7 @@ class HeatmapController extends Controller
             'total_presences' => $totalPresences,
             'total_events' => $totalEvents,
             'avg_per_event' => $totalEvents > 0 ? round($totalPresences / $totalEvents, 1) : 0,
-            'best_day' => $bestDay ? Carbon::parse($bestDay->date)->translatedFormat('l d M') : 'N/A',
+            'best_day' => $bestDay ? Carbon::parse($bestDay->date)->translatedFormat(__('date.day_month')) : 'N/A',
             'best_day_count' => $bestDay->count ?? 0,
             'best_hour' => $bestHour ? $bestHour->hour . 'h' : 'N/A',
             'best_hour_count' => $bestHour->count ?? 0,

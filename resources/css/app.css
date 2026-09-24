@@ -12,6 +12,15 @@
  * Voir tailwind.config.js pour les tokens de couleur/police.
  */
 @layer base {
+    /*
+     * Police de corps par défaut. Le composant <x-fonts /> redéfinit cette
+     * variable pour les langues qui ont besoin de caractères absents
+     * d'Atkinson Hyperlegible (yoruba, fon).
+     */
+    :root {
+        --font-sans: 'Atkinson Hyperlegible';
+    }
+
     body {
         @apply bg-paper text-ink;
     }

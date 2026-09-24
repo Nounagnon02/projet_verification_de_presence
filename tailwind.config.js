@@ -13,7 +13,11 @@ export default {
         extend: {
             fontFamily: {
                 // Corps de texte : très lisible, pensée pour les lecteurs peu à l'aise avec le numérique.
-                sans: ['Atkinson Hyperlegible', ...defaultTheme.fontFamily.sans],
+                // La famille passe par une variable CSS parce qu'elle dépend de la langue :
+                // Atkinson Hyperlegible ne contient ni ẹ (U+1EB9) ni ọ (U+1ECD) ni les
+                // marques de ton U+0300/U+0301, indispensables en yoruba et en fon.
+                // Voir resources/views/components/fonts.blade.php.
+                sans: ['var(--font-sans)', ...defaultTheme.fontFamily.sans],
                 // Titres et intitulés de marque : chaleureux, digne, jamais générique.
                 display: ['Spectral', 'Georgia', ...defaultTheme.fontFamily.serif],
             },

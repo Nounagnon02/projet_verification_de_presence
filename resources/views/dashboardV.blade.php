@@ -21,7 +21,7 @@
             @forelse($groups as $group)
                 <div class="bg-card dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg transition-colors duration-300 mb-6">
                     <div class="p-6 text-ink dark:text-gray-100">
-                        <h3 class="text-lg font-medium text-ink dark:text-white mb-4">{{ $group->name }} - {{ now()->format('d/m/Y') }}</h3>
+                        <h3 class="text-lg font-medium text-ink dark:text-white mb-4">{{ $group->name }} - {{ now()->translatedFormat(__('date.short')) }}</h3>
 
                         @if($group->members->count() > 0)
                             <form method="POST" action="{{ route('verif', $group) }}">

@@ -64,7 +64,7 @@ class SendReminderJob implements ShouldQueue
                 $alertService->sendReminder(
                     $member, 
                     $event->event_name ?? 'Séance prévue', 
-                    Carbon::parse($targetDate)->format('d/m/Y')
+                    Carbon::parse($targetDate)->translatedFormat(__('date.short'))
                 );
             }
         }
