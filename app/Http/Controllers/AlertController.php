@@ -65,7 +65,7 @@ class AlertController extends Controller
         );
 
         return redirect()->route('alerts.index', $group)
-            ->with('success', 'Paramètres d\'alertes mis à jour avec succès !');
+            ->with('success', __('Paramètres d\'alertes mis à jour.'));
     }
 
     /**

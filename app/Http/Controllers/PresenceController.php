@@ -53,7 +53,7 @@ class PresenceController extends Controller
             'group_ids' => 'required|array|min:1',
             'group_ids.*' => 'exists:groups,id',
         ], [
-            'members.*.phone.regex' => 'Le numéro de téléphone ne peut contenir que des chiffres et le symbole +',
+            'members.*.phone.regex' => __('Le numéro de téléphone ne peut contenir que des chiffres et le symbole +'),
         ]);
 
         // Restreindre aux groupes réellement dirigés par le responsable connecté
@@ -84,7 +84,7 @@ class PresenceController extends Controller
             $count++;
         }
 
-        return redirect()->route('membres')->with('success', $count . ' membre(s) ajouté(s) avec succès!');
+        return redirect()->route('membres')->with('success', trans_choice(':count membre ajouté.|:count membres ajoutés.', $count));
     }
 
     /**
@@ -102,7 +102,7 @@ class PresenceController extends Controller
         $session = AttendanceSession::where('group_id', $group->id)->where('is_active', true)->first();
 
         if (!$session) {
-            return redirect()->back()->with('error', "Aucune session active pour ce groupe.");
+            return redirect()->back()->with('error', __('Aucune session active pour ce groupe.'));
         }
 
         $memberIds = $request->input('presences', []);
@@ -300,7 +300,7 @@ class PresenceController extends Controller
         $otherGroupIds = $membre->groups()->pluck('groups.id')->diff($ledGroupIds);
         $membre->groups()->sync($otherGroupIds->merge($selectedLedGroupIds));
 
-        return redirect()->route('membres')->with('success', 'Membre modifié avec succès!');
+        return redirect()->route('membres')->with('success', __('Membre modifié.'));
     }
 
     public function deleteMembre($id)
@@ -318,7 +318,7 @@ class PresenceController extends Controller
             $membre->delete();
         }
 
-        return redirect()->route('membres')->with('success', 'Membre supprimé avec succès!');
+        return redirect()->route('membres')->with('success', __('Membre supprimé.'));
     }
 
     public function printCard(Member $member)

@@ -1,7 +1,7 @@
 <x-guest-layout>
     <div class="text-center mb-8">
-        <h1 class="text-2xl sm:text-[26px] text-ink mb-2">Ravis de vous revoir</h1>
-        <p class="text-ink-soft text-base leading-relaxed">Connectez-vous pour gérer la présence de vos groupes.</p>
+        <h1 class="text-2xl sm:text-[26px] text-ink mb-2">{{ __('Ravis de vous revoir') }}</h1>
+        <p class="text-ink-soft text-base leading-relaxed">{{ __('Connectez-vous pour gérer la présence de vos groupes.') }}</p>
     </div>
 
     <!-- Session Status -->
@@ -17,7 +17,7 @@
                 type="email"
                 name="email"
                 :value="old('email')"
-                placeholder="vous@exemple.com"
+                :placeholder="__('vous@exemple.com')"
                 required
                 autofocus
                 autocomplete="username" />

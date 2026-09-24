@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Statistiques de Présence</title>
+    <title>{{ __('Statistiques de présence') }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -89,43 +89,43 @@
 </head>
 <body>
     <div class="header">
-        <h1>Statistiques de Présence</h1>
-        <p>Groupe(s): {{ auth()->user()->groupsLed->pluck('name')->implode(', ') }}</p>
+        <h1>{{ __('Statistiques de présence') }}</h1>
+        <p>{{ __('Groupe(s) :') }} {{ auth()->user()->groupsLed->pluck('name')->implode(', ') }}</p>
     </div>
 
     <div class="info">
-        <p><strong>Date:</strong> {{ \Carbon\Carbon::parse($date)->translatedFormat(__('date.short')) }}</p>
+        <p><strong>{{ __('Date :') }}</strong> {{ \Carbon\Carbon::parse($date)->translatedFormat(__('date.short')) }}</p>
         @if($search)
-            <p><strong>Recherche:</strong> {{ $search }}</p>
+            <p><strong>{{ __('Recherche :') }}</strong> {{ $search }}</p>
         @endif
-        <p><strong>Généré le:</strong> {{ now()->translatedFormat(__('date.datetime')) }}</p>
+        <p><strong>{{ __('Généré le :') }}</strong> {{ now()->translatedFormat(__('date.datetime')) }}</p>
     </div>
 
     <div class="stats">
         <div class="stat-box">
-            <h3>Présents</h3>
+            <h3>{{ __('Présents') }}</h3>
             <div class="number present">{{ $totalPresent }}</div>
         </div>
         <div class="stat-box">
-            <h3>Total Membres</h3>
+            <h3>{{ __('Total membres') }}</h3>
             <div class="number total">{{ $totalMembres }}</div>
         </div>
         <div class="stat-box">
-            <h3>Taux de Présence</h3>
+            <h3>{{ __('Taux de présence') }}</h3>
             <div class="number rate">{{ $tauxPresence }}%</div>
         </div>
     </div>
 
-    <h2>Liste des Présences</h2>
+    <h2>{{ __('Liste des présences') }}</h2>
     
     @if($presences->count() > 0)
         <table>
             <thead>
                 <tr>
-                    <th>Nom</th>
-                    <th>Téléphone</th>
-                    <th>Heure d'arrivée</th>
-                    <th>Date</th>
+                    <th>{{ __('Nom') }}</th>
+                    <th>{{ __('Téléphone') }}</th>
+                    <th>{{ __('Heure d\'arrivée') }}</th>
+                    <th>{{ __('Date') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -141,12 +141,12 @@
         </table>
     @else
         <div class="no-data">
-            <p>Aucune présence enregistrée pour cette date.</p>
+            <p>{{ __('Aucune présence enregistrée pour cette date.') }}</p>
         </div>
     @endif
 
     <div class="footer">
-        <p>Document généré automatiquement par le système de vérification de présence</p>
+        <p>{{ __('Document généré automatiquement par le système de vérification de présence') }}</p>
     </div>
 </body>
 </html>

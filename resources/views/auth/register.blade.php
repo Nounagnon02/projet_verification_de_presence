@@ -1,7 +1,7 @@
 <x-guest-layout>
     <div class="text-center mb-8">
-        <h1 class="text-2xl sm:text-[26px] text-ink mb-2">Créer un compte</h1>
-        <p class="text-ink-soft text-base leading-relaxed">Rejoignez le système de gestion de présence.</p>
+        <h1 class="text-2xl sm:text-[26px] text-ink mb-2">{{ __('Créer un compte') }}</h1>
+        <p class="text-ink-soft text-base leading-relaxed">{{ __('Rejoignez le système de gestion de présence.') }}</p>
     </div>
 
     <form method="POST" action="{{ route('register') }}" class="space-y-5">
@@ -14,7 +14,7 @@
                 type="text"
                 name="name"
                 :value="old('name')"
-                placeholder="Votre nom complet"
+                :placeholder="__('Votre nom complet')"
                 required
                 autofocus
                 autocomplete="name" />
@@ -28,10 +28,10 @@
                 type="text"
                 name="group_name"
                 :value="old('group_name')"
-                placeholder="Ex: Groupe de prière, Chorale..."
+                :placeholder="__('Ex. : Groupe de prière, Chorale…')"
                 required />
             <x-input-error :messages="$errors->get('group_name')" />
-            <p class="text-sm text-ink-faint">Le nom de votre groupe ou organisation. Vous pourrez ajouter d'autres co-responsables ensuite.</p>
+            <p class="text-sm text-ink-faint">{{ __('Le nom de votre groupe ou organisation. Vous pourrez ajouter d\'autres co-responsables ensuite.') }}</p>
         </div>
 
         <!-- Email Address -->
@@ -41,7 +41,7 @@
                 type="email"
                 name="email"
                 :value="old('email')"
-                placeholder="vous@exemple.com"
+                :placeholder="__('vous@exemple.com')"
                 required
                 autocomplete="username" />
             <x-input-error :messages="$errors->get('email')" />
@@ -53,7 +53,7 @@
             <x-text-input id="password"
                 type="password"
                 name="password"
-                placeholder="Choisissez un mot de passe sécurisé"
+                :placeholder="__('Choisissez un mot de passe sécurisé')"
                 required
                 autocomplete="new-password" />
             <x-input-error :messages="$errors->get('password')" />
@@ -65,7 +65,7 @@
             <x-text-input id="password_confirmation"
                 type="password"
                 name="password_confirmation"
-                placeholder="Confirmez votre mot de passe"
+                :placeholder="__('Confirmez votre mot de passe')"
                 required
                 autocomplete="new-password" />
             <x-input-error :messages="$errors->get('password_confirmation')" />

@@ -40,7 +40,7 @@ class AuthenticatedSessionController extends Controller
             Log::error('Erreur de connexion: ' . $e->getMessage());
 
             return back()->withErrors([
-                'email' => 'Une erreur est survenue lors de la connexion. Veuillez réessayer.',
+                'email' => __('Une erreur est survenue lors de la connexion. Veuillez réessayer.'),
             ])->withInput($request->except('password'));
         }
     }

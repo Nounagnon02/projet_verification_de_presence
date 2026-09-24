@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-ink dark:text-white leading-tight">
-            {{ __('messages.verify_presence') }}
+            {{ __('Vérifier la présence') }}
         </h2>
     </x-slot>
 
@@ -42,26 +42,26 @@
                                                 </div>
                                             </label>
                                             @if(in_array($member->id, $presencesToday))
-                                                <span class="ml-2 text-xs text-confirm dark:text-green-400 font-medium">{{ __('messages.present') }}</span>
+                                                <span class="ml-2 text-xs text-confirm dark:text-green-400 font-medium">{{ __('Présent') }}</span>
                                             @endif
                                         </div>
                                     @endforeach
                                 </div>
 
                                 <div class="flex justify-between items-center">
-                                    <p class="text-sm text-ink-soft dark:text-gray-400">{{ __('messages.members_total', ['count' => $group->members->count()]) }}</p>
+                                    <p class="text-sm text-ink-soft dark:text-gray-400">{{ trans_choice(':count membre au total|:count membres au total', $group->members->count()) }}</p>
                                     <button type="submit" class="bg-accent text-white font-bold py-2 px-6 rounded">
-                                        {{ __('messages.save_presences') }}
+                                        {{ __('Enregistrer les présences') }}
                                     </button>
                                 </div>
                             </form>
                         @else
-                            <p class="text-ink-faint dark:text-gray-400 text-center py-8">{{ __('messages.no_members') }}</p>
+                            <p class="text-ink-faint dark:text-gray-400 text-center py-8">{{ __('Aucun membre enregistré dans ce groupe.') }}</p>
                         @endif
                     </div>
                 </div>
             @empty
-                <p class="text-ink-faint dark:text-gray-400 text-center py-8">Vous ne dirigez aucun groupe pour le moment.</p>
+                <p class="text-ink-faint dark:text-gray-400 text-center py-8">{{ __('Vous ne dirigez aucun groupe pour le moment.') }}</p>
             @endforelse
         </div>
     </div>

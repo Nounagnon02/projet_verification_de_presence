@@ -43,6 +43,31 @@ class Badge extends Model
     }
 
     /**
+     * Nom du badge dans la langue courante.
+     *
+     * La base stocke le libellé français saisi à la création ; la traduction
+     * est indexée sur « condition », qui est une clé technique stable
+     * (first_presence, streak_7...). Si la clé n'existe pas dans la langue
+     * demandée, on retombe sur la valeur enregistrée en base.
+     */
+    public function translatedName(): string
+    {
+        $key = "badges.{$this->condition}.name";
+
+        return __($key) === $key ? $this->name : __($key);
+    }
+
+    /**
+     * Description du badge dans la langue courante, même principe.
+     */
+    public function translatedDescription(): string
+    {
+        $key = "badges.{$this->condition}.description";
+
+        return __($key) === $key ? $this->description : __($key);
+    }
+
+    /**
      * Retourne la classe CSS de couleur
      */
     public function getColorClassAttribute(): string

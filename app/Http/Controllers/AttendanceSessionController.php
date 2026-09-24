@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AttendanceSession;
+use App\Models\Badge;
 use App\Models\Group;
 use App\Models\MemberQrCode;
 use App\Models\Presence;
@@ -59,10 +60,10 @@ class AttendanceSessionController extends Controller
                 'user_agent' => $request->userAgent(),
             ]);
         } catch (\Illuminate\Database\QueryException $e) {
-            return back()->with('error', "Une session est déjà active pour ce groupe. Fermez-la avant d'en ouvrir une nouvelle.");
+            return back()->with('error', __("Une session est déjà active pour ce groupe. Fermez-la avant d'en ouvrir une nouvelle."));
         }
 
-        return redirect()->route('sessions.scan', $session)->with('success', 'Session ouverte.');
+        return redirect()->route('sessions.scan', $session)->with('success', __('Session ouverte.'));
     }
 
     /**
@@ -74,7 +75,7 @@ class AttendanceSessionController extends Controller
 
         $session->update(['is_active' => false, 'closed_at' => now()]);
 
-        return redirect()->route('dashboard')->with('success', 'Session fermée.');
+        return redirect()->route('dashboard')->with('success', __('Session fermée.'));
     }
 
     /**
@@ -96,7 +97,7 @@ class AttendanceSessionController extends Controller
         abort_unless($session->group->leaders->contains(Auth::id()), 403);
 
         if (!$session->is_active) {
-            return response()->json(['error' => 'Cette session est fermée.'], 400);
+            return response()->json(['error' => __('Cette session est fermée.')], 400);
         }
 
         $request->validate([
@@ -121,7 +122,7 @@ class AttendanceSessionController extends Controller
         $qrCode = MemberQrCode::where('token', $request->token)->where('is_active', true)->first();
 
         if (!$qrCode) {
-            return response()->json(['error' => 'QR code invalide ou révoqué.'], 400);
+            return response()->json(['error' => __('QR code invalide ou révoqué.')], 400);
         }
 
         $member = $qrCode->member;
@@ -156,8 +157,10 @@ class AttendanceSessionController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Présence enregistrée pour ' . $member->name,
-            'new_badges' => collect($newBadges)->pluck('name'),
+            'message' => __('Présence enregistrée pour :name', ['name' => $member->name]),
+            // Le nom du badge est traduit dans la langue de la requête ; la
+            // base garde le libellé français d'origine comme repli.
+            'new_badges' => collect($newBadges)->map(fn (Badge $badge) => $badge->translatedName()),
         ]);
     }
 }

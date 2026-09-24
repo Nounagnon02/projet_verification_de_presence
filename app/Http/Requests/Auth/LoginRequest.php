@@ -46,7 +46,7 @@ class LoginRequest extends FormRequest
                 RateLimiter::hit($this->throttleKey());
 
                 throw ValidationException::withMessages([
-                    'email' => 'Ces identifiants ne correspondent pas à nos enregistrements.',
+                    'email' => __('auth.failed'),
                 ]);
             }
 
@@ -57,7 +57,7 @@ class LoginRequest extends FormRequest
             \Log::error('Erreur d\'authentification: ' . $e->getMessage());
             
             throw ValidationException::withMessages([
-                'email' => 'Une erreur technique est survenue. Veuillez réessayer plus tard.',
+                'email' => __('Une erreur technique est survenue. Veuillez réessayer plus tard.'),
             ]);
         }
     }

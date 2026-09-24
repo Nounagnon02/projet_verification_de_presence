@@ -4,7 +4,7 @@ import { Html5Qrcode } from 'html5-qrcode';
  * Scanner de QR personnel pour le responsable : lit le jeton encodé dans le
  * QR de chaque membre et l'envoie à l'endpoint de scan de la session ouverte.
  */
-window.initAttendanceScanner = function (elementId, scanUrl, csrfToken) {
+window.initAttendanceScanner = function (elementId, scanUrl, csrfToken, labels = {}) {
     const waitingEl = document.getElementById('scan-waiting');
     const successEl = document.getElementById('scan-success');
     const successText = document.getElementById('scan-success-text');
@@ -12,6 +12,17 @@ window.initAttendanceScanner = function (elementId, scanUrl, csrfToken) {
     const errorEl = document.getElementById('scan-error');
     const errorText = document.getElementById('scan-error-text');
     const html5QrCode = new Html5Qrcode(elementId);
+
+    // Textes traduits fournis par la vue ; le français sert de repli si la vue
+    // ne les passe pas (le JS n'a pas accès à __()).
+    const defaultLabels = {
+        badgeEarned: 'Badge obtenu :',
+        unknownError: 'Erreur inconnue.',
+        networkError: 'Erreur réseau, réessayez.',
+        cameraError: "Impossible d'accéder à la caméra. Vérifiez les autorisations du navigateur.",
+    };
+    const t = (key) => labels[key] ?? defaultLabels[key];
+
     let processing = false;
     let lastToken = null;
     let lastTokenAt = 0;
@@ -34,7 +45,7 @@ window.initAttendanceScanner = function (elementId, scanUrl, csrfToken) {
         if (type === 'success') {
             errorEl.style.display = 'none';
             successText.textContent = message;
-            successBadge.textContent = badges && badges.length ? 'Badge obtenu : ' + badges.join(', ') : '';
+            successBadge.textContent = badges && badges.length ? t('badgeEarned') + ' ' + badges.join(', ') : '';
             successEl.style.display = 'flex';
         } else {
             successEl.style.display = 'none';
@@ -72,10 +83,10 @@ window.initAttendanceScanner = function (elementId, scanUrl, csrfToken) {
                     if (status === 200 && data.success) {
                         showFeedback(data.message, 'success', data.new_badges);
                     } else {
-                        showFeedback(data.error || 'Erreur inconnue.', 'error');
+                        showFeedback(data.error || t('unknownError'), 'error');
                     }
                 })
-                .catch(() => showFeedback('Erreur réseau, réessayez.', 'error'))
+                .catch(() => showFeedback(t('networkError'), 'error'))
                 .finally(() => {
                     processing = false;
                 });
@@ -102,6 +113,6 @@ window.initAttendanceScanner = function (elementId, scanUrl, csrfToken) {
         onScanSuccess,
         () => {}
     ).catch(() => {
-        showFeedback("Impossible d'accéder à la caméra. Vérifiez les autorisations du navigateur.", 'error');
+        showFeedback(t('cameraError'), 'error');
     });
 };

@@ -1,11 +1,11 @@
 <x-app-layout>
     <x-slot name="header">
-        <h1 class="text-2xl md:text-[28px] text-ink">Tableau de bord</h1>
+        <h1 class="text-2xl md:text-[28px] text-ink">{{ __('Tableau de bord') }}</h1>
         <p class="text-ink-soft text-base mt-1">
             @if($groups->count() > 0)
-                Vous encadrez {{ $groups->count() }} {{ Str::plural('groupe', $groups->count()) }}.
+                {{ trans_choice('Vous encadrez :count groupe.|Vous encadrez :count groupes.', $groups->count()) }}
             @else
-                Vous ne dirigez aucun groupe pour le moment.
+                {{ __('Vous ne dirigez aucun groupe pour le moment.') }}
             @endif
         </p>
     </x-slot>
@@ -33,8 +33,8 @@
                 <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="8.4"/></svg>
             </div>
             <div>
-                <div class="font-display font-semibold text-ink">Vérifier la présence</div>
-                <div class="text-sm text-ink-soft">Marquer les présents manuellement</div>
+                <div class="font-display font-semibold text-ink">{{ __('Vérifier la présence') }}</div>
+                <div class="text-sm text-ink-soft">{{ __('Marquer les présents manuellement') }}</div>
             </div>
         </a>
         <a href="{{ route('membres') }}" class="flex items-center gap-4 p-5 rounded-xl border border-line bg-card hover:border-line-strong transition-colors">
@@ -42,8 +42,8 @@
                 <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.3 19c0-3.3 2.6-5.6 5.7-5.6s5.7 2.3 5.7 5.6" stroke-linecap="round"/><path d="M16 8h4M18 6v4" stroke-linecap="round"/></svg>
             </div>
             <div>
-                <div class="font-display font-semibold text-ink">Ajouter un membre</div>
-                <div class="text-sm text-ink-soft">Enregistrer un ou plusieurs nouveaux membres</div>
+                <div class="font-display font-semibold text-ink">{{ __('Ajouter un membre') }}</div>
+                <div class="text-sm text-ink-soft">{{ __('Enregistrer un ou plusieurs nouveaux membres') }}</div>
             </div>
         </a>
         <a href="{{ route('statistiques.avancees') }}" class="flex items-center gap-4 p-5 rounded-xl border border-line bg-card hover:border-line-strong transition-colors">
@@ -51,15 +51,15 @@
                 <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V11M12 19V5M19 19v-7"/></svg>
             </div>
             <div>
-                <div class="font-display font-semibold text-ink">Analyses avancées</div>
-                <div class="text-sm text-ink-soft">Tendances, classement et comparaison de périodes</div>
+                <div class="font-display font-semibold text-ink">{{ __('Analyses avancées') }}</div>
+                <div class="text-sm text-ink-soft">{{ __('Tendances, classement et comparaison de périodes') }}</div>
             </div>
         </a>
     </div>
 
     <!-- Mes groupes : ouverture/scan de session -->
     <div class="mb-8">
-        <h2 class="text-xl text-ink mb-4">Mes groupes</h2>
+        <h2 class="text-xl text-ink mb-4">{{ __('Mes groupes') }}</h2>
 
         <div class="flex flex-col border border-line rounded-xl bg-card overflow-hidden">
             @forelse($groups as $group)
@@ -69,32 +69,32 @@
                         @if($activeSessions->has($group->id))
                             <div class="flex items-center gap-2 text-[15px]">
                                 <span class="w-2 h-2 rounded-full bg-confirm inline-block"></span>
-                                <span class="font-bold text-confirm">Session en cours</span>
-                                <span class="text-ink-faint">· {{ $group->members_count }} membre(s)</span>
+                                <span class="font-bold text-confirm">{{ __('Session en cours') }}</span>
+                                <span class="text-ink-faint">· {{ trans_choice(':count membre|:count membres', $group->members_count) }}</span>
                             </div>
                         @else
-                            <span class="text-[15px] text-ink-faint">{{ $group->members_count }} membre(s)</span>
+                            <span class="text-[15px] text-ink-faint">{{ trans_choice(':count membre|:count membres', $group->members_count) }}</span>
                         @endif
                     </div>
                     @if($activeSessions->has($group->id))
                         <div class="flex flex-wrap gap-3">
                             <a href="{{ route('sessions.scan', $activeSessions[$group->id]) }}" class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-accent font-bold text-base text-white hover:bg-accent-hover transition-colors">
-                                Scanner les présences
+                                {{ __('Scanner les présences') }}
                             </a>
                             <form method="POST" action="{{ route('sessions.close', $activeSessions[$group->id]) }}">
                                 @csrf
-                                <x-secondary-button type="submit">Fermer la session</x-secondary-button>
+                                <x-secondary-button type="submit">{{ __('Fermer la session') }}</x-secondary-button>
                             </form>
                         </div>
                     @else
                         <form method="POST" action="{{ route('sessions.open', $group) }}">
                             @csrf
-                            <x-primary-button type="submit">Ouvrir une session</x-primary-button>
+                            <x-primary-button type="submit">{{ __('Ouvrir une session') }}</x-primary-button>
                         </form>
                     @endif
                 </div>
             @empty
-                <p class="text-ink-soft px-6 py-6">Vous ne dirigez aucun groupe pour le moment.</p>
+                <p class="text-ink-soft px-6 py-6">{{ __('Vous ne dirigez aucun groupe pour le moment.') }}</p>
             @endforelse
         </div>
     </div>

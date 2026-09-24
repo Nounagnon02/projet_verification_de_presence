@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-ink leading-tight">
-            {{ __('Modifier le Membre') }}
+            {{ __('Modifier le membre') }}
         </h2>
     </x-slot>
 
@@ -26,7 +26,7 @@
 
                         <div class="mb-4">
                             <label for="name" class="block text-sm font-medium text-ink-soft">
-                                Nom et Prénoms
+                                {{ __('Nom et prénoms') }}
                             </label>
                             <input type="text" 
                                    id="name" 
@@ -38,7 +38,7 @@
 
                         <div class="mb-6">
                             <label for="phone" class="block text-sm font-medium text-ink-soft">
-                                Numéro de Téléphone
+                                {{ __('Numéro de téléphone') }}
                             </label>
                             <input type="text"
                                    id="phone"
@@ -49,7 +49,7 @@
                         </div>
 
                         <div class="mb-6">
-                            <label class="block text-sm font-medium text-ink-soft mb-1">Groupe(s)</label>
+                            <label class="block text-sm font-medium text-ink-soft mb-1">{{ __('Groupe(s)') }}</label>
                             <div class="flex flex-wrap gap-3">
                                 @foreach($groups as $group)
                                     <label class="flex items-center bg-paper border rounded px-3 py-2">
@@ -65,11 +65,11 @@
                         <div class="flex items-center justify-between">
                             <a href="{{ route('membres') }}" 
                                class="bg-gray-500 hover:bg-accent-hover text-white font-bold py-2 px-4 rounded">
-                                Annuler
+                                {{ __('Annuler') }}
                             </a>
                             <button type="submit" 
                                     class="bg-accent hover:bg-accent-hover text-white font-bold py-2 px-4 rounded">
-                                Mettre à jour
+                                {{ __('Mettre à jour') }}
                             </button>
                         </div>
                     </form>

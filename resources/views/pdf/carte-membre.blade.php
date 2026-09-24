@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Carte de présence - {{ $member->name }}</title>
+    <title>{{ __('Carte de présence') }} - {{ $member->name }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -49,8 +49,8 @@
 </head>
 <body>
     <div class="card">
-        <h1>Système de Vérification de Présence</h1>
-        <div class="subtitle">Carte de présence personnelle</div>
+        <h1>{{ __('Système de vérification de présence') }}</h1>
+        <div class="subtitle">{{ __('Carte de présence personnelle') }}</div>
         <div class="qr"><img src="{{ $qrImageBase64 }}" width="200" height="200" alt="QR"></div>
         <div class="name">{{ $member->name }}</div>
         <div class="groups">{{ $member->groups->pluck('name')->implode(', ') }}</div>

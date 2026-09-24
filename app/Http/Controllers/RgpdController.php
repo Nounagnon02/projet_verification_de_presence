@@ -26,7 +26,7 @@ class RgpdController extends Controller
             'gdpr_consent_at' => now()
         ]);
 
-        return redirect()->back()->with('success', 'Consentement RGPD enregistré');
+        return redirect()->back()->with('success', __('Consentement RGPD enregistré.'));
     }
 
     public function withdraw()
@@ -37,6 +37,6 @@ class RgpdController extends Controller
             'gdpr_consent_at' => null
         ]);
 
-        return redirect()->back()->with('success', 'Consentement RGPD retiré');
+        return redirect()->back()->with('success', __('Consentement RGPD retiré.'));
     }
 }
