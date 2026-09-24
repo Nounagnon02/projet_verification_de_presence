@@ -326,7 +326,7 @@ class PresenceController extends Controller
         abort_unless($member->groups->pluck('id')->intersect(Auth::user()->groupsLed()->pluck('groups.id'))->isNotEmpty(), 403);
 
         $qrCode = $member->qrCode;
-        abort_if(!$qrCode, 404, "Ce membre n'a pas de QR personnel actif.");
+        abort_if(!$qrCode, 404, __("Ce membre n'a pas de QR personnel actif."));
 
         // PNG (pas SVG) : DomPDF ne rend pas correctement le SVG généré par les
         // librairies QR courantes, et imagick n'est pas disponible pour du PNG

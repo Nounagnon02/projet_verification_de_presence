@@ -51,7 +51,7 @@ Assiduité,,,resources/views/documentation.blade.php:26
 "Aucune donnée disponible",,,resources/views/membres/index.blade.php:265
 "Aucune donnée pour cette période",,,resources/views/statistiques-avancees.blade.php:149
 "Aucune présence enregistrée",,,resources/views/statistiques.blade.php:125
-"Aucune présence enregistrée pour cette date.",,,resources/views/pdf/statistiques.blade.php:144
+"Aucune présence enregistrée pour cette date.",,,resources/views/pdf/statistiques.blade.php:147
 "Aucune session active pour ce groupe.",,,app/Http/Controllers/PresenceController.php:105
 "Badge obtenu :",,,resources/views/sessions/open.blade.php:66
 Bon,,,resources/views/statistiques-avancees.blade.php:140
@@ -65,7 +65,8 @@ CGU,,,resources/views/components/footer.blade.php:26
 "Carte QR personnelle pour chaque membre",,,resources/views/about.blade.php:17
 "Carte d'activité jour par jour et score de régularité",,,resources/views/documentation.blade.php:27
 "Carte de présence",,,resources/views/pdf/carte-membre.blade.php:5
-"Carte de présence personnelle",,,resources/views/pdf/carte-membre.blade.php:53
+"Carte de présence personnelle",,,resources/views/pdf/carte-membre.blade.php:55
+"Ce membre n'a pas de QR personnel actif.",,,app/Http/Controllers/PresenceController.php:329
 "Ce qui fonctionne aujourd'hui",,,resources/views/alerts/index.blade.php:24
 "Ceci concerne votre propre compte responsable — pas les données de vos membres ci-dessus.",,,resources/views/rgpd/index.blade.php:101
 "Cette session est fermée.",,,app/Http/Controllers/AttendanceSessionController.php:100
@@ -115,11 +116,11 @@ Contact,,,resources/views/contact.blade.php:5
 "Créez votre compte et testez les fonctionnalités",,,resources/views/demo.blade.php:98
 "Créez votre compte et votre premier groupe",,,resources/views/documentation.blade.php:11
 Date,,,resources/views/rgpd/index.blade.php:34
-"Date :",,,resources/views/pdf/statistiques.blade.php:97
+"Date :",,,resources/views/pdf/statistiques.blade.php:100
 "Date de début",,,resources/views/heatmap/index.blade.php:15
 "Date de fin",,,resources/views/heatmap/index.blade.php:20
 Diminution,,,resources/views/statistiques-avancees.blade.php:85
-"Document généré automatiquement par le système de vérification de présence",,,resources/views/pdf/statistiques.blade.php:149
+"Document généré automatiquement par le système de vérification de présence",,,resources/views/pdf/statistiques.blade.php:152
 Documentation,,,resources/views/documentation.blade.php:5
 "Donner mon consentement",,,resources/views/rgpd/index.blade.php:121
 "Données collectées",,,resources/views/legal/privacy.blade.php:11
@@ -178,12 +179,12 @@ Fonctionnalités,,,resources/views/components/footer.blade.php:9
 "Gestion des présences pour les réunions et événements de l'organisation.",,,resources/views/rgpd/index.blade.php:79
 "Graphiques et classements",,,resources/views/demo.blade.php:24
 Groupe(s),,,resources/views/membres/edit.blade.php:52
-"Groupe(s) :",,,resources/views/pdf/statistiques.blade.php:93
+"Groupe(s) :",,,resources/views/pdf/statistiques.blade.php:96
 Groupes,,,resources/views/membres/index.blade.php:114
 "Guide de démarrage",,,resources/views/documentation.blade.php:9
-"Généré le :",,,resources/views/pdf/statistiques.blade.php:101
+"Généré le :",,,resources/views/pdf/statistiques.blade.php:104
 Heure,,,resources/views/statistiques.blade.php:96
-"Heure d'arrivée",,,resources/views/pdf/statistiques.blade.php:127
+"Heure d'arrivée",,,resources/views/pdf/statistiques.blade.php:130
 "Heure de début d'événement",,,resources/views/alerts/index.blade.php:106
 "Heure la plus active",,,resources/views/heatmap/index.blade.php:49
 "Horaires :",,,resources/views/contact.blade.php:21
@@ -212,7 +213,7 @@ Heure,,,resources/views/statistiques.blade.php:96
 "Les présentes conditions générales d'utilisation (CGU) régissent l'utilisation de l'application de vérification de présence. En utilisant cette application, vous acceptez ces conditions.",,,resources/views/legal/terms.blade.php:13
 "Les échanges avec le serveur sont chiffrés et les données sont hébergées en Europe. Le consentement de chaque membre est enregistré.",,,resources/views/faq.blade.php:20
 "Liste des membres",,,resources/views/membres/index.blade.php:4
-"Liste des présences",,,resources/views/pdf/statistiques.blade.php:119
+"Liste des présences",,,resources/views/pdf/statistiques.blade.php:122
 "Lundi au vendredi, 9 h - 18 h",,,resources/views/contact.blade.php:22
 Légal,,,resources/views/components/footer.blade.php:21
 "Marquer les présents manuellement",,,resources/views/dashboard.blade.php:37
@@ -289,7 +290,7 @@ Présences,,,resources/views/statistiques-avancees.blade.php:111
 "Présences (période)",,,resources/views/statistiques-avancees.blade.php:44
 "Présences totales",,,resources/views/heatmap/index.blade.php:37
 Présent,,,resources/views/dashboardV.blade.php:45
-Présents,,,resources/views/pdf/statistiques.blade.php:106
+Présents,,,resources/views/pdf/statistiques.blade.php:109
 "Prêt à commencer ?",,,resources/views/welcome.blade.php:59
 "Puis-je exporter les statistiques ?",,,resources/views/faq.blade.php:24
 Période,,,resources/views/statistiques-avancees.blade.php:11
@@ -303,7 +304,7 @@ Rang,,,resources/views/statistiques-avancees.blade.php:109
 "Rappels de pointage",,,resources/views/alerts/index.blade.php:146
 "Rapports PDF détaillés",,,resources/views/demo.blade.php:90
 "Ravis de vous revoir",,,resources/views/auth/login.blade.php:3
-"Recherche :",,,resources/views/pdf/statistiques.blade.php:99
+"Recherche :",,,resources/views/pdf/statistiques.blade.php:102
 Rechercher,,,resources/views/statistiques.blade.php:21
 "Rejoignez le système de gestion de présence.",,,resources/views/auth/register.blade.php:4
 "Renvoyer l'email de vérification",,,resources/views/auth/verify-email.blade.php:18

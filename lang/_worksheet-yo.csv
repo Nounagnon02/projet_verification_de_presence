@@ -51,7 +51,7 @@ Assiduité,Ìdúróṣinṣin,,resources/views/documentation.blade.php:26
 "Aucune donnée disponible","Kò sí data kankan",,resources/views/membres/index.blade.php:265
 "Aucune donnée pour cette période","Kò sí data fún àkókò yìí",,resources/views/statistiques-avancees.blade.php:149
 "Aucune présence enregistrée","Kò sí wíwàníbẹ̀ tí a kọ sílẹ̀",,resources/views/statistiques.blade.php:125
-"Aucune présence enregistrée pour cette date.","Kò sí wíwàníbẹ̀ tí a kọ sílẹ̀ fún ọjọ́ yìí.",,resources/views/pdf/statistiques.blade.php:144
+"Aucune présence enregistrée pour cette date.","Kò sí wíwàníbẹ̀ tí a kọ sílẹ̀ fún ọjọ́ yìí.",,resources/views/pdf/statistiques.blade.php:147
 "Aucune session active pour ce groupe.","Kò sí ìpàdé tó ń lọ fún ẹgbẹ́ yìí.",,app/Http/Controllers/PresenceController.php:105
 "Badge obtenu :","Àmì tí a rí gbà:",,resources/views/sessions/open.blade.php:66
 Bon,Dáadáa,,resources/views/statistiques-avancees.blade.php:140
@@ -65,7 +65,8 @@ CGU,"Àwọn Òfin Ìlò",,resources/views/components/footer.blade.php:26
 "Carte QR personnelle pour chaque membre","Káàdì QR ti ara ẹni fún ọmọ ẹgbẹ́ kọ̀ọ̀kan",,resources/views/about.blade.php:17
 "Carte d'activité jour par jour et score de régularité","Àwòrán ìgbòkègbodò ojoojúmọ́ àti ààmì ìdúróṣinṣin",,resources/views/documentation.blade.php:27
 "Carte de présence","Káàdì wíwàníbẹ̀",,resources/views/pdf/carte-membre.blade.php:5
-"Carte de présence personnelle","Káàdì wíwàníbẹ̀ ti ara ẹni",,resources/views/pdf/carte-membre.blade.php:53
+"Carte de présence personnelle","Káàdì wíwàníbẹ̀ ti ara ẹni",,resources/views/pdf/carte-membre.blade.php:55
+"Ce membre n'a pas de QR personnel actif.","Ọmọ ẹgbẹ́ yìí kò ní káàdì QR ti ara rẹ̀ tó ń ṣiṣẹ́.",,app/Http/Controllers/PresenceController.php:329
 "Ce qui fonctionne aujourd'hui","Ohun tó ń ṣiṣẹ́ lónìí",,resources/views/alerts/index.blade.php:24
 "Ceci concerne votre propre compte responsable — pas les données de vos membres ci-dessus.","Èyí kan àkàǹtì olùdarí tìrẹ — kì í ṣe data àwọn ọmọ ẹgbẹ́ rẹ lókè.",,resources/views/rgpd/index.blade.php:101
 "Cette session est fermée.","Ìpàdé yìí ti pín.",,app/Http/Controllers/AttendanceSessionController.php:100
@@ -115,11 +116,11 @@ Contact,Ìbánisọ̀rọ̀,,resources/views/contact.blade.php:5
 "Créez votre compte et testez les fonctionnalités","Ṣẹ̀dá àkàǹtì rẹ kí o sì dán àwọn ẹ̀ya rẹ̀ wò",,resources/views/demo.blade.php:98
 "Créez votre compte et votre premier groupe","Ṣẹ̀dá àkàǹtì rẹ àti ẹgbẹ́ àkọ́kọ́ rẹ",,resources/views/documentation.blade.php:11
 Date,Ọjọ́,,resources/views/rgpd/index.blade.php:34
-"Date :",Ọjọ́:,,resources/views/pdf/statistiques.blade.php:97
+"Date :",Ọjọ́:,,resources/views/pdf/statistiques.blade.php:100
 "Date de début","Ọjọ́ ìbẹ̀rẹ̀",,resources/views/heatmap/index.blade.php:15
 "Date de fin","Ọjọ́ ìparí",,resources/views/heatmap/index.blade.php:20
 Diminution,Ìdinku,,resources/views/statistiques-avancees.blade.php:85
-"Document généré automatiquement par le système de vérification de présence","Ìwé tí ètò ìṣàyẹ̀wò wíwàníbẹ̀ ṣẹ̀dá fúnra rẹ̀",,resources/views/pdf/statistiques.blade.php:149
+"Document généré automatiquement par le système de vérification de présence","Ìwé tí ètò ìṣàyẹ̀wò wíwàníbẹ̀ ṣẹ̀dá fúnra rẹ̀",,resources/views/pdf/statistiques.blade.php:152
 Documentation,"Ìwé ìtọ́sọ́nà",,resources/views/documentation.blade.php:5
 "Donner mon consentement","Fúnni ní ìfọwọ́sí mi",,resources/views/rgpd/index.blade.php:121
 "Données collectées","Data tí a kójọ",,resources/views/legal/privacy.blade.php:11
@@ -178,12 +179,12 @@ Fonctionnalités,"Àwọn ẹ̀ya",,resources/views/components/footer.blade.php:
 "Gestion des présences pour les réunions et événements de l'organisation.","Ìṣàkóso wíwàníbẹ̀ fún àwọn ìpàdé àti ìṣẹ̀lẹ̀ àjọ náà.",,resources/views/rgpd/index.blade.php:79
 "Graphiques et classements","Àwòrán àti ìtòlẹ́sẹẹsẹ",,resources/views/demo.blade.php:24
 Groupe(s),Ẹgbẹ́,,resources/views/membres/edit.blade.php:52
-"Groupe(s) :",Ẹgbẹ́:,,resources/views/pdf/statistiques.blade.php:93
+"Groupe(s) :",Ẹgbẹ́:,,resources/views/pdf/statistiques.blade.php:96
 Groupes,"Àwọn ẹgbẹ́",,resources/views/membres/index.blade.php:114
 "Guide de démarrage","Ìtọ́sọ́nà ìbẹ̀rẹ̀",,resources/views/documentation.blade.php:9
-"Généré le :","A ṣẹ̀dá rẹ̀ ní:",,resources/views/pdf/statistiques.blade.php:101
+"Généré le :","A ṣẹ̀dá rẹ̀ ní:",,resources/views/pdf/statistiques.blade.php:104
 Heure,Àkókò,,resources/views/statistiques.blade.php:96
-"Heure d'arrivée","Àkókò ìdé",,resources/views/pdf/statistiques.blade.php:127
+"Heure d'arrivée","Àkókò ìdé",,resources/views/pdf/statistiques.blade.php:130
 "Heure de début d'événement","Àkókò ìbẹ̀rẹ̀ ìṣẹ̀lẹ̀",,resources/views/alerts/index.blade.php:106
 "Heure la plus active","Wákàtí tó gbóná jù",,resources/views/heatmap/index.blade.php:49
 "Horaires :","Àkókò iṣẹ́:",,resources/views/contact.blade.php:21
@@ -212,7 +213,7 @@ Heure,Àkókò,,resources/views/statistiques.blade.php:96
 "Les présentes conditions générales d'utilisation (CGU) régissent l'utilisation de l'application de vérification de présence. En utilisant cette application, vous acceptez ces conditions.","Àwọn òfin ìlò wọ̀nyí ń ṣàkóso lílo ohun èlò ìṣàyẹ̀wò wíwàníbẹ̀ yìí. Nípa lílo rẹ̀, ẹ gba àwọn òfin wọ̀nyí.",,resources/views/legal/terms.blade.php:13
 "Les échanges avec le serveur sont chiffrés et les données sont hébergées en Europe. Le consentement de chaque membre est enregistré.","A pa ìbánisọ̀rọ̀ pẹ̀lú sáfà mọ́ ní àṣírí, a sì tọ́jú data ní Yúróòpù. A kọ ìfọwọ́sí ọmọ ẹgbẹ́ kọ̀ọ̀kan sílẹ̀.",,resources/views/faq.blade.php:20
 "Liste des membres","Àtòjọ àwọn ọmọ ẹgbẹ́",,resources/views/membres/index.blade.php:4
-"Liste des présences","Àtòjọ wíwàníbẹ̀",,resources/views/pdf/statistiques.blade.php:119
+"Liste des présences","Àtòjọ wíwàníbẹ̀",,resources/views/pdf/statistiques.blade.php:122
 "Lundi au vendredi, 9 h - 18 h","Ajé sí Ẹtì, 9 àárọ̀ - 6 alẹ́",,resources/views/contact.blade.php:22
 Légal,Òfin,,resources/views/components/footer.blade.php:21
 "Marquer les présents manuellement","Kọ àwọn tó wà níbẹ̀ sílẹ̀ pẹ̀lú ọwọ́",,resources/views/dashboard.blade.php:37
@@ -289,7 +290,7 @@ Présences,Wíwàníbẹ̀,,resources/views/statistiques-avancees.blade.php:111
 "Présences (période)","Wíwàníbẹ̀ (àkókò)",,resources/views/statistiques-avancees.blade.php:44
 "Présences totales","Àpapọ̀ wíwàníbẹ̀",,resources/views/heatmap/index.blade.php:37
 Présent,"Ó wà níbẹ̀",,resources/views/dashboardV.blade.php:45
-Présents,"Àwọn tó wà níbẹ̀",,resources/views/pdf/statistiques.blade.php:106
+Présents,"Àwọn tó wà níbẹ̀",,resources/views/pdf/statistiques.blade.php:109
 "Prêt à commencer ?","Ṣé o ti ṣetán láti bẹ̀rẹ̀?",,resources/views/welcome.blade.php:59
 "Puis-je exporter les statistiques ?","Ṣé mo lè mú àwọn ìṣirò jáde?",,resources/views/faq.blade.php:24
 Période,Àkókò,,resources/views/statistiques-avancees.blade.php:11
@@ -303,7 +304,7 @@ Rang,Ipò,,resources/views/statistiques-avancees.blade.php:109
 "Rappels de pointage","Ìránnilétí ìforúkọsílẹ̀",,resources/views/alerts/index.blade.php:146
 "Rapports PDF détaillés","Ìjábọ̀ PDF kíkún",,resources/views/demo.blade.php:90
 "Ravis de vous revoir","A yọ̀ láti tún rí ọ",,resources/views/auth/login.blade.php:3
-"Recherche :",Ìwádìí:,,resources/views/pdf/statistiques.blade.php:99
+"Recherche :",Ìwádìí:,,resources/views/pdf/statistiques.blade.php:102
 Rechercher,Wá,,resources/views/statistiques.blade.php:21
 "Rejoignez le système de gestion de présence.","Darapọ̀ mọ́ ètò ìṣàkóso wíwàníbẹ̀.",,resources/views/auth/register.blade.php:4
 "Renvoyer l'email de vérification","Tún ímeèlì ìjẹ́rìísí ránṣẹ́",,resources/views/auth/verify-email.blade.php:18

@@ -6,7 +6,10 @@
     <title>{{ __('Statistiques de présence') }}</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            /* DejaVu Sans et non Arial : DomPDF fait correspondre Arial à
+               Helvetica, qui n'a ni ɖ ɛ ɔ (fon) ni ẹ ọ ṣ (yoruba). Cette règle
+               l'emporte sur default_font de config/dompdf.php. */
+            font-family: 'DejaVu Sans', sans-serif;
             margin: 20px;
             color: #333;
         }

@@ -5,7 +5,9 @@
     <title>{{ __('Carte de présence') }} - {{ $member->name }}</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            /* DejaVu Sans et non Arial : DomPDF fait correspondre Arial à
+               Helvetica, qui n'a ni ɖ ɛ ɔ (fon) ni ẹ ọ ṣ (yoruba). */
+            font-family: 'DejaVu Sans', sans-serif;
             margin: 0;
             padding: 30px;
             color: #333;
