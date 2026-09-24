@@ -81,7 +81,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Alertes & Notifications (par groupe)
     Route::get('/groupes/{group}/alerts', [\App\Http\Controllers\AlertController::class, 'index'])->name('alerts.index');
-    Route::put('/groupes/{group}/alerts', [\App\Http\Controllers\AlertController::class, 'update'])->name('alerts.update');
     Route::get('/groupes/{group}/alerts/absents', [\App\Http\Controllers\AlertController::class, 'getAbsentMembers'])->name('alerts.absent-members');
 });
 

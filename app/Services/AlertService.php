@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Member;
 use App\Models\Presence;
 use App\Models\AttendanceSession;
-use Illuminate\Support\Facades\Log;
 
 class AlertService
 {
@@ -21,25 +20,6 @@ class AlertService
         return Member::whereHas('groups', fn ($q) => $q->where('groups.id', $groupId))
             ->whereNotIn('id', $presentMemberIds)
             ->get();
-    }
-
-    /**
-     * Envoie un rappel de pointage
-     */
-    public function sendReminder(Member $member, string $eventName, string $eventDate): array
-    {
-        $message = __("Rappel : n'oubliez pas l'événement « :event » prévu le :date. Pensez à pointer votre présence.", [
-            'event' => $eventName,
-            'date' => $eventDate,
-        ]);
-
-        try {
-            Log::info("Envoi rappel à {$member->phone}: {$message}");
-
-            return ['success' => true, 'message' => __('Rappel envoyé.')];
-        } catch (\Exception $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
-        }
     }
 
     /**

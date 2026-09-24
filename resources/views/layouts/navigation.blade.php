@@ -65,7 +65,7 @@
             @if(auth()->user()->groupsLed->isNotEmpty())
                 <x-sidebar-link :href="route('alerts.index', auth()->user()->groupsLed->first())" :active="request()->routeIs('alerts.*')">
                     <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.6 2H4.4z" stroke-linejoin="round"/><path d="M10 20a2 2 0 0 0 4 0" stroke-linecap="round"/></svg>
-                    {{ __('Alertes & rappels') }}
+                    {{ __('Suivi des absences') }}
                 </x-sidebar-link>
             @endif
             <x-sidebar-link :href="route('rgpd.index')" :active="request()->routeIs('rgpd.*')">

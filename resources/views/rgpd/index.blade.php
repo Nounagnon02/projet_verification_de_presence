@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-ink dark:text-white leading-tight">
+        <h2 class="font-semibold text-xl text-ink leading-tight">
             {{ __('Protection des données (RGPD)') }}
         </h2>
     </x-slot>
@@ -14,32 +14,32 @@
             @endif
 
             <!-- Consentement des membres -->
-            <div class="bg-card dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg mb-6">
-                <div class="p-6 text-ink dark:text-gray-100">
+            <div class="bg-card overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                <div class="p-6 text-ink">
                     <h3 class="text-lg font-semibold mb-1">{{ __('Consentement de vos membres') }}</h3>
-                    <p class="text-sm text-ink-soft dark:text-gray-400 mb-4">
+                    <p class="text-sm text-ink-soft mb-4">
                         {{ __('Statut de consentement enregistré à la création de chaque membre.') }}
                     </p>
 
                     @if($membres->isEmpty())
-                        <p class="text-sm text-ink-faint dark:text-gray-400">{{ __('Vous ne dirigez aucun membre pour le moment.') }}</p>
+                        <p class="text-sm text-ink-faint">{{ __('Vous ne dirigez aucun membre pour le moment.') }}</p>
                     @else
                         <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                <thead class="bg-paper dark:bg-gray-700">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-paper">
                                     <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-ink-faint dark:text-gray-300 uppercase tracking-wider">{{ __('Membre') }}</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-ink-faint dark:text-gray-300 uppercase tracking-wider">{{ __('Groupes') }}</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-ink-faint dark:text-gray-300 uppercase tracking-wider">{{ __('Statut') }}</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-ink-faint dark:text-gray-300 uppercase tracking-wider">{{ __('Date') }}</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-ink-faint dark:text-gray-300 uppercase tracking-wider">{{ __('Méthode') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-ink-faint uppercase tracking-wider">{{ __('Membre') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-ink-faint uppercase tracking-wider">{{ __('Groupes') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-ink-faint uppercase tracking-wider">{{ __('Statut') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-ink-faint uppercase tracking-wider">{{ __('Date') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-ink-faint uppercase tracking-wider">{{ __('Méthode') }}</th>
                                     </tr>
                                 </thead>
-                                <tbody class="bg-card dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                <tbody class="bg-card divide-y divide-gray-200">
                                     @foreach($membres as $membre)
                                         <tr>
-                                            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-ink dark:text-white">{{ $membre->name }}</td>
-                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-ink-soft dark:text-gray-300">{{ $membre->groups->pluck('name')->implode(', ') }}</td>
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-ink">{{ $membre->name }}</td>
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-ink-soft">{{ $membre->groups->pluck('name')->implode(', ') }}</td>
                                             <td class="px-4 py-3 whitespace-nowrap text-sm">
                                                 @if($membre->rgpd_consent)
                                                     <span class="text-confirm font-semibold inline-flex items-center gap-1.5"><x-icon name="check" class="w-4 h-4" /> {{ __('Accordé') }}</span>
@@ -47,10 +47,10 @@
                                                     <span class="text-red-600 font-semibold inline-flex items-center gap-1.5"><x-icon name="x" class="w-4 h-4" /> {{ __('Non accordé') }}</span>
                                                 @endif
                                             </td>
-                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-ink-soft dark:text-gray-300">
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-ink-soft">
                                                 {{ $membre->rgpd_consent_at?->translatedFormat(__('date.datetime')) ?? '—' }}
                                             </td>
-                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-ink-soft dark:text-gray-300">
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-ink-soft">
                                                 {{ $membre->consent_method ?? '—' }}
                                             </td>
                                         </tr>
@@ -62,8 +62,8 @@
                 </div>
             </div>
 
-            <div class="bg-card dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg mb-6">
-                <div class="p-6 text-ink dark:text-gray-100 space-y-6">
+            <div class="bg-card overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                <div class="p-6 text-ink space-y-6">
                     <div>
                         <h4 class="font-semibold mb-2">{{ __('Données collectées sur les membres') }}</h4>
                         <ul class="list-disc list-inside text-sm space-y-1">
@@ -94,13 +94,13 @@
             </div>
 
             <!-- Consentement du compte responsable -->
-            <div class="bg-card dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-ink dark:text-gray-100">
+            <div class="bg-card overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-ink">
                     <h3 class="text-lg font-semibold mb-1">{{ __('Votre consentement personnel') }}</h3>
-                    <p class="text-sm text-ink-soft dark:text-gray-400 mb-4">
+                    <p class="text-sm text-ink-soft mb-4">
                         {{ __('Ceci concerne votre propre compte responsable — pas les données de vos membres ci-dessus.') }}
                     </p>
-                    <div class="bg-accent-tint dark:bg-blue-900/20 p-4 rounded-lg mb-4">
+                    <div class="bg-accent-tint p-4 rounded-lg mb-4">
                         <p class="text-sm">
                             {{ __('Statut actuel :') }}
                             @if(Auth::user()->gdpr_consent)

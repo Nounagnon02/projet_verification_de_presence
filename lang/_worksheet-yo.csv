@@ -14,8 +14,8 @@ francais,yo,pluriel,vu_dans
 ":count membre ajouté.|:count membres ajoutés.","A fi ọmọ ẹgbẹ́ :count kún.|A fi ọmọ ẹgbẹ́ :count kún.",oui,app/Http/Controllers/PresenceController.php:87
 ":count membre au total|:count membres au total","Àpapọ̀ ọmọ ẹgbẹ́ :count|Àpapọ̀ ọmọ ẹgbẹ́ :count",oui,resources/views/dashboardV.blade.php:52
 ":count membre|:count membres","Ọmọ ẹgbẹ́ :count|Ọmọ ẹgbẹ́ :count",oui,resources/views/dashboard.blade.php:73
-":count pointage|:count pointages","Ìforúkọsílẹ̀ :count|Ìforúkọsílẹ̀ :count",oui,resources/views/heatmap/index.blade.php:153
-":count présence|:count présences","Wíwàníbẹ̀ :count|Wíwàníbẹ̀ :count",oui,resources/views/heatmap/index.blade.php:98
+":count pointage|:count pointages","Ìforúkọsílẹ̀ :count|Ìforúkọsílẹ̀ :count",oui,resources/views/heatmap/index.blade.php:146
+":count présence|:count présences","Wíwàníbẹ̀ :count|Wíwàníbẹ̀ :count",oui,resources/views/heatmap/index.blade.php:91
 ":done/:total événements","Ìṣẹ̀lẹ̀ :done/:total",,resources/views/membres/index.blade.php:140
 ":user a créé une présence",":user ṣẹ̀dá àkọsílẹ̀ wíwàníbẹ̀",,resources/views/statistiques.blade.php:153
 ":user a modifié une présence",":user ṣàtúnṣe àkọsílẹ̀ wíwàníbẹ̀",,resources/views/statistiques.blade.php:154
@@ -24,9 +24,6 @@ Accordé,"A fọwọ́sí",,resources/views/rgpd/index.blade.php:45
 "Accès restreint : un responsable ne voit que les membres de ses groupes","Àǹfààní ìhámọ́: olùdarí kan a máa rí àwọn ọmọ ẹgbẹ́ tirẹ̀ nìkan",,resources/views/legal/privacy.blade.php:34
 "Accéder au tableau de bord","Lọ sí pátákó ìdarí",,resources/views/welcome.blade.php:14
 Actions,Ìṣe,,resources/views/membres/index.blade.php:120
-"Activer les alertes d'absence","Mú ìkìlọ̀ àìsí ṣiṣẹ́",,resources/views/alerts/index.blade.php:100
-"Activer les alertes et rappels","Mú ìkìlọ̀ àti ìránnilétí ṣiṣẹ́",,resources/views/alerts/index.blade.php:82
-"Activer les rappels avant événements","Mú ìránnilétí ṣáájú ìṣẹ̀lẹ̀ ṣiṣẹ́",,resources/views/alerts/index.blade.php:153
 "Activité de présence","Ìgbòkègbodò wíwàníbẹ̀",,resources/views/heatmap/index.blade.php:59
 "Activités récentes","Ìgbòkègbodò tuntun",,resources/views/statistiques.blade.php:144
 "Adresse email","Àdírẹ́sì ímeèlì",,resources/views/profile/partials/update-profile-information-form.blade.php:27
@@ -34,8 +31,6 @@ Actions,Ìṣe,,resources/views/membres/index.blade.php:120
 "Ajouter des membres","Fi àwọn ọmọ ẹgbẹ́ kún",,resources/views/membres/index.blade.php:49
 "Ajouter un membre","Fi ọmọ ẹgbẹ́ kan kún",,resources/views/membres/index.blade.php:94
 "Ajoutez vos membres","Fi àwọn ọmọ ẹgbẹ́ rẹ kún",,resources/views/documentation.blade.php:12
-"Alertes & rappels","Ìkìlọ̀ àti ìránnilétí",,resources/views/layouts/navigation.blade.php:68
-"Alertes d'absence","Ìkìlọ̀ àìsí",,resources/views/alerts/index.blade.php:93
 Amélioration,Ìlọsíwájú,,resources/views/statistiques-avancees.blade.php:85
 Analyse,Ìtúpalẹ̀,,resources/views/layouts/navigation.blade.php:50
 "Analyses avancées","Ìtúpalẹ̀ jíjinlẹ̀",,resources/views/layouts/navigation.blade.php:57
@@ -56,9 +51,7 @@ Assiduité,Ìdúróṣinṣin,,resources/views/documentation.blade.php:26
 "Badge obtenu :","Àmì tí a rí gbà:",,resources/views/sessions/open.blade.php:66
 Bon,Dáadáa,,resources/views/statistiques-avancees.blade.php:140
 "Bon (≥70%)","Dáadáa (≥70%)",,resources/views/membres/index.blade.php:280
-"Bonjour {name}, vous n'êtes pas encore enregistré pour l'événement du {date}...","Ẹ nlẹ́ o {name}, ẹ kò tíì forúkọ sílẹ̀ fún ìṣẹ̀lẹ̀ ọjọ́ {date}...",,resources/views/alerts/index.blade.php:131
 CGU,"Àwọn Òfin Ìlò",,resources/views/components/footer.blade.php:26
-"Canaux de notification","Ọ̀nà ìfitónilétí",,resources/views/alerts/index.blade.php:169
 "Carnet de présence numérique pour les groupes : une carte QR par membre, un scan par le responsable, des statistiques automatiques.","Ìwé wíwàníbẹ̀ oní-nọ́mbà fún àwọn ẹgbẹ́: káàdì QR kan fún ọmọ ẹgbẹ́ kọ̀ọ̀kan, ìṣàyẹ̀wò kan láti ọ̀dọ̀ olùdarí, ìṣirò aládàáṣe.",,resources/views/layouts/public.blade.php:7
 "Carte QR","Káàdì QR",,resources/views/membres/index.blade.php:174
 "Carte QR personnelle","Káàdì QR ti ara ẹni",,resources/views/demo.blade.php:39
@@ -67,12 +60,11 @@ CGU,"Àwọn Òfin Ìlò",,resources/views/components/footer.blade.php:26
 "Carte de présence","Káàdì wíwàníbẹ̀",,resources/views/pdf/carte-membre.blade.php:5
 "Carte de présence personnelle","Káàdì wíwàníbẹ̀ ti ara ẹni",,resources/views/pdf/carte-membre.blade.php:55
 "Ce membre n'a pas de QR personnel actif.","Ọmọ ẹgbẹ́ yìí kò ní káàdì QR ti ara rẹ̀ tó ń ṣiṣẹ́.",,app/Http/Controllers/PresenceController.php:329
-"Ce qui fonctionne aujourd'hui","Ohun tó ń ṣiṣẹ́ lónìí",,resources/views/alerts/index.blade.php:24
 "Ceci concerne votre propre compte responsable — pas les données de vos membres ci-dessus.","Èyí kan àkàǹtì olùdarí tìrẹ — kì í ṣe data àwọn ọmọ ẹgbẹ́ rẹ lókè.",,resources/views/rgpd/index.blade.php:101
 "Cette session est fermée.","Ìpàdé yìí ti pín.",,app/Http/Controllers/AttendanceSessionController.php:100
 "Cette zone est protégée. Confirmez votre mot de passe pour continuer.","Agbègbè ààbò ni èyí. Fọwọ́sí ọ̀rọ̀ ìgbaniwọlé rẹ láti tẹ̀síwájú.",,resources/views/auth/confirm-password.blade.php:3
 "Changer de langue","Yí èdè padà",,resources/views/components/language-selector.blade.php:15
-"Chaque carré représente un jour. Plus la couleur est foncée, plus il y a eu de présences ce jour-là. Survolez un carré pour voir les détails.","Onígun mẹ́rin kọ̀ọ̀kan dúró fún ọjọ́ kan. Bí àwọ̀ bá ṣe ṣú tó, bẹ́ẹ̀ ni wíwàníbẹ̀ ṣe pọ̀ tó ní ọjọ́ náà. Fi kọ́sọ̀ sí orí onígun mẹ́rin láti rí àwọn ẹ̀kúnrẹ́rẹ́.",,resources/views/heatmap/index.blade.php:167
+"Chaque carré représente un jour. Plus la couleur est foncée, plus il y a eu de présences ce jour-là. Survolez un carré pour voir les détails.","Onígun mẹ́rin kọ̀ọ̀kan dúró fún ọjọ́ kan. Bí àwọ̀ bá ṣe ṣú tó, bẹ́ẹ̀ ni wíwàníbẹ̀ ṣe pọ̀ tó ní ọjọ́ náà. Fi kọ́sọ̀ sí orí onígun mẹ́rin láti rí àwọn ẹ̀kúnrẹ́rẹ́.",,resources/views/heatmap/index.blade.php:160
 "Chaque membre a une carte QR personnelle : dans la liste des membres, le bouton « Carte QR » en génère le PDF à imprimer. Pour pointer, ouvrez une session depuis le tableau de bord, puis scannez les cartes.","Ọmọ ẹgbẹ́ kọ̀ọ̀kan ní káàdì QR ti ara rẹ̀: nínú àtòjọ àwọn ọmọ ẹgbẹ́, bọ́tìnnì «Káàdì QR» ń ṣẹ̀dá PDF fún títẹ̀. Láti forúkọ sílẹ̀, ṣí ìpàdé kan láti pátákó ìdarí, kí o sì ṣàyẹ̀wò àwọn káàdì.",,resources/views/faq.blade.php:15
 Chiffrement,"Ìpamọ́ àṣírí",,resources/views/legal/security.blade.php:14
 "Chiffrement des échanges avec le serveur (HTTPS/TLS)","A ń pa ìbánisọ̀rọ̀ pẹ̀lú sáfà mọ́ ní àṣírí (HTTPS/TLS)",,resources/views/legal/privacy.blade.php:33
@@ -82,14 +74,13 @@ Chiffrement,"Ìpamọ́ àṣírí",,resources/views/legal/security.blade.php:14
 Cloisonnement,"Ìpínyà data",,resources/views/legal/security.blade.php:18
 "Comment ajouter un membre ?","Báwo ni mo ṣe lè fi ọmọ ẹgbẹ́ kún?",,resources/views/faq.blade.php:9
 "Comment fonctionne la carte QR ?","Báwo ni káàdì QR ṣe ń ṣiṣẹ́?",,resources/views/faq.blade.php:14
-"Comment lire cette heatmap ?","Báwo ni a ṣe ń ka àwòrán yìí?",,resources/views/heatmap/index.blade.php:166
+"Comment lire cette heatmap ?","Báwo ni a ṣe ń ka àwòrán yìí?",,resources/views/heatmap/index.blade.php:159
 "Comment retirer le consentement RGPD ?","Báwo ni mo ṣe lè yọ ìfọwọ́sí RGPD kúrò?",,resources/views/faq.blade.php:29
 "Comment ça marche","Bí ó ṣe ń ṣiṣẹ́",,resources/views/welcome.blade.php:30
 "Comparaison avec la période précédente","Ìfiwéra pẹ̀lú àkókò tó kọjá",,resources/views/statistiques-avancees.blade.php:65
 "Conditions générales d'utilisation","Àwọn òfin ìlò",,resources/views/legal/terms.blade.php:5
 Confidentialité,Ìpamọ́,,resources/views/components/footer.blade.php:25
 "Confidentialité (RGPD)","Ìpamọ́ (RGPD)",,resources/views/layouts/navigation.blade.php:73
-"Configuration des alertes","Ìtòlẹ́sẹẹsẹ ìkìlọ̀",,resources/views/alerts/index.blade.php:4
 Confirmer,Fọwọ́sí,,resources/views/auth/confirm-password.blade.php:23
 "Confirmer le mot de passe","Fọwọ́sí ọ̀rọ̀ ìgbaniwọlé",,resources/views/profile/partials/update-password-form.blade.php:29
 "Confirmez votre mot de passe","Fọwọ́sí ọ̀rọ̀ ìgbaniwọlé rẹ",,resources/views/auth/register.blade.php:68
@@ -108,7 +99,6 @@ Connexion,Wọlé,,resources/views/layouts/public.blade.php:34
 "Consultez et analysez les données de présence.","Wo kí o sì túpalẹ̀ data wíwàníbẹ̀.",,resources/views/statistiques.blade.php:4
 "Consultez les statistiques","Wo àwọn ìṣirò",,resources/views/documentation.blade.php:14
 Contact,Ìbánisọ̀rọ̀,,resources/views/contact.blade.php:5
-"Contact administrateur (pour recevoir les résumés)","Ìbánisọ̀rọ̀ olùdarí (láti gba àkópọ̀)",,resources/views/alerts/index.blade.php:187
 "Critique (<30%)","Léwu (<30%)",,resources/views/membres/index.blade.php:292
 "Création de compte sécurisée","Ṣíṣẹ̀dá àkàǹtì onílàáàbò",,resources/views/demo.blade.php:63
 "Créer mon compte","Ṣẹ̀dá àkàǹtì mi",,resources/views/auth/register.blade.php:76
@@ -136,23 +126,17 @@ Documentation,"Ìwé ìtọ́sọ́nà",,resources/views/documentation.blade.php
 Déconnexion,Jáde,,resources/views/layouts/navigation.blade.php:92
 "Découvrez les fonctionnalités en action","Wo àwọn ẹ̀ya rẹ̀ nínú iṣẹ́",,resources/views/demo.blade.php:5
 "Déjà un compte ?","Ṣé o ti ní àkàǹtì?",,resources/views/auth/register.blade.php:80
-"Délai avant alerte (minutes)","Àkókò ṣáájú ìkìlọ̀ (ìṣẹ́jú)",,resources/views/alerts/index.blade.php:114
 Démonstration,Àfihàn,,resources/views/demo.blade.php:1
 "Démonstration du système","Àfihàn ètò náà",,resources/views/demo.blade.php:4
-Email,Ímeèlì,,resources/views/alerts/index.blade.php:196
-"Email (bientôt disponible)","Ímeèlì (yóò wà láìpẹ́)",,resources/views/alerts/index.blade.php:179
 "Email :",Ímeèlì:,,resources/views/contact.blade.php:13
 "En attente d'un scan…","Ń dúró de ìṣàyẹ̀wò…",,resources/views/sessions/open.blade.php:34
 "En utilisant l'application, vous vous engagez à :","Nípa lílo ohun èlò yìí, ẹ gbà láti:",,resources/views/legal/terms.blade.php:29
 Enregistrer,"Fi pamọ́",,resources/views/profile/partials/update-profile-information-form.blade.php:51
-"Enregistrer les paramètres","Fi ètò pamọ́",,resources/views/alerts/index.blade.php:204
 "Enregistrer les présences","Fi wíwàníbẹ̀ pamọ́",,resources/views/dashboardV.blade.php:54
 "Enregistrer tous les membres","Fi gbogbo ọmọ ẹgbẹ́ pamọ́",,resources/views/membres/index.blade.php:97
 "Enregistrer un ou plusieurs nouveaux membres","Forúkọ ọmọ ẹgbẹ́ tuntun kan tàbí púpọ̀ sílẹ̀",,resources/views/dashboard.blade.php:46
 Enregistré.,"A ti fi pamọ́.",,resources/views/profile/partials/update-profile-information-form.blade.php:60
 "Envoyer le lien de réinitialisation","Fi ọ̀nà ìtúnṣe ránṣẹ́",,resources/views/auth/forgot-password.blade.php:21
-"Envoyer rappel (heures avant)","Fi ìránnilétí ránṣẹ́ (wákàtí ṣáájú)",,resources/views/alerts/index.blade.php:158
-"Envoyer une alerte X minutes après le début","Fi ìkìlọ̀ ránṣẹ́ ìṣẹ́jú X lẹ́yìn ìbẹ̀rẹ̀",,resources/views/alerts/index.blade.php:120
 "Erreur inconnue.","Àṣìṣe àìmọ̀.",,resources/views/sessions/open.blade.php:67
 "Erreur réseau, réessayez.","Àṣìṣe nẹ́tíwọ̀kì, gbìyànjú lẹ́ẹ̀kan sí i.",,resources/views/sessions/open.blade.php:68
 "Ex. : Groupe de prière, Chorale…","Àpẹẹrẹ: Ẹgbẹ́ àdúrà, Ẹgbẹ́ akọrin…",,resources/views/auth/register.blade.php:31
@@ -185,7 +169,6 @@ Groupes,"Àwọn ẹgbẹ́",,resources/views/membres/index.blade.php:114
 "Généré le :","A ṣẹ̀dá rẹ̀ ní:",,resources/views/pdf/statistiques.blade.php:104
 Heure,Àkókò,,resources/views/statistiques.blade.php:96
 "Heure d'arrivée","Àkókò ìdé",,resources/views/pdf/statistiques.blade.php:130
-"Heure de début d'événement","Àkókò ìbẹ̀rẹ̀ ìṣẹ̀lẹ̀",,resources/views/alerts/index.blade.php:106
 "Heure la plus active","Wákàtí tó gbóná jù",,resources/views/heatmap/index.blade.php:49
 "Horaires :","Àkókò iṣẹ́:",,resources/views/contact.blade.php:21
 "Hors ligne","Kò sí lórí ìkànnì",,resources/views/offline.blade.php:6
@@ -206,6 +189,7 @@ Heure,Àkókò,,resources/views/statistiques.blade.php:96
 "La génération de statistiques de présence","Ṣíṣẹ̀dá àwọn ìṣirò wíwàníbẹ̀",,resources/views/legal/terms.blade.php:22
 "La mise en place d'un groupe prend moins de deux minutes.","Ṣíṣètò ẹgbẹ́ kan kò tó ìṣẹ́jú méjì.",,resources/views/welcome.blade.php:60
 "La présence de vos groupes, <span class=""text-accent"">simplement</span> suivie","Wíwàníbẹ̀ àwọn ẹgbẹ́ rẹ, <span class=""text-accent"">lọ́nà tó rọrùn</span>",,resources/views/welcome.blade.php:6
+"La relance se fait par téléphone : appuyez sur un numéro pour appeler. Aucun SMS ni email n'est envoyé automatiquement.","Nípa fóònù ni a ṣe ń rán wọn létí: tẹ nọ́mbà kan láti pè. A kò fi SMS tàbí ímeèlì kankan ránṣẹ́ fúnra rẹ̀.",,resources/views/alerts/index.blade.php:62
 "Le :date","Ní :date",,resources/views/rgpd/index.blade.php:109
 "Le nom de votre groupe ou organisation. Vous pourrez ajouter d'autres co-responsables ensuite.","Orúkọ ẹgbẹ́ tàbí àjọ rẹ. O lè fi àwọn olùdarí mìíràn kún lẹ́yìn náà.",,resources/views/auth/register.blade.php:34
 "Le numéro de téléphone ne peut contenir que des chiffres et le symbole +","Nọ́mbà fóònù lè ní àwọn nọ́mbà àti àmì + nìkan",,app/Http/Controllers/PresenceController.php:56
@@ -217,15 +201,14 @@ Heure,Àkókò,,resources/views/statistiques.blade.php:96
 "Lundi au vendredi, 9 h - 18 h","Ajé sí Ẹtì, 9 àárọ̀ - 6 alẹ́",,resources/views/contact.blade.php:22
 Légal,Òfin,,resources/views/components/footer.blade.php:21
 "Marquer les présents manuellement","Kọ àwọn tó wà níbẹ̀ sílẹ̀ pẹ̀lú ọwọ́",,resources/views/dashboard.blade.php:37
-"Meilleur jour","Ọjọ́ tó dára jù",,resources/views/heatmap/index.blade.php:133
+"Meilleur jour","Ọjọ́ tó dára jù",,resources/views/heatmap/index.blade.php:126
 Membre,"Ọmọ ẹgbẹ́",,resources/views/membres/index.blade.php:108
 "Membre modifié.","A ti ṣàtúnṣe ọmọ ẹgbẹ́.",,app/Http/Controllers/PresenceController.php:303
 "Membre supprimé.","A ti pa ọmọ ẹgbẹ́ rẹ́.",,app/Http/Controllers/PresenceController.php:321
 Membres,"Àwọn ọmọ ẹgbẹ́",,resources/views/layouts/navigation.blade.php:47
-"Membres n'ayant pas pointé","Àwọn ọmọ ẹgbẹ́ tí kò tíì forúkọ sílẹ̀",,resources/views/alerts/index.blade.php:56
+"Membres n'ayant pas pointé","Àwọn ọmọ ẹgbẹ́ tí kò tíì forúkọ sílẹ̀",,resources/views/alerts/index.blade.php:42
 "Merci pour votre inscription. Avant de commencer, vérifiez votre adresse email en cliquant sur le lien que nous venons de vous envoyer. Si vous ne l'avez pas reçu, nous vous en renverrons un.","A dúpẹ́ fún ìforúkọsílẹ̀ rẹ. Ṣáájú kí o tó bẹ̀rẹ̀, jẹ́rìí àdírẹ́sì ímeèlì rẹ nípa títẹ ọ̀nà tí a ṣẹ̀ṣẹ̀ fi ránṣẹ́ sí ọ. Bí o kò bá gbà á, a ó tún fi òmíràn ránṣẹ́.",,resources/views/auth/verify-email.blade.php:3
 "Mes groupes","Àwọn ẹgbẹ́ mi",,resources/views/dashboard.blade.php:62
-"Message d'alerte personnalisé","Ìfiránṣẹ́ ìkìlọ̀ tí a ṣe déédé",,resources/views/alerts/index.blade.php:127
 "Mesures de sécurité","Ìgbésẹ̀ ààbò",,resources/views/legal/security.blade.php:11
 "Mettez à jour les informations de votre compte et votre adresse email.","Ṣàtúnṣe ìsọfúnni àkàǹtì rẹ àti àdírẹ́sì ímeèlì rẹ.",,resources/views/profile/partials/update-profile-information-form.blade.php:8
 "Mettre à jour",Ṣàtúnṣe,,resources/views/membres/edit.blade.php:72
@@ -269,7 +252,6 @@ Organisation,Àjọ,,resources/views/layouts/navigation.blade.php:64
 "Ouvrez « Membres », cliquez sur « + Ajouter », renseignez le nom et le téléphone, choisissez le ou les groupes et cochez le consentement RGPD.","Ṣí «Àwọn ọmọ ẹgbẹ́», tẹ «+ Fi kún», kọ orúkọ àti nọ́mbà fóònù, yan ẹgbẹ́ tàbí àwọn ẹgbẹ́, kí o sì samì sí ìfọwọ́sí RGPD.",,resources/views/faq.blade.php:10
 "Ouvrir le menu","Ṣí àtòjọ",,resources/views/layouts/navigation.blade.php:8
 "Ouvrir une session","Ṣí ìpàdé",,resources/views/dashboard.blade.php:92
-"Paramètres d'alertes mis à jour.","A ti ṣàtúnṣe ètò ìkìlọ̀.",,app/Http/Controllers/AlertController.php:68
 "Pas encore de compte ?","Ṣé o kò tíì ní àkàǹtì?",,resources/views/auth/login.blade.php:59
 "Placez le QR du membre dans le cadre.","Gbé QR ọmọ ẹgbẹ́ sí inú férémù.",,resources/views/sessions/open.blade.php:28
 Plus,Púpọ̀,,resources/views/heatmap/index.blade.php:72
@@ -299,9 +281,6 @@ Période,Àkókò,,resources/views/statistiques-avancees.blade.php:11
 "QR code invalide ou révoqué.","Kóòdù QR kò tọ́ tàbí a ti fagilé rẹ̀.",,app/Http/Controllers/AttendanceSessionController.php:125
 RGPD,RGPD,,resources/views/features.blade.php:34
 Rang,Ipò,,resources/views/statistiques-avancees.blade.php:109
-"Rappel : n'oubliez pas l'événement « :event » prévu le :date. Pensez à pointer votre présence.","Ìránnilétí: má gbàgbé ìṣẹ̀lẹ̀ «:event» ní ọjọ́ :date. Rántí láti forúkọ wíwàníbẹ̀ rẹ sílẹ̀.",,app/Services/AlertService.php:31
-"Rappel envoyé.","A ti fi ìránnilétí ránṣẹ́.",,app/Services/AlertService.php:39
-"Rappels de pointage","Ìránnilétí ìforúkọsílẹ̀",,resources/views/alerts/index.blade.php:146
 "Rapports PDF détaillés","Ìjábọ̀ PDF kíkún",,resources/views/demo.blade.php:90
 "Ravis de vous revoir","A yọ̀ láti tún rí ọ",,resources/views/auth/login.blade.php:3
 "Recherche :",Ìwádìí:,,resources/views/pdf/statistiques.blade.php:102
@@ -317,7 +296,6 @@ Réessayer,"Gbìyànjú lẹ́ẹ̀kan sí i",,resources/views/offline.blade.php
 Régularité,Ìdúróṣinṣin,,resources/views/membres/index.blade.php:117
 Réinitialiser,"Tún bẹ̀rẹ̀",,resources/views/heatmap/index.blade.php:28
 "Réinitialiser le mot de passe","Tún ọ̀rọ̀ ìgbaniwọlé ṣe",,resources/views/auth/reset-password.blade.php:35
-"SMS (bientôt disponible)","SMS (yóò wà láìpẹ́)",,resources/views/alerts/index.blade.php:174
 "Scan QR ou saisie manuelle","Ìṣàyẹ̀wò QR tàbí kíkọ pẹ̀lú ọwọ́",,resources/views/demo.blade.php:72
 "Scan rapide","Ìṣàyẹ̀wò kíákíá",,resources/views/demo.blade.php:40
 "Scanner les présences","Ṣàyẹ̀wò wíwàníbẹ̀",,resources/views/dashboard.blade.php:82
@@ -341,6 +319,7 @@ Statut,Ipò,,resources/views/rgpd/index.blade.php:33
 "Statut actuel :","Ipò lọ́wọ́lọ́wọ́:",,resources/views/rgpd/index.blade.php:105
 "Statut de consentement enregistré à la création de chaque membre.","Ipò ìfọwọ́sí tí a kọ sílẹ̀ nígbà tí a ṣẹ̀dá ọmọ ẹgbẹ́ kọ̀ọ̀kan.",,resources/views/rgpd/index.blade.php:21
 "Suivi de l'assiduité dans le temps","Ìtọ́jú ìdúróṣinṣin ní àkókò gígùn",,resources/views/about.blade.php:19
+"Suivi des absences","Ìtọ́jú àìsí",,resources/views/layouts/navigation.blade.php:68
 Support,Ìrànlọ́wọ́,,resources/views/components/footer.blade.php:13
 "Support technique","Ìrànlọ́wọ́ ìmọ̀-ẹ̀rọ",,resources/views/documentation.blade.php:41
 Supprimer,Paarẹ́,,resources/views/membres/index.blade.php:194
@@ -353,14 +332,14 @@ Sécurité,Ààbò,,resources/views/legal/security.blade.php:5
 "Tableau de bord","Pátákó ìdarí",,resources/views/layouts/public.blade.php:30
 Taux,Ìwọ̀n,,resources/views/statistiques-avancees.blade.php:112
 "Taux : :rate%","Ìwọ̀n: :rate%",,resources/views/statistiques-avancees.blade.php:70
-"Taux de présence","Ìwọ̀n wíwàníbẹ̀",,resources/views/alerts/index.blade.php:38
+"Taux de présence","Ìwọ̀n wíwàníbẹ̀",,resources/views/alerts/index.blade.php:24
 "Tendances, classement des membres et comparaison de périodes","Ìtẹ̀sí, ìtòlẹ́sẹẹsẹ àwọn ọmọ ẹgbẹ́ àti ìfiwéra àkókò",,resources/views/documentation.blade.php:31
 "Tendances, classement des membres et comparaison de périodes.","Ìtẹ̀sí, ìtòlẹ́sẹẹsẹ àwọn ọmọ ẹgbẹ́ àti ìfiwéra àkókò.",,resources/views/statistiques-avancees.blade.php:4
 "Tendances, classement et comparaison de périodes","Ìtẹ̀sí, ìtòlẹ́sẹẹsẹ àti ìfiwéra àkókò",,resources/views/dashboard.blade.php:55
 "Top 5 régularité","Àwọn 5 tó dúróṣinṣin jù",,resources/views/membres/index.blade.php:234
 "Total : :count membre|Total : :count membres","Àpapọ̀: ọmọ ẹgbẹ́ :count|Àpapọ̀: ọmọ ẹgbẹ́ :count",oui,resources/views/membres/index.blade.php:41
 "Total membres","Àpapọ̀ àwọn ọmọ ẹgbẹ́",,resources/views/statistiques-avancees.blade.php:32
-"Tous les membres ont pointé pour l'instant.","Gbogbo àwọn ọmọ ẹgbẹ́ ti forúkọ sílẹ̀ títí di ìsinsìnyí.",,resources/views/alerts/index.blade.php:58
+"Tous les membres ont pointé pour l'instant.","Gbogbo àwọn ọmọ ẹgbẹ́ ti forúkọ sílẹ̀ títí di ìsinsìnyí.",,resources/views/alerts/index.blade.php:44
 "Traduction indicative. Seule la version française fait foi.","Ìtumọ̀ fún ìtọ́sọ́nà nìkan. Ẹ̀dà Faransé nìkan ni ó ní agbára.",,resources/views/components/legal-translation-notice.blade.php:5
 Téléphone,Fóònù,,resources/views/membres/index.blade.php:76
 "Téléphone :",Fóònù:,,resources/views/contact.blade.php:17
@@ -380,7 +359,6 @@ Téléphone,Fóònù,,resources/views/membres/index.blade.php:76
 "Utilisation autorisée","Lílo tí a gbà láàyè",,resources/views/legal/terms.blade.php:18
 "Utilisation des données","Lílo data",,resources/views/legal/privacy.blade.php:21
 "Utilisez un mot de passe long et aléatoire pour protéger votre compte.","Lo ọ̀rọ̀ ìgbaniwọlé gígùn tí kò rọrùn láti mọ̀ láti dáàbò bo àkàǹtì rẹ.",,resources/views/profile/partials/update-password-form.blade.php:8
-"Variables disponibles : {name}, {date}, {event}","Àwọn ìyípadà tó wà: {name}, {date}, {event}",,resources/views/alerts/index.blade.php:134
 "Vos données sont utilisées exclusivement pour :","A ń lo data rẹ fún àwọn nǹkan wọ̀nyí nìkan:",,resources/views/legal/privacy.blade.php:22
 "Vos droits","Ẹ̀tọ́ rẹ",,resources/views/legal/privacy.blade.php:40
 "Votre adresse email n'est pas vérifiée.","A kò tíì jẹ́rìí àdírẹ́sì ímeèlì rẹ.",,resources/views/profile/partials/update-profile-information-form.blade.php:34
@@ -395,17 +373,16 @@ Téléphone,Fóònù,,resources/views/membres/index.blade.php:76
 "Vue d'ensemble des présences","Àkópọ̀ wíwàníbẹ̀",,resources/views/demo.blade.php:23
 "Vérification de présence rapide","Ìṣàyẹ̀wò wíwàníbẹ̀ kíákíá",,resources/views/about.blade.php:16
 "Vérification rapide","Ìṣàyẹ̀wò kíákíá",,resources/views/features.blade.php:14
-Vérification…,"Ń ṣàyẹ̀wò…",,resources/views/alerts/index.blade.php:50
+Vérification…,"Ń ṣàyẹ̀wò…",,resources/views/alerts/index.blade.php:36
 "Vérifier la présence","Ṣàyẹ̀wò wíwàníbẹ̀",,resources/views/layouts/navigation.blade.php:43
-"Vérifier maintenant","Ṣàyẹ̀wò nísinsìnyí",,resources/views/alerts/index.blade.php:50
-le,ní,,resources/views/alerts/index.blade.php:56
+"Vérifier maintenant","Ṣàyẹ̀wò nísinsìnyí",,resources/views/alerts/index.blade.php:36
+le,ní,,resources/views/alerts/index.blade.php:42
 vous@exemple.com,iwo@apeere.com,,resources/views/auth/register.blade.php:44
-"« Vérifier maintenant » affiche les membres qui n'ont pas encore pointé, à relancer vous-même (téléphone). L'envoi automatique de SMS et de rappels n'est pas encore actif : les réglages ci-dessous sont enregistrés en prévision, mais ne déclenchent aucun envoi pour l'instant.","«Ṣàyẹ̀wò nísinsìnyí» ń fi àwọn ọmọ ẹgbẹ́ tí kò tíì forúkọ sílẹ̀ hàn, kí o lè pè wọ́n fúnra rẹ (fóònù). Fífi SMS àti ìránnilétí ránṣẹ́ fúnra rẹ̀ kò tíì ṣiṣẹ́: a fi àwọn ètò ìsàlẹ̀ yìí pamọ́ fún ọjọ́ iwájú, ṣùgbọ́n wọn kò fi nǹkan kankan ránṣẹ́ fún ìsinsìnyí.",,resources/views/alerts/index.blade.php:25
 "À améliorer","Ó nílò ìlọsíwájú",,resources/views/statistiques-avancees.blade.php:142
 "À propos","Nípa wa",,resources/views/components/footer.blade.php:7
 Évolution,Ìyípadà,,resources/views/statistiques-avancees.blade.php:80
 "Évolution des présences","Ìyípadà wíwàníbẹ̀",,resources/views/statistiques-avancees.blade.php:95
 Événements,"Àwọn ìṣẹ̀lẹ̀",,resources/views/heatmap/index.blade.php:41
-"Événements (30 j)","Àwọn ìṣẹ̀lẹ̀ (ọjọ́ 30)",,resources/views/alerts/index.blade.php:34
+"Événements (30 j)","Àwọn ìṣẹ̀lẹ̀ (ọjọ́ 30)",,resources/views/alerts/index.blade.php:20
 "Êtes-vous sûr de vouloir retirer votre consentement ?","Ṣé o dájú pé o fẹ́ yọ ìfọwọ́sí rẹ kúrò?",,resources/views/rgpd/index.blade.php:128
 "Êtes-vous sûr de vouloir supprimer ce membre ?","Ṣé o dájú pé o fẹ́ pa ọmọ ẹgbẹ́ yìí rẹ́?",,resources/views/membres/index.blade.php:189
