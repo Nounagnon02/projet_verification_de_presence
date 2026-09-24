@@ -28,7 +28,7 @@ class AlertService
      */
     public function sendReminder(Member $member, string $eventName, string $eventDate): array
     {
-        $message = "📢 Rappel: N'oubliez pas l'événement '{$eventName}' prévu le {$eventDate}. Pensez à pointer votre présence !";
+        $message = "Rappel : N'oubliez pas l'événement '{$eventName}' prévu le {$eventDate}. Pensez à pointer votre présence !";
 
         try {
             Log::info("Envoi rappel à {$member->phone}: {$message}");

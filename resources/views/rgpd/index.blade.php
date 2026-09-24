@@ -42,9 +42,9 @@
                                             <td class="px-4 py-3 whitespace-nowrap text-sm text-ink-soft dark:text-gray-300">{{ $membre->groups->pluck('name')->implode(', ') }}</td>
                                             <td class="px-4 py-3 whitespace-nowrap text-sm">
                                                 @if($membre->rgpd_consent)
-                                                    <span class="text-confirm font-semibold">✓ Accordé</span>
+                                                    <span class="text-confirm font-semibold inline-flex items-center gap-1.5"><x-icon name="check" class="w-4 h-4" /> Accordé</span>
                                                 @else
-                                                    <span class="text-red-600 font-semibold">✗ Non accordé</span>
+                                                    <span class="text-red-600 font-semibold inline-flex items-center gap-1.5"><x-icon name="x" class="w-4 h-4" /> Non accordé</span>
                                                 @endif
                                             </td>
                                             <td class="px-4 py-3 whitespace-nowrap text-sm text-ink-soft dark:text-gray-300">
@@ -104,12 +104,12 @@
                         <p class="text-sm">
                             Statut actuel :
                             @if(Auth::user()->gdpr_consent)
-                                <span class="text-confirm font-semibold">✓ Consentement accordé</span>
+                                <span class="text-confirm font-semibold inline-flex items-center gap-1.5"><x-icon name="check" class="w-4 h-4" /> Consentement accordé</span>
                                 <span class="text-xs text-ink-faint block">
                                     Le {{ Auth::user()->gdpr_consent_at?->format('d/m/Y à H:i') }}
                                 </span>
                             @else
-                                <span class="text-red-600 font-semibold">✗ Consentement non accordé</span>
+                                <span class="text-red-600 font-semibold inline-flex items-center gap-1.5"><x-icon name="x" class="w-4 h-4" /> Consentement non accordé</span>
                             @endif
                         </p>
                     </div>

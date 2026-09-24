@@ -64,13 +64,4 @@ return [
     // Actions
     'confirm_delete' => 'Êtes-vous sûr de vouloir supprimer ce membre ?',
     'remove_member' => 'Supprimer ce membre',
-    
-    // Keyboard shortcuts
-    'keyboard_shortcuts' => 'Raccourcis Clavier',
-    'add_member_shortcut' => 'Ajouter membre',
-    'verify_presence_shortcut' => 'Vérifier présence',
-    'statistics_shortcut' => 'Statistiques',
-    'dark_mode_shortcut' => 'Mode sombre',
-    'help_shortcut' => 'Aide',
-    'close' => 'Fermer',
 ];

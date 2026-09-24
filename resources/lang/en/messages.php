@@ -65,12 +65,4 @@ return [
     'confirm_delete' => 'Are you sure you want to delete this member?',
     'remove_member' => 'Remove this member',
     
-    // Keyboard shortcuts
-    'keyboard_shortcuts' => 'Keyboard Shortcuts',
-    'add_member_shortcut' => 'Add member',
-    'verify_presence_shortcut' => 'Verify presence',
-    'statistics_shortcut' => 'Statistics',
-    'dark_mode_shortcut' => 'Dark mode',
-    'help_shortcut' => 'Help',
-    'close' => 'Close',
 ];

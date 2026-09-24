@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create('badges', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('icon')->default('🏅');
+            $table->string('icon')->default('award');
             $table->text('description');
             $table->string('condition'); // ex: 'streak_7', 'perfect_month', 'early_bird'
             $table->integer('threshold')->default(1); // Valeur nécessaire pour débloquer

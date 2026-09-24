@@ -9,19 +9,19 @@
                         <h2 class="text-xl font-semibold mb-3">Mesures de sécurité</h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="bg-green-50 p-4 rounded-lg">
-                                <h3 class="font-semibold text-confirm mb-2">🔐 Chiffrement</h3>
+                                <h3 class="font-semibold text-confirm mb-2 flex items-center gap-2"><x-icon name="lock" class="w-5 h-5" /> Chiffrement</h3>
                                 <p class="text-sm">{{ $securityInfo['encryption'] }}</p>
                             </div>
                             <!--<div class="bg-accent-tint p-4 rounded-lg">
-                                <h3 class="font-semibold text-blue-800 mb-2">☁️ Hébergement</h3>
+                                <h3 class="font-semibold text-blue-800 mb-2">Hébergement</h3>
                                 <p class="text-sm">{{ $securityInfo['hosting'] }}</p>
                             </div>
                             <div class="bg-purple-50 p-4 rounded-lg">
-                                <h3 class="font-semibold text-accent mb-2">🗄️ Base de données</h3>
+                                <h3 class="font-semibold text-accent mb-2">Base de données</h3>
                                 <p class="text-sm">{{ $securityInfo['database'] }}</p>
                             </div>
                             <div class="bg-orange-50 p-4 rounded-lg">
-                                <h3 class="font-semibold text-orange-800 mb-2">💾 Sauvegarde</h3>
+                                <h3 class="font-semibold text-orange-800 mb-2">Sauvegarde</h3>
                                 <p class="text-sm">{{ $securityInfo['backup'] }}</p>
                             </div>-->
                         </div>
@@ -31,8 +31,8 @@
                         <h2 class="text-xl font-semibold mb-3">Conformité</h2>
                         <div class="flex flex-wrap gap-2">
                             @foreach($securityInfo['compliance'] as $standard)
-                                <span class="bg-confirm-tint text-confirm px-3 py-1 rounded-full text-sm">
-                                    ✓ {{ $standard }}
+                                <span class="bg-confirm-tint text-confirm px-3 py-1 rounded-full text-sm inline-flex items-center gap-1.5">
+                                    <x-icon name="check" class="w-4 h-4" /> {{ $standard }}
                                 </span>
                             @endforeach
                         </div>

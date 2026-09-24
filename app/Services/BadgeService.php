@@ -160,7 +160,7 @@ class BadgeService
         $badges = [
             [
                 'name' => 'Première Présence',
-                'icon' => '🎉',
+                'icon' => 'sparkle',
                 'description' => 'Votre première présence enregistrée',
                 'condition' => 'first_presence',
                 'threshold' => 1,
@@ -169,7 +169,7 @@ class BadgeService
             ],
             [
                 'name' => 'Série 7 jours',
-                'icon' => '🔥',
+                'icon' => 'flame',
                 'description' => '7 jours de présence consécutifs',
                 'condition' => 'streak_7',
                 'threshold' => 7,
@@ -178,7 +178,7 @@ class BadgeService
             ],
             [
                 'name' => 'Série 14 jours',
-                'icon' => '💪',
+                'icon' => 'bolt',
                 'description' => '14 jours de présence consécutifs',
                 'condition' => 'streak_14',
                 'threshold' => 14,
@@ -187,7 +187,7 @@ class BadgeService
             ],
             [
                 'name' => 'Série 30 jours',
-                'icon' => '🏆',
+                'icon' => 'trophy',
                 'description' => '30 jours de présence consécutifs',
                 'condition' => 'streak_30',
                 'threshold' => 30,
@@ -196,7 +196,7 @@ class BadgeService
             ],
             [
                 'name' => 'Mois Parfait',
-                'icon' => '⭐',
+                'icon' => 'star',
                 'description' => '100% de présence sur un mois complet',
                 'condition' => 'perfect_month',
                 'threshold' => 1,
@@ -205,7 +205,7 @@ class BadgeService
             ],
             [
                 'name' => 'Lève-tôt',
-                'icon' => '🌅',
+                'icon' => 'sunrise',
                 'description' => '10 présences avant 9h',
                 'condition' => 'early_bird',
                 'threshold' => 10,
@@ -214,7 +214,7 @@ class BadgeService
             ],
             [
                 'name' => 'Régulier (10)',
-                'icon' => '📈',
+                'icon' => 'trend',
                 'description' => '10 présences enregistrées',
                 'condition' => 'regular_10',
                 'threshold' => 10,
@@ -223,7 +223,7 @@ class BadgeService
             ],
             [
                 'name' => 'Régulier (25)',
-                'icon' => '📊',
+                'icon' => 'chart',
                 'description' => '25 présences enregistrées',
                 'condition' => 'regular_25',
                 'threshold' => 25,
@@ -232,7 +232,7 @@ class BadgeService
             ],
             [
                 'name' => 'Régulier (50)',
-                'icon' => '🎯',
+                'icon' => 'target',
                 'description' => '50 présences enregistrées',
                 'condition' => 'regular_50',
                 'threshold' => 50,
@@ -241,7 +241,7 @@ class BadgeService
             ],
             [
                 'name' => 'Centenaire',
-                'icon' => '💯',
+                'icon' => 'award',
                 'description' => '100 présences enregistrées',
                 'condition' => 'regular_100',
                 'threshold' => 100,
