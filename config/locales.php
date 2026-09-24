@@ -41,7 +41,7 @@ return [
             'label' => 'Anglais',
             'carbon' => 'en',
             'glyphs' => 'basic',
-            'ready' => false,
+            'ready' => true,
         ],
 
         'es' => [
@@ -49,7 +49,7 @@ return [
             'label' => 'Espagnol',
             'carbon' => 'es',
             'glyphs' => 'basic',
-            'ready' => false,
+            'ready' => true,
         ],
 
         // Yoruba : ISO 639-1 « yo », présent dans CLDR et dans Carbon

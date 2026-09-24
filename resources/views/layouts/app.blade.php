@@ -43,6 +43,10 @@
 
             <div class="flex-1 flex flex-col min-h-screen min-w-0">
                 <div class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-8 sm:py-10">
+                    <div class="flex justify-end mb-2">
+                        <x-language-selector />
+                    </div>
+
                     <!-- Page Heading -->
                     @isset($header)
                         <div class="mb-8">{{ $header }}</div>

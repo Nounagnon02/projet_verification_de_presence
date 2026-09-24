@@ -25,13 +25,12 @@ Route::get('/terms', function () {
     return view('legal.terms');
 })->name('terms');
 Route::get('/security', function () {
+    // « last_audit » valait date('Y-m-d') : la page affirmait chaque jour
+    // qu'un audit de sécurité avait eu lieu le jour même. Retiré, faute
+    // d'audit réel. Les clés hosting/database/backup n'étaient plus rendues.
     return view('legal.security', ['securityInfo' => [
-        'encryption' => 'Chiffrement en transit (HTTPS/TLS)',
-        'hosting' => 'Render',
-        'database' => 'PostgreSQL',
-        'backup' => 'Automatique',
+        'encryption' => __('Chiffrement des échanges avec le serveur (HTTPS/TLS)'),
         'compliance' => ['HTTPS'],
-        'last_audit' => date('Y-m-d')
     ]]);
 })->name('security');
 Route::get('/contact', function () {

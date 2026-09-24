@@ -22,9 +22,13 @@
         <div class="min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 py-10 sm:py-14">
             <div class="w-full max-w-[440px] bg-card border border-line rounded-xl shadow-[0_1px_2px_rgba(42,36,31,0.05),0_12px_32px_rgba(42,36,31,0.08)] px-7 sm:px-11 py-9 sm:py-12">
                 <!-- Marque -->
-                <div class="flex items-center justify-center gap-2 mb-7">
-                    <x-application-logo class="w-7 h-7" />
-                    <span class="text-xs font-bold uppercase tracking-widest text-ink-soft">Présence</span>
+                <div class="flex items-center justify-between gap-2 mb-7">
+                    <span class="w-9"></span>
+                    <span class="flex items-center gap-2">
+                        <x-application-logo class="w-7 h-7" />
+                        <span class="text-xs font-bold uppercase tracking-widest text-ink-soft">Présence</span>
+                    </span>
+                    <x-language-selector />
                 </div>
 
                 {{ $slot }}
