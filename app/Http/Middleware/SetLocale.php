@@ -41,7 +41,13 @@ class SetLocale
      */
     private function resolve(Request $request): string
     {
-        $supported = array_keys(config('locales.supported', []));
+        // Seules les langues relues sont servies. Les autres ont bien un
+        // fichier de traduction (brouillon en attente d'un locuteur), mais
+        // rester sur le français vaut mieux que diffuser un texte non validé.
+        $supported = array_keys(array_filter(
+            config('locales.supported', []),
+            fn ($locale) => $locale['ready'] ?? false
+        ));
 
         // 1. Préférence enregistrée sur le compte : elle suit l'utilisateur
         //    d'un appareil à l'autre.

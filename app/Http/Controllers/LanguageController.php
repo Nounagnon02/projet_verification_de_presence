@@ -10,9 +10,10 @@ class LanguageController extends Controller
 {
     public function switch(Request $request, string $locale): RedirectResponse
     {
-        // Un lien périmé vers une langue retirée ne doit pas produire d'erreur :
-        // on renvoie l'utilisateur d'où il vient sans rien changer.
-        if (! array_key_exists($locale, config('locales.supported', []))) {
+        // Un lien périmé, ou une langue dont la traduction n'est pas encore
+        // relue, ne doit pas produire d'erreur : on renvoie l'utilisateur
+        // d'où il vient sans rien changer.
+        if (! (config("locales.supported.{$locale}.ready") ?? false)) {
             return redirect()->back();
         }
 

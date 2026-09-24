@@ -1,0 +1,410 @@
+francais,fon,pluriel,vu_dans
+"+ Ajouter",,,resources/views/membres/index.blade.php:44
+"1. Chaque membre a un QR",,,resources/views/welcome.blade.php:36
+"1. Inscription",,,resources/views/demo.blade.php:61
+"12 derniers mois",,,resources/views/statistiques-avancees.blade.php:17
+"2. Le responsable scanne",,,resources/views/welcome.blade.php:43
+"2. Vérification",,,resources/views/demo.blade.php:70
+"3 derniers mois",,,resources/views/statistiques-avancees.blade.php:16
+"3. Le suivi se fait seul",,,resources/views/welcome.blade.php:50
+"3. Suivi",,,resources/views/demo.blade.php:79
+"30 derniers jours",,,resources/views/statistiques-avancees.blade.php:15
+"4. Export",,,resources/views/demo.blade.php:88
+"7 derniers jours",,,resources/views/statistiques-avancees.blade.php:14
+":count membre ajouté.|:count membres ajoutés.",,oui,app/Http/Controllers/PresenceController.php:87
+":count membre au total|:count membres au total",,oui,resources/views/dashboardV.blade.php:52
+":count membre|:count membres",,oui,resources/views/dashboard.blade.php:73
+":count pointage|:count pointages",,oui,resources/views/heatmap/index.blade.php:153
+":count présence|:count présences",,oui,resources/views/heatmap/index.blade.php:98
+":done/:total événements",,,resources/views/membres/index.blade.php:140
+":user a créé une présence",,,resources/views/statistiques.blade.php:153
+":user a modifié une présence",,,resources/views/statistiques.blade.php:154
+":user a supprimé une présence",,,resources/views/statistiques.blade.php:155
+Accordé,,,resources/views/rgpd/index.blade.php:45
+"Accès restreint : un responsable ne voit que les membres de ses groupes",,,resources/views/legal/privacy.blade.php:34
+"Accéder au tableau de bord",,,resources/views/welcome.blade.php:14
+Actions,,,resources/views/membres/index.blade.php:120
+"Activer les alertes d'absence",,,resources/views/alerts/index.blade.php:100
+"Activer les alertes et rappels",,,resources/views/alerts/index.blade.php:82
+"Activer les rappels avant événements",,,resources/views/alerts/index.blade.php:153
+"Activité de présence",,,resources/views/heatmap/index.blade.php:59
+"Activités récentes",,,resources/views/statistiques.blade.php:144
+"Adresse email",,,resources/views/profile/partials/update-profile-information-form.blade.php:27
+"Ajout, modification et suppression des membres par groupes",,,resources/views/features.blade.php:10
+"Ajouter des membres",,,resources/views/membres/index.blade.php:49
+"Ajouter un membre",,,resources/views/membres/index.blade.php:94
+"Ajoutez vos membres",,,resources/views/documentation.blade.php:12
+"Alertes & rappels",,,resources/views/layouts/navigation.blade.php:68
+"Alertes d'absence",,,resources/views/alerts/index.blade.php:93
+Amélioration,,,resources/views/statistiques-avancees.blade.php:85
+Analyse,,,resources/views/layouts/navigation.blade.php:50
+"Analyses avancées",,,resources/views/layouts/navigation.blade.php:57
+"Analyses détaillées et comparaisons de périodes",,,resources/views/features.blade.php:25
+Annuler,,,resources/views/membres/edit.blade.php:68
+Appliquer,,,resources/views/heatmap/index.blade.php:25
+Assiduité,,,resources/views/documentation.blade.php:26
+"Assiduité (heatmap)",,,resources/views/layouts/navigation.blade.php:61
+"Aucun membre enregistré dans ce groupe.",,,resources/views/dashboardV.blade.php:59
+"Aucun membre enregistré pour le moment.",,,resources/views/membres/index.blade.php:215
+"Aucun membre n'est présent pour cette date.",,,resources/views/statistiques.blade.php:126
+"Aucun téléphone requis côté membre",,,resources/views/demo.blade.php:46
+"Aucune donnée disponible",,,resources/views/membres/index.blade.php:265
+"Aucune donnée pour cette période",,,resources/views/statistiques-avancees.blade.php:149
+"Aucune présence enregistrée",,,resources/views/statistiques.blade.php:125
+"Aucune présence enregistrée pour cette date.",,,resources/views/pdf/statistiques.blade.php:144
+"Aucune session active pour ce groupe.",,,app/Http/Controllers/PresenceController.php:105
+"Badge obtenu :",,,resources/views/sessions/open.blade.php:66
+Bon,,,resources/views/statistiques-avancees.blade.php:140
+"Bon (≥70%)",,,resources/views/membres/index.blade.php:280
+"Bonjour {name}, vous n'êtes pas encore enregistré pour l'événement du {date}...",,,resources/views/alerts/index.blade.php:131
+CGU,,,resources/views/components/footer.blade.php:26
+"Canaux de notification",,,resources/views/alerts/index.blade.php:169
+"Carnet de présence numérique pour les groupes : une carte QR par membre, un scan par le responsable, des statistiques automatiques.",,,resources/views/layouts/public.blade.php:7
+"Carte QR",,,resources/views/membres/index.blade.php:174
+"Carte QR personnelle",,,resources/views/demo.blade.php:39
+"Carte QR personnelle pour chaque membre",,,resources/views/about.blade.php:17
+"Carte d'activité jour par jour et score de régularité",,,resources/views/documentation.blade.php:27
+"Carte de présence",,,resources/views/pdf/carte-membre.blade.php:5
+"Carte de présence personnelle",,,resources/views/pdf/carte-membre.blade.php:53
+"Ce qui fonctionne aujourd'hui",,,resources/views/alerts/index.blade.php:24
+"Ceci concerne votre propre compte responsable — pas les données de vos membres ci-dessus.",,,resources/views/rgpd/index.blade.php:101
+"Cette session est fermée.",,,app/Http/Controllers/AttendanceSessionController.php:100
+"Cette zone est protégée. Confirmez votre mot de passe pour continuer.",,,resources/views/auth/confirm-password.blade.php:3
+"Changer de langue",,,resources/views/components/language-selector.blade.php:15
+"Chaque carré représente un jour. Plus la couleur est foncée, plus il y a eu de présences ce jour-là. Survolez un carré pour voir les détails.",,,resources/views/heatmap/index.blade.php:167
+"Chaque membre a une carte QR personnelle : dans la liste des membres, le bouton « Carte QR » en génère le PDF à imprimer. Pour pointer, ouvrez une session depuis le tableau de bord, puis scannez les cartes.",,,resources/views/faq.blade.php:15
+Chiffrement,,,resources/views/legal/security.blade.php:14
+"Chiffrement des échanges avec le serveur (HTTPS/TLS)",,,resources/views/legal/privacy.blade.php:33
+"Choisissez un mot de passe sécurisé",,,resources/views/auth/register.blade.php:56
+"Classement par taux de présence",,,resources/views/statistiques-avancees.blade.php:103
+"Cliquez ici pour renvoyer l'email de vérification.",,,resources/views/profile/partials/update-profile-information-form.blade.php:37
+Cloisonnement,,,resources/views/legal/security.blade.php:18
+"Comment ajouter un membre ?",,,resources/views/faq.blade.php:9
+"Comment fonctionne la carte QR ?",,,resources/views/faq.blade.php:14
+"Comment lire cette heatmap ?",,,resources/views/heatmap/index.blade.php:166
+"Comment retirer le consentement RGPD ?",,,resources/views/faq.blade.php:29
+"Comment ça marche",,,resources/views/welcome.blade.php:30
+"Comparaison avec la période précédente",,,resources/views/statistiques-avancees.blade.php:65
+"Conditions générales d'utilisation",,,resources/views/legal/terms.blade.php:5
+Confidentialité,,,resources/views/components/footer.blade.php:25
+"Confidentialité (RGPD)",,,resources/views/layouts/navigation.blade.php:73
+"Configuration des alertes",,,resources/views/alerts/index.blade.php:4
+Confirmer,,,resources/views/auth/confirm-password.blade.php:23
+"Confirmer le mot de passe",,,resources/views/profile/partials/update-password-form.blade.php:29
+"Confirmez votre mot de passe",,,resources/views/auth/register.blade.php:68
+Conformité,,,resources/views/legal/security.blade.php:25
+"Conformité RGPD",,,resources/views/about.blade.php:20
+"Conformément au RGPD, vous disposez des droits suivants :",,,resources/views/legal/privacy.blade.php:41
+"Connectez-vous pour gérer la présence de vos groupes.",,,resources/views/auth/login.blade.php:4
+Connexion,,,resources/views/layouts/public.blade.php:34
+"Consentement RGPD enregistré.",,,app/Http/Controllers/RgpdController.php:29
+"Consentement RGPD obtenu (oral/écrit)",,,resources/views/membres/index.blade.php:83
+"Consentement RGPD retiré.",,,app/Http/Controllers/RgpdController.php:40
+"Consentement accordé",,,resources/views/rgpd/index.blade.php:107
+"Consentement de vos membres",,,resources/views/rgpd/index.blade.php:19
+"Consentement enregistré pour chaque membre",,,resources/views/legal/privacy.blade.php:35
+"Consentement non accordé",,,resources/views/rgpd/index.blade.php:112
+"Consultez et analysez les données de présence.",,,resources/views/statistiques.blade.php:4
+"Consultez les statistiques",,,resources/views/documentation.blade.php:14
+Contact,,,resources/views/contact.blade.php:5
+"Contact administrateur (pour recevoir les résumés)",,,resources/views/alerts/index.blade.php:187
+"Critique (<30%)",,,resources/views/membres/index.blade.php:292
+"Création de compte sécurisée",,,resources/views/demo.blade.php:63
+"Créer mon compte",,,resources/views/auth/register.blade.php:76
+"Créer un compte",,,resources/views/layouts/public.blade.php:37
+"Créez votre compte et testez les fonctionnalités",,,resources/views/demo.blade.php:98
+"Créez votre compte et votre premier groupe",,,resources/views/documentation.blade.php:11
+Date,,,resources/views/rgpd/index.blade.php:34
+"Date :",,,resources/views/pdf/statistiques.blade.php:97
+"Date de début",,,resources/views/heatmap/index.blade.php:15
+"Date de fin",,,resources/views/heatmap/index.blade.php:20
+Diminution,,,resources/views/statistiques-avancees.blade.php:85
+"Document généré automatiquement par le système de vérification de présence",,,resources/views/pdf/statistiques.blade.php:149
+Documentation,,,resources/views/documentation.blade.php:5
+"Donner mon consentement",,,resources/views/rgpd/index.blade.php:121
+"Données collectées",,,resources/views/legal/privacy.blade.php:11
+"Données collectées sur les membres",,,resources/views/rgpd/index.blade.php:68
+"Données de présence (date, heure)",,,resources/views/legal/privacy.blade.php:16
+"Droit d'accès à leurs données",,,resources/views/rgpd/index.blade.php:86
+"Droit d'accès à vos données",,,resources/views/legal/privacy.blade.php:43
+"Droit d'opposition",,,resources/views/legal/privacy.blade.php:47
+"Droit de portabilité",,,resources/views/legal/privacy.blade.php:46
+"Droit de rectification",,,resources/views/legal/privacy.blade.php:44
+"Droit à l'effacement",,,resources/views/legal/privacy.blade.php:45
+"Droits de vos membres",,,resources/views/rgpd/index.blade.php:84
+Déconnexion,,,resources/views/layouts/navigation.blade.php:92
+"Découvrez les fonctionnalités en action",,,resources/views/demo.blade.php:5
+"Déjà un compte ?",,,resources/views/auth/register.blade.php:80
+"Délai avant alerte (minutes)",,,resources/views/alerts/index.blade.php:114
+Démonstration,,,resources/views/demo.blade.php:1
+"Démonstration du système",,,resources/views/demo.blade.php:4
+Email,,,resources/views/alerts/index.blade.php:196
+"Email (bientôt disponible)",,,resources/views/alerts/index.blade.php:179
+"Email :",,,resources/views/contact.blade.php:13
+"En attente d'un scan…",,,resources/views/sessions/open.blade.php:34
+"En utilisant l'application, vous vous engagez à :",,,resources/views/legal/terms.blade.php:29
+Enregistrer,,,resources/views/profile/partials/update-profile-information-form.blade.php:51
+"Enregistrer les paramètres",,,resources/views/alerts/index.blade.php:204
+"Enregistrer les présences",,,resources/views/dashboardV.blade.php:54
+"Enregistrer tous les membres",,,resources/views/membres/index.blade.php:97
+"Enregistrer un ou plusieurs nouveaux membres",,,resources/views/dashboard.blade.php:46
+Enregistré.,,,resources/views/profile/partials/update-profile-information-form.blade.php:60
+"Envoyer le lien de réinitialisation",,,resources/views/auth/forgot-password.blade.php:21
+"Envoyer rappel (heures avant)",,,resources/views/alerts/index.blade.php:158
+"Envoyer une alerte X minutes après le début",,,resources/views/alerts/index.blade.php:120
+"Erreur inconnue.",,,resources/views/sessions/open.blade.php:67
+"Erreur réseau, réessayez.",,,resources/views/sessions/open.blade.php:68
+"Ex. : Groupe de prière, Chorale…",,,resources/views/auth/register.blade.php:31
+Excellent,,,resources/views/statistiques-avancees.blade.php:138
+"Excellent (≥90%)",,,resources/views/membres/index.blade.php:276
+"Export PDF",,,resources/views/documentation.blade.php:34
+"Export PDF des statistiques",,,resources/views/demo.blade.php:25
+"Exporter PDF",,,resources/views/statistiques.blade.php:85
+"Exportez vos rapports",,,resources/views/documentation.blade.php:35
+FAQ,,,resources/views/faq.blade.php:5
+"Faible (≥30%)",,,resources/views/membres/index.blade.php:288
+Fermer,,,resources/views/membres/index.blade.php:44
+"Fermer la session",,,resources/views/dashboard.blade.php:86
+"Fermer la session ?",,,resources/views/sessions/open.blade.php:54
+"Fermer le menu",,,resources/views/layouts/navigation.blade.php:29
+"Filtrer les résultats",,,resources/views/statistiques.blade.php:28
+"Filtres de recherche",,,resources/views/statistiques.blade.php:10
+"Finalité du traitement",,,resources/views/rgpd/index.blade.php:77
+Fonctionnalités,,,resources/views/components/footer.blade.php:9
+"Fonctionnalités avancées",,,resources/views/documentation.blade.php:19
+"Fournir des informations exactes",,,resources/views/legal/terms.blade.php:31
+"Gestion des membres",,,resources/views/membres/index.blade.php:40
+"Gestion des membres par groupes",,,resources/views/about.blade.php:15
+"Gestion des présences pour les réunions et événements de l'organisation.",,,resources/views/rgpd/index.blade.php:79
+"Graphiques et classements",,,resources/views/demo.blade.php:24
+Groupe(s),,,resources/views/membres/edit.blade.php:52
+"Groupe(s) :",,,resources/views/pdf/statistiques.blade.php:93
+Groupes,,,resources/views/membres/index.blade.php:114
+"Guide de démarrage",,,resources/views/documentation.blade.php:9
+"Généré le :",,,resources/views/pdf/statistiques.blade.php:101
+Heure,,,resources/views/statistiques.blade.php:96
+"Heure d'arrivée",,,resources/views/pdf/statistiques.blade.php:127
+"Heure de début d'événement",,,resources/views/alerts/index.blade.php:106
+"Heure la plus active",,,resources/views/heatmap/index.blade.php:49
+"Horaires :",,,resources/views/contact.blade.php:21
+"Hors ligne",,,resources/views/offline.blade.php:6
+"Hébergement sécurisé · Conforme RGPD · Données chiffrées en transit",,,resources/views/components/footer.blade.php:32
+"Il semble que vous n'ayez pas de connexion internet. Vérifiez votre connexion et réessayez.",,,resources/views/offline.blade.php:19
+"Impossible d'accéder à la caméra. Vérifiez les autorisations du navigateur.",,,resources/views/sessions/open.blade.php:69
+"Imprimez la carte de chaque membre et scannez-la pendant la session",,,resources/views/documentation.blade.php:23
+"Informations du profil",,,resources/views/profile/partials/update-profile-information-form.blade.php:4
+"Interface de gestion",,,resources/views/demo.blade.php:18
+"Interface simple pour marquer les présences",,,resources/views/features.blade.php:15
+"L'application de vérification de présence a été conçue pour simplifier la gestion des présences lors de réunions, formations et événements. Notre objectif est de fournir un outil simple, efficace et sécurisé.",,,resources/views/about.blade.php:10
+"L'application est destinée à :",,,resources/views/legal/terms.blade.php:19
+"L'organisation de réunions et formations",,,resources/views/legal/terms.blade.php:23
+"L'utilisateur est responsable de l'utilisation qu'il fait de l'application et des données qu'il y saisit. Nous nous efforçons de maintenir la disponibilité du service mais ne garantissons pas une disponibilité de 100 %.",,,resources/views/legal/terms.blade.php:41
+"La gestion des présences",,,resources/views/legal/privacy.blade.php:24
+"La gestion des présences lors d'événements",,,resources/views/legal/terms.blade.php:21
+"La génération de statistiques",,,resources/views/legal/privacy.blade.php:25
+"La génération de statistiques de présence",,,resources/views/legal/terms.blade.php:22
+"La mise en place d'un groupe prend moins de deux minutes.",,,resources/views/welcome.blade.php:60
+"La présence de vos groupes, <span class=""text-accent"">simplement</span> suivie",,,resources/views/welcome.blade.php:6
+"Le :date",,,resources/views/rgpd/index.blade.php:109
+"Le nom de votre groupe ou organisation. Vous pourrez ajouter d'autres co-responsables ensuite.",,,resources/views/auth/register.blade.php:34
+"Le numéro de téléphone ne peut contenir que des chiffres et le symbole +",,,app/Http/Controllers/PresenceController.php:56
+"Les données sont-elles sécurisées ?",,,resources/views/faq.blade.php:19
+"Les présentes conditions générales d'utilisation (CGU) régissent l'utilisation de l'application de vérification de présence. En utilisant cette application, vous acceptez ces conditions.",,,resources/views/legal/terms.blade.php:13
+"Les échanges avec le serveur sont chiffrés et les données sont hébergées en Europe. Le consentement de chaque membre est enregistré.",,,resources/views/faq.blade.php:20
+"Liste des membres",,,resources/views/membres/index.blade.php:4
+"Liste des présences",,,resources/views/pdf/statistiques.blade.php:119
+"Lundi au vendredi, 9 h - 18 h",,,resources/views/contact.blade.php:22
+Légal,,,resources/views/components/footer.blade.php:21
+"Marquer les présents manuellement",,,resources/views/dashboard.blade.php:37
+"Meilleur jour",,,resources/views/heatmap/index.blade.php:133
+Membre,,,resources/views/membres/index.blade.php:108
+"Membre modifié.",,,app/Http/Controllers/PresenceController.php:303
+"Membre supprimé.",,,app/Http/Controllers/PresenceController.php:321
+Membres,,,resources/views/layouts/navigation.blade.php:47
+"Membres n'ayant pas pointé",,,resources/views/alerts/index.blade.php:56
+"Merci pour votre inscription. Avant de commencer, vérifiez votre adresse email en cliquant sur le lien que nous venons de vous envoyer. Si vous ne l'avez pas reçu, nous vous en renverrons un.",,,resources/views/auth/verify-email.blade.php:3
+"Mes groupes",,,resources/views/dashboard.blade.php:62
+"Message d'alerte personnalisé",,,resources/views/alerts/index.blade.php:127
+"Mesures de sécurité",,,resources/views/legal/security.blade.php:11
+"Mettez à jour les informations de votre compte et votre adresse email.",,,resources/views/profile/partials/update-profile-information-form.blade.php:8
+"Mettre à jour",,,resources/views/membres/edit.blade.php:72
+"Modification des CGU",,,resources/views/legal/terms.blade.php:46
+Modifier,,,resources/views/membres/index.blade.php:181
+"Modifier le membre",,,resources/views/membres/edit.blade.php:4
+"Modifier le mot de passe",,,resources/views/profile/partials/update-password-form.blade.php:4
+Moins,,,resources/views/heatmap/index.blade.php:64
+"Mot de passe",,,resources/views/profile/partials/delete-user-form.blade.php:31
+"Mot de passe actuel",,,resources/views/profile/partials/update-password-form.blade.php:17
+"Mot de passe oublié ?",,,resources/views/auth/login.blade.php:48
+"Mot de passe oublié ? Indiquez votre adresse email : nous vous enverrons un lien pour en choisir un nouveau.",,,resources/views/auth/forgot-password.blade.php:3
+"Moy. par événement",,,resources/views/heatmap/index.blade.php:45
+"Moyen (≥50%)",,,resources/views/membres/index.blade.php:284
+"Moyenne / jour",,,resources/views/statistiques-avancees.blade.php:56
+Méthode,,,resources/views/rgpd/index.blade.php:35
+"Ne pas utiliser l'application à des fins illégales",,,resources/views/legal/terms.blade.php:33
+"Niveaux de régularité :",,,resources/views/membres/index.blade.php:272
+Nom,,,resources/views/profile/partials/update-profile-information-form.blade.php:21
+"Nom complet",,,resources/views/auth/register.blade.php:12
+"Nom du groupe",,,resources/views/auth/register.blade.php:26
+"Nom et prénom",,,resources/views/legal/privacy.blade.php:14
+"Nom et prénoms",,,resources/views/membres/edit.blade.php:29
+"Nom ou téléphone",,,resources/views/statistiques.blade.php:22
+"Non accordé",,,resources/views/rgpd/index.blade.php:47
+"Notre mission",,,resources/views/about.blade.php:8
+"Nous collectons uniquement les données nécessaires au fonctionnement de l'application :",,,resources/views/legal/privacy.blade.php:12
+"Nous contacter",,,resources/views/contact.blade.php:9
+"Nous mettons en place des mesures techniques et organisationnelles pour protéger vos données :",,,resources/views/legal/privacy.blade.php:31
+"Nous nous réservons le droit de modifier ces conditions à tout moment. Les utilisateurs seront informés des modifications importantes.",,,resources/views/legal/terms.blade.php:48
+"Nous rencontrons actuellement des difficultés techniques. Veuillez réessayer dans quelques instants.",,,resources/views/errors/database.blade.php:19
+"Nouveau mot de passe",,,resources/views/profile/partials/update-password-form.blade.php:23
+"Numéro de téléphone",,,resources/views/membres/edit.blade.php:41
+Objet,,,resources/views/legal/terms.blade.php:11
+"Obligations de l'utilisateur",,,resources/views/legal/terms.blade.php:28
+"Obtenir le consentement des personnes enregistrées",,,resources/views/legal/terms.blade.php:34
+Organisation,,,resources/views/layouts/navigation.blade.php:64
+"Oui, le bouton « Exporter PDF » de la page Statistiques produit un document reprenant les filtres appliqués.",,,resources/views/faq.blade.php:25
+"Ouvrez une session et pointez les présences",,,resources/views/documentation.blade.php:13
+"Ouvrez « Confidentialité (RGPD) » et utilisez « Retirer mon consentement » dans la section « Votre consentement personnel ».",,,resources/views/faq.blade.php:30
+"Ouvrez « Membres », cliquez sur « + Ajouter », renseignez le nom et le téléphone, choisissez le ou les groupes et cochez le consentement RGPD.",,,resources/views/faq.blade.php:10
+"Ouvrir le menu",,,resources/views/layouts/navigation.blade.php:8
+"Ouvrir une session",,,resources/views/dashboard.blade.php:92
+"Paramètres d'alertes mis à jour.",,,app/Http/Controllers/AlertController.php:68
+"Pas encore de compte ?",,,resources/views/auth/login.blade.php:59
+"Placez le QR du membre dans le cadre.",,,resources/views/sessions/open.blade.php:28
+Plus,,,resources/views/heatmap/index.blade.php:72
+"Pointage instantané au scan",,,resources/views/demo.blade.php:45
+"Politique de confidentialité",,,resources/views/legal/privacy.blade.php:5
+"Pour toute question ou suggestion, n'hésitez pas à nous contacter.",,,resources/views/about.blade.php:25
+"Pour toute question, suggestion ou support technique :",,,resources/views/contact.blade.php:10
+"Pour une aide personnalisée, contactez-nous depuis la page Contact.",,,resources/views/documentation.blade.php:42
+"Processus simplifié",,,resources/views/demo.blade.php:54
+Produit,,,resources/views/components/footer.blade.php:5
+Profil,,,resources/views/profile/edit.blade.php:4
+"Programmez des événements pour voir le classement",,,resources/views/membres/index.blade.php:266
+Progression,,,resources/views/statistiques-avancees.blade.php:113
+"Protection des données",,,resources/views/legal/privacy.blade.php:30
+"Protection des données (RGPD)",,,resources/views/rgpd/index.blade.php:4
+"Présence enregistrée pour :name",,,app/Http/Controllers/AttendanceSessionController.php:160
+Présences,,,resources/views/statistiques-avancees.blade.php:111
+"Présences (période)",,,resources/views/statistiques-avancees.blade.php:44
+"Présences totales",,,resources/views/heatmap/index.blade.php:37
+Présent,,,resources/views/dashboardV.blade.php:45
+Présents,,,resources/views/pdf/statistiques.blade.php:106
+"Prêt à commencer ?",,,resources/views/welcome.blade.php:59
+"Puis-je exporter les statistiques ?",,,resources/views/faq.blade.php:24
+Période,,,resources/views/statistiques-avancees.blade.php:11
+"Période actuelle",,,resources/views/statistiques-avancees.blade.php:68
+"Période précédente",,,resources/views/statistiques-avancees.blade.php:74
+"QR code invalide ou révoqué.",,,app/Http/Controllers/AttendanceSessionController.php:125
+RGPD,,,resources/views/features.blade.php:34
+Rang,,,resources/views/statistiques-avancees.blade.php:109
+"Rappel : n'oubliez pas l'événement « :event » prévu le :date. Pensez à pointer votre présence.",,,app/Services/AlertService.php:31
+"Rappel envoyé.",,,app/Services/AlertService.php:39
+"Rappels de pointage",,,resources/views/alerts/index.blade.php:146
+"Rapports PDF détaillés",,,resources/views/demo.blade.php:90
+"Ravis de vous revoir",,,resources/views/auth/login.blade.php:3
+"Recherche :",,,resources/views/pdf/statistiques.blade.php:99
+Rechercher,,,resources/views/statistiques.blade.php:21
+"Rejoignez le système de gestion de présence.",,,resources/views/auth/register.blade.php:4
+"Renvoyer l'email de vérification",,,resources/views/auth/verify-email.blade.php:18
+"Respecter la confidentialité des données",,,resources/views/legal/terms.blade.php:32
+Responsabilité,,,resources/views/legal/terms.blade.php:39
+"Retirer mon consentement",,,resources/views/rgpd/index.blade.php:129
+"Retour au tableau de bord",,,resources/views/sessions/open.blade.php:4
+"Retour à l'accueil",,,resources/views/layouts/guest.blade.php:43
+Réessayer,,,resources/views/offline.blade.php:22
+Régularité,,,resources/views/membres/index.blade.php:117
+Réinitialiser,,,resources/views/heatmap/index.blade.php:28
+"Réinitialiser le mot de passe",,,resources/views/auth/reset-password.blade.php:35
+"SMS (bientôt disponible)",,,resources/views/alerts/index.blade.php:174
+"Scan QR ou saisie manuelle",,,resources/views/demo.blade.php:72
+"Scan rapide",,,resources/views/demo.blade.php:40
+"Scanner les présences",,,resources/views/dashboard.blade.php:82
+"Score de régularité par membre et carte d'activité jour par jour",,,resources/views/features.blade.php:30
+"Se connecter",,,resources/views/welcome.blade.php:21
+"Se souvenir de moi",,,resources/views/auth/login.blade.php:43
+"Service temporairement indisponible",,,resources/views/errors/database.blade.php:17
+"Session en cours",,,resources/views/dashboard.blade.php:72
+"Session en cours · ouverte le :date",,,resources/views/sessions/open.blade.php:10
+"Session fermée.",,,app/Http/Controllers/AttendanceSessionController.php:78
+"Session ouverte.",,,app/Http/Controllers/AttendanceSessionController.php:66
+"Si vous découvrez une faille de sécurité, merci de nous contacter immédiatement pour que nous puissions la corriger rapidement.",,,resources/views/legal/security.blade.php:38
+"Signalement de vulnérabilité",,,resources/views/legal/security.blade.php:36
+Statistiques,,,resources/views/layouts/navigation.blade.php:53
+"Statistiques automatiques",,,resources/views/demo.blade.php:81
+"Statistiques de présence",,,resources/views/pdf/statistiques.blade.php:6
+"Statistiques et analyses",,,resources/views/about.blade.php:18
+"Statistiques à jour",,,resources/views/demo.blade.php:19
+"Statistiques, classement de régularité et carte d'assiduité se mettent à jour d'eux-mêmes, groupe par groupe.",,,resources/views/welcome.blade.php:51
+Statut,,,resources/views/rgpd/index.blade.php:33
+"Statut actuel :",,,resources/views/rgpd/index.blade.php:105
+"Statut de consentement enregistré à la création de chaque membre.",,,resources/views/rgpd/index.blade.php:21
+"Suivi de l'assiduité dans le temps",,,resources/views/about.blade.php:19
+Support,,,resources/views/components/footer.blade.php:13
+"Support technique",,,resources/views/documentation.blade.php:41
+Supprimer,,,resources/views/membres/index.blade.php:194
+"Supprimer ce membre",,,resources/views/membres/index.blade.php:312
+"Supprimer le compte",,,resources/views/profile/partials/delete-user-form.blade.php:4
+Système,,,resources/views/statistiques.blade.php:153
+"Système de vérification de présence",,,resources/views/layouts/public.blade.php:8
+"Système de vérification de présence. Tous droits réservés.",,,resources/views/components/footer.blade.php:31
+Sécurité,,,resources/views/legal/security.blade.php:5
+"Tableau de bord",,,resources/views/layouts/public.blade.php:30
+Taux,,,resources/views/statistiques-avancees.blade.php:112
+"Taux : :rate%",,,resources/views/statistiques-avancees.blade.php:70
+"Taux de présence",,,resources/views/alerts/index.blade.php:38
+"Tendances, classement des membres et comparaison de périodes",,,resources/views/documentation.blade.php:31
+"Tendances, classement des membres et comparaison de périodes.",,,resources/views/statistiques-avancees.blade.php:4
+"Tendances, classement et comparaison de périodes",,,resources/views/dashboard.blade.php:55
+"Top 5 régularité",,,resources/views/membres/index.blade.php:234
+"Total : :count membre|Total : :count membres",,oui,resources/views/membres/index.blade.php:41
+"Total membres",,,resources/views/statistiques-avancees.blade.php:32
+"Tous les membres ont pointé pour l'instant.",,,resources/views/alerts/index.blade.php:58
+"Traduction indicative. Seule la version française fait foi.",,,resources/views/components/legal-translation-notice.blade.php:5
+Téléphone,,,resources/views/membres/index.blade.php:76
+"Téléphone :",,,resources/views/contact.blade.php:17
+"Un carnet de présence numérique pour les groupes de l'église : un QR personnel par membre, un scan par le responsable, un suivi qui se fait de lui-même.",,,resources/views/welcome.blade.php:9
+"Un nouveau lien de vérification a été envoyé à l'adresse email fournie lors de l'inscription.",,,resources/views/auth/verify-email.blade.php:8
+"Un nouveau lien de vérification a été envoyé à votre adresse email.",,,resources/views/profile/partials/update-profile-information-form.blade.php:43
+"Un responsable ne voit que les membres des groupes qu’il encadre.",,,resources/views/legal/security.blade.php:19
+"Une carte QR par membre, à scanner pour pointer sa présence",,,resources/views/features.blade.php:20
+"Une carte par membre, à imprimer",,,resources/views/demo.blade.php:44
+"Une carte personnelle et imprimable qui identifie le membre, sans qu'il ait besoin d'un téléphone.",,,resources/views/welcome.blade.php:37
+"Une erreur est survenue lors de la connexion. Veuillez réessayer.",,,app/Http/Controllers/Auth/AuthenticatedSessionController.php:43
+"Une erreur technique est survenue. Veuillez réessayer plus tard.",,,app/Http/Requests/Auth/LoginRequest.php:60
+"Une fois votre compte supprimé, toutes ses données seront définitivement effacées. Avant de continuer, téléchargez les informations que vous souhaitez conserver.",,,resources/views/profile/partials/delete-user-form.blade.php:8
+"Une fois votre compte supprimé, toutes ses données seront définitivement effacées. Saisissez votre mot de passe pour confirmer la suppression définitive.",,,resources/views/profile/partials/delete-user-form.blade.php:27
+"Une session est déjà active pour ce groupe. Fermez-la avant d'en ouvrir une nouvelle.",,,app/Http/Controllers/AttendanceSessionController.php:63
+"Une session est ouverte pour la réunion ; le responsable scanne chaque QR au fur et à mesure.",,,resources/views/welcome.blade.php:44
+"Utilisation autorisée",,,resources/views/legal/terms.blade.php:18
+"Utilisation des données",,,resources/views/legal/privacy.blade.php:21
+"Utilisez un mot de passe long et aléatoire pour protéger votre compte.",,,resources/views/profile/partials/update-password-form.blade.php:8
+"Variables disponibles : {name}, {date}, {event}",,,resources/views/alerts/index.blade.php:134
+"Vos données sont utilisées exclusivement pour :",,,resources/views/legal/privacy.blade.php:22
+"Vos droits",,,resources/views/legal/privacy.blade.php:40
+"Votre adresse email n'est pas vérifiée.",,,resources/views/profile/partials/update-profile-information-form.blade.php:34
+"Votre consentement personnel",,,resources/views/rgpd/index.blade.php:99
+"Votre nom complet",,,resources/views/auth/register.blade.php:17
+"Voulez-vous vraiment supprimer votre compte ?",,,resources/views/profile/partials/delete-user-form.blade.php:23
+"Vous encadrez :count groupe.|Vous encadrez :count groupes.",,oui,resources/views/dashboard.blade.php:6
+"Vous ne dirigez aucun groupe pour le moment.",,,resources/views/dashboardV.blade.php:64
+"Vous ne dirigez aucun groupe.",,,resources/views/membres/index.blade.php:63
+"Vous ne dirigez aucun membre pour le moment.",,,resources/views/rgpd/index.blade.php:25
+"Vous êtes hors ligne",,,resources/views/offline.blade.php:17
+"Vue d'ensemble des présences",,,resources/views/demo.blade.php:23
+"Vérification de présence rapide",,,resources/views/about.blade.php:16
+"Vérification rapide",,,resources/views/features.blade.php:14
+Vérification…,,,resources/views/alerts/index.blade.php:50
+"Vérifier la présence",,,resources/views/layouts/navigation.blade.php:43
+"Vérifier maintenant",,,resources/views/alerts/index.blade.php:50
+le,,,resources/views/alerts/index.blade.php:56
+vous@exemple.com,,,resources/views/auth/register.blade.php:44
+"« Vérifier maintenant » affiche les membres qui n'ont pas encore pointé, à relancer vous-même (téléphone). L'envoi automatique de SMS et de rappels n'est pas encore actif : les réglages ci-dessous sont enregistrés en prévision, mais ne déclenchent aucun envoi pour l'instant.",,,resources/views/alerts/index.blade.php:25
+"À améliorer",,,resources/views/statistiques-avancees.blade.php:142
+"À propos",,,resources/views/components/footer.blade.php:7
+Évolution,,,resources/views/statistiques-avancees.blade.php:80
+"Évolution des présences",,,resources/views/statistiques-avancees.blade.php:95
+Événements,,,resources/views/heatmap/index.blade.php:41
+"Événements (30 j)",,,resources/views/alerts/index.blade.php:34
+"Êtes-vous sûr de vouloir retirer votre consentement ?",,,resources/views/rgpd/index.blade.php:128
+"Êtes-vous sûr de vouloir supprimer ce membre ?",,,resources/views/membres/index.blade.php:189

@@ -54,6 +54,8 @@ return [
 
         // Yoruba : ISO 639-1 « yo », présent dans CLDR et dans Carbon
         // (yo, yo_NG, yo_BJ). Une seule forme de pluriel (catégorie « other »).
+        // Brouillon rédigé sans relecture par un locuteur : ready reste false,
+        // la langue n'est donc ni proposée ni servie. Voir lang/README.md.
         'yo' => [
             'native' => 'Yorùbá',
             'label' => 'Yoruba',
