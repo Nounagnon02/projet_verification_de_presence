@@ -64,10 +64,6 @@
                     {{ __('Suivi des absences') }}
                 </x-sidebar-link>
             @endif
-            <x-sidebar-link :href="route('rgpd.index')" :active="request()->routeIs('rgpd.*')">
-                <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.6-3 7.9-7 10-4-2.1-7-5.4-7-10V6z" stroke-linejoin="round"/><path d="M9.3 12.2l1.8 1.8 3.6-3.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                {{ __('Confidentialité (RGPD)') }}
-            </x-sidebar-link>
         </nav>
 
         <div class="flex-grow"></div>

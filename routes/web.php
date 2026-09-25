@@ -63,17 +63,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/membres/{id}', [PresenceController::class, 'updateMembre'])->name('membres.update');
     Route::delete('/membres/{id}', [PresenceController::class, 'deleteMembre'])->name('membres.delete');
     Route::get('/membres/{member}/carte', [PresenceController::class, 'printCard'])->name('membres.print-card');
+    Route::get('/membres/{member}/donnees', [PresenceController::class, 'exportMemberData'])->name('membres.export');
 
     // Sessions de présence (scan QR par le responsable)
     Route::post('/groupes/{group}/sessions', [AttendanceSessionController::class, 'open'])->name('sessions.open');
     Route::post('/sessions/{session}/fermer', [AttendanceSessionController::class, 'close'])->name('sessions.close');
     Route::get('/sessions/{session}', [AttendanceSessionController::class, 'showScan'])->name('sessions.scan');
     Route::post('/sessions/{session}/scan', [AttendanceSessionController::class, 'scan'])->name('sessions.scan.submit');
-
-    // RGPD
-    Route::get('/rgpd', [\App\Http\Controllers\RgpdController::class, 'index'])->name('rgpd.index');
-    Route::post('/rgpd/consent', [\App\Http\Controllers\RgpdController::class, 'consent'])->name('rgpd.consent');
-    Route::post('/rgpd/withdraw', [\App\Http\Controllers\RgpdController::class, 'withdraw'])->name('rgpd.withdraw');
 
     // Anciennes URL des pages fusionnees dans /analyses : redirigees pour ne
     // pas casser les favoris. heatmap/data n'etait reference nulle part.

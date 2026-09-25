@@ -267,6 +267,53 @@ class PresenceController extends Controller
         return redirect()->route('membres')->with('success', __('Membre supprimé.'));
     }
 
+    /**
+     * Exporte les données d'un membre : droits d'accès et de portabilité (RGPD).
+     *
+     * JSON plutôt que PDF : le RGPD demande un format « structuré, couramment
+     * utilisé et lisible par machine », pour que le membre puisse réutiliser
+     * ses données ailleurs. Les dates sont en ISO 8601 pour la même raison.
+     */
+    public function exportMemberData(Member $member)
+    {
+        abort_unless($member->groups->pluck('id')->intersect(Auth::user()->groupsLed()->pluck('groups.id'))->isNotEmpty(), 403);
+
+        $donnees = [
+            'exporte_le' => now()->toIso8601String(),
+            'membre' => [
+                'nom' => $member->name,
+                'telephone' => $member->phone,
+                'enregistre_le' => $member->created_at?->toIso8601String(),
+                'groupes' => $member->groups->pluck('name')->values(),
+            ],
+            'consentement' => [
+                'accorde' => (bool) $member->rgpd_consent,
+                'date' => $member->rgpd_consent_at?->toIso8601String(),
+                'methode' => $member->consent_method,
+            ],
+            'presences' => $member->presences()
+                ->orderBy('date')
+                ->orderBy('time')
+                ->get()
+                ->map(fn ($presence) => [
+                    // Les casts du modele rendraient « date » en datetime complet
+                    // (2026-09-20T00:00:00.000000Z) : on normalise en ISO 8601 court.
+                    'date' => $presence->date?->format('Y-m-d'),
+                    'heure' => $presence->time?->format('H:i'),
+                    'methode' => $presence->verification_method,
+                ])
+                ->values(),
+        ];
+
+        $nom = \Illuminate\Support\Str::slug($member->name) ?: 'membre';
+
+        return response()->streamDownload(
+            fn () => print(json_encode($donnees, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)),
+            "donnees-{$nom}-".now()->format('Y-m-d').'.json',
+            ['Content-Type' => 'application/json'],
+        );
+    }
+
     public function printCard(Member $member)
     {
         abort_unless($member->groups->pluck('id')->intersect(Auth::user()->groupsLed()->pluck('groups.id'))->isNotEmpty(), 403);

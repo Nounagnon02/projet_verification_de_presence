@@ -20,8 +20,6 @@
             <div>
                 <h3 class="font-display font-semibold text-ink mb-4">{{ __('Légal') }}</h3>
                 <ul class="space-y-2 text-ink-soft">
-                    {{-- Le lien « RGPD » pointait vers rgpd.index, une route protégée :
-                         un visiteur non connecté était renvoyé vers la page de connexion. --}}
                     <li><a href="{{ route('privacy') }}" class="hover:text-ink transition-colors">{{ __('Confidentialité') }}</a></li>
                     <li><a href="{{ route('terms') }}" class="hover:text-ink transition-colors">{{ __('CGU') }}</a></li>
                 </ul>

@@ -114,6 +114,9 @@
                                                     {{ __('Groupes') }}
                                                 </th>
                                                 <th class="px-4 py-3 text-center text-xs font-medium text-ink-faint uppercase tracking-wider">
+                                                    {{ __('Consentement') }}
+                                                </th>
+                                                <th class="px-4 py-3 text-center text-xs font-medium text-ink-faint uppercase tracking-wider">
                                                     {{ __('Régularité') }}
                                                 </th>
                                                 <th class="px-4 py-3 text-center text-xs font-medium text-ink-faint uppercase tracking-wider">
@@ -148,6 +151,18 @@
                                                     <td class="px-4 py-4 whitespace-nowrap text-sm text-ink-soft">
                                                         {{ $membre->groups->pluck('name')->implode(', ') }}
                                                     </td>
+                                                    <td class="px-4 py-4 whitespace-nowrap text-center">
+                                                        @if($membre->rgpd_consent)
+                                                            <span class="inline-flex items-center gap-1.5 text-confirm text-sm font-semibold"
+                                                                  title="{{ $membre->rgpd_consent_at?->translatedFormat(__('date.datetime')) }}">
+                                                                <x-icon name="check" class="w-4 h-4" /> {{ __('Accordé') }}
+                                                            </span>
+                                                        @else
+                                                            <span class="inline-flex items-center gap-1.5 text-red-600 text-sm font-semibold">
+                                                                <x-icon name="x" class="w-4 h-4" /> {{ __('Non accordé') }}
+                                                            </span>
+                                                        @endif
+                                                    </td>
                                                     <td class="px-4 py-4 whitespace-nowrap">
                                                         <div class="flex flex-col items-center">
                                                             <!-- Score et étoiles -->
@@ -174,6 +189,13 @@
                                                            title="{{ __('Carte QR') }}">
                                                             <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 16h4.01M9 12h.01M12 16h.01M9 16h.01M4 12h.01M4 16h.01M4 4h4v4H4V4zm12 0h4v4h-4V4zM4 16h4v4H4v-4z"/>
+                                                            </svg>
+                                                        </a>
+                                                        <a href="{{ route('membres.export', $membre->id) }}"
+                                                           class="text-ink-soft hover:text-ink mr-3"
+                                                           title="{{ __('Exporter les données') }}">
+                                                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                                             </svg>
                                                         </a>
                                                         <a href="{{ route('membres.edit', $membre->id) }}"
