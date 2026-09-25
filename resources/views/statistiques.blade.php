@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
-        <h1 class="text-2xl md:text-[28px] text-ink">{{ __('Statistiques de présence') }}</h1>
-        <p class="text-ink-soft text-base mt-1">{{ __('Consultez et analysez les données de présence.') }}</p>
+        <h1 class="text-2xl md:text-[28px] text-ink">{{ __('Feuille de présence') }}</h1>
+        <p class="text-ink-soft text-base mt-1">{{ __('Qui était présent à une date donnée.') }}</p>
     </x-slot>
 
     <!-- Formulaire de filtrage -->

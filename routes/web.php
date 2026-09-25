@@ -55,7 +55,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/ajout-multiple', [PresenceController::class, 'ajoutMultiple'])->name('ajout.multiple');
     Route::post('/groupes/{group}/verif', [PresenceController::class, 'verif'])->name('verif');
     Route::get('/statistiques', [PresenceController::class, 'statistiques'])->name('statistiques');
-    Route::get('/statistiques-avancees', [PresenceController::class, 'statistiquesAvancees'])->name('statistiques.avancees');
+    Route::get('/analyses', [\App\Http\Controllers\AnalyseController::class, 'index'])->name('analyses.index');
 
     // Gestion des membres
     Route::get('/membres', [PresenceController::class, 'listeMembres'])->name('membres');
@@ -75,9 +75,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/rgpd/consent', [\App\Http\Controllers\RgpdController::class, 'consent'])->name('rgpd.consent');
     Route::post('/rgpd/withdraw', [\App\Http\Controllers\RgpdController::class, 'withdraw'])->name('rgpd.withdraw');
 
-    // Heatmap
-    Route::get('/heatmap', [\App\Http\Controllers\HeatmapController::class, 'index'])->name('heatmap.index');
-    Route::get('/heatmap/data', [\App\Http\Controllers\HeatmapController::class, 'getData'])->name('heatmap.data');
+    // Anciennes URL des pages fusionnees dans /analyses : redirigees pour ne
+    // pas casser les favoris. heatmap/data n'etait reference nulle part.
+    Route::redirect('/statistiques-avancees', '/analyses', 301);
+    Route::redirect('/heatmap', '/analyses', 301);
 
     // Alertes & Notifications (par groupe)
     Route::get('/groupes/{group}/alerts', [\App\Http\Controllers\AlertController::class, 'index'])->name('alerts.index');

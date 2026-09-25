@@ -2,20 +2,21 @@ francais,fon,pluriel,vu_dans
 "+ Ajouter",,,resources/views/membres/index.blade.php:44
 "1. Chaque membre a un QR",,,resources/views/welcome.blade.php:36
 "1. Inscription",,,resources/views/demo.blade.php:61
-"12 derniers mois",,,resources/views/statistiques-avancees.blade.php:17
+"12 derniers mois",,,resources/views/analyses.blade.php:19
 "2. Le responsable scanne",,,resources/views/welcome.blade.php:43
 "2. Vérification",,,resources/views/demo.blade.php:70
-"3 derniers mois",,,resources/views/statistiques-avancees.blade.php:16
+"3 derniers mois",,,resources/views/analyses.blade.php:18
 "3. Le suivi se fait seul",,,resources/views/welcome.blade.php:50
 "3. Suivi",,,resources/views/demo.blade.php:79
-"30 derniers jours",,,resources/views/statistiques-avancees.blade.php:15
+"30 derniers jours",,,resources/views/analyses.blade.php:17
 "4. Export",,,resources/views/demo.blade.php:88
-"7 derniers jours",,,resources/views/statistiques-avancees.blade.php:14
+"7 derniers jours",,,resources/views/analyses.blade.php:16
 ":count membre ajouté.|:count membres ajoutés.",,oui,app/Http/Controllers/PresenceController.php:87
 ":count membre au total|:count membres au total",,oui,resources/views/dashboardV.blade.php:52
 ":count membre|:count membres",,oui,resources/views/dashboard.blade.php:73
-":count pointage|:count pointages",,oui,resources/views/heatmap/index.blade.php:146
-":count présence|:count présences",,oui,resources/views/heatmap/index.blade.php:91
+":count pointage|:count pointages",,oui,resources/views/analyses.blade.php:166
+":count présence|:count présences",,oui,resources/views/analyses.blade.php:143
+":count événement|:count événements",,oui,resources/views/analyses.blade.php:68
 ":done/:total événements",,,resources/views/membres/index.blade.php:140
 ":user a créé une présence",,,resources/views/statistiques.blade.php:153
 ":user a modifié une présence",,,resources/views/statistiques.blade.php:154
@@ -24,32 +25,31 @@ Accordé,,,resources/views/rgpd/index.blade.php:45
 "Accès restreint : un responsable ne voit que les membres de ses groupes",,,resources/views/legal/privacy.blade.php:34
 "Accéder au tableau de bord",,,resources/views/welcome.blade.php:14
 Actions,,,resources/views/membres/index.blade.php:120
-"Activité de présence",,,resources/views/heatmap/index.blade.php:59
 "Activités récentes",,,resources/views/statistiques.blade.php:144
 "Adresse email",,,resources/views/profile/partials/update-profile-information-form.blade.php:27
 "Ajout, modification et suppression des membres par groupes",,,resources/views/features.blade.php:10
 "Ajouter des membres",,,resources/views/membres/index.blade.php:49
 "Ajouter un membre",,,resources/views/membres/index.blade.php:94
 "Ajoutez vos membres",,,resources/views/documentation.blade.php:12
-Amélioration,,,resources/views/statistiques-avancees.blade.php:85
-Analyse,,,resources/views/layouts/navigation.blade.php:50
-"Analyses avancées",,,resources/views/layouts/navigation.blade.php:57
+Amélioration,,,resources/views/analyses.blade.php:93
+Analyses,,,resources/views/layouts/navigation.blade.php:57
+"Analyses avancées",,,resources/views/documentation.blade.php:30
 "Analyses détaillées et comparaisons de périodes",,,resources/views/features.blade.php:25
 Annuler,,,resources/views/membres/edit.blade.php:68
-Appliquer,,,resources/views/heatmap/index.blade.php:25
+Appliquer,,,resources/views/analyses.blade.php:34
 Assiduité,,,resources/views/documentation.blade.php:26
-"Assiduité (heatmap)",,,resources/views/layouts/navigation.blade.php:61
+"Assiduité jour par jour",,,resources/views/analyses.blade.php:112
 "Aucun membre enregistré dans ce groupe.",,,resources/views/dashboardV.blade.php:59
 "Aucun membre enregistré pour le moment.",,,resources/views/membres/index.blade.php:215
 "Aucun membre n'est présent pour cette date.",,,resources/views/statistiques.blade.php:126
 "Aucun téléphone requis côté membre",,,resources/views/demo.blade.php:46
 "Aucune donnée disponible",,,resources/views/membres/index.blade.php:265
-"Aucune donnée pour cette période",,,resources/views/statistiques-avancees.blade.php:149
+"Aucune donnée pour cette période",,,resources/views/analyses.blade.php:216
 "Aucune présence enregistrée",,,resources/views/statistiques.blade.php:125
 "Aucune présence enregistrée pour cette date.",,,resources/views/pdf/statistiques.blade.php:147
 "Aucune session active pour ce groupe.",,,app/Http/Controllers/PresenceController.php:105
 "Badge obtenu :",,,resources/views/sessions/open.blade.php:66
-Bon,,,resources/views/statistiques-avancees.blade.php:140
+Bon,,,resources/views/analyses.blade.php:207
 "Bon (≥70%)",,,resources/views/membres/index.blade.php:280
 CGU,,,resources/views/components/footer.blade.php:26
 "Carnet de présence numérique pour les groupes : une carte QR par membre, un scan par le responsable, des statistiques automatiques.",,,resources/views/layouts/public.blade.php:7
@@ -59,28 +59,26 @@ CGU,,,resources/views/components/footer.blade.php:26
 "Carte d'activité jour par jour et score de régularité",,,resources/views/documentation.blade.php:27
 "Carte de présence",,,resources/views/pdf/carte-membre.blade.php:5
 "Carte de présence personnelle",,,resources/views/pdf/carte-membre.blade.php:55
-"Ce membre n'a pas de QR personnel actif.",,,app/Http/Controllers/PresenceController.php:329
+"Ce membre n'a pas de QR personnel actif.",,,app/Http/Controllers/PresenceController.php:275
 "Ceci concerne votre propre compte responsable — pas les données de vos membres ci-dessus.",,,resources/views/rgpd/index.blade.php:101
 "Cette session est fermée.",,,app/Http/Controllers/AttendanceSessionController.php:100
 "Cette zone est protégée. Confirmez votre mot de passe pour continuer.",,,resources/views/auth/confirm-password.blade.php:3
 "Changer de langue",,,resources/views/components/language-selector.blade.php:15
-"Chaque carré représente un jour. Plus la couleur est foncée, plus il y a eu de présences ce jour-là. Survolez un carré pour voir les détails.",,,resources/views/heatmap/index.blade.php:160
 "Chaque membre a une carte QR personnelle : dans la liste des membres, le bouton « Carte QR » en génère le PDF à imprimer. Pour pointer, ouvrez une session depuis le tableau de bord, puis scannez les cartes.",,,resources/views/faq.blade.php:15
 Chiffrement,,,resources/views/legal/security.blade.php:14
 "Chiffrement des échanges avec le serveur (HTTPS/TLS)",,,resources/views/legal/privacy.blade.php:33
 "Choisissez un mot de passe sécurisé",,,resources/views/auth/register.blade.php:56
-"Classement par taux de présence",,,resources/views/statistiques-avancees.blade.php:103
+"Classement par taux de présence",,,resources/views/analyses.blade.php:176
 "Cliquez ici pour renvoyer l'email de vérification.",,,resources/views/profile/partials/update-profile-information-form.blade.php:37
 Cloisonnement,,,resources/views/legal/security.blade.php:18
 "Comment ajouter un membre ?",,,resources/views/faq.blade.php:9
 "Comment fonctionne la carte QR ?",,,resources/views/faq.blade.php:14
-"Comment lire cette heatmap ?",,,resources/views/heatmap/index.blade.php:159
 "Comment retirer le consentement RGPD ?",,,resources/views/faq.blade.php:29
 "Comment ça marche",,,resources/views/welcome.blade.php:30
-"Comparaison avec la période précédente",,,resources/views/statistiques-avancees.blade.php:65
+"Comparaison avec la période précédente",,,resources/views/analyses.blade.php:75
 "Conditions générales d'utilisation",,,resources/views/legal/terms.blade.php:5
 Confidentialité,,,resources/views/components/footer.blade.php:25
-"Confidentialité (RGPD)",,,resources/views/layouts/navigation.blade.php:73
+"Confidentialité (RGPD)",,,resources/views/layouts/navigation.blade.php:69
 Confirmer,,,resources/views/auth/confirm-password.blade.php:23
 "Confirmer le mot de passe",,,resources/views/profile/partials/update-password-form.blade.php:29
 "Confirmez votre mot de passe",,,resources/views/auth/register.blade.php:68
@@ -96,7 +94,6 @@ Connexion,,,resources/views/layouts/public.blade.php:34
 "Consentement de vos membres",,,resources/views/rgpd/index.blade.php:19
 "Consentement enregistré pour chaque membre",,,resources/views/legal/privacy.blade.php:35
 "Consentement non accordé",,,resources/views/rgpd/index.blade.php:112
-"Consultez et analysez les données de présence.",,,resources/views/statistiques.blade.php:4
 "Consultez les statistiques",,,resources/views/documentation.blade.php:14
 Contact,,,resources/views/contact.blade.php:5
 "Critique (<30%)",,,resources/views/membres/index.blade.php:292
@@ -107,9 +104,9 @@ Contact,,,resources/views/contact.blade.php:5
 "Créez votre compte et votre premier groupe",,,resources/views/documentation.blade.php:11
 Date,,,resources/views/rgpd/index.blade.php:34
 "Date :",,,resources/views/pdf/statistiques.blade.php:100
-"Date de début",,,resources/views/heatmap/index.blade.php:15
-"Date de fin",,,resources/views/heatmap/index.blade.php:20
-Diminution,,,resources/views/statistiques-avancees.blade.php:85
+"Date de début",,,resources/views/analyses.blade.php:27
+"Date de fin",,,resources/views/analyses.blade.php:31
+Diminution,,,resources/views/analyses.blade.php:93
 "Document généré automatiquement par le système de vérification de présence",,,resources/views/pdf/statistiques.blade.php:152
 Documentation,,,resources/views/documentation.blade.php:5
 "Donner mon consentement",,,resources/views/rgpd/index.blade.php:121
@@ -123,7 +120,8 @@ Documentation,,,resources/views/documentation.blade.php:5
 "Droit de rectification",,,resources/views/legal/privacy.blade.php:44
 "Droit à l'effacement",,,resources/views/legal/privacy.blade.php:45
 "Droits de vos membres",,,resources/views/rgpd/index.blade.php:84
-Déconnexion,,,resources/views/layouts/navigation.blade.php:92
+"Du :debut au :fin",,,resources/views/analyses.blade.php:43
+Déconnexion,,,resources/views/layouts/navigation.blade.php:88
 "Découvrez les fonctionnalités en action",,,resources/views/demo.blade.php:5
 "Déjà un compte ?",,,resources/views/auth/register.blade.php:80
 Démonstration,,,resources/views/demo.blade.php:1
@@ -140,7 +138,7 @@ Enregistré.,,,resources/views/profile/partials/update-profile-information-form.
 "Erreur inconnue.",,,resources/views/sessions/open.blade.php:67
 "Erreur réseau, réessayez.",,,resources/views/sessions/open.blade.php:68
 "Ex. : Groupe de prière, Chorale…",,,resources/views/auth/register.blade.php:31
-Excellent,,,resources/views/statistiques-avancees.blade.php:138
+Excellent,,,resources/views/analyses.blade.php:205
 "Excellent (≥90%)",,,resources/views/membres/index.blade.php:276
 "Export PDF",,,resources/views/documentation.blade.php:34
 "Export PDF des statistiques",,,resources/views/demo.blade.php:25
@@ -152,6 +150,7 @@ Fermer,,,resources/views/membres/index.blade.php:44
 "Fermer la session",,,resources/views/dashboard.blade.php:86
 "Fermer la session ?",,,resources/views/sessions/open.blade.php:54
 "Fermer le menu",,,resources/views/layouts/navigation.blade.php:29
+"Feuille de présence",,,resources/views/layouts/navigation.blade.php:51
 "Filtrer les résultats",,,resources/views/statistiques.blade.php:28
 "Filtres de recherche",,,resources/views/statistiques.blade.php:10
 "Finalité du traitement",,,resources/views/rgpd/index.blade.php:77
@@ -169,7 +168,7 @@ Groupes,,,resources/views/membres/index.blade.php:114
 "Généré le :",,,resources/views/pdf/statistiques.blade.php:104
 Heure,,,resources/views/statistiques.blade.php:96
 "Heure d'arrivée",,,resources/views/pdf/statistiques.blade.php:130
-"Heure la plus active",,,resources/views/heatmap/index.blade.php:49
+"Heure la plus active",,,resources/views/analyses.blade.php:163
 "Horaires :",,,resources/views/contact.blade.php:21
 "Hors ligne",,,resources/views/offline.blade.php:6
 "Hébergement sécurisé · Conforme RGPD · Données chiffrées en transit",,,resources/views/components/footer.blade.php:32
@@ -201,10 +200,10 @@ Heure,,,resources/views/statistiques.blade.php:96
 "Lundi au vendredi, 9 h - 18 h",,,resources/views/contact.blade.php:22
 Légal,,,resources/views/components/footer.blade.php:21
 "Marquer les présents manuellement",,,resources/views/dashboard.blade.php:37
-"Meilleur jour",,,resources/views/heatmap/index.blade.php:126
+"Meilleur jour",,,resources/views/analyses.blade.php:156
 Membre,,,resources/views/membres/index.blade.php:108
-"Membre modifié.",,,app/Http/Controllers/PresenceController.php:303
-"Membre supprimé.",,,app/Http/Controllers/PresenceController.php:321
+"Membre modifié.",,,app/Http/Controllers/PresenceController.php:249
+"Membre supprimé.",,,app/Http/Controllers/PresenceController.php:267
 Membres,,,resources/views/layouts/navigation.blade.php:47
 "Membres n'ayant pas pointé",,,resources/views/alerts/index.blade.php:42
 "Merci pour votre inscription. Avant de commencer, vérifiez votre adresse email en cliquant sur le lien que nous venons de vous envoyer. Si vous ne l'avez pas reçu, nous vous en renverrons un.",,,resources/views/auth/verify-email.blade.php:3
@@ -216,14 +215,14 @@ Membres,,,resources/views/layouts/navigation.blade.php:47
 Modifier,,,resources/views/membres/index.blade.php:181
 "Modifier le membre",,,resources/views/membres/edit.blade.php:4
 "Modifier le mot de passe",,,resources/views/profile/partials/update-password-form.blade.php:4
-Moins,,,resources/views/heatmap/index.blade.php:64
+Moins,,,resources/views/analyses.blade.php:114
 "Mot de passe",,,resources/views/profile/partials/delete-user-form.blade.php:31
 "Mot de passe actuel",,,resources/views/profile/partials/update-password-form.blade.php:17
 "Mot de passe oublié ?",,,resources/views/auth/login.blade.php:48
 "Mot de passe oublié ? Indiquez votre adresse email : nous vous enverrons un lien pour en choisir un nouveau.",,,resources/views/auth/forgot-password.blade.php:3
-"Moy. par événement",,,resources/views/heatmap/index.blade.php:45
+"Moy. par événement",,,resources/views/analyses.blade.php:66
 "Moyen (≥50%)",,,resources/views/membres/index.blade.php:284
-"Moyenne / jour",,,resources/views/statistiques-avancees.blade.php:56
+"Moyenne / jour",,,resources/views/analyses.blade.php:62
 Méthode,,,resources/views/rgpd/index.blade.php:35
 "Ne pas utiliser l'application à des fins illégales",,,resources/views/legal/terms.blade.php:33
 "Niveaux de régularité :",,,resources/views/membres/index.blade.php:272
@@ -245,7 +244,7 @@ Nom,,,resources/views/profile/partials/update-profile-information-form.blade.php
 Objet,,,resources/views/legal/terms.blade.php:11
 "Obligations de l'utilisateur",,,resources/views/legal/terms.blade.php:28
 "Obtenir le consentement des personnes enregistrées",,,resources/views/legal/terms.blade.php:34
-Organisation,,,resources/views/layouts/navigation.blade.php:64
+Organisation,,,resources/views/layouts/navigation.blade.php:60
 "Oui, le bouton « Exporter PDF » de la page Statistiques produit un document reprenant les filtres appliqués.",,,resources/views/faq.blade.php:25
 "Ouvrez une session et pointez les présences",,,resources/views/documentation.blade.php:13
 "Ouvrez « Confidentialité (RGPD) » et utilisez « Retirer mon consentement » dans la section « Votre consentement personnel ».",,,resources/views/faq.blade.php:30
@@ -254,7 +253,7 @@ Organisation,,,resources/views/layouts/navigation.blade.php:64
 "Ouvrir une session",,,resources/views/dashboard.blade.php:92
 "Pas encore de compte ?",,,resources/views/auth/login.blade.php:59
 "Placez le QR du membre dans le cadre.",,,resources/views/sessions/open.blade.php:28
-Plus,,,resources/views/heatmap/index.blade.php:72
+Plus,,,resources/views/analyses.blade.php:122
 "Pointage instantané au scan",,,resources/views/demo.blade.php:45
 "Politique de confidentialité",,,resources/views/legal/privacy.blade.php:5
 "Pour toute question ou suggestion, n'hésitez pas à nous contacter.",,,resources/views/about.blade.php:25
@@ -264,23 +263,22 @@ Plus,,,resources/views/heatmap/index.blade.php:72
 Produit,,,resources/views/components/footer.blade.php:5
 Profil,,,resources/views/profile/edit.blade.php:4
 "Programmez des événements pour voir le classement",,,resources/views/membres/index.blade.php:266
-Progression,,,resources/views/statistiques-avancees.blade.php:113
+Progression,,,resources/views/analyses.blade.php:186
 "Protection des données",,,resources/views/legal/privacy.blade.php:30
 "Protection des données (RGPD)",,,resources/views/rgpd/index.blade.php:4
 "Présence enregistrée pour :name",,,app/Http/Controllers/AttendanceSessionController.php:160
-Présences,,,resources/views/statistiques-avancees.blade.php:111
-"Présences (période)",,,resources/views/statistiques-avancees.blade.php:44
-"Présences totales",,,resources/views/heatmap/index.blade.php:37
+Présences,,,resources/views/analyses.blade.php:58
 Présent,,,resources/views/dashboardV.blade.php:45
 Présents,,,resources/views/pdf/statistiques.blade.php:109
 "Prêt à commencer ?",,,resources/views/welcome.blade.php:59
 "Puis-je exporter les statistiques ?",,,resources/views/faq.blade.php:24
-Période,,,resources/views/statistiques-avancees.blade.php:11
-"Période actuelle",,,resources/views/statistiques-avancees.blade.php:68
-"Période précédente",,,resources/views/statistiques-avancees.blade.php:74
+Période,,,resources/views/analyses.blade.php:11
+"Période actuelle",,,resources/views/analyses.blade.php:78
+"Période précédente",,,resources/views/analyses.blade.php:83
 "QR code invalide ou révoqué.",,,app/Http/Controllers/AttendanceSessionController.php:125
+"Qui était présent à une date donnée.",,,resources/views/statistiques.blade.php:4
 RGPD,,,resources/views/features.blade.php:34
-Rang,,,resources/views/statistiques-avancees.blade.php:109
+Rang,,,resources/views/analyses.blade.php:182
 "Rapports PDF détaillés",,,resources/views/demo.blade.php:90
 "Ravis de vous revoir",,,resources/views/auth/login.blade.php:3
 "Recherche :",,,resources/views/pdf/statistiques.blade.php:102
@@ -294,7 +292,7 @@ Responsabilité,,,resources/views/legal/terms.blade.php:39
 "Retour à l'accueil",,,resources/views/layouts/guest.blade.php:43
 Réessayer,,,resources/views/offline.blade.php:22
 Régularité,,,resources/views/membres/index.blade.php:117
-Réinitialiser,,,resources/views/heatmap/index.blade.php:28
+Réinitialiser,,,resources/views/analyses.blade.php:37
 "Réinitialiser le mot de passe",,,resources/views/auth/reset-password.blade.php:35
 "Scan QR ou saisie manuelle",,,resources/views/demo.blade.php:72
 "Scan rapide",,,resources/views/demo.blade.php:40
@@ -309,7 +307,7 @@ Réinitialiser,,,resources/views/heatmap/index.blade.php:28
 "Session ouverte.",,,app/Http/Controllers/AttendanceSessionController.php:66
 "Si vous découvrez une faille de sécurité, merci de nous contacter immédiatement pour que nous puissions la corriger rapidement.",,,resources/views/legal/security.blade.php:38
 "Signalement de vulnérabilité",,,resources/views/legal/security.blade.php:36
-Statistiques,,,resources/views/layouts/navigation.blade.php:53
+Statistiques,,,resources/views/features.blade.php:24
 "Statistiques automatiques",,,resources/views/demo.blade.php:81
 "Statistiques de présence",,,resources/views/pdf/statistiques.blade.php:6
 "Statistiques et analyses",,,resources/views/about.blade.php:18
@@ -319,7 +317,7 @@ Statut,,,resources/views/rgpd/index.blade.php:33
 "Statut actuel :",,,resources/views/rgpd/index.blade.php:105
 "Statut de consentement enregistré à la création de chaque membre.",,,resources/views/rgpd/index.blade.php:21
 "Suivi de l'assiduité dans le temps",,,resources/views/about.blade.php:19
-"Suivi des absences",,,resources/views/layouts/navigation.blade.php:68
+"Suivi des absences",,,resources/views/layouts/navigation.blade.php:64
 Support,,,resources/views/components/footer.blade.php:13
 "Support technique",,,resources/views/documentation.blade.php:41
 Supprimer,,,resources/views/membres/index.blade.php:194
@@ -330,15 +328,15 @@ Système,,,resources/views/statistiques.blade.php:153
 "Système de vérification de présence. Tous droits réservés.",,,resources/views/components/footer.blade.php:31
 Sécurité,,,resources/views/legal/security.blade.php:5
 "Tableau de bord",,,resources/views/layouts/public.blade.php:30
-Taux,,,resources/views/statistiques-avancees.blade.php:112
-"Taux : :rate%",,,resources/views/statistiques-avancees.blade.php:70
+Taux,,,resources/views/analyses.blade.php:185
+"Taux : :rate%",,,resources/views/analyses.blade.php:80
 "Taux de présence",,,resources/views/alerts/index.blade.php:24
+"Tendances, assiduité et classement des membres",,,resources/views/dashboard.blade.php:55
+"Tendances, assiduité et classement des membres sur une période.",,,resources/views/analyses.blade.php:4
 "Tendances, classement des membres et comparaison de périodes",,,resources/views/documentation.blade.php:31
-"Tendances, classement des membres et comparaison de périodes.",,,resources/views/statistiques-avancees.blade.php:4
-"Tendances, classement et comparaison de périodes",,,resources/views/dashboard.blade.php:55
 "Top 5 régularité",,,resources/views/membres/index.blade.php:234
 "Total : :count membre|Total : :count membres",,oui,resources/views/membres/index.blade.php:41
-"Total membres",,,resources/views/statistiques-avancees.blade.php:32
+"Total membres",,,resources/views/analyses.blade.php:54
 "Tous les membres ont pointé pour l'instant.",,,resources/views/alerts/index.blade.php:44
 "Traduction indicative. Seule la version française fait foi.",,,resources/views/components/legal-translation-notice.blade.php:5
 Téléphone,,,resources/views/membres/index.blade.php:76
@@ -378,11 +376,10 @@ Vérification…,,,resources/views/alerts/index.blade.php:36
 "Vérifier maintenant",,,resources/views/alerts/index.blade.php:36
 le,,,resources/views/alerts/index.blade.php:42
 vous@exemple.com,,,resources/views/auth/register.blade.php:44
-"À améliorer",,,resources/views/statistiques-avancees.blade.php:142
+"À améliorer",,,resources/views/analyses.blade.php:209
 "À propos",,,resources/views/components/footer.blade.php:7
-Évolution,,,resources/views/statistiques-avancees.blade.php:80
-"Évolution des présences",,,resources/views/statistiques-avancees.blade.php:95
-Événements,,,resources/views/heatmap/index.blade.php:41
+Évolution,,,resources/views/analyses.blade.php:88
+"Évolution des présences",,,resources/views/analyses.blade.php:103
 "Événements (30 j)",,,resources/views/alerts/index.blade.php:20
 "Êtes-vous sûr de vouloir retirer votre consentement ?",,,resources/views/rgpd/index.blade.php:128
 "Êtes-vous sûr de vouloir supprimer ce membre ?",,,resources/views/membres/index.blade.php:189

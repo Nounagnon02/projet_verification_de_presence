@@ -179,60 +179,6 @@ class PresenceController extends Controller
         return view('statistiques', compact('presences', 'totalPresent', 'totalMembres', 'tauxPresence', 'date', 'search', 'auditLogs'));
     }
 
-    public function statistiquesAvancees(Request $request)
-    {
-        $periode = (int) $request->input('periode', '30'); // 7, 30, 90, 365 jours
-
-        $dateDebut = now()->subDays($periode)->toDateString();
-        $dateFin = now()->toDateString();
-        $dateDebutPrec = now()->subDays($periode * 2)->toDateString();
-        $dateFinPrec = now()->subDays($periode)->toDateString();
-
-        $totalMembres = Member::ledBy(Auth::user())->count();
-
-        $presencesParJour = Presence::selectRaw('DATE(date) as jour, COUNT(DISTINCT member_id) as total')
-            ->whereHas('member', fn ($q) => $q->ledBy(Auth::user()))
-            ->whereBetween('date', [$dateDebut, $dateFin])
-            ->groupBy('jour')
-            ->orderBy('jour')
-            ->get();
-
-        $membresStats = Member::ledBy(Auth::user())
-            ->withCount(['presences as total_presences' => function ($query) use ($dateDebut, $dateFin) {
-                $query->whereBetween('date', [$dateDebut, $dateFin]);
-            }])
-            ->get()
-            ->map(function ($member) use ($periode) {
-                $tauxPresence = $periode > 0 ? round(($member->total_presences / $periode) * 100, 1) : 0;
-                return [
-                    'name' => $member->name,
-                    'total_presences' => $member->total_presences,
-                    'taux_presence' => $tauxPresence
-                ];
-            })
-            ->sortByDesc('taux_presence');
-
-        $presencesActuelles = Presence::whereHas('member', fn ($q) => $q->ledBy(Auth::user()))
-            ->whereBetween('date', [$dateDebut, $dateFin])
-            ->count();
-
-        $presencesPrecedentes = Presence::whereHas('member', fn ($q) => $q->ledBy(Auth::user()))
-            ->whereBetween('date', [$dateDebutPrec, $dateFinPrec])
-            ->count();
-
-        $tendance = $presencesPrecedentes > 0 ?
-            round((($presencesActuelles - $presencesPrecedentes) / $presencesPrecedentes) * 100, 1) : 0;
-
-        $tauxActuel = $totalMembres > 0 ? round(($presencesActuelles / $totalMembres) * 100, 1) : 0;
-        $tauxPrecedent = $totalMembres > 0 ? round(($presencesPrecedentes / $totalMembres) * 100, 1) : 0;
-
-        return view('statistiques-avancees', compact(
-            'totalMembres', 'presencesParJour', 'membresStats', 'tendance',
-            'periode', 'presencesActuelles', 'presencesPrecedentes',
-            'tauxActuel', 'tauxPrecedent'
-        ));
-    }
-
     // Gestion des membres
     public function listeMembres()
     {

@@ -46,13 +46,13 @@
                 <div class="text-sm text-ink-soft">{{ __('Enregistrer un ou plusieurs nouveaux membres') }}</div>
             </div>
         </a>
-        <a href="{{ route('statistiques.avancees') }}" class="flex items-center gap-4 p-5 rounded-xl border border-line bg-card hover:border-line-strong transition-colors">
+        <a href="{{ route('analyses.index') }}" class="flex items-center gap-4 p-5 rounded-xl border border-line bg-card hover:border-line-strong transition-colors">
             <div class="w-11 h-11 flex-shrink-0 rounded-lg bg-accent-tint flex items-center justify-center text-accent">
                 <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V11M12 19V5M19 19v-7"/></svg>
             </div>
             <div>
-                <div class="font-display font-semibold text-ink">{{ __('Analyses avancées') }}</div>
-                <div class="text-sm text-ink-soft">{{ __('Tendances, classement et comparaison de périodes') }}</div>
+                <div class="font-display font-semibold text-ink">{{ __('Analyses') }}</div>
+                <div class="text-sm text-ink-soft">{{ __('Tendances, assiduité et classement des membres') }}</div>
             </div>
         </a>
     </div>

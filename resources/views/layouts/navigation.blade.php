@@ -46,19 +46,15 @@
                 <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.3 19c0-3.3 2.6-5.6 5.7-5.6s5.7 2.3 5.7 5.6" stroke-linecap="round"/><circle cx="17.3" cy="9" r="2.2"/><path d="M15.6 13.6c2.5.4 4.1 2.1 4.4 4.6" stroke-linecap="round"/></svg>
                 {{ __('Membres') }}
             </x-sidebar-link>
-
-            <div class="mt-5 mb-1 px-4 text-xs font-bold uppercase tracking-widest text-ink-faint">{{ __('Analyse') }}</div>
             <x-sidebar-link :href="route('statistiques')" :active="request()->routeIs('statistiques')">
-                <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V11M12 19V5M19 19v-7"/></svg>
-                {{ __('Statistiques') }}
+                <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+                {{ __('Feuille de présence') }}
             </x-sidebar-link>
-            <x-sidebar-link :href="route('statistiques.avancees')" :active="request()->routeIs('statistiques.avancees')">
+
+            <div class="mt-5"></div>
+            <x-sidebar-link :href="route('analyses.index')" :active="request()->routeIs('analyses.*')">
                 <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16l5-5 4 4 7-7" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 8h5v5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                {{ __('Analyses avancées') }}
-            </x-sidebar-link>
-            <x-sidebar-link :href="route('heatmap.index')" :active="request()->routeIs('heatmap.*')">
-                <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
-                {{ __('Assiduité (heatmap)') }}
+                {{ __('Analyses') }}
             </x-sidebar-link>
 
             <div class="mt-5 mb-1 px-4 text-xs font-bold uppercase tracking-widest text-ink-faint">{{ __('Organisation') }}</div>
