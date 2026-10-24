@@ -60,11 +60,26 @@ export function AuthProvider({ children }) {
   // attendre : la valeur reste false, et l'écran d'attente ne clignote plus.
   const loading = false;
 
-  const login = async (email, password) => {
-    const res = await api.post('/login', { email, password }, {
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+  const login = async (email, password, code) => {
+    const body = code ? { email, password, code } : { email, password };
+    const res = await api.post('/login', body, {
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     });
     const result = res.data;
+
+    // Mot de passe correct, mais la 2FA (activée pour ce compte) attend encore
+    // son code : AuthenticatedSessionController répond ainsi en HTTP 200, donc
+    // sans ceci axios ne lève rien et la suite traitait « aucune donnée »
+    // comme un utilisateur connecté — session fantôme, jamais de jeton.
+    if (result.two_factor_required) {
+      const err = new Error(result.message || 'Code de vérification requis.');
+      err.twoFactorRequired = true;
+      throw err;
+    }
+
+    if (!result.success) {
+      throw new Error(result.message || 'Échec de la connexion.');
+    }
 
     let userData;
     let token;
@@ -99,7 +114,9 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     try {
       await api.post('/logout');
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     setUser(null);
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(TOKEN_KEY);
@@ -108,11 +125,7 @@ export function AuthProvider({ children }) {
     invalidateApiCache();
   };
 
-  return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => useContext(AuthContext);

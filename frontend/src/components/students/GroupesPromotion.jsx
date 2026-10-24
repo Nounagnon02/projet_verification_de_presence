@@ -5,8 +5,13 @@ import { listerGroupes } from '../../api/resources/etudiants';
 import { repartirGroupes, creerGroupe, supprimerGroupe } from '../../api/resources/inscriptions';
 import Modal from '../ui/Modal';
 
-const TYPES = [{ value: 'td', label: 'TD' }, { value: 'tp', label: 'TP' }];
-const CHAMP = 'w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50';
+const TYPES = [
+  { value: 'td', label: 'TD' },
+  { value: 'tp', label: 'TP' },
+];
+const CHAMP =
+  // Classe partagée (index.css) : rayon, bordure, focus et état désactivé communs.
+  'champ';
 const LIBELLE = 'text-xs font-semibold text-on-surface-variant';
 
 const messageErreur = (err, defaut) => {
@@ -18,7 +23,15 @@ const messageErreur = (err, defaut) => {
  * Groupes de TD et de TP d'une promotion (une filière, une année) : répartir
  * les étudiants, créer un groupe, supprimer un groupe qui n'a pas de séance.
  */
-export default function GroupesPromotion({ isOpen, onClose, annees, filieres, filiereInitiale = '', anneeInitiale = '', onModifie }) {
+export default function GroupesPromotion({
+  isOpen,
+  onClose,
+  annees,
+  filieres,
+  filiereInitiale = '',
+  anneeInitiale = '',
+  onModifie,
+}) {
   const [filiereId, setFiliereId] = useState('');
   const [anneeId, setAnneeId] = useState('');
   const [typeRepartition, setTypeRepartition] = useState('td');
@@ -91,7 +104,12 @@ export default function GroupesPromotion({ isOpen, onClose, annees, filieres, fi
 
   const supprimer = (g) => {
     const type = g.type.toUpperCase();
-    if (!window.confirm(`Supprimer le groupe de ${type} ${g.libelle} ? Ses ${g.etudiants_count} étudiant(s) n'auront plus de groupe de ${type}.`)) return;
+    if (
+      !window.confirm(
+        `Supprimer le groupe de ${type} ${g.libelle} ? Ses ${g.etudiants_count} étudiant(s) n'auront plus de groupe de ${type}.`,
+      )
+    )
+      return;
     agir(() => supprimerGroupe(g.id), 'Groupe supprimé.');
   };
 
@@ -99,36 +117,75 @@ export default function GroupesPromotion({ isOpen, onClose, annees, filieres, fi
     <Modal isOpen={isOpen} onClose={onClose} title="Groupes de TD et de TP" size="lg">
       <div className="space-y-5">
         <p className="text-sm text-on-surface-variant">
-          Un groupe appartient à une promotion : une filière, une année. Une séance de TD ou de TP donnée à un
-          groupe n'attend que ses membres, et chaque groupe reçoit tout le volume de TD ou de TP du cours.
+          Un groupe appartient à une promotion : une filière, une année. Une séance de TD ou de TP donnée à un groupe
+          n'attend que ses membres, et chaque groupe reçoit tout le volume de TD ou de TP du cours.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label htmlFor="groupes-filiere" className={LIBELLE}>Filière</label>
-            <select id="groupes-filiere" value={filiereId} onChange={(e) => { setFiliereId(e.target.value); setRetour(null); }} className={CHAMP}>
+            <label htmlFor="groupes-filiere" className={LIBELLE}>
+              Filière
+            </label>
+            <select
+              id="groupes-filiere"
+              value={filiereId}
+              onChange={(e) => {
+                setFiliereId(e.target.value);
+                setRetour(null);
+              }}
+              className={CHAMP}
+            >
               <option value="">Sélectionner…</option>
-              {filieres.map((f) => <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>)}
+              {filieres.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.code} : {f.intitule}
+                </option>
+              ))}
             </select>
           </div>
           <div className="space-y-1.5">
-            <label htmlFor="groupes-annee" className={LIBELLE}>Année académique</label>
-            <select id="groupes-annee" value={anneeId} onChange={(e) => { setAnneeId(e.target.value); setRetour(null); }} className={CHAMP}>
+            <label htmlFor="groupes-annee" className={LIBELLE}>
+              Année académique
+            </label>
+            <select
+              id="groupes-annee"
+              value={anneeId}
+              onChange={(e) => {
+                setAnneeId(e.target.value);
+                setRetour(null);
+              }}
+              className={CHAMP}
+            >
               <option value="">Sélectionner…</option>
-              {annees.map((a) => <option key={a.id} value={a.id}>{a.libelle}{a.active ? ' (active)' : ''}{a.close ? ' (close)' : ''}</option>)}
+              {annees.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.libelle}
+                  {a.active ? ' (active)' : ''}
+                  {a.close ? ' (close)' : ''}
+                </option>
+              ))}
             </select>
           </div>
         </div>
 
         {retour && (
-          <p role={retour.ok ? 'status' : 'alert'} className={`flex items-start gap-2 p-3 rounded-lg text-sm ${retour.ok ? 'bg-secondary-container text-on-secondary-container' : 'bg-error/10 text-error'}`}>
-            {retour.ok ? <FiCheck className="mt-0.5 shrink-0" aria-hidden="true" /> : <FiAlertTriangle className="mt-0.5 shrink-0" aria-hidden="true" />}
+          <p
+            role={retour.ok ? 'status' : 'alert'}
+            className={`flex items-start gap-2 p-3 rounded-lg text-sm ${retour.ok ? 'bg-secondary-container text-on-secondary-container' : 'bg-error/10 text-error'}`}
+          >
+            {retour.ok ? (
+              <FiCheck className="mt-0.5 shrink-0" aria-hidden="true" />
+            ) : (
+              <FiAlertTriangle className="mt-0.5 shrink-0" aria-hidden="true" />
+            )}
             <span>{retour.message}</span>
           </p>
         )}
 
         {close && (
-          <p className="text-xs text-on-surface-variant">Cette année est close : ses groupes se consultent, ils ne se modifient plus.</p>
+          <p className="text-xs text-on-surface-variant">
+            Cette année est close : ses groupes se consultent, ils ne se modifient plus.
+          </p>
         )}
 
         {cle && (
@@ -137,8 +194,14 @@ export default function GroupesPromotion({ isOpen, onClose, annees, filieres, fi
               {TYPES.map((t) => {
                 const liste = groupes.filter((g) => g.type === t.value);
                 return (
-                  <section key={t.value} aria-label={`Groupes de ${t.label}`} className="rounded-xl bg-surface-container-low p-3">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">Groupes de {t.label}</h3>
+                  <section
+                    key={t.value}
+                    aria-label={`Groupes de ${t.label}`}
+                    className="rounded-xl bg-surface-container-low p-3"
+                  >
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">
+                      Groupes de {t.label}
+                    </h3>
                     {!charge ? (
                       <FiLoader className="animate-spin text-primary" />
                     ) : liste.length === 0 ? (
@@ -149,17 +212,23 @@ export default function GroupesPromotion({ isOpen, onClose, annees, filieres, fi
                           <li key={g.id} className="flex items-center justify-between gap-2 text-sm">
                             <span>
                               <span className="font-semibold">{g.libelle}</span>{' '}
-                              <span className="text-xs text-on-surface-variant tabular-nums">{g.etudiants_count} étudiant{g.etudiants_count > 1 ? 's' : ''}</span>
+                              <span className="text-xs text-on-surface-variant tabular-nums">
+                                {g.etudiants_count} étudiant{g.etudiants_count > 1 ? 's' : ''}
+                              </span>
                               {g.responsables_count === 0 && g.etudiants_count > 0 && (
                                 <span className="block text-[11px] text-on-surface-variant">
                                   Aucun responsable : personne n'affichera le QR Code de ses séances.
                                 </span>
                               )}
                             </span>
-                            <button type="button" onClick={() => supprimer(g)} disabled={verrouille}
+                            <button
+                              type="button"
+                              onClick={() => supprimer(g)}
+                              disabled={verrouille}
                               aria-label={`Supprimer le groupe de ${t.label} ${g.libelle}`}
-                              className="p-1.5 hover:bg-error/10 rounded-lg transition-colors disabled:opacity-40">
-                              <FiTrash2 className="text-error" />
+                              className="p-1.5 hover:bg-error/10 rounded-lg transition-colors disabled:opacity-40"
+                            >
+                              <FiTrash2 className="text-statut-erreur" />
                             </button>
                           </li>
                         ))}
@@ -174,23 +243,44 @@ export default function GroupesPromotion({ isOpen, onClose, annees, filieres, fi
               <h3 className="text-sm font-semibold text-on-surface">Répartir la promotion</h3>
               <div className="flex flex-wrap items-end gap-3">
                 <div className="space-y-1.5 w-28">
-                  <label htmlFor="groupes-type" className={LIBELLE}>Type</label>
-                  <select id="groupes-type" value={typeRepartition} onChange={(e) => setTypeRepartition(e.target.value)} className={CHAMP}>
-                    {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  <label htmlFor="groupes-type" className={LIBELLE}>
+                    Type
+                  </label>
+                  <select
+                    id="groupes-type"
+                    value={typeRepartition}
+                    onChange={(e) => setTypeRepartition(e.target.value)}
+                    className={CHAMP}
+                  >
+                    {TYPES.map((t) => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="space-y-1.5 w-28">
-                  <label htmlFor="groupes-nombre" className={LIBELLE}>Nombre</label>
-                  <input id="groupes-nombre" type="number" min="1" max="30" required value={nombre} onChange={(e) => setNombre(e.target.value)} className={CHAMP} />
+                  <label htmlFor="groupes-nombre" className={LIBELLE}>
+                    Nombre
+                  </label>
+                  <input
+                    id="groupes-nombre"
+                    type="number"
+                    min="1"
+                    max="30"
+                    required
+                    value={nombre}
+                    onChange={(e) => setNombre(e.target.value)}
+                    className={CHAMP}
+                  />
                 </div>
-                <button type="submit" disabled={verrouille}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 disabled:opacity-50">
+                <button type="submit" disabled={verrouille} className="btn-primaire">
                   {enCours && <FiLoader className="animate-spin" />} Répartir
                 </button>
               </div>
               <p className="text-xs text-on-surface-variant">
-                Par ordre de matricule, en groupes G1, G2… de même taille à un étudiant près. Remplace la répartition
-                de ce type pour la promotion.
+                Par ordre de matricule, en groupes G1, G2… de même taille à un étudiant près. Remplace la répartition de
+                ce type pour la promotion.
               </p>
             </form>
 
@@ -198,21 +288,46 @@ export default function GroupesPromotion({ isOpen, onClose, annees, filieres, fi
               <h3 className="text-sm font-semibold text-on-surface">Créer un groupe</h3>
               <div className="flex flex-wrap items-end gap-3">
                 <div className="space-y-1.5 w-28">
-                  <label htmlFor="groupes-type-creation" className={LIBELLE}>Type</label>
-                  <select id="groupes-type-creation" value={typeCreation} onChange={(e) => setTypeCreation(e.target.value)} className={CHAMP}>
-                    {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  <label htmlFor="groupes-type-creation" className={LIBELLE}>
+                    Type
+                  </label>
+                  <select
+                    id="groupes-type-creation"
+                    value={typeCreation}
+                    onChange={(e) => setTypeCreation(e.target.value)}
+                    className={CHAMP}
+                  >
+                    {TYPES.map((t) => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="space-y-1.5 flex-1 min-w-[8rem]">
-                  <label htmlFor="groupes-libelle" className={LIBELLE}>Libellé</label>
-                  <input id="groupes-libelle" maxLength={30} value={libelle} onChange={(e) => setLibelle(e.target.value)} placeholder="G3, TP-A…" className={CHAMP} />
+                  <label htmlFor="groupes-libelle" className={LIBELLE}>
+                    Libellé
+                  </label>
+                  <input
+                    id="groupes-libelle"
+                    maxLength={30}
+                    value={libelle}
+                    onChange={(e) => setLibelle(e.target.value)}
+                    placeholder="G3, TP-A…"
+                    className={CHAMP}
+                  />
                 </div>
-                <button type="submit" disabled={verrouille || !libelle.trim()}
-                  className="px-4 py-2.5 bg-secondary/10 text-secondary rounded-xl text-sm font-semibold hover:bg-secondary/20 disabled:opacity-50">
+                <button
+                  type="submit"
+                  disabled={verrouille || !libelle.trim()}
+                  className="px-4 py-2.5 bg-statut-succes-fond text-statut-succes rounded-xl text-sm font-semibold hover:bg-statut-succes/15 disabled:opacity-50"
+                >
                   Créer
                 </button>
               </div>
-              <p className="text-xs text-on-surface-variant">Pour changer un étudiant de groupe, modifiez-le dans la liste.</p>
+              <p className="text-xs text-on-surface-variant">
+                Pour changer un étudiant de groupe, modifiez-le dans la liste.
+              </p>
             </form>
           </>
         )}

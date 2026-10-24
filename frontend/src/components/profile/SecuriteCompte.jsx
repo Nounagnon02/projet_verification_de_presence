@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { FiShield, FiLock, FiCheck, FiCopy, FiAlertTriangle, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiShield, FiCheck, FiCopy, FiAlertTriangle, FiEye, FiEyeOff } from 'react-icons/fi';
 import {
-  modifierMotDePasse, activerDeuxFacteurs, confirmerDeuxFacteurs, desactiverDeuxFacteurs,
+  modifierMotDePasse,
+  activerDeuxFacteurs,
+  confirmerDeuxFacteurs,
+  desactiverDeuxFacteurs,
 } from '../../api/resources/comptes';
 import Modal from '../ui/Modal';
 import { useToastCtx } from '../../context/ToastContext';
@@ -25,14 +28,20 @@ const PwInput = ({ value, onChange, placeholder, show, onToggle, autoComplete })
       aria-label={placeholder}
       placeholder={placeholder}
       autoComplete={autoComplete}
-      className="w-full px-3 py-2.5 pr-10 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all"
+      className="champ pr-11"
       value={value}
       onChange={onChange}
       required
       minLength={8}
     />
-    <button type="button" onClick={onToggle} aria-label={show ? `Masquer « ${placeholder} »` : `Afficher « ${placeholder} »`} className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors">
-      {show ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+    {/* Cible de 32 px : l'icône seule (16 px) était sous le minimum WCAG 2.5.8. */}
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={show ? `Masquer « ${placeholder} »` : `Afficher « ${placeholder} »`}
+      className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-lg p-2 text-on-surface-variant hover:bg-surface-container-highest hover:text-primary transition-colors"
+    >
+      {show ? <FiEyeOff size={16} aria-hidden="true" /> : <FiEye size={16} aria-hidden="true" />}
     </button>
   </div>
 );
@@ -168,25 +177,18 @@ export default function SecuriteCompte({ deuxFacteursActive = false, onDeuxFacte
     }
   };
 
-  const togglePw = (field) => setShowPw(prev => ({ ...prev, [field]: !prev[field] }));
-
+  const togglePw = (field) => setShowPw((prev) => ({ ...prev, [field]: !prev[field] }));
 
   return (
     <section aria-label="Sécurité du compte" className="space-y-8">
-
       {/* Mot de passe */}
-      <div className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 bg-primary/5 rounded-xl">
-            <FiLock className="text-primary" size={20} />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-on-surface">Mot de passe</h2>
-            <p className="text-xs text-on-surface-variant">Modifiez votre mot de passe</p>
-          </div>
+      <div className="rounded-xxl border border-outline-variant/15 bg-surface-container-lowest p-5 sm:p-7">
+        <div className="mb-6">
+          <h2 className="font-headline text-base font-bold text-primary">Mot de passe</h2>
+          <p className="mt-1 text-sm text-on-surface-variant">Modifiez votre mot de passe.</p>
         </div>
         {pwError && (
-          <div className="mb-4 flex items-center gap-2 p-3 bg-error/10 rounded-xl text-error text-sm">
+          <div className="mb-4 flex items-center gap-2 p-3 bg-statut-erreur-fond rounded-xl text-statut-erreur text-sm">
             <FiAlertTriangle size={16} />
             <span>{pwError}</span>
           </div>
@@ -217,11 +219,14 @@ export default function SecuriteCompte({ deuxFacteursActive = false, onDeuxFacte
             autoComplete="new-password"
           />
           <div className="flex items-center gap-4 pt-1">
-            <button type="submit" className="bg-primary text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition-all">
+            <button
+              type="submit"
+              className="flex items-center gap-2 rounded-xl bg-gradient-to-br from-marque to-marque-fonce px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary/20 transition-transform hover:scale-[0.99] active:scale-[0.98]"
+            >
               Mettre à jour
             </button>
             {saved && (
-              <span className="flex items-center gap-1.5 text-sm text-secondary font-semibold">
+              <span className="flex items-center gap-1.5 text-sm text-success font-semibold">
                 <FiCheck size={16} /> Mot de passe modifié
               </span>
             )}
@@ -230,32 +235,36 @@ export default function SecuriteCompte({ deuxFacteursActive = false, onDeuxFacte
       </div>
 
       {/* 2FA */}
-      <div className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10">
-        <div className="flex items-center gap-3">
-          <div className={`p-2.5 rounded-xl ${deuxFacteursActive ? 'bg-secondary/10' : 'bg-primary/5'}`}>
-            <FiShield className={deuxFacteursActive ? 'text-secondary' : 'text-primary'} size={20} />
+      <div className="rounded-xxl border border-outline-variant/15 bg-surface-container-lowest p-5 sm:p-7">
+        {/* flex-wrap + basis-56 : sur téléphone, le bouton passe sous le texte
+            au lieu de le réduire à quelques mots par ligne. */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${deuxFacteursActive ? 'bg-statut-succes-fond' : 'bg-primary/5'}`}
+          >
+            <FiShield
+              className={deuxFacteursActive ? 'text-statut-succes' : 'text-primary'}
+              size={20}
+              aria-hidden="true"
+            />
           </div>
-          <div className="flex-1">
-            <h2 className="text-lg font-bold text-on-surface">Authentification à deux facteurs</h2>
-            <p className="text-xs text-on-surface-variant mt-0.5">
+          <div className="min-w-0 flex-1 basis-56">
+            <h2 className="font-headline text-base font-bold text-primary">Authentification à deux facteurs</h2>
+            <p className="mt-0.5 text-sm text-on-surface-variant">
               {deuxFacteursActive
                 ? "Votre compte est sécurisé par une application d'authentification."
-                : "Ajoutez une couche de sécurité supplémentaire à votre compte."}
+                : 'Ajoutez une couche de sécurité supplémentaire à votre compte.'}
             </p>
           </div>
           {deuxFacteursActive ? (
             <button
               onClick={() => setShowDisableConfirm(true)}
-              className="px-4 py-2 bg-error/10 text-error rounded-xl text-sm font-semibold hover:bg-error/20 transition-colors"
+              className="px-4 py-2 bg-statut-erreur-fond text-statut-erreur rounded-xl text-sm font-semibold hover:bg-error/20 transition-colors"
             >
               Désactiver
             </button>
           ) : (
-            <button
-              onClick={handleEnable2FA}
-              disabled={twoFALoading}
-              className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
-            >
+            <button onClick={handleEnable2FA} disabled={twoFALoading} className="btn-primaire">
               {twoFALoading ? 'Chargement...' : 'Activer'}
             </button>
           )}
@@ -265,7 +274,7 @@ export default function SecuriteCompte({ deuxFacteursActive = false, onDeuxFacte
       {/* Modal 2FA — Activation */}
       <Modal isOpen={show2FAModal} onClose={handleCloseModal} title={TITRE_ETAPE_2FA[twoFAStep]} size="md">
         {twoFAError && (
-          <div className="flex items-center gap-2 p-3 bg-error/10 rounded-xl text-error text-sm mb-4">
+          <div className="flex items-center gap-2 p-3 bg-statut-erreur-fond rounded-xl text-statut-erreur text-sm mb-4">
             <FiAlertTriangle size={16} />
             <span>{twoFAError}</span>
           </div>
@@ -294,7 +303,10 @@ export default function SecuriteCompte({ deuxFacteursActive = false, onDeuxFacte
             <div className="bg-surface-container-high rounded-xl p-3 flex items-center justify-between gap-2">
               <code className="text-xs text-on-surface-variant break-all font-mono select-all">{twoFASecret}</code>
               <button
-                onClick={() => { navigator.clipboard.writeText(twoFASecret); addToast?.('Clé copiée', 'success'); }}
+                onClick={() => {
+                  navigator.clipboard.writeText(twoFASecret);
+                  addToast?.('Clé copiée', 'success');
+                }}
                 className="flex-shrink-0 p-1.5 hover:bg-surface-container-lowest rounded-lg transition-colors"
                 title="Copier la clé"
               >
@@ -317,9 +329,15 @@ export default function SecuriteCompte({ deuxFacteursActive = false, onDeuxFacte
             <button
               onClick={handleConfirm2FA}
               disabled={twoFALoading || twoFACode.length !== 6}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-marque to-marque-fonce px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition-transform hover:scale-[0.99] active:scale-[0.98] disabled:opacity-50"
             >
-              {twoFALoading ? 'Vérification...' : <><FiCheck size={18} /> Confirmer</>}
+              {twoFALoading ? (
+                'Vérification...'
+              ) : (
+                <>
+                  <FiCheck size={18} /> Confirmer
+                </>
+              )}
             </button>
           </div>
         )}
@@ -327,7 +345,7 @@ export default function SecuriteCompte({ deuxFacteursActive = false, onDeuxFacte
         {/* Étape codes de récupération */}
         {twoFAStep === 'done' && (
           <div className="space-y-5">
-            <div className="flex items-center gap-2 p-3 bg-secondary/10 rounded-xl text-secondary text-sm">
+            <div className="flex items-center gap-2 rounded-xl bg-statut-succes-fond p-3 text-sm text-statut-succes">
               <FiShield size={16} />
               <span>2FA activée avec succès !</span>
             </div>
@@ -337,16 +355,27 @@ export default function SecuriteCompte({ deuxFacteursActive = false, onDeuxFacte
             <div className="bg-surface-container-high rounded-xl p-4">
               <div className="grid grid-cols-2 gap-2">
                 {recoveryCodes.map((code, i) => (
-                  <code key={i} className="font-mono text-sm text-on-surface bg-surface-container-lowest px-3 py-1.5 rounded-lg text-center select-all">{code}</code>
+                  <code
+                    key={i}
+                    className="font-mono text-sm text-on-surface bg-surface-container-lowest px-3 py-1.5 rounded-lg text-center select-all"
+                  >
+                    {code}
+                  </code>
                 ))}
               </div>
             </div>
             <div className="flex gap-3">
-              <button onClick={copyRecoveryCodes} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl text-sm font-semibold hover:bg-surface-container transition-colors">
+              <button
+                onClick={copyRecoveryCodes}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl text-sm font-semibold hover:bg-surface-container transition-colors"
+              >
                 <FiCopy size={16} />
                 {copied ? 'Copié !' : 'Copier'}
               </button>
-              <button onClick={handleCloseModal} className="flex-1 px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all">
+              <button
+                onClick={handleCloseModal}
+                className="flex-1 rounded-xl bg-gradient-to-br from-marque to-marque-fonce px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary/20 transition-transform hover:scale-[0.99] active:scale-[0.98]"
+              >
                 Terminé
               </button>
             </div>
@@ -355,16 +384,21 @@ export default function SecuriteCompte({ deuxFacteursActive = false, onDeuxFacte
       </Modal>
 
       {/* Modal désactiver 2FA */}
-      <Modal isOpen={showDisableConfirm} onClose={() => setShowDisableConfirm(false)} title="Désactiver la 2FA" size="sm">
+      <Modal
+        isOpen={showDisableConfirm}
+        onClose={() => setShowDisableConfirm(false)}
+        title="Désactiver la 2FA"
+        size="sm"
+      >
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-error/10 rounded-xl">
-            <FiAlertTriangle className="text-error" size={20} />
+            <FiAlertTriangle className="text-statut-erreur" size={20} />
           </div>
           <p className="text-xs text-on-surface-variant">Cette action réduit la sécurité de votre compte.</p>
         </div>
 
         {disableError && (
-          <div className="flex items-center gap-2 p-3 bg-error/10 rounded-xl text-error text-sm mb-4">
+          <div className="flex items-center gap-2 p-3 bg-statut-erreur-fond rounded-xl text-statut-erreur text-sm mb-4">
             <FiAlertTriangle size={16} />
             <span>{disableError}</span>
           </div>
@@ -383,7 +417,11 @@ export default function SecuriteCompte({ deuxFacteursActive = false, onDeuxFacte
         />
         <div className="flex gap-3">
           <button
-            onClick={() => { setShowDisableConfirm(false); setDisablePassword(''); setDisableError(''); }}
+            onClick={() => {
+              setShowDisableConfirm(false);
+              setDisablePassword('');
+              setDisableError('');
+            }}
             className="flex-1 px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl text-sm font-semibold hover:bg-surface-container transition-colors"
           >
             Annuler

@@ -1,12 +1,20 @@
 import cn from '../../utils/cn';
 
-export default function ProgressBar({ value, max = 100, label, showValue = true, color = 'primary', size = 'md', className = '' }) {
+export default function ProgressBar({
+  value,
+  max = 100,
+  label,
+  showValue = true,
+  color = 'primary',
+  size = 'md',
+  className = '',
+}) {
   const pct = Math.min((value / max) * 100, 100);
   const colors = {
     primary: 'bg-primary',
-    success: 'bg-[#2E7D32]',
-    warning: 'bg-[#A65207]',
-    error: 'bg-[#C62828]',
+    success: 'bg-statut-succes',
+    warning: 'bg-statut-alerte',
+    error: 'bg-statut-erreur',
   };
   const heights = { sm: 'h-1.5', md: 'h-2.5', lg: 'h-4' };
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiChevronRight, FiCheck, FiAlertCircle, FiPlus, FiArrowRight, FiLoader } from 'react-icons/fi';
+import { FiChevronRight, FiCheck, FiAlertCircle, FiPlus, FiArrowRight, FiLoader, FiFileText } from 'react-icons/fi';
 import { MdCloudDone } from 'react-icons/md';
 import { validerCoursImportes } from '../../api/resources/imports';
 import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
@@ -18,10 +18,8 @@ const heures = (valeur) => {
  * CTT (125 h pour 5 crédits, dont 75 h de travail personnel), et l'EC,
  * enregistré « à ventiler », ne se terminait jamais.
  */
-const estComplete = (ligne) => Boolean(
-  ligne.code && ligne.intitule
-  && (ligne.isUe || VOLUMES.some(([champ]) => heures(ligne[champ]) > 0))
-);
+const estComplete = (ligne) =>
+  Boolean(ligne.code && ligne.intitule && (ligne.isUe || VOLUMES.some(([champ]) => heures(ligne[champ]) > 0)));
 
 const LIGNE_VIDE = { id: 0, code: '', intitule: '', semestre: '', credits: '', edited: true, isUe: true };
 
@@ -91,12 +89,16 @@ function lireCoursEnSession() {
           sourceType: 'dedicated',
           meta: {
             filename: parsed?.metadata?.filename || root?.metadata?.filename || 'Catalogue cours.pdf',
-            score: parsed?.score_de_confiance ?? root?.score_de_confiance ?? 0.95,
+            // Pas de valeur par défaut : un 95 % affiché sans score réel
+            // présentait une confiance que l'IA n'avait jamais calculée.
+            score: parsed?.score_de_confiance ?? root?.score_de_confiance ?? null,
             total: uesData.length,
           },
         };
       }
-    } catch { /* on se rabat sur l'emploi du temps */ }
+    } catch {
+      /* on se rabat sur l'emploi du temps */
+    }
   }
 
   const edt = sessionStorage.getItem('import_analysis');
@@ -121,16 +123,21 @@ function lireCoursEnSession() {
           sourceType: 'schedule',
           meta: {
             filename: root?.metadata?.filename || 'Emploi du temps.pdf',
-            score: root?.score_de_confiance ?? 0.9,
+            score: root?.score_de_confiance ?? null,
             total: coursesData.length,
           },
         };
       }
-    } catch { /* on se rabat sur une ligne vide */ }
+    } catch {
+      /* on se rabat sur une ligne vide */
+    }
   }
 
-  // Aucune donnée exploitable : une ligne vierge à remplir à la main.
-  return { courses: [LIGNE_VIDE], sourceType: 'schedule', meta: { filename: 'Document importé', score: 0 } };
+  // Aucune donnée exploitable : rien à valider. L'écran propose d'importer un
+  // document ou de saisir à la main (une ligne vierge). Il s'étiquetait
+  // auparavant « Dérivé de l'emploi du temps » avec une « Confiance IA : 0 % »,
+  // sans qu'aucun document ni aucune IA n'ait servi.
+  return { courses: [LIGNE_VIDE], sourceType: 'manuel', vide: true, meta: { filename: null, score: null } };
 }
 
 /**
@@ -142,11 +149,16 @@ function lireCoursEnSession() {
  * l'utilisateur decouvrir le refus apres coup.
  */
 const NIVEAU_PAR_SEMESTRE = {
-  1: 'L1', 2: 'L1',
-  3: 'L2', 4: 'L2',
-  5: 'L3', 6: 'L3',
-  7: 'M1', 8: 'M1',
-  9: 'M2', 10: 'M2',
+  1: 'L1',
+  2: 'L1',
+  3: 'L2',
+  4: 'L2',
+  5: 'L3',
+  6: 'L3',
+  7: 'M1',
+  8: 'M1',
+  9: 'M2',
+  10: 'M2',
 };
 
 function niveauxDesLignes(lignes) {
@@ -218,6 +230,9 @@ export default function CourseValidationPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [analysisMeta] = useState(() => initial.meta);
+  // Sans import en session : état vide tant que l'utilisateur n'a pas choisi
+  // la saisie manuelle.
+  const [saisieManuelle, setSaisieManuelle] = useState(false);
 
   // Destination de l'import. Elle etait ecrite en dur — filiere_id: 1,
   // annee_id: 1 — si bien que TOUTE analyse atterrissait dans la premiere
@@ -228,9 +243,8 @@ export default function CourseValidationPage() {
   // L2 : proposer L1 n'aurait aucun sens, et le serveur le refuserait.
   const niveauxAttendus = niveauxDesLignes(courses);
 
-  const filieresCompatibles = niveauxAttendus.length > 0
-    ? filtres.filieres.filter((f) => niveauxAttendus.includes(f.niveau))
-    : filtres.filieres;
+  const filieresCompatibles =
+    niveauxAttendus.length > 0 ? filtres.filieres.filter((f) => niveauxAttendus.includes(f.niveau)) : filtres.filieres;
 
   const updateCourse = (id, field, value) => {
     setCourses((prev) => prev.map((c) => (c.id === id ? { ...c, [field]: value, edited: true } : c)));
@@ -238,7 +252,10 @@ export default function CourseValidationPage() {
 
   const addRow = () => {
     const maxId = courses.reduce((max, c) => Math.max(max, c.id), 0);
-    setCourses((prev) => [...prev, { id: maxId + 1, code: '', intitule: '', semestre: '', credits: '', edited: true, isUe: true }]);
+    setCourses((prev) => [
+      ...prev,
+      { id: maxId + 1, code: '', intitule: '', semestre: '', credits: '', edited: true, isUe: true },
+    ]);
   };
 
   const removeRow = (id) => {
@@ -255,22 +272,22 @@ export default function CourseValidationPage() {
     if (!course.isUe && course.code && course.intitule) {
       return { label: 'Heures à saisir', color: 'bg-warning-container text-on-surface' };
     }
-    return { label: 'Action requis', color: 'bg-tertiary-fixed text-on-tertiary-fixed' };
+    return { label: 'Action requise', color: 'bg-error-container text-on-error-container' };
   };
 
   const readyCount = courses.filter(estComplete).length;
   const alertCount = courses.filter((c) => !estComplete(c)).length;
-  const confidence = Math.round(analysisMeta.score * 100);
+  const confidence = analysisMeta.score === null ? null : Math.round(analysisMeta.score * 100);
 
   const handleSave = async () => {
     const validCourses = courses.filter(estComplete);
     if (validCourses.length === 0) {
-      setError('Aucun cours valide à importer. Remplissez au moins le code, l\'intitulé et les crédits.');
+      setError("Aucun cours valide à importer. Remplissez au moins le code, l'intitulé et les crédits.");
       return;
     }
 
     if (!filtres.filiere || !filtres.annee) {
-      setError('Choisissez la filière et l\'année académique de destination avant de valider.');
+      setError("Choisissez la filière et l'année académique de destination avant de valider.");
       return;
     }
 
@@ -325,6 +342,31 @@ export default function CourseValidationPage() {
     }
   };
 
+  if (initial.vide && !saisieManuelle) {
+    return (
+      <div className="max-w-lg mx-auto py-12">
+        <div className="carte p-8 text-center">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <FiFileText className="text-primary" size={30} aria-hidden="true" />
+          </div>
+          <h1 className="titre-page mb-3">Rien à valider</h1>
+          <p className="text-on-surface-variant mb-8">
+            Aucun import de cours n&apos;est en attente. Importez un document depuis la page des cours, ou saisissez les
+            UE et EC à la main.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button type="button" onClick={() => navigate('/courses')} className="btn-primaire">
+              Importer un document
+            </button>
+            <button type="button" onClick={() => setSaisieManuelle(true)} className="btn-secondaire">
+              Saisir à la main
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (saved) {
     return (
       <div className="max-w-lg mx-auto py-12">
@@ -334,18 +376,23 @@ export default function CourseValidationPage() {
           </div>
           <h1 className="text-2xl font-bold font-headline text-primary mb-3">Cours importés !</h1>
           <p className="text-on-surface-variant mb-2">
-            {courses.filter((c) => c.isUe && estComplete(c)).length} UE et {courses.filter((c) => !c.isUe && estComplete(c)).length} EC enregistrés.
+            {courses.filter((c) => c.isUe && estComplete(c)).length} UE et{' '}
+            {courses.filter((c) => !c.isUe && estComplete(c)).length} EC enregistrés.
             {alertCount > 0 && ` ${alertCount} ligne(s) laissée(s) de côté, faute d'heures par type.`}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mt-6">
             {sourceType === 'schedule' && (
-              <button onClick={() => navigate('/import/validate-schedule')}
-                className="bg-primary text-white px-8 py-3 rounded-xl font-semibold hover:opacity-90 transition-all flex items-center justify-center gap-2">
+              <button
+                onClick={() => navigate('/import/validate-schedule')}
+                className="bg-marque text-white px-8 py-3 rounded-xl font-semibold hover:opacity-90 transition-all flex items-center justify-center gap-2"
+              >
                 Valider l'emploi du temps <FiArrowRight />
               </button>
             )}
-            <button onClick={() => navigate('/courses')}
-              className="bg-surface-container-high text-on-surface px-8 py-3 rounded-xl font-semibold hover:bg-surface-container transition-all">
+            <button
+              onClick={() => navigate('/courses')}
+              className="bg-surface-container-high text-on-surface px-8 py-3 rounded-xl font-semibold hover:bg-surface-container transition-all"
+            >
               Voir les cours
             </button>
           </div>
@@ -358,24 +405,30 @@ export default function CourseValidationPage() {
     <div>
       {/* Breadcrumb & Header */}
       <div className="mb-10">
-        <nav className="flex items-center gap-2 text-xs text-outline mb-3">
+        <nav className="flex items-center gap-2 text-xs text-on-surface-variant mb-3">
           <span>Gestion des cours</span>
           <FiChevronRight className="text-[14px]" />
-          <span>Importation IA</span>
+          <span>{sourceType === 'manuel' ? 'Saisie manuelle' : 'Importation IA'}</span>
           <FiChevronRight className="text-[14px]" />
           <span className="text-primary font-semibold">Validation des données</span>
         </nav>
         <div className="flex justify-between items-end gap-4 flex-wrap">
           <div>
-            <h1 className="text-3xl font-extrabold text-primary tracking-tight">Valider les cours extraits</h1>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
+              {sourceType === 'manuel' ? 'Saisir des cours' : 'Valider les cours extraits'}
+            </h1>
             <p className="text-on-surface-variant mt-2 max-w-2xl">
               {sourceType === 'dedicated'
-                ? 'Revisez les Unités d\'Enseignement et Éléments Constitutifs extraits par l\'IA.'
-                : 'Les cours ci-dessous ont été dérivés de l\'analyse de l\'emploi du temps. Modifiez si nécessaire.'}
+                ? "Revisez les Unités d'Enseignement et Éléments Constitutifs extraits par l'IA."
+                : sourceType === 'manuel'
+                  ? 'Ajoutez les UE et leurs EC ligne par ligne, puis choisissez la filière de destination.'
+                  : "Les cours ci-dessous ont été dérivés de l'analyse de l'emploi du temps. Modifiez si nécessaire."}
             </p>
           </div>
           {/* Stepper */}
-          <div className="hidden md:flex items-center gap-4 bg-surface-container-low px-6 py-3 rounded-2xl shadow-sm">
+          <div
+            className={`${sourceType === 'manuel' ? 'hidden' : 'hidden md:flex'} items-center gap-4 bg-surface-container-low px-6 py-3 rounded-2xl shadow-sm`}
+          >
             <div className="flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center text-[10px]">
                 <FiCheck className="text-[16px]" />
@@ -391,32 +444,40 @@ export default function CourseValidationPage() {
             </div>
             <div className="w-8 h-px bg-outline-variant"></div>
             <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-[12px] font-bold">3</span>
+              <span className="w-6 h-6 rounded-full bg-marque text-white flex items-center justify-center text-[12px] font-bold">
+                3
+              </span>
               <span className="text-xs font-bold text-primary">Validation</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-12 gap-8">
+      {/* [&>div]:min-w-0 : une colonne de grille garde sinon la largeur de son
+          contenu, et le tableau élargissait la page de 8 px à 360 px. */}
+      <div className="grid grid-cols-12 gap-6 lg:gap-8 [&>div]:min-w-0">
         {/* Main Table */}
         <div className="col-span-12 lg:col-span-9">
           <div className="bg-surface-container-lowest rounded-[24px] overflow-hidden shadow-sm">
-            <div className="px-8 py-6 flex justify-between items-center border-b border-surface-container-high">
+            <div className="px-5 sm:px-8 py-5 sm:py-6 flex flex-wrap justify-between items-center gap-3 border-b border-surface-container-high">
               <h2 className="text-lg font-bold text-primary">
-                Données extraites — {courses.filter((c) => c.isUe).length} UE,{' '}
-                {courses.filter((c) => !c.isUe).length} EC
+                {sourceType === 'manuel' ? 'Cours saisis' : 'Données extraites'} :{' '}
+                {courses.filter((c) => c.isUe).length} UE, {courses.filter((c) => !c.isUe).length} EC
               </h2>
               <div className="flex gap-2">
                 <span className="text-[10px] font-medium text-on-surface-variant bg-surface-container-low px-3 py-1.5 rounded-lg">
-                  {sourceType === 'dedicated' ? 'Analyse dédiée' : 'Dérivé de l\'emploi du temps'}
+                  {sourceType === 'dedicated'
+                    ? 'Analyse dédiée'
+                    : sourceType === 'manuel'
+                      ? 'Saisie manuelle'
+                      : "Dérivé de l'emploi du temps"}
                 </span>
               </div>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Cours extraits">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-surface-container-low/50 text-[11px] uppercase tracking-wider text-outline font-bold">
+                  <tr className="bg-surface-container-low/50 text-[11px] uppercase tracking-wider text-on-surface-variant font-bold">
                     <th className="px-8 py-4 w-12">#</th>
                     {/* Rien ne distinguait une UE d'un EC : trente-huit lignes
                         melant les deux avaient l'air d'un catalogue de
@@ -434,12 +495,19 @@ export default function CourseValidationPage() {
                   {courses.map((course) => {
                     const status = statusInfo(course);
                     return (
-                      <tr key={course.id} className={`hover:bg-surface-container-low group transition-colors ${course.isUe ? '' : 'bg-surface/30'}`}>
+                      <tr
+                        key={course.id}
+                        className={`hover:bg-surface-container-low group transition-colors ${course.isUe ? '' : 'bg-surface/30'}`}
+                      >
                         <td className="px-8 py-4 text-xs text-on-surface-variant font-mono">{course.id + 1}</td>
                         <td className="px-4 py-4">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${course.isUe
-                            ? 'bg-primary/10 text-primary'
-                            : 'bg-surface-container-high text-on-surface-variant'}`}>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              course.isUe
+                                ? 'bg-primary/10 text-primary'
+                                : 'bg-surface-container-high text-on-surface-variant'
+                            }`}
+                          >
                             {course.isUe ? 'UE' : 'EC'}
                           </span>
                         </td>
@@ -468,10 +536,13 @@ export default function CourseValidationPage() {
                             value={course.semestre.toString().replace(/[^0-9]/g, '')}
                             onChange={(e) => updateCourse(course.id, 'semestre', `S${e.target.value}`)}
                             aria-label={`Semestre de la ligne ${course.id + 1}`}
-                            className="bg-transparent text-sm border-none focus:ring-0 py-1">
+                            className="bg-transparent text-sm border-none focus:ring-0 py-1"
+                          >
                             <option value="">Semestre</option>
                             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((s) => (
-                              <option key={s} value={s}>S{s}</option>
+                              <option key={s} value={s}>
+                                S{s}
+                              </option>
                             ))}
                           </select>
                         </td>
@@ -489,44 +560,57 @@ export default function CourseValidationPage() {
                             />
                           ) : (
                             <div className="space-y-1">
-                            <div className="flex gap-1.5">
-                              {VOLUMES.map(([champ, libelle]) => (
-                                <label key={champ} className="flex flex-col items-center text-[9px] font-semibold text-on-surface-variant">
-                                  {libelle}
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    value={course[champ] ?? 0}
-                                    onChange={(e) => updateCourse(course.id, champ, e.target.value)}
-                                    className="bg-transparent border-b py-1 text-sm font-mono focus:ring-0 w-12 text-center"
-                                    aria-label={`${libelle} de ${course.code || "l'EC"}`}
-                                  />
-                                </label>
-                              ))}
-                            </div>
-                            {(course.volume_horaire > 0 || course.tpe > 0 || course.ctt > 0) && (
-                              <p className="text-[10px] text-on-surface-variant max-w-[14rem]">
-                                Lu dans le document : {[
-                                  course.volume_horaire > 0 && `total ${course.volume_horaire} h`,
-                                  course.tpe > 0 && `TPE ${course.tpe} h`,
-                                  course.ctt > 0 && `CTT ${course.ctt} h`,
-                                ].filter(Boolean).join(' · ')}. Seules les heures de cours, par type, se planifient.
-                              </p>
-                            )}
+                              <div className="flex gap-1.5">
+                                {VOLUMES.map(([champ, libelle]) => (
+                                  <label
+                                    key={champ}
+                                    className="flex flex-col items-center text-[9px] font-semibold text-on-surface-variant"
+                                  >
+                                    {libelle}
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={course[champ] ?? 0}
+                                      onChange={(e) => updateCourse(course.id, champ, e.target.value)}
+                                      className="bg-transparent border-b py-1 text-sm font-mono focus:ring-0 w-12 text-center"
+                                      aria-label={`${libelle} de ${course.code || "l'EC"}`}
+                                    />
+                                  </label>
+                                ))}
+                              </div>
+                              {(course.volume_horaire > 0 || course.tpe > 0 || course.ctt > 0) && (
+                                <p className="text-[10px] text-on-surface-variant max-w-[14rem]">
+                                  Lu dans le document :{' '}
+                                  {[
+                                    course.volume_horaire > 0 && `total ${course.volume_horaire} h`,
+                                    course.tpe > 0 && `TPE ${course.tpe} h`,
+                                    course.ctt > 0 && `CTT ${course.ctt} h`,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' · ')}
+                                  . Seules les heures de cours, par type, se planifient.
+                                </p>
+                              )}
                             </div>
                           )}
                         </td>
                         <td className="px-4 py-4">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${status.color}`}>
-                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'currentColor' }}></span>
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${status.color}`}
+                          >
+                            <span
+                              className="w-1.5 h-1.5 rounded-full"
+                              style={{ backgroundColor: 'currentColor' }}
+                            ></span>
                             {status.label}
                           </span>
                         </td>
                         <td className="px-8 py-4 text-right">
                           <button
                             onClick={() => removeRow(course.id)}
-                            className="text-outline hover:text-error transition-colors p-1 opacity-0 group-hover:opacity-100"
-                            title="Supprimer">
+                            className="text-on-surface-variant hover:text-error transition-colors p-1 opacity-0 group-hover:opacity-100"
+                            title="Supprimer"
+                          >
                             <FiAlertCircle className="text-[16px]" />
                           </button>
                         </td>
@@ -536,7 +620,10 @@ export default function CourseValidationPage() {
                   <tr className="hover:bg-surface-container-low group transition-colors border-t border-dashed border-outline-variant">
                     <td className="px-8 py-4"></td>
                     <td colSpan={6} className="px-4 py-4">
-                      <button onClick={addRow} className="flex items-center gap-2 text-primary text-xs font-bold hover:underline">
+                      <button
+                        onClick={addRow}
+                        className="flex items-center gap-2 text-primary text-xs font-bold hover:underline"
+                      >
                         <FiPlus className="text-[18px]" /> Ajouter une ligne manuellement
                       </button>
                     </td>
@@ -550,38 +637,54 @@ export default function CourseValidationPage() {
         {/* Sidebar */}
         <div className="col-span-12 lg:col-span-3 space-y-6">
           <div className="bg-primary-container p-6 rounded-[24px] text-white">
-            <h3 className="text-sm font-bold opacity-80 mb-4">Aperçu de l'import</h3>
+            <h3 className="text-sm font-bold opacity-80 mb-4">
+              {sourceType === 'manuel' ? 'Aperçu de la saisie' : "Aperçu de l'import"}
+            </h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-xs">Éléments détectés</span>
+                <span className="text-xs">{sourceType === 'manuel' ? 'Lignes' : 'Éléments détectés'}</span>
                 <span className="font-mono font-bold">{courses.length}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-xs">Prêts</span>
-                <span className="font-mono font-bold text-secondary-fixed">{readyCount}</span>
+                {/* Panneau toujours bleu nuit (clair comme sombre) : des teintes claires
+                    fixes restent lisibles dans les deux thèmes. Les classes *-fixed
+                    d'origine n'existaient pas : les chiffres étaient blancs. */}
+                <span className="font-mono font-bold text-emerald-300">{readyCount}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-xs">Alertes</span>
-                <span className="font-mono font-bold text-tertiary-fixed">{alertCount}</span>
+                <span className="font-mono font-bold text-warning">{alertCount}</span>
               </div>
-              <div className="pt-4 border-t border-white/10">
-                <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
-                  <div className="bg-secondary-fixed h-full rounded-full transition-all" style={{ width: `${confidence}%` }}></div>
+              {/* Affichée seulement si l'analyse a fourni un score. */}
+              {confidence !== null && (
+                <div className="pt-4 border-t border-white/10">
+                  <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
+                    <div
+                      className="bg-emerald-300 h-full rounded-full transition-all"
+                      style={{ width: `${confidence}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-[10px] mt-2 opacity-90">Confiance IA : {confidence}%</p>
                 </div>
-                <p className="text-[10px] mt-2 opacity-60">Confiance IA : {confidence}%</p>
-              </div>
+              )}
             </div>
           </div>
 
-          <div className="bg-surface-container-lowest p-6 rounded-[24px] shadow-sm">
-            <h3 className="text-sm font-bold text-primary mb-4">Document source</h3>
-            <div className="aspect-[3/4] bg-surface-container-low rounded-xl overflow-hidden relative flex items-center justify-center">
-              <div className="text-center p-4">
-                <p className="text-xs text-on-surface-variant font-medium">{analysisMeta.filename}</p>
-                <p className="text-[10px] text-on-surface-variant/60 mt-1">Analysé par IA Gemini</p>
+          {analysisMeta.filename && (
+            <div className="bg-surface-container-lowest p-6 rounded-[24px] shadow-sm">
+              <h3 className="text-sm font-bold text-primary mb-4">Document source</h3>
+              {/* Un cadre 3:4 vide imitait un aperçu du document qui n'a jamais
+                  existé : il n'affichait que le nom du fichier, sur 400 px de haut. */}
+              <div className="flex items-center gap-3 rounded-xl bg-surface-container-low p-3">
+                <FiFileText className="shrink-0 text-primary" size={20} aria-hidden="true" />
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-medium text-on-surface">{analysisMeta.filename}</p>
+                  <p className="text-[10px] text-on-surface-variant mt-0.5">Analysé par l&apos;IA</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Destination de l'import.
               Elle etait ecrite en dur : filiere_id: 1, annee_id: 1. Toute
@@ -591,11 +694,24 @@ export default function CourseValidationPage() {
             <h3 className="text-sm font-bold text-primary">Destination</h3>
 
             <div className="space-y-1">
-              <label htmlFor="import-annee" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Année académique</label>
-              <select id="import-annee" value={filtres.annee} onChange={(e) => filtres.setAnnee(e.target.value)} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50">
+              <label
+                htmlFor="import-annee"
+                className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider"
+              >
+                Année académique
+              </label>
+              <select
+                id="import-annee"
+                value={filtres.annee}
+                onChange={(e) => filtres.setAnnee(e.target.value)}
+                className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+              >
                 <option value="">Choisir une année…</option>
                 {filtres.annees.map((a) => (
-                  <option key={a.id} value={a.id}>{a.libelle}{a.active ? ' (active)' : ''}</option>
+                  <option key={a.id} value={a.id}>
+                    {a.libelle}
+                    {a.active ? ' (active)' : ''}
+                  </option>
                 ))}
               </select>
             </div>
@@ -603,40 +719,62 @@ export default function CourseValidationPage() {
             {filtres.anneeClose && <BandeauAnneeClose annee={filtres.anneeChoisie} />}
 
             <div className="space-y-1">
-              <label htmlFor="import-filiere" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Filière</label>
-              <select id="import-filiere" value={filtres.filiere} onChange={(e) => filtres.setFiliere(e.target.value)}
-                disabled={!filtres.annee} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50">
+              <label
+                htmlFor="import-filiere"
+                className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider"
+              >
+                Filière
+              </label>
+              <select
+                id="import-filiere"
+                value={filtres.filiere}
+                onChange={(e) => filtres.setFiliere(e.target.value)}
+                disabled={!filtres.annee}
+                className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+              >
                 <option value="">Choisir une filière…</option>
                 {filieresCompatibles.map((f) => (
-                  <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>
+                  <option key={f.id} value={f.id}>
+                    {f.code} : {f.intitule}
+                  </option>
                 ))}
               </select>
             </div>
 
             {niveauxAttendus.length > 0 && (
               <p className="text-xs text-on-surface-variant">
-                Les semestres extraits désignent {niveauxAttendus.join(' et ')} : seules
-                les filières de ce niveau sont proposées. Une UE de S3 rangée en L1
-                serait refusée.
+                Les semestres extraits désignent {niveauxAttendus.join(' et ')} : seules les filières de ce niveau sont
+                proposées. Une UE de S3 rangée en L1 serait refusée.
               </p>
             )}
 
             {filtres.annee && filieresCompatibles.length === 0 && (
               <p className="text-xs text-error">
-                Aucune filière de niveau {niveauxAttendus.join(' ou ')} pour cette année.
-                Créez-la, ou corrigez les semestres ci-contre.
+                Aucune filière de niveau {niveauxAttendus.join(' ou ')} pour cette année. Créez-la, ou corrigez les
+                semestres ci-contre.
               </p>
             )}
           </div>
 
           <div className="flex flex-col gap-3">
-            <button onClick={handleSave} disabled={saving || readyCount === 0 || !filtres.filiere || !filtres.annee || filtres.anneeClose}
-              className="w-full py-4 rounded-xl bg-gradient-to-br from-primary to-primary-container text-white font-bold text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2">
+            <button
+              onClick={handleSave}
+              disabled={saving || readyCount === 0 || !filtres.filiere || !filtres.annee || filtres.anneeClose}
+              className="w-full py-4 rounded-xl bg-gradient-to-br from-marque to-marque-fonce text-white font-bold text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2"
+            >
               <MdCloudDone className="text-[20px]" />
-              {saving ? <><FiLoader className="animate-spin" /> Enregistrement...</> : 'Valider et enregistrer'}
+              {saving ? (
+                <>
+                  <FiLoader className="animate-spin" /> Enregistrement...
+                </>
+              ) : (
+                'Valider et enregistrer'
+              )}
             </button>
-            <button onClick={() => navigate('/courses')}
-              className="w-full py-4 rounded-xl bg-surface-container-highest text-on-surface font-bold text-sm hover:bg-surface-container-high transition-colors">
+            <button
+              onClick={() => navigate('/courses')}
+              className="w-full py-4 rounded-xl bg-surface-container-highest text-on-surface font-bold text-sm hover:bg-surface-container-high transition-colors"
+            >
               Annuler
             </button>
           </div>

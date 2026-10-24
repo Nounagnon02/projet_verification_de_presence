@@ -57,17 +57,23 @@ export default function SelecteurSalle({
         onChange={(e) => onChange(e.target.value)}
         className={className}
       >
-        <option value="">Aucune — QR seul</option>
+        <option value="">Aucune : QR seul</option>
         {protegees.length > 0 && (
           <optgroup label="Avec contrôle au scan">
             {protegees.map((s) => (
-              <option key={s.id} value={s.id}>{s.nom} · {controles(s).join(' + ')}</option>
+              <option key={s.id} value={s.id}>
+                {s.nom} · {controles(s).join(' + ')}
+              </option>
             ))}
           </optgroup>
         )}
         {qrSeul.length > 0 && (
-          <optgroup label="QR seul — GPS et Wi-Fi à configurer">
-            {qrSeul.map((s) => <option key={s.id} value={s.id}>{s.nom}</option>)}
+          <optgroup label="QR seul : GPS et Wi-Fi à configurer">
+            {qrSeul.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.nom}
+              </option>
+            ))}
           </optgroup>
         )}
       </select>

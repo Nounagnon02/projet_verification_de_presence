@@ -1,17 +1,30 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  FiCheckCircle, FiAlertTriangle, FiLoader,
-  FiSmartphone, FiUser, FiArrowRight, FiMail, FiLock, FiLogOut,
-  FiClock, FiMapPin, FiBookOpen
+  FiCheckCircle,
+  FiAlertTriangle,
+  FiLoader,
+  FiSmartphone,
+  FiUser,
+  FiArrowRight,
+  FiMail,
+  FiLock,
+  FiLogOut,
+  FiClock,
+  FiMapPin,
+  FiBookOpen,
 } from 'react-icons/fi';
 import { MdVerified } from 'react-icons/md';
 import { useSearchParams } from 'react-router-dom';
 import { recupererCoursParToken } from '../../api/resources/presences';
 import apiEtudiant, { enregistrerJetonEtudiant, effacerJetonEtudiant, aUnJetonEtudiant } from '../../api/etudiant';
 import { useFingerprint } from '../../hooks/useFingerprint';
+import Logo from '../../components/ui/Logo';
 
 /** Longueur exacte du code d'accès tiré et envoyé par l'administration. */
 const LONGUEUR_CODE = 6;
+
+// « 08:00:00 » → « 08:00 » : l'API renvoie les secondes, inutiles à l'étudiant.
+const heure = (valeur) => (valeur ? String(valeur).slice(0, 5) : '--:--');
 
 const PresenceValidationPage = () => {
   const [searchParams] = useSearchParams();
@@ -90,7 +103,9 @@ const PresenceValidationPage = () => {
       }
     })();
 
-    return () => { annule = true; };
+    return () => {
+      annule = true;
+    };
   }, [qrToken]);
 
   // Demande de la position, uniquement si la salle du cours l'exige — inutile
@@ -120,7 +135,9 @@ const PresenceValidationPage = () => {
       }
     })();
 
-    return () => { annule = true; };
+    return () => {
+      annule = true;
+    };
   }, [cours, position, positionRefusee]);
 
   // Focus automatique sur le premier champ pertinent (connexion ou validation).
@@ -207,7 +224,7 @@ const PresenceValidationPage = () => {
         setResult({
           success: true,
           course: data.data?.cours || cours?.cours || 'Cours',
-          time: `${cours?.heure_debut || '--:--'} - ${cours?.heure_fin || '--:--'}`,
+          time: `${heure(cours?.heure_debut)} - ${heure(cours?.heure_fin)}`,
           message: data.message || 'Présence validée avec succès !',
           student: data.data?.etudiant || '',
         });
@@ -250,11 +267,11 @@ const PresenceValidationPage = () => {
   // ─── SCREEN: SUCCÈS ───────────────────────────────────
   if (step === 'success' && result?.success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#f0fdf4] to-[#dcfce7] flex flex-col">
+      <div className="min-h-screen bg-gradient-to-br from-surface to-statut-succes-fond flex flex-col">
         <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
           {/* Animation check */}
           <div className="relative mb-8">
-            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg shadow-success/20 animate-[bounce-in_0.5s_ease-out]">
+            <div className="w-24 h-24 bg-surface-container-lowest rounded-full flex items-center justify-center shadow-lg shadow-success/20 animate-[bounce-in_0.5s_ease-out]">
               <MdVerified className="text-success" size={56} />
             </div>
             <div className="absolute -top-1 -right-1 w-8 h-8 bg-success rounded-full flex items-center justify-center animate-[bounce-in_0.6s_ease-out_0.2s_both]">
@@ -262,26 +279,20 @@ const PresenceValidationPage = () => {
             </div>
           </div>
 
-          <h1 className="text-3xl font-bold font-headline text-on-surface mb-2 text-center">
-            Présence validée !
-          </h1>
+          <h1 className="text-3xl font-bold font-headline text-on-surface mb-2 text-center">Présence validée !</h1>
           <p className="text-on-surface-variant text-center mb-8 max-w-xs">
             Votre présence a été enregistrée avec succès.
           </p>
 
           {/* Course info card */}
-          <div className="w-full max-w-sm bg-white/80 backdrop-blur-sm rounded-2xl p-5 shadow-sm border border-success/20 mb-6">
+          <div className="w-full max-w-sm bg-surface-container-lowest/80 backdrop-blur-sm rounded-2xl p-5 shadow-sm border border-success/20 mb-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-success/10 rounded-xl flex items-center justify-center">
                 <FiBookOpen className="text-success" size={20} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm text-on-surface truncate">
-                  {result.course}
-                </p>
-                <p className="text-xs text-on-surface-variant">
-                  {result.time}
-                </p>
+                <p className="font-bold text-sm text-on-surface truncate">{result.course}</p>
+                <p className="text-xs text-on-surface-variant">{result.time}</p>
               </div>
             </div>
             {result.student && (
@@ -295,16 +306,18 @@ const PresenceValidationPage = () => {
             )}
           </div>
 
-          <button onClick={resetAll}
-            className="w-full max-w-sm py-3.5 bg-primary text-white rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+          <button
+            onClick={resetAll}
+            className="btn-primaire w-full max-w-sm py-3.5 shadow-lg shadow-primary/20 active:scale-[0.98]"
+          >
             <FiArrowRight size={16} />
             Valider une autre présence
           </button>
         </div>
 
         <footer className="py-6 text-center">
-          <p className="text-[10px] font-technical uppercase tracking-widest text-on-surface-variant/60">
-            Système de Gestion de Présence — UAC
+          <p className="text-[10px] font-technical uppercase tracking-widest text-on-surface-variant">
+            Système de Gestion de Présence, UAC
           </p>
         </footer>
 
@@ -322,34 +335,34 @@ const PresenceValidationPage = () => {
   // ─── SCREEN: ERREUR ───────────────────────────────────
   if (step === 'error') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#fef2f2] to-[#fee2e2] flex flex-col">
+      <div className="min-h-screen bg-gradient-to-br from-surface to-statut-erreur-fond flex flex-col">
         <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg shadow-error/20 mb-8">
-            <FiAlertTriangle className="text-error" size={48} />
+          <div className="w-24 h-24 bg-surface-container-lowest rounded-full flex items-center justify-center shadow-lg shadow-error/20 mb-8">
+            <FiAlertTriangle className="text-statut-erreur" size={48} />
           </div>
 
-          <h1 className="text-2xl font-bold font-headline text-on-surface mb-2 text-center">
-            Validation échouée
-          </h1>
-          <p className="text-on-surface-variant text-center mb-8 max-w-xs">
-            {error}
-          </p>
+          <h1 className="text-2xl font-bold font-headline text-on-surface mb-2 text-center">Validation échouée</h1>
+          <p className="text-on-surface-variant text-center mb-8 max-w-xs">{error}</p>
 
           <div className="flex flex-col w-full max-w-sm gap-3">
-            <button onClick={() => { setStep('scan'); setError(''); }}
-              className="w-full py-3.5 bg-primary text-white rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:opacity-90 active:scale-[0.98] transition-all">
+            <button
+              onClick={() => {
+                setStep('scan');
+                setError('');
+              }}
+              className="btn-primaire w-full py-3.5 shadow-lg shadow-primary/20 active:scale-[0.98]"
+            >
               Réessayer
             </button>
-            <button onClick={resetAll}
-              className="w-full py-3 bg-surface-container-high text-on-surface-variant rounded-xl font-semibold text-sm hover:bg-surface-container-higher transition-all">
+            <button onClick={resetAll} className="btn-secondaire w-full py-3">
               Nouveau scan
             </button>
           </div>
         </div>
 
         <footer className="py-6 text-center">
-          <p className="text-[10px] font-technical uppercase tracking-widest text-on-surface-variant/60">
-            Système de Gestion de Présence — UAC
+          <p className="text-[10px] font-technical uppercase tracking-widest text-on-surface-variant">
+            Système de Gestion de Présence, UAC
           </p>
         </footer>
       </div>
@@ -372,33 +385,33 @@ const PresenceValidationPage = () => {
   return (
     <div className="min-h-screen bg-surface flex flex-col">
       {/* TopBar */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-outline-variant/10">
+      <header className="sticky top-0 z-50 bg-surface-container-lowest/80 backdrop-blur-md border-b border-outline-variant/10">
         <div className="max-w-md mx-auto px-5 py-3">
           <div className="flex items-center justify-between gap-3 mb-2">
-            <img src="/images/logo-couleur-compact.png" alt="UAC Présences"
-              className="h-6 w-auto shrink-0" />
+            <Logo className="h-6 w-auto shrink-0" />
             <div className="flex items-center gap-2 shrink-0">
               {qrToken && (
                 <div className="bg-secondary/10 px-3 py-1.5 rounded-full flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-secondary">Session active</span>
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-statut-succes">
+                    Session active
+                  </span>
                 </div>
               )}
               {connecte && (
-                <button onClick={handleLogout} title="Se déconnecter"
-                  className="p-1.5 rounded-full hover:bg-surface-container-high text-on-surface-variant transition-colors">
+                <button
+                  onClick={handleLogout}
+                  title="Se déconnecter"
+                  className="p-1.5 rounded-full hover:bg-surface-container-high text-on-surface-variant transition-colors"
+                >
                   <FiLogOut size={14} />
                 </button>
               )}
             </div>
           </div>
-          <h1 className="font-headline font-bold text-primary text-base leading-snug">
-            Enregistrement de présence
-          </h1>
+          <h1 className="font-headline font-bold text-primary text-base leading-snug">Enregistrement de présence</h1>
           <p className="text-[11px] text-on-surface-variant font-medium leading-snug">
-            {connecte
-              ? 'Confirmez votre présence pour ce cours'
-              : 'Connectez-vous pour confirmer votre présence'}
+            {connecte ? 'Confirmez votre présence pour ce cours' : 'Connectez-vous pour confirmer votre présence'}
           </p>
         </div>
       </header>
@@ -407,14 +420,14 @@ const PresenceValidationPage = () => {
         {/* Infos cours */}
         {cours && (
           <div className="mb-6 animate-[fadeIn_0.3s_ease-out]">
-            <div className="bg-gradient-to-br from-primary to-primary-container rounded-2xl p-5 text-white shadow-lg shadow-primary/20">
+            <div className="bg-gradient-to-br from-marque to-marque-fonce rounded-2xl p-5 text-white shadow-lg shadow-primary/20">
               <p className="text-white/70 text-[10px] font-bold uppercase tracking-wider mb-2">Cours en cours</p>
               <h2 className="text-xl font-bold font-headline mb-3">{cours.cours || 'Cours'}</h2>
               <div className="flex flex-wrap items-center gap-4 text-white/80 text-xs">
                 {cours.heure_debut && (
                   <span className="flex items-center gap-1.5">
                     <FiClock size={13} />
-                    {cours.heure_debut} - {cours.heure_fin}
+                    {heure(cours.heure_debut)} - {heure(cours.heure_fin)}
                   </span>
                 )}
                 {cours.salle && (
@@ -452,13 +465,12 @@ const PresenceValidationPage = () => {
 
           {cours?.verification?.wifi_requis && (
             <div className="bg-warning/10 rounded-xl p-3.5 flex items-start gap-2.5 border border-warning/20 mb-5">
-              <FiSmartphone className="text-warning shrink-0 mt-0.5" size={16} />
+              <FiSmartphone className="text-statut-alerte shrink-0 mt-0.5" size={16} />
               <div className="text-sm text-on-surface">
                 <p className="font-semibold">Validation par l'application mobile</p>
                 <p className="text-on-surface-variant text-xs mt-0.5">
-                  Cette salle vérifie le réseau Wi-Fi, une information qu'un
-                  navigateur ne peut pas lire. Utilisez l'application UAC
-                  Présences pour valider votre présence.
+                  Cette salle vérifie le réseau Wi-Fi, une information qu'un navigateur ne peut pas lire. Utilisez
+                  l'application UAC Présences pour valider votre présence.
                 </p>
               </div>
             </div>
@@ -473,28 +485,30 @@ const PresenceValidationPage = () => {
 
               {loginErrors.general && (
                 <div className="bg-error/10 rounded-xl p-3.5 flex items-start gap-2.5 border border-error/10 animate-[shake_0.4s_ease-out]">
-                  <FiAlertTriangle className="text-error shrink-0 mt-0.5" size={16} />
-                  <p className="text-sm text-error font-medium">{loginErrors.general}</p>
+                  <FiAlertTriangle className="text-statut-erreur shrink-0 mt-0.5" size={16} />
+                  <p className="text-sm text-statut-erreur font-medium">{loginErrors.general}</p>
                 </div>
               )}
 
               {codeAbsent && (
                 <div className="rounded-xl border border-warning/20 bg-warning/10 p-3.5 flex items-start gap-2.5">
-                  <FiAlertTriangle className="text-warning shrink-0 mt-0.5" size={16} />
+                  <FiAlertTriangle className="text-statut-alerte shrink-0 mt-0.5" size={16} />
                   <p className="text-sm text-on-surface">
-                    Aucun code d'accès n'a encore été envoyé pour ce compte.
-                    Demandez-le à votre administration : il vous parviendra par
-                    e-mail avec vos identifiants.
+                    Aucun code d'accès n'a encore été envoyé pour ce compte. Demandez-le à votre administration : il
+                    vous parviendra par e-mail avec vos identifiants.
                   </p>
                 </div>
               )}
 
               <div className="space-y-2">
-                <label className="block text-xs font-semibold text-on-surface-variant ml-1 uppercase tracking-wider" htmlFor="email">
+                <label
+                  className="block text-xs font-semibold text-on-surface-variant ml-1 uppercase tracking-wider"
+                  htmlFor="email"
+                >
                   Email
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-outline">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-on-surface-variant">
                     <FiMail size={16} />
                   </div>
                   <input
@@ -509,15 +523,18 @@ const PresenceValidationPage = () => {
                     className="w-full bg-surface-container-lowest border-2 border-outline-variant/20 rounded-xl pl-11 pr-4 py-3.5 text-base focus:border-primary focus:outline-none transition-all disabled:opacity-60"
                   />
                 </div>
-                {loginErrors.email && <p className="text-xs text-error ml-1">{loginErrors.email}</p>}
+                {loginErrors.email && <p className="text-xs text-statut-erreur ml-1">{loginErrors.email}</p>}
               </div>
 
               <div className="space-y-2">
-                <label className="block text-xs font-semibold text-on-surface-variant ml-1 uppercase tracking-wider" htmlFor="identifiant">
+                <label
+                  className="block text-xs font-semibold text-on-surface-variant ml-1 uppercase tracking-wider"
+                  htmlFor="identifiant"
+                >
                   Identifiant unique
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-outline">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-on-surface-variant">
                     <FiUser size={16} />
                   </div>
                   <input
@@ -531,15 +548,20 @@ const PresenceValidationPage = () => {
                     className="w-full bg-surface-container-lowest border-2 border-outline-variant/20 rounded-xl pl-11 pr-4 py-3.5 text-base font-mono focus:border-primary focus:outline-none transition-all disabled:opacity-60"
                   />
                 </div>
-                {loginErrors.identifiantUnique && <p className="text-xs text-error ml-1">{loginErrors.identifiantUnique}</p>}
+                {loginErrors.identifiantUnique && (
+                  <p className="text-xs text-statut-erreur ml-1">{loginErrors.identifiantUnique}</p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <label className="block text-xs font-semibold text-on-surface-variant ml-1 uppercase tracking-wider" htmlFor="code">
+                <label
+                  className="block text-xs font-semibold text-on-surface-variant ml-1 uppercase tracking-wider"
+                  htmlFor="code"
+                >
                   Code d'accès
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-outline">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-on-surface-variant">
                     <FiLock size={16} />
                   </div>
                   <input
@@ -555,13 +577,13 @@ const PresenceValidationPage = () => {
                     className="w-full bg-surface-container-lowest border-2 border-outline-variant/20 rounded-xl pl-11 pr-4 py-3.5 text-base font-mono tracking-widest focus:border-primary focus:outline-none transition-all disabled:opacity-60"
                   />
                 </div>
-                {loginErrors.code && <p className="text-xs text-error ml-1">{loginErrors.code}</p>}
+                {loginErrors.code && <p className="text-xs text-statut-erreur ml-1">{loginErrors.code}</p>}
               </div>
 
               <button
                 type="submit"
                 disabled={loginLoading}
-                className="w-full bg-gradient-to-br from-primary to-primary-container text-white py-4 rounded-xl font-headline font-bold text-base shadow-lg shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-70 hover:shadow-xl hover:shadow-primary/30"
+                className="w-full bg-gradient-to-br from-marque to-marque-fonce text-white py-4 rounded-xl font-headline font-bold text-base shadow-lg shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-70 hover:shadow-xl hover:shadow-primary/30"
               >
                 {loginLoading ? <FiLoader className="animate-spin" size={20} /> : <FiArrowRight size={20} />}
                 {loginLoading ? 'Connexion...' : 'Se connecter'}
@@ -574,21 +596,17 @@ const PresenceValidationPage = () => {
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
                 <div className="bg-error/10 rounded-xl p-3.5 flex items-start gap-2.5 border border-error/10 animate-[shake_0.4s_ease-out]">
-                  <FiAlertTriangle className="text-error shrink-0 mt-0.5" size={16} />
-                  <p className="text-sm text-error font-medium">{error}</p>
+                  <FiAlertTriangle className="text-statut-erreur shrink-0 mt-0.5" size={16} />
+                  <p className="text-sm text-statut-erreur font-medium">{error}</p>
                 </div>
               )}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-br from-primary to-primary-container text-white py-4 rounded-xl font-headline font-bold text-base shadow-lg shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-70 hover:shadow-xl hover:shadow-primary/30"
+                className="w-full bg-gradient-to-br from-marque to-marque-fonce text-white py-4 rounded-xl font-headline font-bold text-base shadow-lg shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-70 hover:shadow-xl hover:shadow-primary/30"
               >
-                {loading ? (
-                  <FiLoader className="animate-spin" size={20} />
-                ) : (
-                  <FiCheckCircle size={20} />
-                )}
+                {loading ? <FiLoader className="animate-spin" size={20} /> : <FiCheckCircle size={20} />}
                 {loading ? 'Validation...' : 'Valider ma présence'}
               </button>
             </form>
@@ -598,8 +616,8 @@ const PresenceValidationPage = () => {
 
       {/* Footer */}
       <footer className="py-5 border-t border-outline-variant/5">
-        <p className="text-[10px] font-technical uppercase tracking-widest text-on-surface-variant/60 text-center">
-          Université d'Abomey-Calavi — Système de Gestion de Présence
+        <p className="text-[10px] font-technical uppercase tracking-widest text-on-surface-variant text-center">
+          Université d'Abomey-Calavi, Système de Gestion de Présence
         </p>
       </footer>
 

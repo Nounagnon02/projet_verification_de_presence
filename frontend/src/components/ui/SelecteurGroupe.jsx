@@ -13,7 +13,16 @@ const TYPES_A_GROUPES = ['td', 'tp'];
  * Absent pour un CM ou une évaluation ; un groupe qui ne vaut plus pour le
  * cours ou le type choisi est effacé, pour ne jamais envoyer un groupe caché.
  */
-export default function SelecteurGroupe({ id, ecId, type, value, onChange, className = '', labelClassName = '', wrapperClassName = '' }) {
+export default function SelecteurGroupe({
+  id,
+  ecId,
+  type,
+  value,
+  onChange,
+  className = '',
+  labelClassName = '',
+  wrapperClassName = '',
+}) {
   const actif = Boolean(ecId) && TYPES_A_GROUPES.includes(type);
 
   const groupesQuery = useQuery({
@@ -33,19 +42,23 @@ export default function SelecteurGroupe({ id, ecId, type, value, onChange, class
 
   return (
     <div className={wrapperClassName}>
-      <label htmlFor={id} className={labelClassName}>Groupe</label>
+      <label htmlFor={id} className={labelClassName}>
+        Groupe
+      </label>
       <select id={id} value={value ?? ''} onChange={(e) => onChange(e.target.value)} className={className}>
         <option value="">Toute la promotion</option>
         {liste.map((g) => (
           <option key={g.id} value={g.id}>
-            {g.libelle}{g.filiere?.code ? ` — ${g.filiere.code}` : ''} ({g.etudiants_count} étudiant{g.etudiants_count > 1 ? 's' : ''})
+            {g.libelle}
+            {g.filiere?.code ? ` : ${g.filiere.code}` : ''} ({g.etudiants_count} étudiant
+            {g.etudiants_count > 1 ? 's' : ''})
           </option>
         ))}
       </select>
       {charge && liste.length === 0 && (
         <p className="text-xs text-on-surface-variant pt-1">
-          Aucun groupe de {type.toUpperCase()} pour ce cours : la séance réunit toute la promotion.
-          Les groupes se créent dans Étudiants.
+          Aucun groupe de {type.toUpperCase()} pour ce cours : la séance réunit toute la promotion. Les groupes se
+          créent dans Étudiants.
         </p>
       )}
     </div>

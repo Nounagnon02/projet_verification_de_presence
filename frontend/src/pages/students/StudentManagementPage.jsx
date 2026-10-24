@@ -1,9 +1,28 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { FiPlus, FiEdit2, FiTrash2, FiAlertTriangle, FiLoader, FiRefreshCw, FiUpload, FiCheck, FiFileText, FiTrendingUp, FiUsers, FiBookOpen } from 'react-icons/fi';
 import {
-  listerEtudiants, listerGroupes, creerEtudiant, modifierEtudiant,
-  modifierGroupesEtudiant, supprimerEtudiant, promouvoirEtudiants, importerEtudiantsCsv,
+  FiPlus,
+  FiEdit2,
+  FiTrash2,
+  FiAlertTriangle,
+  FiLoader,
+  FiRefreshCw,
+  FiUpload,
+  FiCheck,
+  FiFileText,
+  FiTrendingUp,
+  FiUsers,
+  FiBookOpen,
+} from 'react-icons/fi';
+import {
+  listerEtudiants,
+  listerGroupes,
+  creerEtudiant,
+  modifierEtudiant,
+  modifierGroupesEtudiant,
+  supprimerEtudiant,
+  promouvoirEtudiants,
+  importerEtudiantsCsv,
 } from '../../api/resources/etudiants';
 import SearchInput from '../../components/ui/SearchInput';
 import Pagination from '../../components/ui/Pagination';
@@ -19,16 +38,23 @@ import EnrollmentDrawer from '../../components/students/EnrollmentDrawer';
 const groupeDe = (etudiant, type) => String(etudiant?.groupes?.find((g) => g.type === type)?.id ?? '');
 
 /** L'étudiant reste-t-il dans sa promotion ? Changer de filière ou d'année le retire de ses groupes. */
-const memePromotion = (etudiant, form) => (
-  String(etudiant?.filiere?.id ?? etudiant?.filiere_id ?? '') === String(form.filiere_id)
-  && String(etudiant?.annee?.id ?? etudiant?.annee_id ?? '') === String(form.annee_id)
-);
+const memePromotion = (etudiant, form) =>
+  String(etudiant?.filiere?.id ?? etudiant?.filiere_id ?? '') === String(form.filiere_id) &&
+  String(etudiant?.annee?.id ?? etudiant?.annee_id ?? '') === String(form.annee_id);
 
 const StudentManagementPage = () => {
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ nom: '', prenom: '', email: '', matricule: '', filiere_id: '', annee_id: '', est_responsable: false });
+  const [form, setForm] = useState({
+    nom: '',
+    prenom: '',
+    email: '',
+    matricule: '',
+    filiere_id: '',
+    annee_id: '',
+    est_responsable: false,
+  });
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
@@ -51,7 +77,10 @@ const StudentManagementPage = () => {
   // La grille des filières mène ici avec ?filiere=…&annee=… : les filtres s'y ouvrent.
   const [parametres] = useSearchParams();
   const filtres = useFiltresAcademiques({
-    onChangement: () => { setPageCourante(1); setFiltreGroupe(''); },
+    onChangement: () => {
+      setPageCourante(1);
+      setFiltreGroupe('');
+    },
     initial: { annee: parametres.get('annee'), filiere: parametres.get('filiere') },
   });
   const { annees, filieres, filieresToutes } = filtres;
@@ -107,7 +136,7 @@ const StudentManagementPage = () => {
   const pagination = etudiantsQuery.data?.meta ?? null;
   const loading = etudiantsQuery.isLoading;
   const error = etudiantsQuery.isError
-    ? (etudiantsQuery.error?.response?.data?.message || etudiantsQuery.error?.message || 'Erreur de connexion au serveur')
+    ? etudiantsQuery.error?.response?.data?.message || etudiantsQuery.error?.message || 'Erreur de connexion au serveur'
     : null;
 
   // Après une création, une modification, une suppression, une promotion ou
@@ -137,7 +166,15 @@ const StudentManagementPage = () => {
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ nom: '', prenom: '', email: '', matricule: '', filiere_id: '', annee_id: activeYear?.id?.toString() || '', est_responsable: false });
+    setForm({
+      nom: '',
+      prenom: '',
+      email: '',
+      matricule: '',
+      filiere_id: '',
+      annee_id: activeYear?.id?.toString() || '',
+      est_responsable: false,
+    });
     setFormError('');
     setShowModal(true);
   };
@@ -187,7 +224,7 @@ const StudentManagementPage = () => {
       return;
     }
     if (editing && !form.annee_id) {
-      setFormError("Veuillez sélectionner une année académique");
+      setFormError('Veuillez sélectionner une année académique');
       return;
     }
     setSaving(true);
@@ -213,8 +250,10 @@ const StudentManagementPage = () => {
         await modifierEtudiant(editing.id, payload);
         // Les groupes ne se choisissent que dans la même promotion : un changement
         // de filière ou d'année en retire l'étudiant, côté serveur.
-        if (memePromotion(editing, form)
-          && (formGroupes.td !== groupeDe(editing, 'td') || formGroupes.tp !== groupeDe(editing, 'tp'))) {
+        if (
+          memePromotion(editing, form) &&
+          (formGroupes.td !== groupeDe(editing, 'td') || formGroupes.tp !== groupeDe(editing, 'tp'))
+        ) {
           await modifierGroupesEtudiant(editing.id, formGroupes);
         }
         addToast?.('Étudiant modifié avec succès', 'success');
@@ -226,9 +265,10 @@ const StudentManagementPage = () => {
       rafraichir();
     } catch (err) {
       const data = err.response?.data;
-      const msg = (data?.errors ? Object.values(data.errors).flat().join(', ') : null)
-        || data?.message
-        || "Erreur lors de l'enregistrement";
+      const msg =
+        (data?.errors ? Object.values(data.errors).flat().join(', ') : null) ||
+        data?.message ||
+        "Erreur lors de l'enregistrement";
       setFormError(msg);
     } finally {
       setSaving(false);
@@ -263,7 +303,10 @@ const StudentManagementPage = () => {
 
   // Récupère le nombre d'étudiants concernés sans rien modifier.
   const previewPromotion = useCallback(async (fromId) => {
-    if (!fromId) { setPromotePreview(null); return; }
+    if (!fromId) {
+      setPromotePreview(null);
+      return;
+    }
     try {
       const data = await promouvoirEtudiants({
         from_filiere_id: parseInt(fromId, 10),
@@ -281,7 +324,9 @@ const StudentManagementPage = () => {
   const filiereSuivante = (depart) => {
     const rang = depart ? ordreNiveaux.indexOf(depart.niveau) : -1;
     if (!depart?.programme_id || rang < 0 || rang + 1 >= ordreNiveaux.length) return null;
-    return filieresToutes.find((f) => f.programme_id === depart.programme_id && f.niveau === ordreNiveaux[rang + 1]) ?? null;
+    return (
+      filieresToutes.find((f) => f.programme_id === depart.programme_id && f.niveau === ordreNiveaux[rang + 1]) ?? null
+    );
   };
   const filiereDepart = filieresToutes.find((f) => String(f.id) === promoteForm.from_filiere_id) ?? null;
   const filiereProposee = filiereSuivante(filiereDepart);
@@ -310,7 +355,9 @@ const StudentManagementPage = () => {
       rafraichir();
     } catch (err) {
       const d = err.response?.data;
-      setPromoteError((d?.errors ? Object.values(d.errors).flat().join(', ') : null) || d?.message || 'Erreur lors de la promotion.');
+      setPromoteError(
+        (d?.errors ? Object.values(d.errors).flat().join(', ') : null) || d?.message || 'Erreur lors de la promotion.',
+      );
     } finally {
       setPromoting(false);
     }
@@ -325,7 +372,9 @@ const StudentManagementPage = () => {
     if (!f) return;
     const ext = '.' + f.name.split('.').pop().toLowerCase();
     if (ext === '.csv' || ext === '.xlsx') {
-      setImportFile(f); setImportError(''); setImportResult(null);
+      setImportFile(f);
+      setImportError('');
+      setImportResult(null);
     } else setImportError('Format non supporté. Utilisez CSV ou XLSX.');
   };
 
@@ -354,13 +403,15 @@ const StudentManagementPage = () => {
         });
       } else {
         setImportResult({
-          success: false, imported: 0, total: 0,
+          success: false,
+          imported: 0,
+          total: 0,
           errors: [apiData.message || JSON.stringify(apiData)],
         });
       }
       rafraichir();
     } catch (err) {
-      const message = err.response?.data?.message || err.message || 'Erreur lors de l\'import';
+      const message = err.response?.data?.message || err.message || "Erreur lors de l'import";
       setImportError(message);
       setImportResult(null);
     } finally {
@@ -368,87 +419,202 @@ const StudentManagementPage = () => {
     }
   };
 
-  const resetImport = () => { setImportFile(null); setImportResult(null); setImportError(''); if (importFileRef.current) importFileRef.current.value = ''; };
+  const resetImport = () => {
+    setImportFile(null);
+    setImportResult(null);
+    setImportError('');
+    if (importFileRef.current) importFileRef.current.value = '';
+  };
 
   return (
     <div>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-primary font-headline">Gestion des Étudiants</h1>
-          <p className="text-sm text-on-surface-variant">
-            {pagination?.total ?? students.length} étudiant(s) inscrit(s)
-          </p>
+          <h1 className="titre-page">Gestion des Étudiants</h1>
+          <p className="sous-titre-page">{pagination?.total ?? students.length} étudiant(s) inscrit(s)</p>
         </div>
+        {/* Action principale pleine largeur sur téléphone, actions secondaires
+            dessous : les cinq boutons s'étalaient sur trois lignes inégales. */}
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={rafraichir} className="p-2.5 hover:bg-surface-container-high rounded-xl transition-colors" title="Actualiser">
-            <FiRefreshCw className={`text-on-surface-variant ${loading ? 'animate-spin' : ''}`} />
+          <button type="button" onClick={openCreate} className="btn-primaire w-full sm:w-auto sm:order-last">
+            <FiPlus aria-hidden="true" /> Nouvel étudiant
           </button>
-          <button onClick={openCreate} className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 transition-all shadow-sm">
-            <FiPlus /> Nouvel étudiant
+          <button
+            type="button"
+            onClick={() => {
+              setShowImportModal(true);
+              resetImport();
+            }}
+            className="btn-secondaire flex-1 sm:flex-none px-3 sm:px-4"
+          >
+            <FiUpload aria-hidden="true" /> Import en masse
           </button>
-          <button onClick={() => { setShowImportModal(true); resetImport(); }} className="flex items-center gap-2 bg-secondary/10 text-secondary px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-secondary/20 transition-all shadow-sm">
-            <FiUpload /> Import en masse
+          <button
+            type="button"
+            onClick={openPromote}
+            className="btn-secondaire flex-1 sm:flex-none px-3 sm:px-4"
+            title="Passer une promotion à l'année/niveau suivant"
+          >
+            <FiTrendingUp aria-hidden="true" /> Promouvoir
           </button>
-          <button onClick={openPromote} className="flex items-center gap-2 bg-tertiary/10 text-tertiary px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-tertiary/20 transition-all shadow-sm" title="Passer une promotion à l'année/niveau suivant">
-            <FiTrendingUp /> Promouvoir
+          <button
+            type="button"
+            onClick={() => setShowGroupes(true)}
+            className="btn-secondaire flex-1 sm:flex-none px-3 sm:px-4"
+            title="Groupes de TD et de TP d'une promotion"
+          >
+            <FiUsers aria-hidden="true" /> Groupes
           </button>
-          <button onClick={() => setShowGroupes(true)} className="flex items-center gap-2 bg-surface-container-high text-on-surface px-5 py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 transition-all shadow-sm" title="Groupes de TD et de TP d'une promotion">
-            <FiUsers /> Groupes
+          <button
+            type="button"
+            onClick={rafraichir}
+            className="btn-icone"
+            title="Actualiser"
+            aria-label="Actualiser la liste"
+          >
+            <FiRefreshCw className={loading ? 'animate-spin' : ''} aria-hidden="true" />
           </button>
         </div>
       </div>
 
-      {/* Filtres */}
+      {/* Filtres : grille régulière (2 colonnes sur téléphone) au lieu de
+          largeurs minimales disparates qui laissaient des champs orphelins. */}
       <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/10 mb-6">
-        <div className="flex flex-wrap items-end gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 items-end gap-3 sm:gap-4 [&>div]:min-w-0">
           <div className="space-y-1 flex-1 min-w-[160px]">
-            <label htmlFor="filtre-annee" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Année académique</label>
-            <select id="filtre-annee" value={filtres.annee} onChange={(e) => filtres.setAnnee(e.target.value)}
-              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
+            <label
+              htmlFor="filtre-annee"
+              className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Année académique
+            </label>
+            <select
+              id="filtre-annee"
+              value={filtres.annee}
+              onChange={(e) => filtres.setAnnee(e.target.value)}
+              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <option value="">Toutes les années</option>
-              {annees.map(a => <option key={a.id} value={a.id}>{a.libelle || a.annee}{a.active ? ' (Active)' : ''}</option>)}
+              {annees.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.libelle || a.annee}
+                  {a.active ? ' (Active)' : ''}
+                </option>
+              ))}
             </select>
           </div>
           <div className="space-y-1 flex-1 min-w-[160px]">
-            <label htmlFor="filtre-filiere" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Filière</label>
-            <select id="filtre-filiere" value={filtres.filiere} onChange={(e) => filtres.setFiliere(e.target.value)}
-              disabled={filtres.anneeVide} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
+            <label
+              htmlFor="filtre-filiere"
+              className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Filière
+            </label>
+            <select
+              id="filtre-filiere"
+              value={filtres.filiere}
+              onChange={(e) => filtres.setFiliere(e.target.value)}
+              disabled={filtres.anneeVide}
+              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <option value="">{filtres.anneeVide ? 'Aucune filière cette année' : 'Toutes les filières'}</option>
-              {filieres.map(f => <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>)}
+              {filieres.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.code} : {f.intitule}
+                </option>
+              ))}
             </select>
           </div>
           <div className="space-y-1 min-w-[140px]">
-            <label htmlFor="filtre-niveau" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Niveau</label>
-            <select id="filtre-niveau" value={filtres.niveau} onChange={(e) => filtres.setNiveau(e.target.value)}
-              disabled={filtres.niveaux.length === 0} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
+            <label
+              htmlFor="filtre-niveau"
+              className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Niveau
+            </label>
+            <select
+              id="filtre-niveau"
+              value={filtres.niveau}
+              onChange={(e) => filtres.setNiveau(e.target.value)}
+              disabled={filtres.niveaux.length === 0}
+              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <option value="">Tous les niveaux</option>
-              {filtres.niveaux.map(n => <option key={n} value={n}>{n}</option>)}
+              {filtres.niveaux.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
             </select>
           </div>
           <div className="space-y-1 min-w-[120px]">
-            <label htmlFor="filtre-semestre" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Semestre</label>
-            <select id="filtre-semestre" value={filtres.semestre} onChange={(e) => filtres.setSemestre(e.target.value)}
-              disabled={filtres.semestres.length === 0} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
+            <label
+              htmlFor="filtre-semestre"
+              className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Semestre
+            </label>
+            <select
+              id="filtre-semestre"
+              value={filtres.semestre}
+              onChange={(e) => filtres.setSemestre(e.target.value)}
+              disabled={filtres.semestres.length === 0}
+              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <option value="">Tous</option>
-              {filtres.semestres.map(s => <option key={s} value={s}>Semestre {s}</option>)}
+              {filtres.semestres.map((s) => (
+                <option key={s} value={s}>
+                  Semestre {s}
+                </option>
+              ))}
             </select>
           </div>
           <div className="space-y-1 min-w-[140px]">
-            <label htmlFor="filtre-responsable" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Responsable</label>
-            <select id="filtre-responsable" value={filtreResponsable} onChange={(e) => { setFiltreResponsable(e.target.value); setPageCourante(1); }}
-              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
+            <label
+              htmlFor="filtre-responsable"
+              className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Responsable
+            </label>
+            <select
+              id="filtre-responsable"
+              value={filtreResponsable}
+              onChange={(e) => {
+                setFiltreResponsable(e.target.value);
+                setPageCourante(1);
+              }}
+              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <option value="">Tous les étudiants</option>
               <option value="1">Responsables uniquement</option>
               <option value="0">Non-responsables</option>
             </select>
           </div>
           <div className="space-y-1 min-w-[140px]">
-            <label htmlFor="filtre-groupe" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Groupe</label>
-            <select id="filtre-groupe" value={filtreGroupe} onChange={(e) => { setFiltreGroupe(e.target.value); setPageCourante(1); }}
+            <label
+              htmlFor="filtre-groupe"
+              className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Groupe
+            </label>
+            <select
+              id="filtre-groupe"
+              value={filtreGroupe}
+              onChange={(e) => {
+                setFiltreGroupe(e.target.value);
+                setPageCourante(1);
+              }}
               disabled={groupesFiltre.length === 0}
-              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
-              <option value="">{!filtres.filiere ? 'Choisir une filière' : groupesFiltre.length ? 'Tous les groupes' : 'Aucun groupe'}</option>
-              {groupesFiltre.map((g) => <option key={g.id} value={g.id}>{g.type.toUpperCase()} {g.libelle}</option>)}
+              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="">
+                {!filtres.filiere ? 'Choisir une filière' : groupesFiltre.length ? 'Tous les groupes' : 'Aucun groupe'}
+              </option>
+              {groupesFiltre.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.type.toUpperCase()} {g.libelle}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -458,13 +624,21 @@ const StudentManagementPage = () => {
             tableau vide. */}
         {filtres.anneeVide && (
           <p className="mt-3 text-xs text-on-surface-variant">
-            Cette année académique ne contient encore aucune filière. Rattachez-lui
-            des filières, ou choisissez une autre année.
+            Cette année académique ne contient encore aucune filière. Rattachez-lui des filières, ou choisissez une
+            autre année.
           </p>
         )}
       </div>
 
-      <SearchInput value={search} onChange={(v) => { setSearch(v); setPageCourante(1); }} placeholder="Rechercher par nom, prénom, matricule..." className="mb-6 max-w-md" />
+      <SearchInput
+        value={search}
+        onChange={(v) => {
+          setSearch(v);
+          setPageCourante(1);
+        }}
+        placeholder="Rechercher par nom, prénom, matricule..."
+        className="mb-6 max-w-md"
+      />
 
       {error && (
         <div className="mb-6 flex items-start gap-3 p-4 bg-error-container/30 rounded-xl text-on-error-container text-sm border border-error/10">
@@ -473,27 +647,39 @@ const StudentManagementPage = () => {
             <p className="font-semibold">Erreur de chargement</p>
             <p className="text-xs mt-1 opacity-80">{error}</p>
           </div>
-          <button onClick={rafraichir} className="px-3 py-1 bg-error/10 hover:bg-error/20 rounded-lg text-xs font-semibold transition-colors">
+          <button
+            onClick={rafraichir}
+            className="px-3 py-1 bg-error/10 hover:bg-error/20 rounded-lg text-xs font-semibold transition-colors"
+          >
             Réessayer
           </button>
         </div>
       )}
 
       {deleteId && (
-        <div className="mb-6 flex items-center gap-3 p-4 bg-error/10 rounded-xl text-error border border-error/10">
+        <div className="mb-6 flex items-center gap-3 p-4 bg-statut-erreur-fond rounded-xl text-statut-erreur border border-error/10">
           <FiAlertTriangle />
           {/* « Irréversible » était faux : la suppression est douce, pour ne pas
               effacer l'historique de présence qui pointe sur cet étudiant.
               Annoncer une perte définitive dissuadait d'une action qui ne l'est
               pas, et laissait croire le matricule libéré. */}
           <p className="flex-1 text-sm">
-            Supprimer cet étudiant ? Il disparaît des listes, mais son historique de
-            présence est conservé : le réinscrire avec le même matricule lui rendra
-            son dossier.
+            Supprimer cet étudiant ? Il disparaît des listes, mais son historique de présence est conservé : le
+            réinscrire avec le même matricule lui rendra son dossier.
           </p>
-          <button onClick={confirmDelete} disabled={deleting} className="flex items-center gap-2 px-4 py-1.5 bg-error text-white rounded-lg text-sm font-semibold disabled:opacity-50">
-            {deleting && <FiLoader className="animate-spin" />} Confirmer</button>
-          <button onClick={() => setDeleteId(null)} className="px-4 py-1.5 text-sm font-semibold hover:bg-surface-container-high rounded-lg transition-colors">Annuler</button>
+          <button
+            onClick={confirmDelete}
+            disabled={deleting}
+            className="flex items-center gap-2 px-4 py-1.5 bg-error text-white rounded-lg text-sm font-semibold disabled:opacity-50"
+          >
+            {deleting && <FiLoader className="animate-spin" />} Confirmer
+          </button>
+          <button
+            onClick={() => setDeleteId(null)}
+            className="px-4 py-1.5 text-sm font-semibold hover:bg-surface-container-high rounded-lg transition-colors"
+          >
+            Annuler
+          </button>
         </div>
       )}
 
@@ -520,115 +706,194 @@ const StudentManagementPage = () => {
               </tr>
             ) : students.length === 0 ? (
               <tr>
-                <td colSpan={8} className="p-8 text-center text-on-surface-variant">Aucun étudiant trouvé</td>
+                <td colSpan={8} className="p-8 text-center text-on-surface-variant">
+                  Aucun étudiant trouvé
+                </td>
               </tr>
-            ) : Array.isArray(students) && students.map((s) => (
-              <tr key={s.id} className="border-b border-outline-variant/5 hover:bg-surface-container-low/50 transition-colors">
-                <td className="p-4 font-mono text-xs font-semibold">{s.matricule}</td>
-                <td className="p-4 font-medium">
-                  <span className="flex items-center gap-2">
-                    {s.nom}
-                    {/* Paire de jetons opaques : les modificateurs d'opacité
+            ) : (
+              Array.isArray(students) &&
+              students.map((s) => (
+                <tr
+                  key={s.id}
+                  className="border-b border-outline-variant/5 hover:bg-surface-container-low/50 transition-colors"
+                >
+                  <td className="p-4 font-mono text-xs font-semibold">{s.matricule}</td>
+                  <td className="p-4 font-medium">
+                    <span className="flex items-center gap-2">
+                      {s.nom}
+                      {/* Paire de jetons opaques : les modificateurs d'opacité
                         (bg-primary/10) ne produisent aucun CSS sur les couleurs
                         déclarées en var(), le badge serait invisible. */}
-                    {s.est_responsable && (
-                      <span
-                        title="Responsable de la promotion — affiche le QR Code des séances qu'il suit"
-                        className="shrink-0 rounded-full bg-secondary-container px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-on-secondary-container">
-                        Responsable
-                      </span>
-                    )}
-                  </span>
-                </td>
-                <td className="p-4">{s.prenom}</td>
-                <td className="p-4 text-on-surface-variant hidden md:table-cell">{s.email}</td>
-                <td className="p-4 hidden lg:table-cell">{s.filiere?.code || s.filiere || '-'}</td>
-                <td className="p-4 hidden lg:table-cell">
-                  <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-semibold">{s.annee?.annee || s.annee || '-'}</span>
-                </td>
-                <td className="p-4 hidden lg:table-cell">
-                  {s.groupes?.length ? (
-                    <span className="flex flex-wrap gap-1">
-                      {[...s.groupes].sort((a, b) => a.type.localeCompare(b.type)).map((g) => (
-                        <span key={g.id} className="px-2 py-0.5 bg-surface-container-high rounded text-xs font-medium whitespace-nowrap">
-                          {g.type.toUpperCase()} {g.libelle}
+                      {s.est_responsable && (
+                        <span
+                          title="Responsable de la promotion : affiche le QR Code des séances qu'il suit"
+                          className="shrink-0 rounded-full bg-secondary-container px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-on-secondary-container"
+                        >
+                          Responsable
                         </span>
-                      ))}
+                      )}
                     </span>
-                  ) : <span className="text-on-surface-variant">—</span>}
-                </td>
-                <td className="p-4 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <button onClick={() => setEnrollmentStudent(s)} title="Inscriptions aux EC" className="p-2 hover:bg-surface-container-high rounded-lg transition-colors">
-                      <FiBookOpen className="text-on-surface-variant" />
-                    </button>
-                    <button onClick={() => openEdit(s)} title="Modifier" className="p-2 hover:bg-surface-container-high rounded-lg transition-colors">
-                      <FiEdit2 className="text-on-surface-variant" />
-                    </button>
-                    <button onClick={() => setDeleteId(s.id)} title="Supprimer" className="p-2 hover:bg-error/10 rounded-lg transition-colors">
-                      <FiTrash2 className="text-error" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="p-4">{s.prenom}</td>
+                  <td className="p-4 text-on-surface-variant hidden md:table-cell">{s.email}</td>
+                  <td className="p-4 hidden lg:table-cell">{s.filiere?.code || s.filiere || '-'}</td>
+                  <td className="p-4 hidden lg:table-cell">
+                    <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-semibold">
+                      {s.annee?.annee || s.annee || '-'}
+                    </span>
+                  </td>
+                  <td className="p-4 hidden lg:table-cell">
+                    {s.groupes?.length ? (
+                      <span className="flex flex-wrap gap-1">
+                        {[...s.groupes]
+                          .sort((a, b) => a.type.localeCompare(b.type))
+                          .map((g) => (
+                            <span
+                              key={g.id}
+                              className="px-2 py-0.5 bg-surface-container-high rounded text-xs font-medium whitespace-nowrap"
+                            >
+                              {g.type.toUpperCase()} {g.libelle}
+                            </span>
+                          ))}
+                      </span>
+                    ) : (
+                      <span className="text-on-surface-variant">—</span>
+                    )}
+                  </td>
+                  <td className="p-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => setEnrollmentStudent(s)}
+                        title="Inscriptions aux EC"
+                        className="p-2 hover:bg-surface-container-high rounded-lg transition-colors"
+                      >
+                        <FiBookOpen className="text-on-surface-variant" />
+                      </button>
+                      <button
+                        onClick={() => openEdit(s)}
+                        title="Modifier"
+                        className="p-2 hover:bg-surface-container-high rounded-lg transition-colors"
+                      >
+                        <FiEdit2 className="text-on-surface-variant" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteId(s.id)}
+                        title="Supprimer"
+                        className="p-2 hover:bg-error/10 rounded-lg transition-colors"
+                      >
+                        <FiTrash2 className="text-statut-erreur" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
 
         <div className="px-4 pb-4">
-          <Pagination pagination={pagination || { current_page: page, last_page: 1, from: 1, to: students.length, total: students.length }} onPageChange={setPageCourante} />
+          <Pagination
+            pagination={
+              pagination || { current_page: page, last_page: 1, from: 1, to: students.length, total: students.length }
+            }
+            onPageChange={setPageCourante}
+          />
         </div>
       </div>
 
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editing ? "Modifier l'étudiant" : 'Nouvel étudiant'} size="lg">
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={editing ? "Modifier l'étudiant" : 'Nouvel étudiant'}
+        size="lg"
+      >
         <form onSubmit={handleSave} className="space-y-4">
           {formError && (
-            <div className="flex items-center gap-2 p-3 bg-error/10 rounded-xl text-error text-sm">
+            <div className="flex items-center gap-2 p-3 bg-statut-erreur-fond rounded-xl text-statut-erreur text-sm">
               <FiAlertTriangle /> {formError}
             </div>
           )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label htmlFor="etudiant-nom" className="text-xs font-semibold text-on-surface-variant">Nom *</label>
-              <input id="etudiant-nom" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
-                value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} />
+              <label htmlFor="etudiant-nom" className="text-xs font-semibold text-on-surface-variant">
+                Nom *
+              </label>
+              <input
+                id="etudiant-nom"
+                className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
+                value={form.nom}
+                onChange={(e) => setForm({ ...form, nom: e.target.value })}
+              />
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="etudiant-prenom" className="text-xs font-semibold text-on-surface-variant">Prénom *</label>
-              <input id="etudiant-prenom" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
-                value={form.prenom} onChange={(e) => setForm({ ...form, prenom: e.target.value })} />
+              <label htmlFor="etudiant-prenom" className="text-xs font-semibold text-on-surface-variant">
+                Prénom *
+              </label>
+              <input
+                id="etudiant-prenom"
+                className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
+                value={form.prenom}
+                onChange={(e) => setForm({ ...form, prenom: e.target.value })}
+              />
             </div>
           </div>
           <div className="space-y-1.5">
-            <label htmlFor="etudiant-email" className="text-xs font-semibold text-on-surface-variant">Email *</label>
-            <input id="etudiant-email" type="email" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
-              value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            <label htmlFor="etudiant-email" className="text-xs font-semibold text-on-surface-variant">
+              Email *
+            </label>
+            <input
+              id="etudiant-email"
+              type="email"
+              className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
           </div>
           <div className="space-y-1.5">
-            <label htmlFor="etudiant-matricule" className="text-xs font-semibold text-on-surface-variant">Matricule *</label>
-            <input id="etudiant-matricule" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono border-b-2 border-transparent focus:border-primary transition-colors"
-              value={form.matricule} onChange={(e) => setForm({ ...form, matricule: e.target.value })} placeholder="22-XXXX-XXXX" required />
+            <label htmlFor="etudiant-matricule" className="text-xs font-semibold text-on-surface-variant">
+              Matricule *
+            </label>
+            <input
+              id="etudiant-matricule"
+              className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono border-b-2 border-transparent focus:border-primary transition-colors"
+              value={form.matricule}
+              onChange={(e) => setForm({ ...form, matricule: e.target.value })}
+              placeholder="22-XXXX-XXXX"
+              required
+            />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label htmlFor="etudiant-filiere" className="text-xs font-semibold text-on-surface-variant">Filière *</label>
-              <select id="etudiant-filiere" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
-                value={form.filiere_id} onChange={(e) => setForm({ ...form, filiere_id: e.target.value })}>
+              <label htmlFor="etudiant-filiere" className="text-xs font-semibold text-on-surface-variant">
+                Filière *
+              </label>
+              <select
+                id="etudiant-filiere"
+                className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
+                value={form.filiere_id}
+                onChange={(e) => setForm({ ...form, filiere_id: e.target.value })}
+              >
                 <option value="">Sélectionner une filière</option>
                 {filieresToutes.map((f) => (
                   <option key={f.id} value={f.id}>
-                    {f.code} — {f.intitule}
+                    {f.code} : {f.intitule}
                   </option>
                 ))}
               </select>
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="etudiant-annee" className="text-xs font-semibold text-on-surface-variant">Année académique</label>
+              <label htmlFor="etudiant-annee" className="text-xs font-semibold text-on-surface-variant">
+                Année académique
+              </label>
               {editing ? (
                 // En édition, l'année reste modifiable (le changement d'année
                 // relève d'une promotion — voir évolution à venir).
-                <select id="etudiant-annee" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
-                  value={form.annee_id} onChange={(e) => setForm({ ...form, annee_id: e.target.value })}>
+                <select
+                  id="etudiant-annee"
+                  className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
+                  value={form.annee_id}
+                  onChange={(e) => setForm({ ...form, annee_id: e.target.value })}
+                >
                   <option value="">Sélectionner une année</option>
                   {annees.map((a) => (
                     <option key={a.id} value={a.id}>
@@ -653,16 +918,33 @@ const StudentManagementPage = () => {
                   nouvelle promotion.
                 </p>
               ) : groupesEleve.length === 0 ? (
-                <p className="text-xs text-on-surface-variant">Aucun groupe dans cette promotion : créez-les depuis « Groupes ».</p>
+                <p className="text-xs text-on-surface-variant">
+                  Aucun groupe dans cette promotion : créez-les depuis « Groupes ».
+                </p>
               ) : (
                 <div className="grid grid-cols-2 gap-4">
                   {['td', 'tp'].map((type) => (
                     <div key={type} className="space-y-1.5">
-                      <label htmlFor={`etudiant-groupe-${type}`} className="text-xs font-semibold text-on-surface-variant">Groupe de {type.toUpperCase()}</label>
-                      <select id={`etudiant-groupe-${type}`} value={formGroupes[type]} onChange={(e) => setFormGroupes((g) => ({ ...g, [type]: e.target.value }))}
-                        className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors">
+                      <label
+                        htmlFor={`etudiant-groupe-${type}`}
+                        className="text-xs font-semibold text-on-surface-variant"
+                      >
+                        Groupe de {type.toUpperCase()}
+                      </label>
+                      <select
+                        id={`etudiant-groupe-${type}`}
+                        value={formGroupes[type]}
+                        onChange={(e) => setFormGroupes((g) => ({ ...g, [type]: e.target.value }))}
+                        className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-b-2 border-transparent focus:border-primary transition-colors"
+                      >
                         <option value="">Aucun</option>
-                        {groupesEleve.filter((g) => g.type === type).map((g) => <option key={g.id} value={g.id}>{g.libelle}</option>)}
+                        {groupesEleve
+                          .filter((g) => g.type === type)
+                          .map((g) => (
+                            <option key={g.id} value={g.id}>
+                              {g.libelle}
+                            </option>
+                          ))}
                       </select>
                     </div>
                   ))}
@@ -672,26 +954,33 @@ const StudentManagementPage = () => {
           )}
           {editing && (
             <label className="flex items-start gap-3 rounded-xl bg-surface-container-high px-3 py-3 cursor-pointer">
-              <input type="checkbox" checked={form.est_responsable}
+              <input
+                type="checkbox"
+                checked={form.est_responsable}
                 onChange={(e) => setForm({ ...form, est_responsable: e.target.checked })}
-                className="mt-0.5 h-4 w-4 accent-primary" />
+                className="mt-0.5 h-4 w-4 accent-primary"
+              />
               <span>
                 <span className="block text-sm font-semibold text-on-surface">Responsable de la promotion</span>
                 <span className="block text-xs text-on-surface-variant">
-                  Donne accès, dans l'application mobile, à l'onglet affichant le QR Code du cours en
-                  séance. Le responsable peut le présenter et le partager, jamais le générer. Il n'affiche
-                  que les séances qu'il suit : avec des groupes de TD ou de TP, désignez un responsable
-                  par groupe.
+                  Donne accès, dans l'application mobile, à l'onglet affichant le QR Code du cours en séance. Le
+                  responsable peut le présenter et le partager, jamais le générer. Il n'affiche que les séances qu'il
+                  suit : avec des groupes de TD ou de TP, désignez un responsable par groupe.
                 </span>
               </span>
             </label>
           )}
           <div className="flex justify-end gap-3 pt-4">
-            <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors">
+            <button
+              type="button"
+              onClick={() => setShowModal(false)}
+              className="px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors"
+            >
               Annuler
             </button>
-            <button type="submit" disabled={saving} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50">
-              {saving && <FiLoader className="animate-spin" />}{saving ? 'Enregistrement...' : editing ? 'Modifier' : 'Créer'}
+            <button type="submit" disabled={saving} className="btn-primaire">
+              {saving && <FiLoader className="animate-spin" />}
+              {saving ? 'Enregistrement...' : editing ? 'Modifier' : 'Créer'}
             </button>
           </div>
         </form>
@@ -701,46 +990,67 @@ const StudentManagementPage = () => {
       <Modal isOpen={showPromote} onClose={() => setShowPromote(false)} title="Promouvoir une promotion" size="lg">
         <div className="space-y-4">
           <p className="text-sm text-on-surface-variant">
-            Fait passer tous les étudiants d'une filière vers une autre (ex. L1 → L2), et
-            réinscrit chacun aux cours de sa nouvelle filière. L'identifiant de connexion des
-            étudiants reste inchangé. Ils quittent leurs groupes de TD et de TP : répartissez ensuite la
-            nouvelle promotion depuis « Groupes ».
+            Fait passer tous les étudiants d'une filière vers une autre (ex. L1 → L2), et réinscrit chacun aux cours de
+            sa nouvelle filière. L'identifiant de connexion des étudiants reste inchangé. Ils quittent leurs groupes de
+            TD et de TP : répartissez ensuite la nouvelle promotion depuis « Groupes ».
           </p>
 
           {promoteError && (
-            <div className="flex items-start gap-2 p-3 bg-error/10 text-error rounded-lg text-sm">
+            <div className="flex items-start gap-2 p-3 bg-statut-erreur-fond text-statut-erreur rounded-lg text-sm">
               <FiAlertTriangle className="mt-0.5 shrink-0" /> <span>{promoteError}</span>
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label htmlFor="promo-depart" className="text-xs font-semibold text-on-surface-variant">Filière de départ *</label>
-              <select id="promo-depart" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              <label htmlFor="promo-depart" className="text-xs font-semibold text-on-surface-variant">
+                Filière de départ *
+              </label>
+              <select
+                id="promo-depart"
+                className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                 value={promoteForm.from_filiere_id}
                 onChange={(e) => {
                   const v = e.target.value;
                   // La destination proposée : le niveau suivant du même programme.
                   const suivante = filiereSuivante(filieresToutes.find((f) => String(f.id) === v));
-                  setPromoteForm({ ...promoteForm, from_filiere_id: v, to_filiere_id: suivante ? String(suivante.id) : '' });
+                  setPromoteForm({
+                    ...promoteForm,
+                    from_filiere_id: v,
+                    to_filiere_id: suivante ? String(suivante.id) : '',
+                  });
                   previewPromotion(v);
-                }}>
+                }}
+              >
                 <option value="">Sélectionner...</option>
-                {filieresToutes.map((f) => <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>)}
+                {filieresToutes.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.code} : {f.intitule}
+                  </option>
+                ))}
               </select>
               {promotePreview !== null && (
                 <p className="text-xs text-on-surface-variant">{promotePreview} étudiant(s) concerné(s)</p>
               )}
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="promo-destination" className="text-xs font-semibold text-on-surface-variant">Filière de destination *</label>
-              <select id="promo-destination" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              <label htmlFor="promo-destination" className="text-xs font-semibold text-on-surface-variant">
+                Filière de destination *
+              </label>
+              <select
+                id="promo-destination"
+                className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                 value={promoteForm.to_filiere_id}
-                onChange={(e) => setPromoteForm({ ...promoteForm, to_filiere_id: e.target.value })}>
+                onChange={(e) => setPromoteForm({ ...promoteForm, to_filiere_id: e.target.value })}
+              >
                 <option value="">Sélectionner...</option>
-                {filieresToutes.filter((f) => f.id?.toString() !== promoteForm.from_filiere_id).map((f) => (
-                  <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>
-                ))}
+                {filieresToutes
+                  .filter((f) => f.id?.toString() !== promoteForm.from_filiere_id)
+                  .map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.code} : {f.intitule}
+                    </option>
+                  ))}
               </select>
               {filiereDepart && (
                 <p className="text-xs text-on-surface-variant">
@@ -753,7 +1063,10 @@ const StudentManagementPage = () => {
           </div>
 
           {horsParcours && (
-            <p role="alert" className="flex items-start gap-2 p-3 bg-warning-container rounded-lg text-xs text-on-surface">
+            <p
+              role="alert"
+              className="flex items-start gap-2 p-3 bg-warning-container rounded-lg text-xs text-on-surface"
+            >
               <FiAlertTriangle className="mt-0.5 shrink-0" aria-hidden="true" />
               <span>
                 {filiereDepart.code} → {filiereDestination.code} : ce n'est pas le niveau suivant du même programme.
@@ -763,13 +1076,20 @@ const StudentManagementPage = () => {
           )}
 
           <div className="space-y-1.5">
-            <label htmlFor="promo-annee-destination" className="text-xs font-semibold text-on-surface-variant">Année de destination</label>
-            <select id="promo-annee-destination" className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            <label htmlFor="promo-annee-destination" className="text-xs font-semibold text-on-surface-variant">
+              Année de destination
+            </label>
+            <select
+              id="promo-annee-destination"
+              className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
               value={promoteForm.to_annee_id}
-              onChange={(e) => setPromoteForm({ ...promoteForm, to_annee_id: e.target.value })}>
+              onChange={(e) => setPromoteForm({ ...promoteForm, to_annee_id: e.target.value })}
+            >
               <option value="">Conserver l'année actuelle</option>
               {annees.map((a) => (
-                <option key={a.id} value={a.id}>{a.libelle || a.annee} {a.active || a.is_active ? '(active)' : ''}</option>
+                <option key={a.id} value={a.id}>
+                  {a.libelle || a.annee} {a.active || a.is_active ? '(active)' : ''}
+                </option>
               ))}
             </select>
             {/* Promus, les étudiants ne sont plus attendus aux séances restantes
@@ -783,40 +1103,81 @@ const StudentManagementPage = () => {
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={() => setShowPromote(false)} className="px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors">
+            <button
+              type="button"
+              onClick={() => setShowPromote(false)}
+              className="px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors"
+            >
               Annuler
             </button>
-            <button type="button" onClick={handlePromote} disabled={promoting}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50">
-              {promoting && <FiLoader className="animate-spin" />}{promoting ? 'Promotion...' : 'Promouvoir'}
+            <button type="button" onClick={handlePromote} disabled={promoting} className="btn-primaire">
+              {promoting && <FiLoader className="animate-spin" />}
+              {promoting ? 'Promotion...' : 'Promouvoir'}
             </button>
           </div>
         </div>
       </Modal>
 
-      <GroupesPromotion isOpen={showGroupes} onClose={() => setShowGroupes(false)} annees={annees} filieres={filieresToutes}
-        filiereInitiale={filtres.filiere} anneeInitiale={anneeGroupes} onModifie={rafraichir} />
+      <GroupesPromotion
+        isOpen={showGroupes}
+        onClose={() => setShowGroupes(false)}
+        annees={annees}
+        filieres={filieresToutes}
+        filiereInitiale={filtres.filiere}
+        anneeInitiale={anneeGroupes}
+        onModifie={rafraichir}
+      />
 
       {/* ─── Modal Import CSV ───────────────────────────── */}
       {/* Pas de fermeture pendant l'envoi : Modal appelle onClose pour le voile, Échap et la croix,
           d'où la garde ici plutôt que sur chaque commande. */}
-      <Modal isOpen={showImportModal} title="Import en masse" size="md"
-        onClose={() => { if (!importUploading) { setShowImportModal(false); resetImport(); } }}>
+      <Modal
+        isOpen={showImportModal}
+        title="Import en masse"
+        size="md"
+        onClose={() => {
+          if (!importUploading) {
+            setShowImportModal(false);
+            resetImport();
+          }
+        }}
+      >
         {/* Drop zone */}
-        <div onDragOver={(e) => { e.preventDefault(); setImportDragOver(true); }} onDragLeave={() => setImportDragOver(false)} onDrop={handleImportDrop}
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setImportDragOver(true);
+          }}
+          onDragLeave={() => setImportDragOver(false)}
+          onDrop={handleImportDrop}
           className={`border-2 border-dashed rounded-xl p-10 text-center transition-all cursor-pointer ${importDragOver ? 'border-primary bg-primary/5' : 'border-outline-variant/30 hover:border-primary/40'} ${importFile ? 'bg-surface-container-low' : ''}`}
-          onClick={() => importFileRef.current?.click()}>
-          <input ref={importFileRef} type="file" accept=".csv,.xlsx" aria-label="Choisir le fichier CSV ou XLSX des étudiants" className="hidden" onChange={(e) => {
-            const f = e.target.files[0]; if (f) { setImportFile(f); setImportError(''); setImportResult(null); }
-          }} />
+          onClick={() => importFileRef.current?.click()}
+        >
+          <input
+            ref={importFileRef}
+            type="file"
+            accept=".csv,.xlsx"
+            aria-label="Choisir le fichier CSV ou XLSX des étudiants"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files[0];
+              if (f) {
+                setImportFile(f);
+                setImportError('');
+                setImportResult(null);
+              }
+            }}
+          />
           {!importFile ? (
             <>
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
                 <FiUpload className="text-2xl text-primary" />
               </div>
               <h3 className="text-sm font-semibold text-on-surface mb-1">Importez un fichier CSV</h3>
-              <p className="text-xs text-on-surface-variant mb-4">ou <span className="text-primary font-semibold cursor-pointer hover:underline">parcourez</span></p>
-              <p className="text-[10px] text-on-surface-variant/60">CSV ou XLSX — 5 Mo max</p>
+              <p className="text-xs text-on-surface-variant mb-4">
+                ou <span className="text-primary font-semibold cursor-pointer hover:underline">parcourez</span>
+              </p>
+              <p className="text-[10px] text-on-surface-variant">CSV ou XLSX : 5 Mo max</p>
             </>
           ) : (
             <div className="flex items-center gap-4 justify-center">
@@ -825,8 +1186,14 @@ const StudentManagementPage = () => {
                 <p className="text-sm font-medium text-on-surface">{importFile.name}</p>
                 <p className="text-[10px] text-on-surface-variant">{(importFile.size / 1024).toFixed(1)} Ko</p>
               </div>
-              <button onClick={(e) => { e.stopPropagation(); resetImport(); }} className="p-2 hover:bg-surface-container-high rounded-lg transition-colors">
-                <FiTrash2 className="text-outline" />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  resetImport();
+                }}
+                className="p-2 hover:bg-surface-container-high rounded-lg transition-colors"
+              >
+                <FiTrash2 className="text-on-surface-variant" />
               </button>
             </div>
           )}
@@ -841,19 +1208,30 @@ const StudentManagementPage = () => {
 
         {/* Résultat */}
         {importResult && (
-          <div className={`mt-4 p-4 rounded-xl flex items-start gap-3 ${importResult.success ? 'bg-secondary-container/30 border border-secondary/10' : 'bg-error-container/30 border border-error/10'}`}>
-            {importResult.success ? <FiCheck className="text-secondary text-lg mt-0.5 flex-shrink-0" /> : <FiAlertTriangle className="text-error text-lg mt-0.5 flex-shrink-0" />}
+          <div
+            className={`mt-4 p-4 rounded-xl flex items-start gap-3 ${importResult.success ? 'bg-secondary-container/30 border border-secondary/10' : 'bg-error-container/30 border border-error/10'}`}
+          >
+            {importResult.success ? (
+              <FiCheck className="text-secondary text-lg mt-0.5 flex-shrink-0" />
+            ) : (
+              <FiAlertTriangle className="text-statut-erreur text-lg mt-0.5 flex-shrink-0" />
+            )}
             <div className="text-sm flex-1">
-              <p className="font-semibold">{importResult.success ? 'Import terminé avec succès' : 'Erreurs lors de l\'import'}</p>
+              <p className="font-semibold">
+                {importResult.success ? 'Import terminé avec succès' : "Erreurs lors de l'import"}
+              </p>
               <p className="text-on-surface-variant text-xs mt-1">
                 {importResult.imported}/{importResult.total} étudiants importés
-                {importResult.errors?.length > 0 && ` (${importResult.errors.length} erreur${importResult.errors.length > 1 ? 's' : ''})`}
+                {importResult.errors?.length > 0 &&
+                  ` (${importResult.errors.length} erreur${importResult.errors.length > 1 ? 's' : ''})`}
               </p>
               {importResult.errors?.length > 0 && (
                 <div className="mt-3 space-y-1 max-h-32 overflow-y-auto">
                   {importResult.errors.map((e, i) => (
                     <p key={i} className="text-xs text-on-error-container/70 bg-error-container/20 p-1.5 rounded">
-                      {typeof e === 'string' ? e : `${e.row || 'Ligne ' + (i+1)} : ${Array.isArray(e.errors) ? e.errors.join(', ') : e.errors || 'Erreur'}`}
+                      {typeof e === 'string'
+                        ? e
+                        : `${e.row || 'Ligne ' + (i + 1)} : ${Array.isArray(e.errors) ? e.errors.join(', ') : e.errors || 'Erreur'}`}
                     </p>
                   ))}
                 </div>
@@ -863,8 +1241,10 @@ const StudentManagementPage = () => {
         )}
 
         {importFile && !importResult && !importUploading && (
-          <button onClick={handleImportUpload}
-            className="mt-6 w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-br from-primary to-primary-container text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-primary/20 active:scale-[0.99] transition-all">
+          <button
+            onClick={handleImportUpload}
+            className="mt-6 w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-br from-marque to-marque-fonce text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-primary/20 active:scale-[0.99] transition-all"
+          >
             <FiUpload /> Importer les étudiants
           </button>
         )}
@@ -880,14 +1260,27 @@ const StudentManagementPage = () => {
         {/* Format info */}
         <div className="mt-6 bg-surface-container-high rounded-xl p-4">
           <h4 className="text-xs font-bold text-primary mb-2">Format attendu</h4>
-          <p className="text-[11px] text-on-surface-variant">Colonnes : <span className="font-mono font-medium text-primary">nom, prenom, email, matricule, filiere_code, annee_libelle</span></p>
-          <p className="text-[11px] text-on-surface-variant mt-1">Facultatives : <span className="font-mono font-medium text-primary">groupe_td, groupe_tp</span> — le groupe est créé dans la promotion s'il n'existe pas.</p>
+          <p className="text-[11px] text-on-surface-variant">
+            Colonnes :{' '}
+            <span className="font-mono font-medium text-primary">
+              nom, prenom, email, matricule, filiere_code, annee_libelle
+            </span>
+          </p>
+          <p className="text-[11px] text-on-surface-variant mt-1">
+            Facultatives : <span className="font-mono font-medium text-primary">groupe_td, groupe_tp</span> : le groupe
+            est créé dans la promotion s'il n'existe pas.
+          </p>
           <p className="text-[11px] text-on-surface-variant mt-1">CSV avec séparateur virgule, encodage UTF-8.</p>
         </div>
 
         {importResult && (
-          <button onClick={() => { setShowImportModal(false); resetImport(); }}
-            className="mt-4 w-full py-2.5 bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all">
+          <button
+            onClick={() => {
+              setShowImportModal(false);
+              resetImport();
+            }}
+            className="btn-primaire mt-4 w-full"
+          >
             Fermer
           </button>
         )}

@@ -26,11 +26,11 @@ const AlertsBanner = ({ alerts, to = '/attendance/queue' }) => {
         </div>
         <div className="min-w-0">
           <h3 className="text-sm font-bold text-on-error-container">{premiere?.title}</h3>
-          <p className="text-xs text-on-error-container/80">{premiere?.message}</p>
+          <p className="text-xs text-on-error-container">{premiere?.message}</p>
           {/* Le bandeau ne montre que la première anomalie. Sans ce décompte,
               rien n'indiquait qu'il en restait d'autres à traiter. */}
           {autres > 0 && (
-            <p className="text-[11px] font-semibold text-error mt-1">
+            <p className="text-[11px] font-semibold text-on-error-container mt-1">
               et {autres} autre{autres > 1 ? 's' : ''} anomalie{autres > 1 ? 's' : ''} ouverte{autres > 1 ? 's' : ''}
             </p>
           )}
@@ -39,10 +39,10 @@ const AlertsBanner = ({ alerts, to = '/attendance/queue' }) => {
 
       <Link
         to={to}
-        className="text-xs font-bold text-error hover:underline px-4 py-2 rounded-lg shrink-0 flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-error focus:ring-offset-2"
+        className="text-xs font-bold text-on-error-container underline-offset-2 hover:underline px-4 py-2 rounded-lg shrink-0 flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-error focus:ring-offset-2"
       >
         Voir la liste
-        <FiArrowRight size={13} />
+        <FiArrowRight size={13} aria-hidden="true" />
       </Link>
     </div>
   );

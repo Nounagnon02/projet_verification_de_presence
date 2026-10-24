@@ -13,7 +13,10 @@ const links = [
 
 export default function BottomNavBar() {
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 backdrop-blur-xl z-50 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.05)] border-t border-slate-100">
+    <nav
+      aria-label="Accès rapide"
+      className="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-2 pb-4 pt-2 bg-surface-container-lowest/90 backdrop-blur-xl z-50 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.05)] border-t border-outline-variant/20"
+    >
       {links.map((link) => (
         <NavLink
           key={link.to}

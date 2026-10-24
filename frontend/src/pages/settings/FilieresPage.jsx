@@ -5,14 +5,19 @@ import { FiPlus, FiEdit2, FiTrash2, FiLoader, FiAlertTriangle } from 'react-icon
 import Modal from '../../components/ui/Modal';
 import { listerAnnees, listerFilieres } from '../../api/resources/reference';
 import {
-  listerProgrammes, creerFiliere, modifierFiliere, supprimerFiliere,
+  listerProgrammes,
+  creerFiliere,
+  modifierFiliere,
+  supprimerFiliere,
   renommerProgramme as apiRenommerProgramme,
 } from '../../api/resources/filieres';
 import useNiveaux from '../../hooks/useNiveaux';
 import { useToastCtx } from '../../context/ToastContext';
 
 const NOUVEAU = 'nouveau';
-const CHAMP = 'w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all disabled:opacity-50';
+const CHAMP =
+  // Classe partagée (index.css) : rayon, bordure, focus et état désactivé communs.
+  'champ';
 const ETIQUETTE = 'block text-xs font-semibold text-on-surface-variant mb-1';
 
 const pluriel = (n, mot) => `${n} ${mot}${n > 1 ? 's' : ''}`;
@@ -28,9 +33,8 @@ const obstacles = (f) => {
   return raisons.length ? raisons.join(', ') : null;
 };
 
-const ErreurChamp = ({ messages }) => (messages?.length
-  ? <p className="text-xs text-error mt-1">{messages.join(' ')}</p>
-  : null);
+const ErreurChamp = ({ messages }) =>
+  messages?.length ? <p className="text-xs text-statut-erreur mt-1">{messages.join(' ')}</p> : null;
 
 /**
  * Une filière dans la grille : ses effectifs de l'année, ses UE par semestre,
@@ -47,28 +51,46 @@ function CaseFiliere({ filiere, annee, niveau, anneeId, onModifier, onSupprimer 
   return (
     <div className="rounded-lg border border-outline-variant/20 bg-surface-container-low/40 p-3 space-y-1.5 mb-2 last:mb-0">
       <div className="flex items-start justify-between gap-2">
-        <span className="font-mono text-xs font-bold text-primary break-all" title={filiere.intitule}>{filiere.code}</span>
+        <span className="font-mono text-xs font-bold text-primary break-all" title={filiere.intitule}>
+          {filiere.code}
+        </span>
         <div className="flex gap-0.5 shrink-0">
-          <button type="button" onClick={onModifier} aria-label={`Modifier ${filiere.code}`} title="Modifier"
-            className="p-1 rounded hover:bg-surface-container-high transition-colors">
+          <button
+            type="button"
+            onClick={onModifier}
+            aria-label={`Modifier ${filiere.code}`}
+            title="Modifier"
+            className="p-1 rounded hover:bg-surface-container-high transition-colors"
+          >
             <FiEdit2 size={12} className="text-on-surface-variant" aria-hidden="true" />
           </button>
-          <button type="button" onClick={onSupprimer} disabled={Boolean(obstacle)} aria-label={`Supprimer ${filiere.code}`}
+          <button
+            type="button"
+            onClick={onSupprimer}
+            disabled={Boolean(obstacle)}
+            aria-label={`Supprimer ${filiere.code}`}
             title={obstacle ? `Suppression impossible : ${obstacle}` : 'Supprimer'}
-            className="p-1 rounded hover:bg-error/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent">
-            <FiTrash2 size={12} className="text-error" aria-hidden="true" />
+            className="p-1 rounded hover:bg-error/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+          >
+            <FiTrash2 size={12} className="text-statut-erreur" aria-hidden="true" />
           </button>
         </div>
       </div>
 
       {annee ? (
         <>
-          <p className="text-xs text-on-surface tabular-nums">{pluriel(annee.etudiants_count ?? 0, 'étudiant')} · {annee.ues_count ?? 0} UE</p>
+          <p className="text-xs text-on-surface tabular-nums">
+            {pluriel(annee.etudiants_count ?? 0, 'étudiant')} · {annee.ues_count ?? 0} UE
+          </p>
           {parSemestre.length > 0 && (
-            <p className="text-[11px] text-on-surface-variant tabular-nums">{parSemestre.map(([s, n]) => `S${s} : ${n}`).join(' · ')}</p>
+            <p className="text-[11px] text-on-surface-variant tabular-nums">
+              {parSemestre.map(([s, n]) => `S${s} : ${n}`).join(' · ')}
+            </p>
           )}
           {horsNiveau.length > 0 && (
-            <p className="text-[11px] text-error">UE hors niveau : {horsNiveau.map(([s]) => `S${s}`).join(', ')}</p>
+            <p className="text-[11px] text-statut-erreur">
+              UE hors niveau : {horsNiveau.map(([s]) => `S${s}`).join(', ')}
+            </p>
           )}
         </>
       ) : (
@@ -76,8 +98,12 @@ function CaseFiliere({ filiere, annee, niveau, anneeId, onModifier, onSupprimer 
       )}
 
       <div className="flex gap-3 text-[11px] font-semibold pt-0.5">
-        <Link to={`/courses?${requete}`} className="text-primary hover:underline">UE →</Link>
-        <Link to={`/students?${requete}`} className="text-primary hover:underline">Étudiants →</Link>
+        <Link to={`/courses?${requete}`} className="text-primary hover:underline">
+          UE →
+        </Link>
+        <Link to={`/students?${requete}`} className="text-primary hover:underline">
+          Étudiants →
+        </Link>
       </div>
     </div>
   );
@@ -166,7 +192,9 @@ export default function FilieresPage() {
 
     for (const f of toutes) (parProgramme.get(f.programme_id) ?? sansProgramme).filieres.push(f);
 
-    const rangees = [...parProgramme.values()].sort((a, b) => String(a.programme.code).localeCompare(String(b.programme.code)));
+    const rangees = [...parProgramme.values()].sort((a, b) =>
+      String(a.programme.code).localeCompare(String(b.programme.code)),
+    );
 
     return sansProgramme.filieres.length ? [...rangees, sansProgramme] : rangees;
   }, [programmes, toutes]);
@@ -184,7 +212,7 @@ export default function FilieresPage() {
     setFormulaire({
       mode: 'creation',
       valeurs: {
-        programme: programme ? String(programme.id) : (programmes[0] ? String(programmes[0].id) : NOUVEAU),
+        programme: programme ? String(programme.id) : programmes[0] ? String(programmes[0].id) : NOUVEAU,
         programme_code: '',
         programme_intitule: '',
         niveau: niveau || niveaux[0]?.code || '',
@@ -221,12 +249,20 @@ export default function FilieresPage() {
   const programmeChoisi = v && v.programme !== NOUVEAU ? programmes.find((p) => String(p.id) === v.programme) : null;
   const baseCode = programmeChoisi?.code ?? v?.programme_code?.trim().toUpperCase() ?? '';
   const baseIntitule = programmeChoisi?.intitule ?? v?.programme_intitule?.trim() ?? '';
-  const code = v ? (v.codeTouche ? v.code : (baseCode && v.niveau ? `${baseCode}-${v.niveau}` : '')) : '';
-  const intitule = v ? (v.intituleTouche ? v.intitule : (baseIntitule && v.niveau ? `${baseIntitule} (${v.niveau})` : '')) : '';
+  const code = v ? (v.codeTouche ? v.code : baseCode && v.niveau ? `${baseCode}-${v.niveau}` : '') : '';
+  const intitule = v
+    ? v.intituleTouche
+      ? v.intitule
+      : baseIntitule && v.niveau
+        ? `${baseIntitule} (${v.niveau})`
+        : ''
+    : '';
 
   const niveauVerrouille = formulaire?.mode === 'edition' && (formulaire.filiere.ues_total ?? 0) > 0;
   const semestresVerrous = niveauVerrouille
-    ? Object.keys(formulaire.filiere.ues_par_semestre ?? {}).map((s) => `S${s}`).join(', ')
+    ? Object.keys(formulaire.filiere.ues_par_semestre ?? {})
+        .map((s) => `S${s}`)
+        .join(', ')
     : '';
 
   const enregistrer = async (e) => {
@@ -290,7 +326,10 @@ export default function FilieresPage() {
       setProgrammeEdite(null);
       rafraichir();
     } catch (err) {
-      addToast?.(err.response?.data?.errors?.intitule?.[0] || err.response?.data?.message || 'Le renommage a échoué.', 'error');
+      addToast?.(
+        err.response?.data?.errors?.intitule?.[0] || err.response?.data?.message || 'Le renommage a échoué.',
+        'error',
+      );
     } finally {
       setRenommage(false);
     }
@@ -304,19 +343,27 @@ export default function FilieresPage() {
           <h1 className="text-2xl font-bold font-headline text-primary">Filières</h1>
           <p className="text-sm text-on-surface-variant">
             Une filière est un programme à un niveau : IM + L2 = IM-L2.
-            {!loading && anneeChoisie && ` ${pluriel(etudiantsDeLAnnee, 'étudiant')} inscrit${etudiantsDeLAnnee > 1 ? 's' : ''} en ${anneeChoisie.libelle}.`}
+            {!loading &&
+              anneeChoisie &&
+              ` ${pluriel(etudiantsDeLAnnee, 'étudiant')} inscrit${etudiantsDeLAnnee > 1 ? 's' : ''} en ${anneeChoisie.libelle}.`}
           </p>
         </div>
         <div className="flex items-end gap-3">
           <div>
-            <label htmlFor="filieres-annee" className={ETIQUETTE}>Année</label>
+            <label htmlFor="filieres-annee" className={ETIQUETTE}>
+              Année
+            </label>
             <select id="filieres-annee" value={anneeId} onChange={(e) => setAnneeId(e.target.value)} className={CHAMP}>
               <option value="">Toutes les années</option>
-              {(annees ?? []).map((a) => <option key={a.id} value={a.id}>{a.libelle}{a.active ? ' (active)' : ''}</option>)}
+              {(annees ?? []).map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.libelle}
+                  {a.active ? ' (active)' : ''}
+                </option>
+              ))}
             </select>
           </div>
-          <button type="button" onClick={() => ouvrirCreation()}
-            className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 transition-all whitespace-nowrap">
+          <button type="button" onClick={() => ouvrirCreation()} className="btn-primaire">
             <FiPlus aria-hidden="true" /> Nouvelle filière
           </button>
         </div>
@@ -334,15 +381,23 @@ export default function FilieresPage() {
         </div>
       ) : (
         <>
-          <div className={`bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm overflow-x-auto transition-opacity ${loading ? 'opacity-60' : ''}`} aria-busy={loading}>
+          <div
+            className={`bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm overflow-x-auto transition-opacity ${loading ? 'opacity-60' : ''}`}
+            aria-busy={loading}
+          >
             <table className="w-full text-sm border-collapse">
               <caption className="sr-only">Filières par programme et par niveau</caption>
               <thead>
                 <tr className="text-left text-[10px] uppercase tracking-wider text-on-surface-variant border-b border-outline-variant/20">
-                  <th scope="col" className="p-3 font-semibold w-52">Programme</th>
+                  <th scope="col" className="p-3 font-semibold w-52">
+                    Programme
+                  </th>
                   {niveaux.map((n) => (
                     <th key={n.code} scope="col" className="p-3 font-semibold min-w-[10.5rem]">
-                      {n.code} <span className="normal-case tracking-normal font-normal">· {n.semestres.map((s) => `S${s}`).join('-')}</span>
+                      {n.code}{' '}
+                      <span className="normal-case tracking-normal font-normal">
+                        · {n.semestres.map((s) => `S${s}`).join('-')}
+                      </span>
                     </th>
                   ))}
                 </tr>
@@ -354,65 +409,85 @@ export default function FilieresPage() {
                       Aucune filière. Créez la première avec « Nouvelle filière ».
                     </td>
                   </tr>
-                ) : lignes.map(({ programme, filieres }) => (
-                  <tr key={programme?.id ?? 'sans-programme'} className="border-b border-outline-variant/10 last:border-0 align-top">
-                    <th scope="row" className="p-3 text-left font-normal">
-                      <span className="flex items-center gap-1.5">
-                        <span className="font-mono text-xs font-bold text-primary">{programme?.code ?? 'Sans programme'}</span>
-                        {programme && (
-                          <button
-                            type="button"
-                            onClick={() => setProgrammeEdite({ id: programme.id, code: programme.code, ancien: programme.intitule, intitule: programme.intitule, renommer_filieres: true })}
-                            aria-label={`Renommer le programme ${programme.code}`}
-                            title="Renommer le programme"
-                            className="p-1 rounded text-on-surface-variant hover:text-primary hover:bg-surface-container-high"
-                          >
-                            <FiEdit2 size={12} aria-hidden="true" />
-                          </button>
-                        )}
-                      </span>
-                      <span className="block text-xs text-on-surface-variant mt-0.5">{programme?.intitule ?? 'À rattacher à un programme'}</span>
-                    </th>
-                    {niveaux.map((n) => {
-                      const ici = filieres.filter((f) => f.niveau === n.code);
-
-                      return (
-                        <td key={n.code} className="p-2">
-                          {ici.length > 0 ? ici.map((f) => (
-                            <CaseFiliere
-                              key={f.id}
-                              filiere={f}
-                              annee={delAnnee.get(f.id)}
-                              niveau={n}
-                              anneeId={anneeId}
-                              onModifier={() => ouvrirEdition(f)}
-                              onSupprimer={() => setASupprimer(f)}
-                            />
-                          )) : programme && (
+                ) : (
+                  lignes.map(({ programme, filieres }) => (
+                    <tr
+                      key={programme?.id ?? 'sans-programme'}
+                      className="border-b border-outline-variant/10 last:border-0 align-top"
+                    >
+                      <th scope="row" className="p-3 text-left font-normal">
+                        <span className="flex items-center gap-1.5">
+                          <span className="font-mono text-xs font-bold text-primary">
+                            {programme?.code ?? 'Sans programme'}
+                          </span>
+                          {programme && (
                             <button
                               type="button"
-                              onClick={() => ouvrirCreation(programme, n.code)}
-                              aria-label={`Ouvrir le niveau ${n.code} du programme ${programme.code}`}
-                              className="w-full min-h-[5.5rem] rounded-lg border border-dashed border-outline-variant/40 text-xs text-on-surface-variant hover:border-primary hover:text-primary transition-colors"
+                              onClick={() =>
+                                setProgrammeEdite({
+                                  id: programme.id,
+                                  code: programme.code,
+                                  ancien: programme.intitule,
+                                  intitule: programme.intitule,
+                                  renommer_filieres: true,
+                                })
+                              }
+                              aria-label={`Renommer le programme ${programme.code}`}
+                              title="Renommer le programme"
+                              className="p-1 rounded text-on-surface-variant hover:text-primary hover:bg-surface-container-high"
                             >
-                              + Ouvrir {n.code}
+                              <FiEdit2 size={12} aria-hidden="true" />
                             </button>
                           )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
+                        </span>
+                        <span className="block text-xs text-on-surface-variant mt-0.5">
+                          {programme?.intitule ?? 'À rattacher à un programme'}
+                        </span>
+                      </th>
+                      {niveaux.map((n) => {
+                        const ici = filieres.filter((f) => f.niveau === n.code);
+
+                        return (
+                          <td key={n.code} className="p-2">
+                            {ici.length > 0
+                              ? ici.map((f) => (
+                                  <CaseFiliere
+                                    key={f.id}
+                                    filiere={f}
+                                    annee={delAnnee.get(f.id)}
+                                    niveau={n}
+                                    anneeId={anneeId}
+                                    onModifier={() => ouvrirEdition(f)}
+                                    onSupprimer={() => setASupprimer(f)}
+                                  />
+                                ))
+                              : programme && (
+                                  <button
+                                    type="button"
+                                    onClick={() => ouvrirCreation(programme, n.code)}
+                                    aria-label={`Ouvrir le niveau ${n.code} du programme ${programme.code}`}
+                                    className="w-full min-h-[5.5rem] rounded-lg border border-dashed border-outline-variant/40 text-xs text-on-surface-variant hover:border-primary hover:text-primary transition-colors"
+                                  >
+                                    + Ouvrir {n.code}
+                                  </button>
+                                )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
 
           {niveauInconnu.length > 0 && (
             <p role="alert" className="mt-4 flex items-start gap-2 text-xs text-on-surface-variant">
-              <FiAlertTriangle className="text-error shrink-0 mt-0.5" aria-hidden="true" />
+              <FiAlertTriangle className="text-statut-erreur shrink-0 mt-0.5" aria-hidden="true" />
               <span>
-                Niveau non reconnu, donc absent de la grille : {niveauInconnu.map((f) => `${f.code} (« ${f.niveau} »)`).join(', ')}.
-                Corrigez leur niveau pour qu'elles y apparaissent.
+                Niveau non reconnu, donc absent de la grille :{' '}
+                {niveauInconnu.map((f) => `${f.code} (« ${f.niveau} »)`).join(', ')}. Corrigez leur niveau pour qu'elles
+                y apparaissent.
               </span>
             </p>
           )}
@@ -420,17 +495,31 @@ export default function FilieresPage() {
       )}
 
       {/* Création / modification */}
-      <Modal isOpen={Boolean(formulaire)} onClose={() => setFormulaire(null)}
-        title={formulaire?.mode === 'edition' ? `Modifier ${formulaire.filiere.code}` : 'Nouvelle filière'}>
+      <Modal
+        isOpen={Boolean(formulaire)}
+        onClose={() => setFormulaire(null)}
+        title={formulaire?.mode === 'edition' ? `Modifier ${formulaire.filiere.code}` : 'Nouvelle filière'}
+      >
         {formulaire && (
           <form onSubmit={enregistrer} className="space-y-4">
             <ErreurChamp messages={erreurs.general} />
 
             <div>
-              <label htmlFor="filiere-programme" className={ETIQUETTE}>Programme</label>
-              <select id="filiere-programme" value={v.programme} onChange={(e) => changer('programme', e.target.value)} className={CHAMP}>
+              <label htmlFor="filiere-programme" className={ETIQUETTE}>
+                Programme
+              </label>
+              <select
+                id="filiere-programme"
+                value={v.programme}
+                onChange={(e) => changer('programme', e.target.value)}
+                className={CHAMP}
+              >
                 {formulaire.mode === 'edition' && !v.programme && <option value="">Aucun</option>}
-                {programmes.map((p) => <option key={p.id} value={p.id}>{p.code} — {p.intitule}</option>)}
+                {programmes.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.code} : {p.intitule}
+                  </option>
+                ))}
                 {formulaire.mode === 'creation' && <option value={NOUVEAU}>Nouveau programme…</option>}
               </select>
               <ErreurChamp messages={erreurs.programme_id} />
@@ -439,31 +528,58 @@ export default function FilieresPage() {
             {v.programme === NOUVEAU && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label htmlFor="programme-code" className={ETIQUETTE}>Code du programme</label>
-                  <input id="programme-code" className={`${CHAMP} font-mono`} value={v.programme_code} maxLength={15}
-                    onChange={(e) => changer('programme_code', e.target.value.toUpperCase())} placeholder="IM" required />
+                  <label htmlFor="programme-code" className={ETIQUETTE}>
+                    Code du programme
+                  </label>
+                  <input
+                    id="programme-code"
+                    className={`${CHAMP} font-mono`}
+                    value={v.programme_code}
+                    maxLength={15}
+                    onChange={(e) => changer('programme_code', e.target.value.toUpperCase())}
+                    placeholder="IM"
+                    required
+                  />
                   <ErreurChamp messages={erreurs.programme_code} />
                 </div>
                 <div className="sm:col-span-2">
-                  <label htmlFor="programme-intitule" className={ETIQUETTE}>Intitulé du programme</label>
-                  <input id="programme-intitule" className={CHAMP} value={v.programme_intitule}
-                    onChange={(e) => changer('programme_intitule', e.target.value)} placeholder="Informatique et Mathématiques" required />
+                  <label htmlFor="programme-intitule" className={ETIQUETTE}>
+                    Intitulé du programme
+                  </label>
+                  <input
+                    id="programme-intitule"
+                    className={CHAMP}
+                    value={v.programme_intitule}
+                    onChange={(e) => changer('programme_intitule', e.target.value)}
+                    placeholder="Informatique et Mathématiques"
+                    required
+                  />
                   <ErreurChamp messages={erreurs.programme_intitule} />
                 </div>
               </div>
             )}
 
             <div>
-              <label htmlFor="filiere-niveau" className={ETIQUETTE}>Niveau</label>
-              <select id="filiere-niveau" value={v.niveau} onChange={(e) => changer('niveau', e.target.value)} disabled={niveauVerrouille} className={CHAMP}>
+              <label htmlFor="filiere-niveau" className={ETIQUETTE}>
+                Niveau
+              </label>
+              <select
+                id="filiere-niveau"
+                value={v.niveau}
+                onChange={(e) => changer('niveau', e.target.value)}
+                disabled={niveauVerrouille}
+                className={CHAMP}
+              >
                 {niveaux.map((n) => (
-                  <option key={n.code} value={n.code}>{n.code} — {n.libelle} ({n.semestres.map((s) => `S${s}`).join(', ')})</option>
+                  <option key={n.code} value={n.code}>
+                    {n.code} : {n.libelle} ({n.semestres.map((s) => `S${s}`).join(', ')})
+                  </option>
                 ))}
               </select>
               {niveauVerrouille && (
                 <p className="text-xs text-on-surface-variant mt-1">
-                  Ses UE sont en {semestresVerrous} : le niveau ne change plus. Pour faire passer ses étudiants au niveau
-                  suivant, utilisez la promotion (Étudiants → Promouvoir).
+                  Ses UE sont en {semestresVerrous} : le niveau ne change plus. Pour faire passer ses étudiants au
+                  niveau suivant, utilisez la promotion (Étudiants → Promouvoir).
                 </p>
               )}
               <ErreurChamp messages={erreurs.niveau} />
@@ -471,16 +587,43 @@ export default function FilieresPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label htmlFor="filiere-code" className={ETIQUETTE}>Code</label>
-                <input id="filiere-code" className={`${CHAMP} font-mono`} value={code} maxLength={20}
-                  onChange={(e) => setFormulaire((f) => ({ ...f, valeurs: { ...f.valeurs, code: e.target.value.toUpperCase(), codeTouche: true } }))} required />
-                <p className="text-[11px] text-on-surface-variant mt-1">20 caractères au plus, unique dans votre établissement.</p>
+                <label htmlFor="filiere-code" className={ETIQUETTE}>
+                  Code
+                </label>
+                <input
+                  id="filiere-code"
+                  className={`${CHAMP} font-mono`}
+                  value={code}
+                  maxLength={20}
+                  onChange={(e) =>
+                    setFormulaire((f) => ({
+                      ...f,
+                      valeurs: { ...f.valeurs, code: e.target.value.toUpperCase(), codeTouche: true },
+                    }))
+                  }
+                  required
+                />
+                <p className="text-[11px] text-on-surface-variant mt-1">
+                  20 caractères au plus, unique dans votre établissement.
+                </p>
                 <ErreurChamp messages={erreurs.code} />
               </div>
               <div className="sm:col-span-2">
-                <label htmlFor="filiere-intitule" className={ETIQUETTE}>Intitulé</label>
-                <input id="filiere-intitule" className={CHAMP} value={intitule}
-                  onChange={(e) => setFormulaire((f) => ({ ...f, valeurs: { ...f.valeurs, intitule: e.target.value, intituleTouche: true } }))} required />
+                <label htmlFor="filiere-intitule" className={ETIQUETTE}>
+                  Intitulé
+                </label>
+                <input
+                  id="filiere-intitule"
+                  className={CHAMP}
+                  value={intitule}
+                  onChange={(e) =>
+                    setFormulaire((f) => ({
+                      ...f,
+                      valeurs: { ...f.valeurs, intitule: e.target.value, intituleTouche: true },
+                    }))
+                  }
+                  required
+                />
                 <ErreurChamp messages={erreurs.intitule} />
               </div>
             </div>
@@ -494,11 +637,14 @@ export default function FilieresPage() {
             )}
 
             <div className="flex justify-end gap-3 pt-2">
-              <button type="button" onClick={() => setFormulaire(null)} className="px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors">
+              <button
+                type="button"
+                onClick={() => setFormulaire(null)}
+                className="px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors"
+              >
                 Annuler
               </button>
-              <button type="submit" disabled={enregistrement}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-all">
+              <button type="submit" disabled={enregistrement} className="btn-primaire">
                 {enregistrement && <FiLoader className="animate-spin" aria-hidden="true" />}
                 {enregistrement ? 'Enregistrement…' : formulaire.mode === 'edition' ? 'Enregistrer' : 'Créer'}
               </button>
@@ -512,14 +658,23 @@ export default function FilieresPage() {
         {aSupprimer && (
           <div className="space-y-4">
             <p className="text-sm text-on-surface-variant">
-              {aSupprimer.code} — {aSupprimer.intitule} n'a ni étudiant, ni UE, ni séance. Sa suppression est définitive.
+              {aSupprimer.code} : {aSupprimer.intitule} n'a ni étudiant, ni UE, ni séance. Sa suppression est
+              définitive.
             </p>
             <div className="flex justify-end gap-3">
-              <button type="button" onClick={() => setASupprimer(null)} className="px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors">
+              <button
+                type="button"
+                onClick={() => setASupprimer(null)}
+                className="px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors"
+              >
                 Annuler
               </button>
-              <button type="button" onClick={supprimer} disabled={suppression}
-                className="flex items-center gap-2 px-5 py-2.5 bg-error text-white rounded-xl text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-all">
+              <button
+                type="button"
+                onClick={supprimer}
+                disabled={suppression}
+                className="flex items-center gap-2 px-5 py-2.5 bg-error text-white rounded-xl text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-all"
+              >
                 {suppression && <FiLoader className="animate-spin" aria-hidden="true" />}Supprimer
               </button>
             </div>
@@ -527,11 +682,17 @@ export default function FilieresPage() {
         )}
       </Modal>
 
-      <Modal isOpen={Boolean(programmeEdite)} onClose={() => !renommage && setProgrammeEdite(null)} title={programmeEdite ? `Renommer le programme ${programmeEdite.code}` : ''}>
+      <Modal
+        isOpen={Boolean(programmeEdite)}
+        onClose={() => !renommage && setProgrammeEdite(null)}
+        title={programmeEdite ? `Renommer le programme ${programmeEdite.code}` : ''}
+      >
         {programmeEdite && (
           <form onSubmit={renommerProgramme} className="space-y-4 text-sm">
             <div className="space-y-1.5">
-              <label htmlFor="programme-intitule" className="text-xs font-semibold text-on-surface-variant">Intitulé</label>
+              <label htmlFor="programme-intitule" className="text-xs font-semibold text-on-surface-variant">
+                Intitulé
+              </label>
               <input
                 id="programme-intitule"
                 value={programmeEdite.intitule}
@@ -540,7 +701,9 @@ export default function FilieresPage() {
                 maxLength={255}
                 className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
-              <p className="text-xs text-on-surface-variant">Le code {programmeEdite.code} ne change pas : il préfixe les codes des filières.</p>
+              <p className="text-xs text-on-surface-variant">
+                Le code {programmeEdite.code} ne change pas : il préfixe les codes des filières.
+              </p>
             </div>
             <label htmlFor="programme-renommer" className="flex items-start gap-2">
               <input
@@ -553,15 +716,21 @@ export default function FilieresPage() {
               <span>
                 Renommer aussi les filières au nom dérivé
                 <span className="block text-xs text-on-surface-variant">
-                  « {programmeEdite.ancien} (L1) » devient « {programmeEdite.intitule.trim() || '…'} (L1) ». Un intitulé personnalisé n'est pas touché.
+                  « {programmeEdite.ancien} (L1) » devient « {programmeEdite.intitule.trim() || '…'} (L1) ». Un intitulé
+                  personnalisé n'est pas touché.
                 </span>
               </span>
             </label>
             <div className="flex justify-end gap-3 pt-2">
-              <button type="button" onClick={() => setProgrammeEdite(null)} disabled={renommage} className="px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl">
+              <button
+                type="button"
+                onClick={() => setProgrammeEdite(null)}
+                disabled={renommage}
+                className="px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl"
+              >
                 Annuler
               </button>
-              <button type="submit" disabled={renommage || !programmeEdite.intitule.trim()} className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 disabled:opacity-50">
+              <button type="submit" disabled={renommage || !programmeEdite.intitule.trim()} className="btn-primaire">
                 {renommage && <FiLoader className="animate-spin" aria-hidden="true" />} Renommer
               </button>
             </div>

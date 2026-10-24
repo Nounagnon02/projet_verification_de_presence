@@ -7,9 +7,7 @@ import { activerAnnee } from '../../api/resources/anneesAcademiques';
 import { useToastCtx } from '../../context/ToastContext';
 import PreparationAnnee from './PreparationAnnee';
 import AlerteCalendrier from '../../components/ui/AlerteCalendrier';
-import {
-  LIBELLES_STATUT, anneesApres, contenuAnnee, formatDateLongue, joursAvant, pluriel,
-} from '../../utils/annees';
+import { LIBELLES_STATUT, anneesApres, contenuAnnee, formatDateLongue, joursAvant, pluriel } from '../../utils/annees';
 
 // Jetons pleins : les couleurs du thème sont des variables hexadécimales, et
 // Tailwind ne produit rien pour « bg-secondary/10 » ou « bg-primary/10 ».
@@ -28,15 +26,22 @@ const Libelle = ({ children }) => <span className="whitespace-nowrap">{children}
  */
 function alerteAnnee(active, suivante) {
   if (!active) {
-    return { niveau: 'erreur', texte: "Aucune année n'est active pour votre établissement. Choisissez-en une ci-dessous : les inscriptions et la génération des séances en dépendent." };
+    return {
+      niveau: 'erreur',
+      texte:
+        "Aucune année n'est active pour votre établissement. Choisissez-en une ci-dessous : les inscriptions et la génération des séances en dépendent.",
+    };
   }
 
   const jours = joursAvant(active.date_fin);
 
   if (!suivante && jours !== null && jours <= 30) {
-    const quand = jours < 0
-      ? `est terminée depuis le ${formatDateLongue(active.date_fin)}`
-      : jours === 0 ? "se termine aujourd'hui" : `se termine le ${formatDateLongue(active.date_fin)}, dans ${pluriel(jours, 'jour')}`;
+    const quand =
+      jours < 0
+        ? `est terminée depuis le ${formatDateLongue(active.date_fin)}`
+        : jours === 0
+          ? "se termine aujourd'hui"
+          : `se termine le ${formatDateLongue(active.date_fin)}, dans ${pluriel(jours, 'jour')}`;
 
     return {
       niveau: 'attention',
@@ -89,8 +94,8 @@ export default function AcademicYearsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold font-headline text-primary">Années académiques</h1>
         <p className="text-sm text-on-surface-variant max-w-2xl mt-1">
-          Les années sont communes à toute l'université : le super administrateur les crée.
-          Vous choisissez celle sur laquelle travaille votre établissement.
+          Les années sont communes à toute l'université : le super administrateur les crée. Vous choisissez celle sur
+          laquelle travaille votre établissement.
         </p>
       </div>
 
@@ -101,9 +106,11 @@ export default function AcademicYearsPage() {
             alerte.niveau === 'info' ? 'bg-surface-container-high' : 'bg-warning-container'
           }`}
         >
-          {alerte.niveau === 'info'
-            ? <FiInfo className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
-            : <FiAlertTriangle className="shrink-0 mt-0.5" aria-hidden="true" />}
+          {alerte.niveau === 'info' ? (
+            <FiInfo className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
+          ) : (
+            <FiAlertTriangle className="shrink-0 mt-0.5" aria-hidden="true" />
+          )}
           <p>{alerte.texte}</p>
         </div>
       )}
@@ -132,12 +139,18 @@ export default function AcademicYearsPage() {
               >
                 <div className="flex items-start gap-3">
                   <div className="p-2.5 rounded-xl bg-surface-container-high">
-                    <FiCalendar className={year.active ? 'text-primary' : 'text-outline'} size={20} aria-hidden="true" />
+                    <FiCalendar
+                      className={year.active ? 'text-primary' : 'text-on-surface-variant'}
+                      size={20}
+                      aria-hidden="true"
+                    />
                   </div>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="font-bold text-primary text-base">{year.libelle}</h2>
-                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${CLASSES_STATUT[year.statut] || CLASSES_STATUT.terminee}`}>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${CLASSES_STATUT[year.statut] || CLASSES_STATUT.terminee}`}
+                      >
                         {LIBELLES_STATUT[year.statut] || year.statut}
                       </span>
                     </div>
@@ -156,19 +169,21 @@ export default function AcademicYearsPage() {
 
                 <div className="bg-surface-container-high rounded-xl p-3.5 flex items-center gap-3 text-sm">
                   <div className="flex-1">
-                    <p className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider mb-0.5">Début</p>
+                    <p className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider mb-0.5">
+                      Début
+                    </p>
                     <p className="font-semibold text-on-surface">{formatDateLongue(year.date_debut)}</p>
                   </div>
-                  <FiArrowRight size={16} className="text-outline shrink-0" aria-hidden="true" />
+                  <FiArrowRight size={16} className="text-on-surface-variant shrink-0" aria-hidden="true" />
                   <div className="flex-1 text-right">
-                    <p className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider mb-0.5">Fin</p>
+                    <p className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider mb-0.5">
+                      Fin
+                    </p>
                     <p className="font-semibold text-on-surface">{formatDateLongue(year.date_fin)}</p>
                   </div>
                 </div>
 
-                <p className="text-xs text-on-surface-variant">
-                  {contenu || 'Rien encore pour votre établissement'}
-                </p>
+                <p className="text-xs text-on-surface-variant">{contenu || 'Rien encore pour votre établissement'}</p>
 
                 {!year.active && (
                   <div className="flex flex-wrap gap-2 mt-auto">
@@ -199,18 +214,30 @@ export default function AcademicYearsPage() {
       )}
 
       {aPreparer && activeYear && (
-        <PreparationAnnee cible={aPreparer} source={activeYear} onClose={() => setAPreparer(null)} onPreparee={rafraichir} />
+        <PreparationAnnee
+          cible={aPreparer}
+          source={activeYear}
+          onClose={() => setAPreparer(null)}
+          onPreparee={rafraichir}
+        />
       )}
 
-      <Modal isOpen={!!cible} onClose={() => !activation && setCible(null)} title={cible ? `Passer sur ${cible.libelle} ?` : ''}>
-        {cible && (
-          <ConsequencesBascule cible={cible} active={activeYear} />
-        )}
+      <Modal
+        isOpen={!!cible}
+        onClose={() => !activation && setCible(null)}
+        title={cible ? `Passer sur ${cible.libelle} ?` : ''}
+      >
+        {cible && <ConsequencesBascule cible={cible} active={activeYear} />}
         <div className="flex justify-end gap-3 pt-5">
-          <button type="button" onClick={() => setCible(null)} disabled={activation} className="px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors">
+          <button
+            type="button"
+            onClick={() => setCible(null)}
+            disabled={activation}
+            className="px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors"
+          >
             Annuler
           </button>
-          <button type="button" onClick={activer} disabled={activation} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-all">
+          <button type="button" onClick={activer} disabled={activation} className="btn-primaire">
             {activation && <FiLoader className="animate-spin" />}
             {cible ? `Passer sur ${cible.libelle}` : ''}
           </button>
@@ -228,22 +255,35 @@ function ConsequencesBascule({ cible, active }) {
   return (
     <div className="space-y-4 text-sm text-on-surface">
       <p>
-        {active ? <>Votre établissement travaille aujourd'hui sur <strong><Libelle>{active.libelle}</Libelle></strong>. </> : null}
+        {active ? (
+          <>
+            Votre établissement travaille aujourd'hui sur{' '}
+            <strong>
+              <Libelle>{active.libelle}</Libelle>
+            </strong>
+            .{' '}
+          </>
+        ) : null}
         En passant sur <Libelle>{cible.libelle}</Libelle> :
       </p>
       <ul className="list-disc pl-5 space-y-1.5">
         <li>les nouvelles inscriptions iront dans {cible.libelle} ;</li>
         {creneaux > 0 ? (
-          <li>les séances seront générées chaque nuit depuis son emploi du temps ({pluriel(creneaux, 'créneau', 'créneaux')}) ;</li>
+          <li>
+            les séances seront générées chaque nuit depuis son emploi du temps (
+            {pluriel(creneaux, 'créneau', 'créneaux')}) ;
+          </li>
         ) : (
           <li>
-            <strong>aucune séance ne sera générée</strong> : {cible.libelle} n'a pas encore d'emploi du temps pour votre établissement ;
+            <strong>aucune séance ne sera générée</strong> : {cible.libelle} n'a pas encore d'emploi du temps pour votre
+            établissement ;
           </li>
         )}
         {active && retirees > 0 && (
           <li>
-            {pluriel(retirees, 'séance déjà planifiée', 'séances déjà planifiées')} de {active.libelle} après aujourd'hui
-            {retirees > 1 ? ' seront retirées' : ' sera retirée'} — aucune n'a de présence ;
+            {pluriel(retirees, 'séance déjà planifiée', 'séances déjà planifiées')} de {active.libelle} après
+            aujourd'hui
+            {retirees > 1 ? ' seront retirées' : ' sera retirée'}, aucune n'a de présence ;
           </li>
         )}
         <li>

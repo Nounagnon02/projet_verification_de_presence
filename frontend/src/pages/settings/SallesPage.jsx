@@ -1,18 +1,41 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { FiPlus, FiEdit2, FiTrash2, FiMapPin, FiWifi, FiAlertTriangle, FiSearch, FiLoader, FiCrosshair, FiCalendar } from 'react-icons/fi';
+import {
+  FiPlus,
+  FiEdit2,
+  FiTrash2,
+  FiMapPin,
+  FiWifi,
+  FiAlertTriangle,
+  FiSearch,
+  FiLoader,
+  FiCrosshair,
+  FiCalendar,
+} from 'react-icons/fi';
 import Modal from '../../components/ui/Modal';
-import { listerSalles, creerSalle, modifierSalle, supprimerSalle, utilisateurConnecte } from '../../api/resources/salles';
+import {
+  listerSalles,
+  creerSalle,
+  modifierSalle,
+  supprimerSalle,
+  utilisateurConnecte,
+} from '../../api/resources/salles';
 import { useToastCtx } from '../../context/ToastContext';
 
 // La plage IP a quitté le formulaire : enregistrée et comparée au scan, elle
 // n'y refusait jamais rien. Le champ promettait un contrôle qui n'existait pas.
 const EMPTY_SALLE = {
-  nom: '', code: '', etablissement_id: '',
-  latitude: '', longitude: '', rayon_geofence_m: 50,
-  ssid_attendu: '', bssid_attendu: '',
-  hors_reseau: false, actif: true,
+  nom: '',
+  code: '',
+  etablissement_id: '',
+  latitude: '',
+  longitude: '',
+  rayon_geofence_m: 50,
+  ssid_attendu: '',
+  bssid_attendu: '',
+  hors_reseau: false,
+  actif: true,
 };
 
 const renseigne = (v) => v !== null && v !== undefined && v !== '';
@@ -41,14 +64,19 @@ const VIDES = {
 };
 
 /** Forme de recherche : sans casse ni accents. */
-const cle = (texte) => String(texte ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const cle = (texte) =>
+  String(texte ?? '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase();
 
 // Les salles actives et utilisées d'abord : c'est par elles qu'il faut
 // commencer la configuration.
-const parUsage = (a, b) => (Number(b.actif) - Number(a.actif))
-  || ((b.seances_a_venir ?? 0) - (a.seances_a_venir ?? 0))
-  || ((b.creneaux_count ?? 0) - (a.creneaux_count ?? 0))
-  || String(a.nom).localeCompare(String(b.nom));
+const parUsage = (a, b) =>
+  Number(b.actif) - Number(a.actif) ||
+  (b.seances_a_venir ?? 0) - (a.seances_a_venir ?? 0) ||
+  (b.creneaux_count ?? 0) - (a.creneaux_count ?? 0) ||
+  String(a.nom).localeCompare(String(b.nom));
 
 const usage = (s) => {
   const parts = [];
@@ -61,13 +89,15 @@ const usage = (s) => {
 function Protection({ salle }) {
   const base = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap';
 
-  if (!salle.actif) return <span className={`${base} bg-error/10 text-error`}>Désactivée</span>;
+  if (!salle.actif) return <span className={`${base} bg-statut-erreur-fond text-statut-erreur`}>Désactivée</span>;
 
   const controles = [verifieGps(salle) && 'GPS', verifieWifi(salle) && 'Wi-Fi'].filter(Boolean);
 
-  return controles.length
-    ? <span className={`${base} bg-secondary/10 text-secondary`}>QR + {controles.join(' + ')}</span>
-    : <span className={`${base} bg-warning-container text-on-surface`}>QR seul</span>;
+  return controles.length ? (
+    <span className={`${base} bg-statut-succes-fond text-statut-succes`}>QR + {controles.join(' + ')}</span>
+  ) : (
+    <span className={`${base} bg-warning-container text-on-surface`}>QR seul</span>
+  );
 }
 
 const Compteur = ({ valeur, libelle, alerte = false }) => (
@@ -101,7 +131,11 @@ export default function SallesPage() {
   // bandeau d'état doit compter toutes les salles, pas le résultat d'une
   // recherche.
   const sallesQuery = useQuery({ queryKey: ['salles'], queryFn: ({ signal }) => listerSalles(signal) });
-  const salles = Array.isArray(sallesQuery.data?.data) ? sallesQuery.data.data : (Array.isArray(sallesQuery.data) ? sallesQuery.data : []);
+  const salles = Array.isArray(sallesQuery.data?.data)
+    ? sallesQuery.data.data
+    : Array.isArray(sallesQuery.data)
+      ? sallesQuery.data
+      : [];
   const loading = sallesQuery.isLoading;
   const rafraichir = () => queryClient.invalidateQueries({ queryKey: ['salles'] });
 
@@ -146,7 +180,10 @@ export default function SallesPage() {
    */
   const utiliserMaPosition = () => {
     if (!navigator.geolocation) {
-      setLocalisation({ etat: 'erreur', message: "Ce navigateur ne donne pas accès à la position : saisissez les coordonnées." });
+      setLocalisation({
+        etat: 'erreur',
+        message: 'Ce navigateur ne donne pas accès à la position : saisissez les coordonnées.',
+      });
       return;
     }
 
@@ -159,19 +196,21 @@ export default function SallesPage() {
         const precision = Math.round(coords.accuracy ?? 0);
         setLocalisation({
           etat: 'ok',
-          message: precision > rayon
-            ? `Position relevée à ±${precision} m, moins précise que le rayon de la salle (${rayon} m) : réessayez près d'une fenêtre, ou élargissez le rayon.`
-            : `Position relevée à ±${precision} m. Vérifiez que vous êtes bien dans la salle.`,
+          message:
+            precision > rayon
+              ? `Position relevée à ±${precision} m, moins précise que le rayon de la salle (${rayon} m) : réessayez près d'une fenêtre, ou élargissez le rayon.`
+              : `Position relevée à ±${precision} m. Vérifiez que vous êtes bien dans la salle.`,
         });
       },
-      (err) => setLocalisation({
-        etat: 'erreur',
-        message: !window.isSecureContext
-          ? "La position n'est disponible que sur une connexion sécurisée (https) : saisissez les coordonnées."
-          : err?.code === 1
-            ? "Accès à la position refusé : autorisez-le dans le navigateur, ou saisissez les coordonnées."
-            : "Position introuvable : réessayez près d'une fenêtre, ou saisissez les coordonnées.",
-      }),
+      (err) =>
+        setLocalisation({
+          etat: 'erreur',
+          message: !window.isSecureContext
+            ? "La position n'est disponible que sur une connexion sécurisée (https) : saisissez les coordonnées."
+            : err?.code === 1
+              ? 'Accès à la position refusé : autorisez-le dans le navigateur, ou saisissez les coordonnées.'
+              : "Position introuvable : réessayez près d'une fenêtre, ou saisissez les coordonnées.",
+        }),
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );
   };
@@ -224,9 +263,7 @@ export default function SallesPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64 text-on-surface-variant">Chargement...</div>
-    );
+    return <div className="flex items-center justify-center h-64 text-on-surface-variant">Chargement...</div>;
   }
 
   const actives = salles.filter((s) => s.actif);
@@ -244,7 +281,9 @@ export default function SallesPage() {
     .filter((s) => !q || cle(s.nom).includes(q) || cle(s.code).includes(q))
     .sort(parUsage);
 
-  const champ = 'w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all';
+  const champ =
+    // Classe partagée (index.css) : rayon, bordure, focus et état désactivé communs.
+    'champ';
 
   return (
     <div className="space-y-6">
@@ -256,10 +295,7 @@ export default function SallesPage() {
             Ce que chaque salle vérifie au scan, en plus du QR code : la position (GPS) et le réseau (Wi-Fi).
           </p>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all"
-        >
+        <button onClick={openCreate} className="btn-primaire">
           <FiPlus size={16} /> Ajouter une salle
         </button>
       </div>
@@ -268,13 +304,18 @@ export default function SallesPage() {
         <div className="text-center py-16 text-on-surface-variant">
           <FiMapPin size={48} className="mx-auto mb-4 opacity-30" />
           <p className="text-lg font-semibold">Aucune salle configurée</p>
-          <p className="text-sm mt-1">Ajoutez des salles pour activer la vérification de présence par géolocalisation et réseau Wi-Fi.</p>
+          <p className="text-sm mt-1">
+            Ajoutez des salles pour activer la vérification de présence par géolocalisation et réseau Wi-Fi.
+          </p>
         </div>
       ) : (
         <>
           {/* État d'ensemble : les seize salles « GPS non configuré » d'affilée ne
               disaient pas que la protection au scan était presque absente. */}
-          <section aria-label="État des salles" className="bg-surface-container-lowest rounded-xl p-5 shadow-sm border border-outline-variant/10">
+          <section
+            aria-label="État des salles"
+            className="bg-surface-container-lowest rounded-xl p-5 shadow-sm border border-outline-variant/10"
+          >
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <Compteur valeur={etat.gps} libelle="contrôlent la position (GPS)" />
               <Compteur valeur={etat.wifi} libelle="contrôlent le réseau (Wi-Fi)" />
@@ -283,10 +324,11 @@ export default function SallesPage() {
             </div>
             {etat.qrSeul > 0 && (
               <p className="flex items-start gap-2 text-xs text-on-surface-variant mt-4">
-                <FiAlertTriangle size={14} className="text-error shrink-0 mt-0.5" aria-hidden="true" />
+                <FiAlertTriangle size={14} className="text-statut-erreur shrink-0 mt-0.5" aria-hidden="true" />
                 <span>
-                  Dans une salle « QR seul », le scan ne vérifie pas que l'étudiant est dans la salle : un QR code relayé
-                  à distance peut suffire. Commencez par les salles qui ont des séances à venir, placées en tête de liste.
+                  Dans une salle « QR seul », le scan ne vérifie pas que l'étudiant est dans la salle : un QR code
+                  relayé à distance peut suffire. Commencez par les salles qui ont des séances à venir, placées en tête
+                  de liste.
                 </span>
               </p>
             )}
@@ -304,16 +346,22 @@ export default function SallesPage() {
                     aria-pressed={actif}
                     onClick={() => choisirFiltre(f.id)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      actif ? 'bg-primary text-white shadow-sm' : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container'
+                      actif
+                        ? 'bg-marque text-white shadow-sm'
+                        : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container'
                     }`}
                   >
-                    {f.libelle} <span className="opacity-70 tabular-nums">({salles.filter(f.garde).length})</span>
+                    {f.libelle} <span className="tabular-nums">({salles.filter(f.garde).length})</span>
                   </button>
                 );
               })}
             </div>
             <div className="relative lg:ml-auto w-full lg:max-w-xs">
-              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} aria-hidden="true" />
+              <FiSearch
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant"
+                size={16}
+                aria-hidden="true"
+              />
               <input
                 type="search"
                 aria-label="Rechercher une salle"
@@ -346,18 +394,32 @@ export default function SallesPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => openEdit(salle)} className="p-1.5 hover:bg-surface-container-high rounded-lg transition-colors" title="Modifier" aria-label={`Modifier ${salle.nom}`}>
+                      <button
+                        onClick={() => openEdit(salle)}
+                        className="p-1.5 hover:bg-surface-container-high rounded-lg transition-colors"
+                        title="Modifier"
+                        aria-label={`Modifier ${salle.nom}`}
+                      >
                         <FiEdit2 size={14} className="text-on-surface-variant" />
                       </button>
-                      <button onClick={() => setShowDelete(salle)} className="p-1.5 hover:bg-error/10 rounded-lg transition-colors" title="Supprimer" aria-label={`Supprimer ${salle.nom}`}>
-                        <FiTrash2 size={14} className="text-error" />
+                      <button
+                        onClick={() => setShowDelete(salle)}
+                        className="p-1.5 hover:bg-error/10 rounded-lg transition-colors"
+                        title="Supprimer"
+                        aria-label={`Supprimer ${salle.nom}`}
+                      >
+                        <FiTrash2 size={14} className="text-statut-erreur" />
                       </button>
                     </div>
                   </div>
 
                   <div className="space-y-2 text-xs">
                     <div className="flex items-center gap-2">
-                      <FiMapPin size={12} className={verifieGps(salle) ? 'text-secondary' : 'text-on-surface-variant/40'} aria-hidden="true" />
+                      <FiMapPin
+                        size={12}
+                        className={verifieGps(salle) ? 'text-secondary' : 'text-on-surface-variant/40'}
+                        aria-hidden="true"
+                      />
                       <span className="text-on-surface-variant">
                         {verifieGps(salle)
                           ? `${Number(salle.latitude).toFixed(5)}, ${Number(salle.longitude).toFixed(5)} · rayon ${salle.rayon_geofence_m} m`
@@ -365,15 +427,19 @@ export default function SallesPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <FiWifi size={12} className={verifieWifi(salle) ? 'text-secondary' : 'text-on-surface-variant/40'} aria-hidden="true" />
+                      <FiWifi
+                        size={12}
+                        className={verifieWifi(salle) ? 'text-secondary' : 'text-on-surface-variant/40'}
+                        aria-hidden="true"
+                      />
                       <span className="text-on-surface-variant">
                         {salle.hors_reseau
                           ? 'Hors réseau : pas de contrôle Wi-Fi'
-                          : (salle.ssid_attendu || salle.bssid_attendu || 'Wi-Fi non configuré')}
+                          : salle.ssid_attendu || salle.bssid_attendu || 'Wi-Fi non configuré'}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <FiCalendar size={12} className="text-on-surface-variant/60" aria-hidden="true" />
+                      <FiCalendar size={12} className="text-on-surface-variant" aria-hidden="true" />
                       <span className="text-on-surface-variant">{usage(salle)}</span>
                     </div>
                   </div>
@@ -395,10 +461,14 @@ export default function SallesPage() {
       )}
 
       {/* Modal Création / Édition */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)}
-        title={editing ? 'Modifier la salle' : 'Nouvelle salle'} size="lg">
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={editing ? 'Modifier la salle' : 'Nouvelle salle'}
+        size="lg"
+      >
         {error && (
-          <div className="flex items-center gap-2 p-3 bg-error/10 rounded-xl text-error text-sm mb-4">
+          <div className="flex items-center gap-2 p-3 bg-statut-erreur-fond rounded-xl text-statut-erreur text-sm mb-4">
             <FiAlertTriangle size={16} />
             <span>{error}</span>
           </div>
@@ -409,7 +479,14 @@ export default function SallesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="sm:col-span-2">
               <Field label="Nom de la salle *" htmlFor="salle-nom">
-                <input id="salle-nom" type="text" required className={champ} value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} />
+                <input
+                  id="salle-nom"
+                  type="text"
+                  required
+                  className={champ}
+                  value={form.nom}
+                  onChange={(e) => setForm({ ...form, nom: e.target.value })}
+                />
               </Field>
             </div>
             <Field label={editing ? 'Code unique *' : 'Code unique'} htmlFor="salle-code">
@@ -433,22 +510,51 @@ export default function SallesPage() {
           <Field label="Entité">
             <div className="flex items-center gap-2 px-3 py-2.5 bg-surface-container-high rounded-lg text-sm text-on-surface-variant">
               <FiMapPin size={14} className="text-secondary" />
-              <span className="font-medium text-on-surface">{userEntity?.nom || userEntity?.code || 'Entité non définie'}</span>
+              <span className="font-medium text-on-surface">
+                {userEntity?.nom || userEntity?.code || 'Entité non définie'}
+              </span>
             </div>
           </Field>
 
           {/* Géolocalisation */}
           <div className="border-t border-outline-variant/20 pt-4">
-            <h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2"><FiMapPin size={16} /> Géolocalisation GPS</h4>
+            <h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2">
+              <FiMapPin size={16} /> Géolocalisation GPS
+            </h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Field label="Latitude" htmlFor="salle-latitude">
-                <input id="salle-latitude" type="number" step="any" placeholder="Ex: 6.3650" className={`${champ} font-mono`} value={form.latitude} onChange={(e) => setForm({ ...form, latitude: e.target.value })} />
+                <input
+                  id="salle-latitude"
+                  type="number"
+                  step="any"
+                  placeholder="Ex: 6.3650"
+                  className={`${champ} font-mono`}
+                  value={form.latitude}
+                  onChange={(e) => setForm({ ...form, latitude: e.target.value })}
+                />
               </Field>
               <Field label="Longitude" htmlFor="salle-longitude">
-                <input id="salle-longitude" type="number" step="any" placeholder="Ex: 2.4180" className={`${champ} font-mono`} value={form.longitude} onChange={(e) => setForm({ ...form, longitude: e.target.value })} />
+                <input
+                  id="salle-longitude"
+                  type="number"
+                  step="any"
+                  placeholder="Ex: 2.4180"
+                  className={`${champ} font-mono`}
+                  value={form.longitude}
+                  onChange={(e) => setForm({ ...form, longitude: e.target.value })}
+                />
               </Field>
               <Field label="Rayon geofence (mètres)" htmlFor="salle-rayon">
-                <input id="salle-rayon" type="number" min="5" max="500" placeholder="50" className={champ} value={form.rayon_geofence_m} onChange={(e) => setForm({ ...form, rayon_geofence_m: e.target.value })} />
+                <input
+                  id="salle-rayon"
+                  type="number"
+                  min="5"
+                  max="500"
+                  placeholder="50"
+                  className={champ}
+                  value={form.rayon_geofence_m}
+                  onChange={(e) => setForm({ ...form, rayon_geofence_m: e.target.value })}
+                />
               </Field>
             </div>
             <div className="flex flex-wrap items-center gap-3 mt-3">
@@ -458,11 +564,18 @@ export default function SallesPage() {
                 disabled={localisation.etat === 'encours'}
                 className="flex items-center gap-2 px-3 py-2 bg-primary/10 text-primary rounded-lg text-xs font-semibold hover:bg-primary/20 transition-all disabled:opacity-50"
               >
-                {localisation.etat === 'encours' ? <FiLoader className="animate-spin" size={14} /> : <FiCrosshair size={14} />}
+                {localisation.etat === 'encours' ? (
+                  <FiLoader className="animate-spin" size={14} />
+                ) : (
+                  <FiCrosshair size={14} />
+                )}
                 Utiliser ma position actuelle
               </button>
               {localisation.message && (
-                <p role="status" className={`text-xs ${localisation.etat === 'erreur' ? 'text-error' : 'text-on-surface-variant'}`}>
+                <p
+                  role="status"
+                  className={`text-xs ${localisation.etat === 'erreur' ? 'text-error' : 'text-on-surface-variant'}`}
+                >
                   {localisation.message}
                 </p>
               )}
@@ -474,70 +587,122 @@ export default function SallesPage() {
 
           {/* Réseau Wi-Fi */}
           <div className="border-t border-outline-variant/20 pt-4">
-            <h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2"><FiWifi size={16} /> Réseau Wi-Fi</h4>
+            <h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2">
+              <FiWifi size={16} /> Réseau Wi-Fi
+            </h4>
             {/* Conséquence non évidente, à dire ici : c'est l'administrateur
                 qui la déclenche en remplissant ces champs. */}
             <p className="text-xs text-on-surface-variant mb-3">
               Renseigner un réseau rend cette salle validable{' '}
-              <span className="font-semibold">uniquement depuis l'application mobile</span> :
-              un navigateur ne peut pas lire le nom du réseau. Laissez ces champs
-              vides, ou cochez « hors réseau », pour autoriser aussi la page web.
+              <span className="font-semibold">uniquement depuis l'application mobile</span> : un navigateur ne peut pas
+              lire le nom du réseau. Laissez ces champs vides, ou cochez « hors réseau », pour autoriser aussi la page
+              web.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="SSID attendu" htmlFor="salle-ssid">
-                <input id="salle-ssid" type="text" placeholder="Ex: IFRI-WiFi" className={champ} value={form.ssid_attendu} onChange={(e) => setForm({ ...form, ssid_attendu: e.target.value })} />
+                <input
+                  id="salle-ssid"
+                  type="text"
+                  placeholder="Ex: IFRI-WiFi"
+                  className={champ}
+                  value={form.ssid_attendu}
+                  onChange={(e) => setForm({ ...form, ssid_attendu: e.target.value })}
+                />
               </Field>
               <Field label="BSSID attendu (MAC)" htmlFor="salle-bssid">
-                <input id="salle-bssid" type="text" placeholder="Ex: 00:11:22:33:44:55" className={`${champ} font-mono`} value={form.bssid_attendu} onChange={(e) => setForm({ ...form, bssid_attendu: e.target.value })} />
+                <input
+                  id="salle-bssid"
+                  type="text"
+                  placeholder="Ex: 00:11:22:33:44:55"
+                  className={`${champ} font-mono`}
+                  value={form.bssid_attendu}
+                  onChange={(e) => setForm({ ...form, bssid_attendu: e.target.value })}
+                />
               </Field>
             </div>
             <label className="flex items-center gap-2 mt-3 cursor-pointer">
-              <input type="checkbox" checked={form.hors_reseau} onChange={(e) => setForm({ ...form, hors_reseau: e.target.checked })} className="rounded border-outline-variant/30 text-primary focus:ring-primary/20" />
-              <span className="text-xs text-on-surface-variant">Salle hors réseau : aucun contrôle Wi-Fi (GPS seul)</span>
+              <input
+                type="checkbox"
+                checked={form.hors_reseau}
+                onChange={(e) => setForm({ ...form, hors_reseau: e.target.checked })}
+                className="rounded border-outline-variant/30 text-primary focus:ring-primary/20"
+              />
+              <span className="text-xs text-on-surface-variant">
+                Salle hors réseau : aucun contrôle Wi-Fi (GPS seul)
+              </span>
             </label>
           </div>
 
           {/* Statut */}
           <div className="border-t border-outline-variant/20 pt-4">
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={form.actif} onChange={(e) => setForm({ ...form, actif: e.target.checked })} className="rounded border-outline-variant/30 text-primary focus:ring-primary/20" />
+              <input
+                type="checkbox"
+                checked={form.actif}
+                onChange={(e) => setForm({ ...form, actif: e.target.checked })}
+                className="rounded border-outline-variant/30 text-primary focus:ring-primary/20"
+              />
               <span className="text-sm text-on-surface-variant">Salle active</span>
             </label>
           </div>
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 bg-surface-container-high text-on-surface rounded-xl text-sm font-semibold hover:bg-surface-container transition-colors">
+            <button
+              type="button"
+              onClick={() => setShowModal(false)}
+              className="px-5 py-2.5 bg-surface-container-high text-on-surface rounded-xl text-sm font-semibold hover:bg-surface-container transition-colors"
+            >
               Annuler
             </button>
-            <button type="submit" disabled={saving} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50">
-              {saving && <FiLoader className="animate-spin" />}{saving ? 'Enregistrement...' : (editing ? 'Mettre à jour' : 'Créer')}
+            <button type="submit" disabled={saving} className="btn-primaire">
+              {saving && <FiLoader className="animate-spin" />}
+              {saving ? 'Enregistrement...' : editing ? 'Mettre à jour' : 'Créer'}
             </button>
           </div>
         </form>
       </Modal>
 
       {/* Modal confirmation suppression */}
-      <Modal isOpen={Boolean(showDelete)} onClose={() => setShowDelete(null)} title="Supprimer la salle" size="md"
-        aria-describedby="suppression-salle-description">
+      <Modal
+        isOpen={Boolean(showDelete)}
+        onClose={() => setShowDelete(null)}
+        title="Supprimer la salle"
+        size="md"
+        aria-describedby="suppression-salle-description"
+      >
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 bg-error/10 rounded-xl"><FiAlertTriangle className="text-error" size={20} /></div>
+          <div className="p-2 bg-error/10 rounded-xl">
+            <FiAlertTriangle className="text-statut-erreur" size={20} />
+          </div>
           {/* La salle visée peut être nulle : `Modal` ne se rend pas fermée, mais
               ses enfants sont construits à chaque rendu de la page. */}
-          <p className="text-xs text-on-surface-variant">{showDelete?.nom} ({showDelete?.code})</p>
+          <p className="text-xs text-on-surface-variant">
+            {showDelete?.nom} ({showDelete?.code})
+          </p>
         </div>
         {/* La règle est énoncée avant le clic, plutôt que découverte par une
             erreur : le serveur refuse si des événements à venir utilisent la
             salle. */}
         <p id="suppression-salle-description" className="text-sm text-on-surface-variant mb-6">
-          Cette action est irréversible. Elle sera refusée si des événements à venir
-          utilisent cette salle ; les événements passés sont conservés. Pour la retirer
-          des listes sans la supprimer, décochez plutôt « Salle active ».
+          Cette action est irréversible. Elle sera refusée si des événements à venir utilisent cette salle ; les
+          événements passés sont conservés. Pour la retirer des listes sans la supprimer, décochez plutôt « Salle active
+          ».
         </p>
         <div className="flex gap-3">
-          <button onClick={() => setShowDelete(null)} className="flex-1 px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl text-sm font-semibold hover:bg-surface-container transition-colors">Annuler</button>
-          <button onClick={handleDelete} disabled={deleting} className="flex items-center justify-center gap-2 flex-1 px-4 py-2.5 bg-error text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50">
-            {deleting && <FiLoader className="animate-spin" />}Supprimer</button>
+          <button
+            onClick={() => setShowDelete(null)}
+            className="flex-1 px-4 py-2.5 bg-surface-container-high text-on-surface rounded-xl text-sm font-semibold hover:bg-surface-container transition-colors"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="flex items-center justify-center gap-2 flex-1 px-4 py-2.5 bg-error text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
+          >
+            {deleting && <FiLoader className="animate-spin" />}Supprimer
+          </button>
         </div>
       </Modal>
     </div>
@@ -546,7 +711,9 @@ export default function SallesPage() {
 
 const Field = ({ label, htmlFor, children }) => (
   <div className="space-y-1">
-    <label htmlFor={htmlFor} className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">{label}</label>
+    <label htmlFor={htmlFor} className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">
+      {label}
+    </label>
     {children}
   </div>
 );

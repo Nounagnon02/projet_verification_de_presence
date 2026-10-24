@@ -6,27 +6,23 @@ export default function GaugeChart({ value, max = 100, size = 140, label, classN
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - pct);
 
-  const color = pct >= 0.8 ? '#2E7D32' : pct >= 0.5 ? '#A65207' : '#C62828';
+  const color = pct >= 0.8 ? 'stroke-statut-succes' : pct >= 0.5 ? 'stroke-statut-alerte' : 'stroke-statut-erreur';
 
   return (
     <div className={cn('relative inline-flex items-center justify-center', className)}>
       <svg width={size} height={size} viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r={radius} fill="none" className="stroke-surface-container-high" strokeWidth="8" />
         <circle
-          cx="60" cy="60" r={radius}
+          cx="60"
+          cy="60"
+          r={radius}
           fill="none"
-          stroke="#E6E8EC"
-          strokeWidth="8"
-        />
-        <circle
-          cx="60" cy="60" r={radius}
-          fill="none"
-          stroke={color}
           strokeWidth="8"
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           transform="rotate(-90 60 60)"
-          className="transition-all duration-1000 ease-out"
+          className={cn(color, 'transition-all duration-1000 ease-out')}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">

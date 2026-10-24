@@ -7,7 +7,9 @@ import { useToastCtx } from '../../context/ToastContext';
 import { datesLisibles, questionRetrait } from '../../utils/calendrier';
 
 const FERIE_VIDE = { libelle: '', date_debut: '', date_fin: '' };
-const CHAMP = 'w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50';
+const CHAMP =
+  // Classe partagée (index.css) : rayon, bordure, focus et état désactivé communs.
+  'champ';
 const LIBELLE = 'text-xs font-semibold text-on-surface-variant';
 
 const messageErreur = (err, defaut) => {
@@ -43,7 +45,9 @@ export default function JoursFeriesPage() {
 
   const charge = !feriesQuery.isLoading;
   const feries = feriesQuery.data?.data ?? [];
-  const erreurFeries = feriesQuery.isError ? messageErreur(feriesQuery.error, "Les jours fériés n'ont pas pu être chargés.") : '';
+  const erreurFeries = feriesQuery.isError
+    ? messageErreur(feriesQuery.error, "Les jours fériés n'ont pas pu être chargés.")
+    : '';
   const occupe = Boolean(enCours);
 
   const rafraichirFeries = () => queryClient.invalidateQueries({ queryKey: ['jours-feries'] });
@@ -88,20 +92,30 @@ export default function JoursFeriesPage() {
         <div>
           <h1 className="text-2xl font-bold font-headline text-primary">Jours fériés</h1>
           <p className="text-sm text-on-surface-variant max-w-2xl mt-1">
-            Aucune séance n'est générée ces jours-là, dans aucune faculté. Déclarer un jour férié retire les
-            séances à venir qu'il couvre, si elles n'ont jamais été ouvertes et n'ont aucune présence.
+            Aucune séance n'est générée ces jours-là, dans aucune faculté. Déclarer un jour férié retire les séances à
+            venir qu'il couvre, si elles n'ont jamais été ouvertes et n'ont aucune présence.
           </p>
         </div>
         <div className="space-y-1 w-full md:w-56">
-          <label htmlFor="feries-annee" className={LIBELLE}>Année académique</label>
+          <label htmlFor="feries-annee" className={LIBELLE}>
+            Année académique
+          </label>
           <select id="feries-annee" value={choisie} onChange={(e) => setAnneeId(e.target.value)} className={CHAMP}>
-            {liste.map((a) => <option key={a.id} value={a.id}>{a.libelle}{a.active ? ' (en cours)' : ''}</option>)}
+            {liste.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.libelle}
+                {a.active ? ' (en cours)' : ''}
+              </option>
+            ))}
           </select>
         </div>
       </div>
 
       {erreurFeries && (
-        <p role="alert" className="flex items-start gap-2 p-3 bg-error/10 text-error rounded-lg text-sm">
+        <p
+          role="alert"
+          className="flex items-start gap-2 p-3 bg-statut-erreur-fond text-statut-erreur rounded-lg text-sm"
+        >
           <FiAlertTriangle className="mt-0.5 shrink-0" aria-hidden="true" /> {erreurFeries}
         </p>
       )}
@@ -112,53 +126,102 @@ export default function JoursFeriesPage() {
             <tr className="border-b border-outline-variant/10 text-on-surface-variant text-xs uppercase tracking-wider">
               <th className="text-left p-3 font-semibold">Libellé</th>
               <th className="text-left p-3 font-semibold">Dates</th>
-              <th className="p-3"><span className="sr-only">Actions</span></th>
+              <th className="p-3">
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody>
             {!charge && choisie ? (
-              <tr><td colSpan={3} className="p-6 text-center"><FiLoader className="animate-spin mx-auto text-primary" aria-label="Chargement" /></td></tr>
-            ) : feries.length === 0 ? (
-              <tr><td colSpan={3} className="p-6 text-center text-on-surface-variant">Aucun jour férié déclaré{annee ? ` pour ${annee.libelle}` : ''}.</td></tr>
-            ) : feries.map((f) => (
-              <tr key={f.id} className="border-b border-outline-variant/5 last:border-0">
-                <td className="p-3 font-medium">{f.libelle}</td>
-                <td className="p-3 text-on-surface-variant whitespace-nowrap">{datesLisibles(f.date_debut, f.date_fin)}</td>
-                <td className="p-3 text-right">
-                  <button type="button" onClick={() => retirer(f)} disabled={occupe} aria-label={`Retirer « ${f.libelle} »`}
-                    className="p-2 hover:bg-error/10 rounded-lg transition-colors disabled:opacity-40">
-                    <FiTrash2 className="text-error" />
-                  </button>
+              <tr>
+                <td colSpan={3} className="p-6 text-center">
+                  <FiLoader className="animate-spin mx-auto text-primary" aria-label="Chargement" />
                 </td>
               </tr>
-            ))}
+            ) : feries.length === 0 ? (
+              <tr>
+                <td colSpan={3} className="p-6 text-center text-on-surface-variant">
+                  Aucun jour férié déclaré{annee ? ` pour ${annee.libelle}` : ''}.
+                </td>
+              </tr>
+            ) : (
+              feries.map((f) => (
+                <tr key={f.id} className="border-b border-outline-variant/5 last:border-0">
+                  <td className="p-3 font-medium">{f.libelle}</td>
+                  <td className="p-3 text-on-surface-variant whitespace-nowrap">
+                    {datesLisibles(f.date_debut, f.date_fin)}
+                  </td>
+                  <td className="p-3 text-right">
+                    <button
+                      type="button"
+                      onClick={() => retirer(f)}
+                      disabled={occupe}
+                      aria-label={`Retirer « ${f.libelle} »`}
+                      className="p-2 hover:bg-error/10 rounded-lg transition-colors disabled:opacity-40"
+                    >
+                      <FiTrash2 className="text-statut-erreur" />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
 
       {annee && (
-        <form onSubmit={declarer} className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/10 space-y-3">
+        <form
+          onSubmit={declarer}
+          className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/10 space-y-3"
+        >
           <h2 className="font-semibold text-on-surface">Déclarer un jour férié</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="space-y-1">
-              <label htmlFor="ferie-libelle" className={LIBELLE}>Libellé</label>
-              <input id="ferie-libelle" required maxLength={120} placeholder="Fête du Vodoun" value={ferie.libelle}
-                onChange={(e) => setFerie((f) => ({ ...f, libelle: e.target.value }))} className={CHAMP} />
+              <label htmlFor="ferie-libelle" className={LIBELLE}>
+                Libellé
+              </label>
+              <input
+                id="ferie-libelle"
+                required
+                maxLength={120}
+                placeholder="Fête du Vodoun"
+                value={ferie.libelle}
+                onChange={(e) => setFerie((f) => ({ ...f, libelle: e.target.value }))}
+                className={CHAMP}
+              />
             </div>
             <div className="space-y-1">
-              <label htmlFor="ferie-debut" className={LIBELLE}>Le</label>
-              <input id="ferie-debut" type="date" required min={annee.date_debut} max={annee.date_fin} value={ferie.date_debut}
-                onChange={(e) => setFerie((f) => ({ ...f, date_debut: e.target.value }))} className={CHAMP} />
+              <label htmlFor="ferie-debut" className={LIBELLE}>
+                Le
+              </label>
+              <input
+                id="ferie-debut"
+                type="date"
+                required
+                min={annee.date_debut}
+                max={annee.date_fin}
+                value={ferie.date_debut}
+                onChange={(e) => setFerie((f) => ({ ...f, date_debut: e.target.value }))}
+                className={CHAMP}
+              />
             </div>
             <div className="space-y-1">
-              <label htmlFor="ferie-fin" className={LIBELLE}>Jusqu'au (facultatif)</label>
-              <input id="ferie-fin" type="date" min={ferie.date_debut || annee.date_debut} max={annee.date_fin} value={ferie.date_fin}
-                onChange={(e) => setFerie((f) => ({ ...f, date_fin: e.target.value }))} className={CHAMP} />
+              <label htmlFor="ferie-fin" className={LIBELLE}>
+                Jusqu'au (facultatif)
+              </label>
+              <input
+                id="ferie-fin"
+                type="date"
+                min={ferie.date_debut || annee.date_debut}
+                max={annee.date_fin}
+                value={ferie.date_fin}
+                onChange={(e) => setFerie((f) => ({ ...f, date_fin: e.target.value }))}
+                className={CHAMP}
+              />
             </div>
           </div>
           <div className="flex justify-end">
-            <button type="submit" disabled={occupe}
-              className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 disabled:opacity-50">
+            <button type="submit" disabled={occupe} className="btn-primaire">
               {enCours === 'declarer' && <FiLoader className="animate-spin" aria-hidden="true" />} Déclarer
             </button>
           </div>

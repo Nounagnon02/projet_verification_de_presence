@@ -35,8 +35,10 @@ export function restantesPour(ec, type) {
 /** « CM 10h · TP/TD 15h = 25h », ou le total d'un EC encore à ventiler. */
 export function libelleVolumes(ec) {
   if (!ec) return '';
-  if (ec.volume_a_ventiler) return `${ec.volume_horaire ?? 0}h — à ventiler entre CM, TD et TP`;
+  if (ec.volume_a_ventiler) return `${ec.volume_horaire ?? 0}h : à ventiler entre CM, TD et TP`;
 
-  const parties = VOLUMES.filter(([champ]) => Number(ec[champ]) > 0).map(([champ, libelle]) => `${libelle} ${ec[champ]}h`);
+  const parties = VOLUMES.filter(([champ]) => Number(ec[champ]) > 0).map(
+    ([champ, libelle]) => `${libelle} ${ec[champ]}h`,
+  );
   return parties.length > 0 ? `${parties.join(' · ')} = ${ec.volume_horaire}h` : `${ec.volume_horaire ?? 0}h`;
 }

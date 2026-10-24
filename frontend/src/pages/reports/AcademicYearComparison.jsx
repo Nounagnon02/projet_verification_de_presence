@@ -3,6 +3,7 @@ import { FiLoader, FiAlertCircle } from 'react-icons/fi';
 import BarChart from '../../components/charts/BarChart';
 import { listerAnnees } from '../../api/resources/reference';
 import { rapportSemestre } from '../../api/resources/rapports';
+import { couleurTaux } from '../../utils/taux';
 
 const donnees = (reponse) => reponse?.data ?? reponse ?? [];
 
@@ -43,7 +44,7 @@ export default function AcademicYearComparison() {
               active: a.active || false,
             };
           }
-        })
+        }),
       );
     },
   });
@@ -52,17 +53,32 @@ export default function AcademicYearComparison() {
   const error = yearsQuery.isError ? 'Impossible de charger les données.' : '';
   const years = yearsQuery.data ?? [];
 
-  if (loading) return <div className="flex justify-center p-12"><FiLoader className="animate-spin text-primary w-8 h-8" /></div>;
+  if (loading)
+    return (
+      <div className="flex justify-center p-12">
+        <FiLoader className="animate-spin text-primary w-8 h-8" />
+      </div>
+    );
 
-  const details = years.length > 0 ? years : [];
+  // Ordre chronologique (« 2023-2024 » < « 2024-2025 » en tri de chaînes).
+  // L'API rend les années de la plus récente à la plus ancienne : la
+  // « première » année était donc la dernière, et le signe de la progression
+  // s'en trouvait inversé.
+  const details = [...years].sort((a, b) => String(a.year).localeCompare(String(b.year)));
 
-  // Calcul de la progression
-  const validYears = years.filter(y => y.rate > 0);
-  const latestRate = validYears.length > 0 ? validYears[validYears.length - 1].rate : 0;
-  const firstRate = validYears.length > 1 ? validYears[0].rate : latestRate;
-  const progression = firstRate > 0 ? ((latestRate - firstRate) / firstRate * 100).toFixed(1) : '0';
-  const progressionPositive = parseFloat(progression) >= 0;
-  const progressionColor = progressionPositive ? 'text-success' : 'text-error';
+  // Progression : seulement entre deux années qui ont eu des séances. Avec une
+  // seule, l'écran affichait « +0.0 % — Augmentation du taux de présence ».
+  const anneesAvecSeances = details.filter((y) => y.evenements > 0);
+  const mesurable = anneesAvecSeances.length >= 2;
+  const premier = anneesAvecSeances[0]?.rate ?? 0;
+  const dernier = anneesAvecSeances[anneesAvecSeances.length - 1]?.rate ?? 0;
+  const progression = mesurable && premier > 0 ? (((dernier - premier) / premier) * 100).toFixed(1) : null;
+  const progressionPositive = progression !== null && parseFloat(progression) >= 0;
+  const progressionColor = progressionPositive ? 'text-statut-succes' : 'text-statut-erreur';
+  // Moyenne des années qui ont eu des séances : une année vide comptait pour 0 %.
+  const moyenne = anneesAvecSeances.length
+    ? Math.round(anneesAvecSeances.reduce((a, b) => a + b.rate, 0) / anneesAvecSeances.length)
+    : null;
 
   return (
     <div>
@@ -74,7 +90,7 @@ export default function AcademicYearComparison() {
       </div>
 
       {error && (
-        <div className="flex items-start gap-2.5 p-4 bg-error/10 rounded-xl text-error border border-error/10 mb-5">
+        <div className="flex items-start gap-2.5 p-4 bg-statut-erreur-fond rounded-xl text-statut-erreur border border-error/10 mb-5">
           <FiAlertCircle className="text-lg shrink-0 mt-0.5" />
           <p className="text-sm">{error}</p>
         </div>
@@ -98,26 +114,34 @@ export default function AcademicYearComparison() {
 
             <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/10">
               <h2 className="text-base font-bold font-headline text-primary mb-4">Progression Totale</h2>
-              <p className={`text-5xl font-bold font-headline mb-2 ${progressionColor}`}>
-                {progressionPositive ? '+' : ''}{progression}%
-              </p>
-              <p className="text-sm text-on-surface-variant">
-                {progressionPositive ? 'Augmentation' : 'Diminution'} du taux de présence
-              </p>
+              {progression !== null ? (
+                <>
+                  <p className={`text-5xl font-bold font-headline mb-2 ${progressionColor}`}>
+                    {progressionPositive ? '+' : ''}
+                    {progression}%
+                  </p>
+                  <p className="text-sm text-on-surface-variant">
+                    {progressionPositive ? 'Augmentation' : 'Diminution'} du taux de présence entre{' '}
+                    {anneesAvecSeances[0].year} et {anneesAvecSeances[anneesAvecSeances.length - 1].year}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-5xl font-bold font-headline mb-2 text-on-surface-variant">—</p>
+                  <p className="text-sm text-on-surface-variant">
+                    Il faut au moins deux années avec des séances pour mesurer une progression
+                    {anneesAvecSeances.length === 1 ? ` (seule ${anneesAvecSeances[0].year} en a).` : '.'}
+                  </p>
+                </>
+              )}
               <div className="mt-6 grid grid-cols-2 gap-4">
                 <div className="bg-surface-container-high rounded-xl p-3">
                   <p className="text-xs text-on-surface-variant">Moyenne</p>
-                  <p className="text-xl font-bold text-primary">
-                    {details.length > 0
-                      ? Math.round(details.reduce((a, b) => a + b.rate, 0) / details.length)
-                      : 0}%
-                  </p>
+                  <p className="text-xl font-bold text-primary">{moyenne === null ? '—' : `${moyenne}%`}</p>
                 </div>
                 <div className="bg-surface-container-high rounded-xl p-3">
                   <p className="text-xs text-on-surface-variant">Séances</p>
-                  <p className="text-xl font-bold text-primary">
-                    {details.reduce((a, b) => a + b.evenements, 0)}
-                  </p>
+                  <p className="text-xl font-bold text-primary">{details.reduce((a, b) => a + b.evenements, 0)}</p>
                 </div>
               </div>
             </div>
@@ -142,7 +166,7 @@ export default function AcademicYearComparison() {
                     <td className="p-4 text-right text-on-surface-variant">{d.students}</td>
                     <td className="p-4 text-right text-on-surface-variant">{d.evenements}</td>
                     <td className="p-4 text-right text-on-surface-variant">{d.presences}</td>
-                    <td className="p-4 text-right font-bold" style={{ color: d.rate >= 80 ? '#2E7D32' : d.rate >= 50 ? '#A65207' : '#C62828' }}>
+                    <td className="p-4 text-right font-bold" style={{ color: couleurTaux(d.rate) }}>
                       {d.rate}%
                     </td>
                     <td className="p-4 text-right">{d.active ? '✓' : '—'}</td>

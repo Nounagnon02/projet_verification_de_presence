@@ -17,7 +17,7 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 api.interceptors.response.use(
@@ -39,11 +39,20 @@ api.interceptors.response.use(
     } else if (err.response?.status === 403 && err.response?.data?.code === 'two_factor_setup_required') {
       // Le groupe /super-admin exige désormais la 2FA (RequireTwoFactorForSuperAdmin).
       // Le compte reste authentifié : on ne le déconnecte pas, on le renvoie
-      // vers l'écran où il peut l'activer.
-      window.location.href = '/profile?securite=requise';
+      // vers l'écran où il peut l'activer. /profile est gardée par
+      // role="faculte_admin" : y envoyer un super admin le faisait rebondir
+      // aussitôt sur /super-admin, sans jamais voir l'écran d'activation.
+      let role = null;
+      try {
+        role = JSON.parse(localStorage.getItem('presence_user') || 'null')?.role ?? null;
+      } catch {
+        // role reste null : destination par défaut /profile.
+      }
+      const cible = role === 'super_admin' ? '/super-admin/profile' : '/profile';
+      window.location.href = `${cible}?securite=requise`;
     }
     return Promise.reject(err);
-  }
+  },
 );
 
 export { TOKEN_KEY };

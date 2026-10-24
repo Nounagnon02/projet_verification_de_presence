@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  FiAlertTriangle, FiCheckCircle, FiClock, FiMapPin,
-  FiRefreshCw, FiSmartphone, FiXCircle,
+  FiAlertTriangle,
+  FiCheckCircle,
+  FiClock,
+  FiMapPin,
+  FiRefreshCw,
+  FiSmartphone,
+  FiXCircle,
 } from 'react-icons/fi';
 import { listerFilePresences, validerPresence } from '../../api/resources/presences';
 import { listerFilieres } from '../../api/resources/reference';
@@ -38,8 +43,11 @@ const formaterDateHeure = (valeur) => {
   const date = new Date(valeur);
   if (Number.isNaN(date.getTime())) return null;
   return date.toLocaleString('fr-FR', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 };
 
@@ -81,8 +89,12 @@ const indicesAnomalie = (presence) => {
   } else if (presence.statut === 'suspect') {
     indices.push({ cle: 'suspect', libelle: 'Suspect, sans autre scan de ce téléphone', Icone: FiAlertTriangle });
   }
-  if (presence.latitude === null || presence.latitude === undefined
-    || presence.longitude === null || presence.longitude === undefined) {
+  if (
+    presence.latitude === null ||
+    presence.latitude === undefined ||
+    presence.longitude === null ||
+    presence.longitude === undefined
+  ) {
     indices.push({ cle: 'gps', libelle: 'Position GPS absente', Icone: FiMapPin });
   }
   if (!presence.heure_scan) {
@@ -92,7 +104,9 @@ const indicesAnomalie = (presence) => {
   return indices;
 };
 
-const classeChamp = 'w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20';
+const classeChamp =
+  // Classe partagée (index.css) : rayon, bordure, focus et état désactivé communs.
+  'champ py-2';
 const classeLibelle = 'text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider';
 
 export default function PresenceQueuePage() {
@@ -117,15 +131,14 @@ export default function PresenceQueuePage() {
   const monte = useRef(true);
   useEffect(() => {
     monte.current = true;
-    return () => { monte.current = false; };
+    return () => {
+      monte.current = false;
+    };
   }, []);
 
   const queryClient = useQueryClient();
 
-  const rafraichir = useCallback(
-    () => queryClient.invalidateQueries({ queryKey: ['presences-file'] }),
-    [queryClient],
-  );
+  const rafraichir = useCallback(() => queryClient.invalidateQueries({ queryKey: ['presences-file'] }), [queryClient]);
 
   // Liste des filières pour le filtre. Son échec n'empêche pas de travailler.
   const filieresQuery = useQuery({ queryKey: ['filieres'], queryFn: () => listerFilieres() });
@@ -150,8 +163,8 @@ export default function PresenceQueuePage() {
 
   const chargement = fileQuery.isFetching;
   const erreur = fileQuery.isError
-    ? (fileQuery.error?.response?.data?.message
-      || 'Impossible de charger les présences à valider. Vérifiez votre connexion puis réessayez.')
+    ? fileQuery.error?.response?.data?.message ||
+      'Impossible de charger les présences à valider. Vérifiez votre connexion puis réessayez.'
     : '';
 
   // Copie locale de la page affichée : les actions de validation/rejet la
@@ -228,10 +241,7 @@ export default function PresenceQueuePage() {
 
       if (!monte.current) return;
 
-      addToast?.(
-        data?.message || (type === 'valider' ? 'Présence validée.' : 'Présence rejetée.'),
-        'success',
-      );
+      addToast?.(data?.message || (type === 'valider' ? 'Présence validée.' : 'Présence rejetée.'), 'success');
 
       // La page vient de se vider : on recharge pour reprendre la suite de la file.
       if (derniereLigne) rafraichir();
@@ -243,10 +253,7 @@ export default function PresenceQueuePage() {
       if (statut === 404 || statut === 409) {
         // Déjà arbitrée entre-temps (ou supprimée) : sa place n'est plus dans la
         // file, on la laisse retirée.
-        addToast?.(
-          err.response?.data?.message || 'Cette présence a déjà été traitée.',
-          'warning',
-        );
+        addToast?.(err.response?.data?.message || 'Cette présence a déjà été traitée.', 'warning');
       } else {
         setPresences((precedent) => {
           if (precedent.some((ligne) => ligne.id === presence.id)) return precedent;
@@ -255,8 +262,7 @@ export default function PresenceQueuePage() {
         });
         ajusterCompteurs(1);
         addToast?.(
-          err.response?.data?.message
-          || "L'opération a échoué. La ligne a été remise dans la file, réessayez.",
+          err.response?.data?.message || "L'opération a échoué. La ligne a été remise dans la file, réessayez.",
           'error',
         );
         fermer = false;
@@ -304,9 +310,10 @@ export default function PresenceQueuePage() {
       label: 'Scan',
       render: (_, ligne) => {
         const horodatage = formaterDateHeure(ligne.heure_scan);
-        const creneau = ligne.evenement?.heure_debut && ligne.evenement?.heure_fin
-          ? `Séance ${String(ligne.evenement.heure_debut).slice(0, 5)} – ${String(ligne.evenement.heure_fin).slice(0, 5)}`
-          : null;
+        const creneau =
+          ligne.evenement?.heure_debut && ligne.evenement?.heure_fin
+            ? `Séance ${String(ligne.evenement.heure_debut).slice(0, 5)} – ${String(ligne.evenement.heure_fin).slice(0, 5)}`
+            : null;
 
         return (
           <div className="min-w-[130px]">
@@ -322,7 +329,7 @@ export default function PresenceQueuePage() {
       render: (_, ligne) => {
         const indices = indicesAnomalie(ligne);
         if (indices.length === 0) {
-          return <span className="text-on-surface-variant/60">Aucun indice</span>;
+          return <span className="text-on-surface-variant">Aucun indice</span>;
         }
 
         return (
@@ -330,12 +337,14 @@ export default function PresenceQueuePage() {
             {indices.map(({ cle, libelle, details, Icone }) => (
               <div key={cle} className="text-[11px] font-medium text-on-surface-variant">
                 <span className="inline-flex items-center gap-1.5">
-                  <Icone size={12} className="text-warning shrink-0" aria-hidden="true" />
+                  <Icone size={12} className="text-statut-alerte shrink-0" aria-hidden="true" />
                   {libelle}
                 </span>
                 {details && (
                   <ul className="mt-0.5 pl-[18px] space-y-0.5 text-on-surface">
-                    {details.map((detail, i) => <li key={`${cle}-${i}`}>{detail}</li>)}
+                    {details.map((detail, i) => (
+                      <li key={`${cle}-${i}`}>{detail}</li>
+                    ))}
                   </ul>
                 )}
               </div>
@@ -351,7 +360,10 @@ export default function PresenceQueuePage() {
         <div className="flex items-center gap-1.5">
           <button
             type="button"
-            onClick={() => { setMotif(''); setCible({ type: 'valider', presence: ligne }); }}
+            onClick={() => {
+              setMotif('');
+              setCible({ type: 'valider', presence: ligne });
+            }}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-[11px] font-bold hover:bg-primary/20 transition-colors"
             aria-label={`Valider la présence de ${nomComplet(ligne.etudiant)}`}
           >
@@ -359,8 +371,11 @@ export default function PresenceQueuePage() {
           </button>
           <button
             type="button"
-            onClick={() => { setMotif(''); setCible({ type: 'rejeter', presence: ligne }); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-error/10 text-error rounded-lg text-[11px] font-bold hover:bg-error/20 transition-colors"
+            onClick={() => {
+              setMotif('');
+              setCible({ type: 'rejeter', presence: ligne });
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-statut-erreur-fond text-statut-erreur rounded-lg text-[11px] font-bold hover:bg-statut-erreur/15 transition-colors"
             aria-label={`Rejeter la présence de ${nomComplet(ligne.etudiant)}`}
           >
             <FiXCircle size={12} aria-hidden="true" /> Rejeter
@@ -382,7 +397,7 @@ export default function PresenceQueuePage() {
         </div>
         <div className="flex items-center gap-3">
           {pagination?.total > 0 && (
-            <span className="px-3 py-1.5 rounded-xl bg-warning-container/30 text-warning text-xs font-semibold whitespace-nowrap">
+            <span className="px-3 py-1.5 rounded-xl bg-statut-alerte-fond text-statut-alerte text-xs font-semibold whitespace-nowrap">
               {pagination.total} à traiter
             </span>
           )}
@@ -401,36 +416,53 @@ export default function PresenceQueuePage() {
       <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/10">
         <div className="flex flex-wrap items-end gap-4">
           <div className="space-y-1 min-w-[160px] flex-1">
-            <label htmlFor="file-filiere" className={classeLibelle}>Filière</label>
+            <label htmlFor="file-filiere" className={classeLibelle}>
+              Filière
+            </label>
             <select
               id="file-filiere"
               value={filtreFiliere}
-              onChange={(e) => { setFiltreFiliere(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setFiltreFiliere(e.target.value);
+                setPage(1);
+              }}
               className={classeChamp}
             >
               <option value="">Toutes</option>
               {filieres.map((filiere) => (
-                <option key={filiere.id} value={filiere.id}>{filiere.code}</option>
+                <option key={filiere.id} value={filiere.id}>
+                  {filiere.code}
+                </option>
               ))}
             </select>
           </div>
           <div className="space-y-1 min-w-[150px] flex-1">
-            <label htmlFor="file-date-debut" className={classeLibelle}>Séances à partir du</label>
+            <label htmlFor="file-date-debut" className={classeLibelle}>
+              Séances à partir du
+            </label>
             <input
               id="file-date-debut"
               type="date"
               value={dateDebut}
-              onChange={(e) => { setDateDebut(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setDateDebut(e.target.value);
+                setPage(1);
+              }}
               className={classeChamp}
             />
           </div>
           <div className="space-y-1 min-w-[150px] flex-1">
-            <label htmlFor="file-date-fin" className={classeLibelle}>Séances jusqu'au</label>
+            <label htmlFor="file-date-fin" className={classeLibelle}>
+              Séances jusqu'au
+            </label>
             <input
               id="file-date-fin"
               type="date"
               value={dateFin}
-              onChange={(e) => { setDateFin(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setDateFin(e.target.value);
+                setPage(1);
+              }}
               className={classeChamp}
             />
           </div>
@@ -449,7 +481,10 @@ export default function PresenceQueuePage() {
       {/* Recherche (côté serveur) */}
       <SearchInput
         value={recherche}
-        onChange={(valeur) => { setRecherche(valeur); setPage(1); }}
+        onChange={(valeur) => {
+          setRecherche(valeur);
+          setPage(1);
+        }}
         placeholder="Rechercher un étudiant (nom ou matricule)..."
         className="max-w-md"
       />
@@ -458,7 +493,7 @@ export default function PresenceQueuePage() {
       {erreur ? (
         <div className="bg-surface-container-lowest rounded-xxl p-10 shadow-sm border border-outline-variant/10 text-center">
           <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-error-container/30 flex items-center justify-center">
-            <FiAlertTriangle className="text-error" size={26} aria-hidden="true" />
+            <FiAlertTriangle className="text-statut-erreur" size={26} aria-hidden="true" />
           </div>
           <h2 className="text-base font-semibold text-on-surface mb-1">Chargement impossible</h2>
           <p className="text-sm text-on-surface-variant mb-5">{erreur}</p>
@@ -474,18 +509,22 @@ export default function PresenceQueuePage() {
             loading={chargement}
             aria-label="Présences en attente de validation manuelle"
             caption="File des scans suspects à valider ou rejeter"
-            emptyMessage={rechercheActive
-              ? 'Aucun scan suspect ne correspond à cette recherche.'
-              : "Aucune présence n'attend de validation. Les scans suspects apparaîtront ici dès qu'ils seront enregistrés."}
-            emptyAction={rechercheActive ? (
-              <Button variant="outline" size="sm" onClick={effacerRecherche}>
-                Effacer la recherche
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" onClick={rafraichir}>
-                <FiRefreshCw size={14} aria-hidden="true" /> Actualiser
-              </Button>
-            )}
+            emptyMessage={
+              rechercheActive
+                ? 'Aucun scan suspect ne correspond à cette recherche.'
+                : "Aucune présence n'attend de validation. Les scans suspects apparaîtront ici dès qu'ils seront enregistrés."
+            }
+            emptyAction={
+              rechercheActive ? (
+                <Button variant="outline" size="sm" onClick={effacerRecherche}>
+                  Effacer la recherche
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" onClick={rafraichir}>
+                  <FiRefreshCw size={14} aria-hidden="true" /> Actualiser
+                </Button>
+              )
+            }
             pagination={pagination}
             onPageChange={setPage}
           />
@@ -513,13 +552,13 @@ export default function PresenceQueuePage() {
 
             {cible.type === 'valider' ? (
               <p className="text-sm text-on-surface-variant">
-                La présence passera au statut « valide ». L'opération est tracée à votre nom
-                dans le journal d'audit. Confirmez-vous cette validation ?
+                La présence passera au statut « valide ». L'opération est tracée à votre nom dans le journal d'audit.
+                Confirmez-vous cette validation ?
               </p>
             ) : (
               <div className="space-y-1.5">
                 <label htmlFor={idMotif} className="text-xs font-semibold text-on-surface-variant">
-                  Motif du rejet <span className="text-error">*</span>
+                  Motif du rejet <span className="text-statut-erreur">*</span>
                 </label>
                 <textarea
                   id={idMotif}

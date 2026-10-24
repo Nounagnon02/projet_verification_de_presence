@@ -18,32 +18,30 @@ const tabs = [
 ];
 
 const tabLinkClass = ({ isActive }) =>
-  `flex-1 sm:flex-none text-center px-4 py-2 rounded-lg text-sm font-bold transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
-    isActive
-      ? 'bg-primary text-white shadow-sm'
-      : 'text-on-surface-variant hover:text-primary hover:bg-primary/5'
+  `whitespace-nowrap text-center px-3 sm:px-4 py-2 rounded-lg text-sm font-bold transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+    isActive ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-primary hover:bg-primary/5'
   }`;
 
+// Une navigation entre routes, pas des onglets ARIA : role="tab" sans panneau
+// ni flèches annonçait un widget absent, et aria-selected restait faux partout.
+// NavLink pose aria-current="page" sur l'entrée active. Le <main> de MainLayout
+// englobe déjà cette page : un second <main id="main-content"> le dupliquait.
 export default function AttendanceLayout() {
   return (
     <div>
-      <div className="flex items-center gap-1 bg-surface-container-lowest rounded-xl p-1 shadow-sm border border-outline-variant/10 mb-6 overflow-x-auto" role="tablist" aria-label="Onglets de gestion des présences">
+      {/* Grille 2×2 sous 640 px : en ligne, « Saisie manuelle » était coupé
+          à 390 px et les libellés passaient sur deux lignes. */}
+      <nav
+        className="grid grid-cols-2 gap-1 sm:flex sm:items-center bg-surface-container-lowest rounded-xl p-1 shadow-sm border border-outline-variant/10 mb-6"
+        aria-label="Gestion des présences"
+      >
         {tabs.map((tab) => (
-          <NavLink
-            key={tab.to}
-            to={tab.to}
-            end
-            className={tabLinkClass}
-            role="tab"
-            aria-selected={false}
-          >
+          <NavLink key={tab.to} to={tab.to} end className={tabLinkClass}>
             {tab.label}
           </NavLink>
         ))}
-      </div>
-      <main id="main-content" tabIndex={-1}>
-        <Outlet />
-      </main>
+      </nav>
+      <Outlet />
     </div>
   );
 }

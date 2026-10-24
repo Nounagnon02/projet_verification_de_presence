@@ -22,7 +22,11 @@ export default function DataTable({
 }) {
   const renderSortIcon = (field) => {
     if (sortField !== field) return <FiChevronUp size={14} className="text-on-surface-variant/40" aria-hidden="true" />;
-    return sortDirection === 'asc' ? <FiArrowUp size={14} aria-hidden="true" /> : <FiArrowDown size={14} aria-hidden="true" />;
+    return sortDirection === 'asc' ? (
+      <FiArrowUp size={14} aria-hidden="true" />
+    ) : (
+      <FiArrowDown size={14} aria-hidden="true" />
+    );
   };
 
   if (loading) {
@@ -39,12 +43,19 @@ export default function DataTable({
 
   return (
     <div className={className}>
-      <div className="overflow-x-auto">
+      {/* Zone défilante atteignable au clavier (WCAG 2.1.1) : sans tabIndex, un
+          tableau plus large que l'écran ne se faisait défiler qu'à la souris. */}
+      <div
+        className="overflow-x-auto rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+        tabIndex={0}
+        role="region"
+        aria-label={ariaLabel || caption || 'Tableau'}
+      >
         <table className="w-full" role="grid" aria-label={ariaLabel}>
           {caption && <caption className="sr-only">{caption}</caption>}
           <thead>
             <tr className="border-b border-outline-variant/10" role="row">
-              {columns.map(col => (
+              {columns.map((col) => (
                 <th
                   key={col.key}
                   className={cn(
@@ -74,12 +85,17 @@ export default function DataTable({
                   onRowClick ? 'cursor-pointer hover:bg-surface-container-low' : '',
                 )}
                 onClick={() => onRowClick?.(row)}
-                onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && onRowClick) { e.preventDefault(); onRowClick(row); }}}
+                onKeyDown={(e) => {
+                  if ((e.key === 'Enter' || e.key === ' ') && onRowClick) {
+                    e.preventDefault();
+                    onRowClick(row);
+                  }
+                }}
                 tabIndex={onRowClick ? 0 : undefined}
                 role="row"
                 aria-selected={false}
               >
-                {columns.map(col => (
+                {columns.map((col) => (
                   <td key={col.key} className="px-4 py-3 text-sm text-on-surface" role="gridcell">
                     {col.render ? col.render(row[col.key], row) : row[col.key]}
                   </td>
@@ -89,9 +105,7 @@ export default function DataTable({
           </tbody>
         </table>
       </div>
-      {pagination && onPageChange && (
-        <Pagination pagination={pagination} onPageChange={onPageChange} />
-      )}
+      {pagination && onPageChange && <Pagination pagination={pagination} onPageChange={onPageChange} />}
     </div>
   );
 }

@@ -1,15 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { FiAlertTriangle, FiBookOpen, FiLoader, FiPlus, FiRefreshCw, FiTrash2 } from 'react-icons/fi';
 import {
-  FiAlertTriangle,
-  FiBookOpen,
-  FiLoader,
-  FiPlus,
-  FiRefreshCw,
-  FiTrash2,
-} from 'react-icons/fi';
-import {
-  listerEcsInscrits, listerEcsDisponibles, inscrireEc, desinscrireEc, reinitialiserInscriptions,
+  listerEcsInscrits,
+  listerEcsDisponibles,
+  inscrireEc,
+  desinscrireEc,
+  reinitialiserInscriptions,
 } from '../../api/resources/inscriptions';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
@@ -45,10 +42,7 @@ const estAnnulation = (err) => err.name === 'CanceledError' || err.name === 'Abo
 
 /** Texte sur lequel porte la recherche locale d'un EC. */
 const texteRecherche = (ec) =>
-  [ec.code, ec.intitule, ec.ue?.code, ec.ue?.intitule]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
+  [ec.code, ec.intitule, ec.ue?.code, ec.ue?.intitule].filter(Boolean).join(' ').toLowerCase();
 
 /**
  * Une ligne d'EC, avec son action unique (inscrire ou désinscrire).
@@ -69,7 +63,11 @@ function LigneEc({ ec, action }) {
         <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-on-surface-variant">
           {/* /ecs-available ne charge pas la relation ue : on n'affiche
               l'unité d'enseignement que lorsque le serveur la fournit. */}
-          {ec.ue && <span className="truncate">UE {ec.ue.code} — {ec.ue.intitule}</span>}
+          {ec.ue && (
+            <span className="truncate">
+              UE {ec.ue.code} : {ec.ue.intitule}
+            </span>
+          )}
           {ec.volume_horaire > 0 && <span>{ec.volume_horaire} h</span>}
           {statut && <Badge variant={statut.variant}>{statut.libelle}</Badge>}
         </p>
@@ -86,9 +84,7 @@ function ColonneEcs({ titre, ecs, vide, children }) {
   return (
     <section className="rounded-xl border border-outline-variant/10 bg-surface-container-lowest">
       <header className="flex items-center justify-between border-b border-outline-variant/10 px-4 py-3">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">
-          {titre}
-        </h3>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">{titre}</h3>
         <Badge>{ecs.length}</Badge>
       </header>
       {ecs.length === 0 ? (
@@ -153,9 +149,10 @@ export default function EnrollmentDrawer({ student, open, onClose, onChange }) {
     [disponiblesQuery.data],
   );
   const chargement = inscritsQuery.isFetching || disponiblesQuery.isFetching;
-  const erreur = inscritsQuery.isError || disponiblesQuery.isError
-    ? messageErreur(inscritsQuery.error ?? disponiblesQuery.error, 'Erreur lors du chargement des inscriptions.')
-    : null;
+  const erreur =
+    inscritsQuery.isError || disponiblesQuery.isError
+      ? messageErreur(inscritsQuery.error ?? disponiblesQuery.error, 'Erreur lors du chargement des inscriptions.')
+      : null;
 
   const rafraichir = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['ecs-inscrits', studentId] });
@@ -166,55 +163,64 @@ export default function EnrollmentDrawer({ student, open, onClose, onChange }) {
    * Exécute une écriture puis recharge les deux listes : le serveur reste la
    * seule source de vérité, aucune liste n'est corrigée à la main côté client.
    */
-  const ecrire = useCallback(async (cle, envoyer, repliErreur) => {
-    if (!studentId) return;
+  const ecrire = useCallback(
+    async (cle, envoyer, repliErreur) => {
+      if (!studentId) return;
 
-    const controleur = new AbortController();
-    abortEcritureRef.current = controleur;
-    setActionEnCours(cle);
-    try {
-      const data = await envoyer(controleur.signal);
-      if (!monteRef.current) return;
-      onChange?.(data?.data ?? null);
-      rafraichir();
-      return data;
-    } catch (err) {
-      if (estAnnulation(err) || !monteRef.current) return;
-      addToast?.(messageErreur(err, repliErreur), 'error');
-    } finally {
-      if (monteRef.current && !controleur.signal.aborted) setActionEnCours(null);
-    }
-  }, [studentId, onChange, rafraichir, addToast]);
+      const controleur = new AbortController();
+      abortEcritureRef.current = controleur;
+      setActionEnCours(cle);
+      try {
+        const data = await envoyer(controleur.signal);
+        if (!monteRef.current) return;
+        onChange?.(data?.data ?? null);
+        rafraichir();
+        return data;
+      } catch (err) {
+        if (estAnnulation(err) || !monteRef.current) return;
+        addToast?.(messageErreur(err, repliErreur), 'error');
+      } finally {
+        if (monteRef.current && !controleur.signal.aborted) setActionEnCours(null);
+      }
+    },
+    [studentId, onChange, rafraichir, addToast],
+  );
 
-  const inscrire = useCallback(async (ec) => {
-    const data = await ecrire(
-      ec.id,
-      (signal) => inscrireEc(studentId, [ec.id], signal),
-      `Erreur lors de l'inscription à ${ec.code}.`,
-    );
-    if (!data) return;
-    // Le serveur ignore silencieusement un EC hors filière/année de l'étudiant :
-    // la réponse est un succès avec attached à 0. Sans ce contrôle, l'interface
-    // annoncerait une inscription qui n'a pas eu lieu.
-    if ((data.data?.attached ?? 0) === 0) {
-      addToast?.(
-        `${ec.code} n'appartient pas à la filière et à l'année de l'étudiant : inscription refusée.`,
-        'error',
+  const inscrire = useCallback(
+    async (ec) => {
+      const data = await ecrire(
+        ec.id,
+        (signal) => inscrireEc(studentId, [ec.id], signal),
+        `Erreur lors de l'inscription à ${ec.code}.`,
       );
-      return;
-    }
-    addToast?.(`Inscription à ${ec.code} enregistrée.`, 'success');
-  }, [ecrire, studentId, addToast]);
+      if (!data) return;
+      // Le serveur ignore silencieusement un EC hors filière/année de l'étudiant :
+      // la réponse est un succès avec attached à 0. Sans ce contrôle, l'interface
+      // annoncerait une inscription qui n'a pas eu lieu.
+      if ((data.data?.attached ?? 0) === 0) {
+        addToast?.(
+          `${ec.code} n'appartient pas à la filière et à l'année de l'étudiant : inscription refusée.`,
+          'error',
+        );
+        return;
+      }
+      addToast?.(`Inscription à ${ec.code} enregistrée.`, 'success');
+    },
+    [ecrire, studentId, addToast],
+  );
 
-  const desinscrire = useCallback(async (ec) => {
-    const data = await ecrire(
-      ec.id,
-      (signal) => desinscrireEc(studentId, ec.id, signal),
-      `Erreur lors de la désinscription de ${ec.code}.`,
-    );
-    if (!data) return;
-    addToast?.(`Étudiant désinscrit de ${ec.code}.`, 'success');
-  }, [ecrire, studentId, addToast]);
+  const desinscrire = useCallback(
+    async (ec) => {
+      const data = await ecrire(
+        ec.id,
+        (signal) => desinscrireEc(studentId, ec.id, signal),
+        `Erreur lors de la désinscription de ${ec.code}.`,
+      );
+      if (!data) return;
+      addToast?.(`Étudiant désinscrit de ${ec.code}.`, 'success');
+    },
+    [ecrire, studentId, addToast],
+  );
 
   const reinitialiser = useCallback(async () => {
     const data = await ecrire(
@@ -257,20 +263,13 @@ export default function EnrollmentDrawer({ student, open, onClose, onChange }) {
   const nomComplet = `${student.prenom || ''} ${student.nom || ''}`.trim();
 
   return (
-    <Modal
-      isOpen={ouvert}
-      onClose={fermer}
-      title="Inscriptions aux enseignements"
-      size="xl"
-    >
+    <Modal isOpen={ouvert} onClose={fermer} title="Inscriptions aux enseignements" size="xl">
       <div className="space-y-5">
         <div className="rounded-xl bg-surface-container-low p-4">
           <p className="text-sm font-semibold text-on-surface">
             {nomComplet || 'Étudiant'}
             {student.matricule && (
-              <span className="ml-2 font-mono text-xs font-medium text-on-surface-variant">
-                {student.matricule}
-              </span>
+              <span className="ml-2 font-mono text-xs font-medium text-on-surface-variant">{student.matricule}</span>
             )}
           </p>
           <p className="mt-1 text-xs text-on-surface-variant">
@@ -308,11 +307,7 @@ export default function EnrollmentDrawer({ student, open, onClose, onChange }) {
               <ColonneEcs
                 titre="Inscrit à"
                 ecs={inscritsFiltres}
-                vide={
-                  terme
-                    ? 'Aucun EC inscrit ne correspond à ce filtre.'
-                    : "Cet étudiant n'est inscrit à aucun EC."
-                }
+                vide={terme ? 'Aucun EC inscrit ne correspond à ce filtre.' : "Cet étudiant n'est inscrit à aucun EC."}
               >
                 {inscritsFiltres.map((ec) => (
                   <LigneEc
@@ -327,9 +322,9 @@ export default function EnrollmentDrawer({ student, open, onClose, onChange }) {
                         className="flex-shrink-0 rounded-lg p-2 transition-colors hover:bg-error/10 disabled:opacity-40 disabled:pointer-events-none"
                       >
                         {actionEnCours === ec.id ? (
-                          <FiLoader className="animate-spin text-error" aria-hidden="true" />
+                          <FiLoader className="animate-spin text-statut-erreur" aria-hidden="true" />
                         ) : (
-                          <FiTrash2 className="text-error" aria-hidden="true" />
+                          <FiTrash2 className="text-statut-erreur" aria-hidden="true" />
                         )}
                       </button>
                     }
@@ -374,36 +369,21 @@ export default function EnrollmentDrawer({ student, open, onClose, onChange }) {
 
         <div className="border-t border-outline-variant/10 pt-4">
           {confirmationReset ? (
-            <div className="flex flex-wrap items-center gap-3 rounded-xl border border-error/10 bg-error/10 p-4 text-error">
+            <div className="flex flex-wrap items-center gap-3 rounded-xl border border-error/10 bg-statut-erreur-fond p-4 text-statut-erreur">
               <FiAlertTriangle aria-hidden="true" />
               <p className="flex-1 text-sm">
-                Toutes les inscriptions actuelles seront supprimées, puis l'étudiant sera
-                réinscrit à l'ensemble des ECs de sa filière et de son année.
+                Toutes les inscriptions actuelles seront supprimées, puis l'étudiant sera réinscrit à l'ensemble des ECs
+                de sa filière et de son année.
               </p>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={reinitialiser}
-                loading={actionEnCours === 'reset'}
-              >
+              <Button variant="destructive" size="sm" onClick={reinitialiser} loading={actionEnCours === 'reset'}>
                 Confirmer
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setConfirmationReset(false)}
-                disabled={enEcriture}
-              >
+              <Button variant="ghost" size="sm" onClick={() => setConfirmationReset(false)} disabled={enEcriture}>
                 Annuler
               </Button>
             </div>
           ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setConfirmationReset(true)}
-              disabled={actionsBloquees}
-            >
+            <Button variant="outline" size="sm" onClick={() => setConfirmationReset(true)} disabled={actionsBloquees}>
               <FiRefreshCw aria-hidden="true" />
               Réinitialiser les inscriptions
             </Button>

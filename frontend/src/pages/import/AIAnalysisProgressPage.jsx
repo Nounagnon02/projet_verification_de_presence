@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { FiLoader, FiCheck, FiFileText, FiCpu, FiAlertTriangle, FiRefreshCw } from 'react-icons/fi';
+import { FiLoader, FiCheck, FiFileText, FiCpu, FiAlertTriangle, FiRefreshCw, FiUploadCloud } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { recupererStatutAnalyseIa } from '../../api/resources/imports';
 
@@ -131,10 +131,11 @@ export default function AIAnalysisProgressPage() {
     }
   }, [status, statutQuery.data, analysisType, navigate]);
 
-  const error = erreurRelance
-    ?? initial.erreur
-    ?? (isFailed ? (statutQuery.data?.data?.error_message || 'L\'analyse a échoué. Veuillez réessayer.') : null)
-    ?? (delaiDepasse ? 'L\'analyse a pris trop de temps. Veuillez réessayer.' : null);
+  const error =
+    erreurRelance ??
+    initial.erreur ??
+    (isFailed ? statutQuery.data?.data?.error_message || "L'analyse a échoué. Veuillez réessayer." : null) ??
+    (delaiDepasse ? "L'analyse a pris trop de temps. Veuillez réessayer." : null);
 
   const handleRetry = () => {
     if (!analysisId) {
@@ -149,26 +150,49 @@ export default function AIAnalysisProgressPage() {
 
   const isComplete = currentStage >= STAGES.length;
 
+  // Ouverte sans import en cours (lien direct, retour arrière, rechargement) :
+  // ce n'est pas une panne. L'écran « Erreur » proposait « Réessayer », qui ne
+  // pouvait rien relancer. On oriente plutôt vers les deux points d'import.
+  if (!analysisId && !erreurRelance) {
+    return (
+      <div className="max-w-lg mx-auto py-12">
+        <div className="carte p-8 text-center">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <FiUploadCloud className="text-primary" size={30} aria-hidden="true" />
+          </div>
+          <h1 className="titre-page mb-3">Aucune analyse en cours</h1>
+          <p className="text-on-surface-variant mb-8">
+            {initial.erreur && initial.erreur.startsWith('Identifiant')
+              ? initial.erreur
+              : "L'analyse par IA démarre quand vous importez un document depuis l'emploi du temps ou les cours."}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button type="button" onClick={() => navigate('/schedules/weekly')} className="btn-primaire">
+              Importer un emploi du temps
+            </button>
+            <button type="button" onClick={() => navigate('/courses')} className="btn-secondaire">
+              Importer des cours
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className="max-w-lg mx-auto py-12">
         <div className="bg-surface-container-lowest rounded-xl p-8 shadow-sm text-center">
           <div className="w-16 h-16 bg-error-container rounded-full flex items-center justify-center mx-auto mb-6">
-            <FiAlertTriangle className="text-error" size={32} />
+            <FiAlertTriangle className="text-statut-erreur" size={32} />
           </div>
           <h1 className="text-2xl font-bold font-headline text-primary mb-3">Erreur</h1>
           <p className="text-on-surface-variant mb-8">{error}</p>
           <div className="flex gap-3 justify-center">
-            <button
-              onClick={handleRetry}
-              className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition-all"
-            >
-              <FiRefreshCw /> Réessayer
+            <button type="button" onClick={handleRetry} className="btn-primaire">
+              <FiRefreshCw aria-hidden="true" /> Réessayer
             </button>
-            <button
-              onClick={() => navigate(retourVersLOrigine)}
-              className="bg-surface-container-high text-on-surface-variant px-6 py-3 rounded-xl font-semibold hover:bg-surface-container-high/80 transition-all"
-            >
+            <button type="button" onClick={() => navigate(retourVersLOrigine)} className="btn-secondaire">
               Retour
             </button>
           </div>
@@ -197,8 +221,7 @@ export default function AIAnalysisProgressPage() {
             <p className="text-on-surface-variant mb-8">
               {analysisType === 'courses'
                 ? 'Notre IA analyse votre catalogue de cours...'
-                : "Notre IA analyse votre emploi du temps..."
-              }
+                : 'Notre IA analyse votre emploi du temps...'}
             </p>
 
             {/* Progress bar (indéterminée = simple animation) */}
@@ -218,12 +241,19 @@ export default function AIAnalysisProgressPage() {
                 const isActive = i === currentStage;
                 const isDone = i < currentStage;
                 return (
-                  <div key={stage.key} className={`flex items-center gap-4 p-3 rounded-xl ${isActive ? 'bg-primary/5' : ''}`}>
-                    <div className={`p-2 rounded-lg ${isDone ? 'bg-secondary/10 text-secondary' : isActive ? 'bg-primary/10 text-primary' : 'bg-surface-container-high text-on-surface-variant'}`}>
+                  <div
+                    key={stage.key}
+                    className={`flex items-center gap-4 p-3 rounded-xl ${isActive ? 'bg-primary/5' : ''}`}
+                  >
+                    <div
+                      className={`p-2 rounded-lg ${isDone ? 'bg-secondary/10 text-secondary' : isActive ? 'bg-primary/10 text-primary' : 'bg-surface-container-high text-on-surface-variant'}`}
+                    >
                       {isDone ? <FiCheck size={18} /> : <StageIcon size={18} />}
                     </div>
                     <div className="flex-1">
-                      <p className={`text-sm font-semibold ${isDone ? 'text-secondary' : isActive ? 'text-primary' : 'text-on-surface-variant'}`}>
+                      <p
+                        className={`text-sm font-semibold ${isDone ? 'text-secondary' : isActive ? 'text-primary' : 'text-on-surface-variant'}`}
+                      >
                         {stage.label}
                       </p>
                     </div>
@@ -238,9 +268,7 @@ export default function AIAnalysisProgressPage() {
               })}
             </div>
 
-            <p className="mt-6 text-xs text-on-surface-variant/60">
-              Requête {pollCount > 0 ? `#${pollCount}` : '...'}
-            </p>
+            <p className="mt-6 text-xs text-on-surface-variant">Requête {pollCount > 0 ? `#${pollCount}` : '...'}</p>
 
             <button
               onClick={() => navigate(retourVersLOrigine)}

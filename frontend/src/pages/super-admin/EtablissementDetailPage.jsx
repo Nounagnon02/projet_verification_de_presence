@@ -1,15 +1,53 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
-  MdArrowBack, MdBusiness, MdEmail, MdPhone, MdLocationOn,
-  MdEdit, MdDelete, MdRefresh, MdContentCopy, MdCheck, MdWarning,
+  MdArrowBack,
+  MdBusiness,
+  MdEmail,
+  MdPhone,
+  MdLocationOn,
+  MdEdit,
+  MdRefresh,
+  MdContentCopy,
+  MdCheck,
+  MdWarning,
+  MdVpnKey,
+  MdDeleteOutline,
 } from 'react-icons/md';
 import {
-  recupererEtablissement, recupererStatsEtablissement, modifierEtablissement,
-  supprimerEtablissement, renvoyerIdentifiantsEtablissement,
+  recupererEtablissement,
+  recupererStatsEtablissement,
+  modifierEtablissement,
+  supprimerEtablissement,
+  renvoyerIdentifiantsEtablissement,
 } from '../../api/resources/etablissements';
+import ProgressBar from '../../components/charts/ProgressBar';
+import { monogrammeInstitution, tonaliteInstitution } from '../../utils/identiteInstitution';
+import { couleurTaux } from '../../utils/taux';
 
+/** « 2026-10-13 » → « 13 oct. 2026 », sans décalage de fuseau. */
+const dateCourte = (iso) => {
+  if (!iso) return null;
+  const [a, m, j] = String(iso).slice(0, 10).split('-').map(Number);
+  return new Date(a, m - 1, j).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
+const CHAMPS = [
+  { cle: 'code', libelle: 'Code', Icone: MdBusiness },
+  { cle: 'nom', libelle: 'Nom', Icone: MdBusiness },
+  { cle: 'email', libelle: 'Email', Icone: MdEmail, type: 'email' },
+  { cle: 'telephone', libelle: 'Téléphone', Icone: MdPhone, type: 'tel' },
+  { cle: 'adresse', libelle: 'Adresse', Icone: MdLocationOn, multiligne: true },
+];
+
+/**
+ * Fiche d'une faculté (super administrateur) : identité et année de travail en
+ * tête, chiffres clés, filières en colonne principale ; coordonnées, compte
+ * administrateur et suppression dans un panneau latéral, chacun avec ses
+ * actions nommées. Remplace une colonne étroite à icônes muettes, dont les
+ * chiffres changeaient de couleur sans signification.
+ */
 export default function EtablissementDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -56,7 +94,8 @@ export default function EtablissementDetailPage() {
     });
   }
 
-  const handleSave = async () => {
+  const handleSave = async (e) => {
+    e.preventDefault();
     setSaving(true);
     setMessage({ type: '', text: '' });
     try {
@@ -68,9 +107,10 @@ export default function EtablissementDetailPage() {
       }
     } catch (err) {
       const data = err.response?.data;
-      const msg = (data?.errors ? Object.values(data.errors).flat().join(', ') : null)
-        || data?.message
-        || 'Erreur lors de la mise à jour.';
+      const msg =
+        (data?.errors ? Object.values(data.errors).flat().join(', ') : null) ||
+        data?.message ||
+        'Erreur lors de la mise à jour.';
       setMessage({ type: 'error', text: msg });
     } finally {
       setSaving(false);
@@ -90,7 +130,15 @@ export default function EtablissementDetailPage() {
     }
   };
 
+  // Le renvoi remplace le mot de passe et révoque les sessions ouvertes
+  // (EtablissementController::resendCredentials) : il partait sans confirmation.
   const handleResendCredentials = async () => {
+    if (
+      !window.confirm(
+        "Renvoyer les identifiants ? Un nouveau mot de passe sera envoyé par email et l'administrateur sera déconnecté de ses sessions en cours.",
+      )
+    )
+      return;
     try {
       const data = await renvoyerIdentifiantsEtablissement(id);
       if (data.success) {
@@ -103,7 +151,7 @@ export default function EtablissementDetailPage() {
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text).then(() => {
-      setMessage({ type: 'success', text: 'Copié !' });
+      setMessage({ type: 'success', text: 'Email copié.' });
       setTimeout(() => setMessage({ type: '', text: '' }), 2000);
     });
   };
@@ -119,204 +167,348 @@ export default function EtablissementDetailPage() {
   if (!etablissement) {
     return (
       <div className="text-center py-16">
-        <p className="text-slate-500">Faculté introuvable.</p>
-        <button onClick={() => navigate('/super-admin/etablissements')} className="text-blue-600 text-sm mt-2 hover:underline">
+        <p className="text-on-surface-variant">Faculté introuvable.</p>
+        <button
+          type="button"
+          onClick={() => navigate('/super-admin/etablissements')}
+          className="text-primary text-sm mt-2 hover:underline"
+        >
           Retour à la liste
         </button>
       </div>
     );
   }
 
-  return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <button
-          onClick={() => navigate('/super-admin/etablissements')}
-          className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
-        >
-          <MdArrowBack size={18} />
-        </button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-[#011549] font-headline">{etablissement.nom}</h1>
-          <p className="text-sm text-slate-500 mt-1">Code: {etablissement.code}</p>
-        </div>
-        <button onClick={rafraichir} className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors" title="Rafraîchir">
-          <MdRefresh size={18} />
-        </button>
-        <button onClick={handleDelete} className="p-2 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 transition-colors" title="Supprimer">
-          <MdDelete size={18} />
-        </button>
-      </div>
+  const { fond, texte } = tonaliteInstitution(etablissement.code);
+  const filieres = Array.isArray(stats?.filieres) ? stats.filieres : [];
+  const taux = stats?.taux_presence ?? null;
+  const annee = stats?.annee_active ?? null;
+  const nbAdmins = etablissement.users_count ?? 0;
+  const coursDuJour = stats?.cours_aujourdhui ?? 0;
 
-      {/* Message */}
+  const chiffres = [
+    {
+      libelle: 'Filières',
+      valeur: (stats?.total_filieres ?? etablissement.filieres_count ?? 0).toLocaleString('fr-FR'),
+    },
+    { libelle: 'Étudiants', valeur: (stats?.total_etudiants ?? 0).toLocaleString('fr-FR') },
+    { libelle: 'Présences enregistrées', valeur: (stats?.total_presences ?? 0).toLocaleString('fr-FR') },
+  ];
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-6">
+      <Link
+        to="/super-admin/etablissements"
+        className="inline-flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-primary transition-colors"
+      >
+        <MdArrowBack size={16} aria-hidden="true" />
+        Facultés & Écoles
+      </Link>
+
+      {/* En-tête : identité, statut, année de travail, actions nommées. */}
+      <header className="carte flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 items-start gap-4">
+          <div
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl font-headline text-xl font-bold"
+            style={{ backgroundColor: fond, color: texte }}
+            aria-hidden="true"
+          >
+            {monogrammeInstitution(etablissement.code)}
+          </div>
+          <div className="min-w-0">
+            <h1 className="titre-page">{etablissement.nom}</h1>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+              <span className="rounded-md bg-primary/10 px-2 py-0.5 font-mono font-semibold text-primary">
+                {etablissement.code}
+              </span>
+              {etablissement.actif ? (
+                <span className="rounded-full bg-statut-succes-fond px-2 py-0.5 font-semibold text-statut-succes">
+                  Active
+                </span>
+              ) : (
+                <span className="rounded-full bg-surface-container-high px-2 py-0.5 font-semibold text-on-surface-variant">
+                  Inactive
+                </span>
+              )}
+              {annee && (
+                <span className="rounded-full bg-surface-container-high px-2 py-0.5 font-semibold text-on-surface">
+                  Année {annee.libelle}
+                  <span className="font-normal text-on-surface-variant">
+                    {annee.suit_universite ? ' · celle de l’université' : ' · choisie par la faculté'}
+                  </span>
+                </span>
+              )}
+            </div>
+            <p className="mt-2 text-sm text-on-surface-variant">
+              {nbAdmins} compte{nbAdmins > 1 ? 's' : ''} administrateur
+              {' · '}
+              {coursDuJour === 0
+                ? 'aucune séance aujourd’hui'
+                : `${coursDuJour} séance${coursDuJour > 1 ? 's' : ''} aujourd’hui`}
+              {etablissement.created_at && ` · créée le ${dateCourte(etablissement.created_at)}`}
+            </p>
+          </div>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={rafraichir}
+            className="btn-icone"
+            aria-label="Rafraîchir les données"
+            title="Rafraîchir"
+          >
+            <MdRefresh size={18} aria-hidden="true" />
+          </button>
+        </div>
+      </header>
+
       {message.text && (
-        <div className={`flex items-start gap-3 p-4 rounded-xl border ${
-          message.type === 'success'
-            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-            : 'bg-red-50 text-red-700 border-red-200'
-        }`}>
-          {message.type === 'success' ? <MdCheck className="text-lg shrink-0 mt-0.5" /> : <MdWarning className="text-lg shrink-0 mt-0.5" />}
-          <p className="text-sm">{message.text}</p>
+        <div
+          role="status"
+          className={`flex items-start gap-3 p-4 rounded-xl border text-sm ${
+            message.type === 'success'
+              ? 'bg-statut-succes-fond text-statut-succes border-statut-succes/20'
+              : 'bg-statut-erreur-fond text-statut-erreur border-statut-erreur/20'
+          }`}
+        >
+          {message.type === 'success' ? (
+            <MdCheck className="text-lg shrink-0 mt-0.5" aria-hidden="true" />
+          ) : (
+            <MdWarning className="text-lg shrink-0 mt-0.5" aria-hidden="true" />
+          )}
+          <p>{message.text}</p>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Infos */}
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-[#011549]">Informations</h2>
-            <button
-              onClick={() => setEditing(!editing)}
-              className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800"
-            >
-              <MdEdit size={14} />
-              {editing ? 'Annuler' : 'Modifier'}
-            </button>
+      {/* Chiffres clés : une seule couleur ; seul le taux est coloré, selon
+          les mêmes seuils que partout ailleurs (utils/taux). */}
+      <section aria-label="Chiffres clés" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        {chiffres.map((c) => (
+          <div key={c.libelle} className="carte p-5">
+            <p className="font-headline text-3xl font-bold text-primary">{c.valeur}</p>
+            <p className="mt-1 text-xs font-medium uppercase tracking-wider text-on-surface-variant">{c.libelle}</p>
           </div>
-
-          {editing ? (
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="etablissement-code" className="text-xs font-semibold uppercase tracking-wider text-slate-500">Code</label>
-                <input
-                  id="etablissement-code"
-                  value={form.code}
-                  onChange={(e) => setForm({ ...form, code: e.target.value })}
-                  className="w-full mt-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#011549]/20"
-                />
-              </div>
-              <div>
-                <label htmlFor="etablissement-nom" className="text-xs font-semibold uppercase tracking-wider text-slate-500">Nom</label>
-                <input
-                  id="etablissement-nom"
-                  value={form.nom}
-                  onChange={(e) => setForm({ ...form, nom: e.target.value })}
-                  className="w-full mt-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#011549]/20"
-                />
-              </div>
-              <div>
-                <label htmlFor="etablissement-email" className="text-xs font-semibold uppercase tracking-wider text-slate-500">Email</label>
-                <input
-                  id="etablissement-email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full mt-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#011549]/20"
-                />
-              </div>
-              <div>
-                <label htmlFor="etablissement-telephone" className="text-xs font-semibold uppercase tracking-wider text-slate-500">Téléphone</label>
-                <input
-                  id="etablissement-telephone"
-                  value={form.telephone}
-                  onChange={(e) => setForm({ ...form, telephone: e.target.value })}
-                  className="w-full mt-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#011549]/20"
-                />
-              </div>
-              <div>
-                <label htmlFor="etablissement-adresse" className="text-xs font-semibold uppercase tracking-wider text-slate-500">Adresse</label>
-                <textarea
-                  id="etablissement-adresse"
-                  value={form.adresse}
-                  onChange={(e) => setForm({ ...form, adresse: e.target.value })}
-                  rows={2}
-                  className="w-full mt-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#011549]/20 resize-none"
-                />
-              </div>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="px-4 py-2 bg-[#011549] text-white rounded-lg text-sm font-semibold hover:bg-[#011549]/90 transition-colors disabled:opacity-50 flex items-center gap-2"
-              >
-                {saving && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
-                Enregistrer
-              </button>
-            </div>
+        ))}
+        <div className="carte p-5">
+          <p
+            className="font-headline text-3xl font-bold"
+            style={{ color: taux === null ? undefined : couleurTaux(taux) }}
+          >
+            {taux === null ? '—' : `${taux} %`}
+          </p>
+          <p className="mt-1 text-xs font-medium uppercase tracking-wider text-on-surface-variant">Taux de présence</p>
+          {taux === null ? (
+            <p className="mt-2 text-xs text-on-surface-variant">Aucune séance passée avec des inscrits.</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex items-start gap-3">
-                <MdBusiness className="text-on-surface-variant mt-0.5" />
-                <div>
-                  <p className="text-xs text-on-surface-variant">Code</p>
-                  <p className="text-sm font-mono text-[#011549]">{etablissement.code}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <MdEmail className="text-on-surface-variant mt-0.5" />
-                <div>
-                  <p className="text-xs text-on-surface-variant">Email</p>
-                  <p className="text-sm text-[#011549]">{etablissement.email}</p>
-                </div>
-              </div>
-              {etablissement.telephone && (
-                <div className="flex items-start gap-3">
-                  <MdPhone className="text-on-surface-variant mt-0.5" />
-                  <div>
-                    <p className="text-xs text-on-surface-variant">Téléphone</p>
-                    <p className="text-sm text-[#011549]">{etablissement.telephone}</p>
-                  </div>
-                </div>
-              )}
-              {etablissement.adresse && (
-                <div className="flex items-start gap-3">
-                  <MdLocationOn className="text-on-surface-variant mt-0.5" />
-                  <div>
-                    <p className="text-xs text-on-surface-variant">Adresse</p>
-                    <p className="text-sm text-[#011549]">{etablissement.adresse}</p>
-                  </div>
-                </div>
-              )}
-            </div>
+            <ProgressBar
+              value={taux}
+              showValue={false}
+              size="sm"
+              color={taux >= 80 ? 'success' : taux >= 50 ? 'warning' : 'error'}
+              className="mt-3"
+            />
           )}
         </div>
+      </section>
 
-        {/* Stats & Actions */}
-        <div className="space-y-6">
-          {/* Stats */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4">
-            <h2 className="text-base font-semibold text-[#011549]">Statistiques</h2>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-500">Filières</span>
-                <span className="text-sm font-semibold text-[#011549]">{stats?.filieres_count ?? 0}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-500">Étudiants</span>
-                <span className="text-sm font-semibold text-[#011549]">{stats?.etudiants_count ?? 0}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-500">Administrateurs</span>
-                <span className="text-sm font-semibold text-[#011549]">{stats?.admins_count ?? 0}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-500">Statut</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                  etablissement.actif ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
-                }`}>
-                  {etablissement.actif ? 'Actif' : 'Inactif'}
-                </span>
-              </div>
-            </div>
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3 [&>*]:min-w-0">
+        {/* Filières */}
+        <section aria-labelledby="titre-filieres" className="carte overflow-hidden lg:col-span-2">
+          <div className="flex items-baseline justify-between gap-3 border-b border-outline-variant/15 px-5 py-4 sm:px-6">
+            <h2 id="titre-filieres" className="font-headline text-base font-bold text-primary">
+              Filières
+            </h2>
+            <span className="text-xs text-on-surface-variant">
+              {filieres.length} filière{filieres.length > 1 ? 's' : ''}
+            </span>
           </div>
+          {filieres.length === 0 ? (
+            <p className="px-6 py-10 text-center text-sm text-on-surface-variant">
+              Aucune filière : la faculté les crée depuis ses paramètres.
+            </p>
+          ) : (
+            <div className="overflow-x-auto" tabIndex={0} role="region" aria-labelledby="titre-filieres">
+              <table className="tableau">
+                <thead>
+                  <tr>
+                    <th scope="col">Code</th>
+                    <th scope="col">Intitulé</th>
+                    <th scope="col" className="hidden sm:table-cell">
+                      Niveau
+                    </th>
+                    <th scope="col" className="!text-right">
+                      Étudiants
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filieres.map((f) => (
+                    <tr key={f.id}>
+                      <td className="whitespace-nowrap font-mono text-xs font-semibold text-primary">{f.code}</td>
+                      <td className="min-w-[9rem] sm:min-w-[12rem]">
+                        {f.intitule}
+                        {/* Sous 640 px, le niveau passe sous l'intitulé : sa colonne
+                            repoussait « Étudiants » hors de l'écran. */}
+                        {f.niveau && !String(f.intitule).includes(f.niveau) && (
+                          <span className="block text-xs text-on-surface-variant sm:hidden">{f.niveau}</span>
+                        )}
+                      </td>
+                      <td className="hidden whitespace-nowrap text-on-surface-variant sm:table-cell">
+                        {f.niveau || '—'}
+                      </td>
+                      <td className="text-right tabular-nums">{f.etudiants}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
 
-          {/* Actions */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-3">
-            <h2 className="text-base font-semibold text-[#011549]">Actions</h2>
-            <button
-              onClick={handleResendCredentials}
-              className="w-full px-4 py-2.5 border border-blue-200 text-blue-600 rounded-xl text-sm font-medium hover:bg-blue-50 transition-colors"
-            >
+        {/* Panneau latéral */}
+        <aside className="space-y-6" aria-label="Gestion de la faculté">
+          <section aria-labelledby="titre-coordonnees" className="carte p-5 sm:p-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 id="titre-coordonnees" className="font-headline text-base font-bold text-primary">
+                {editing ? 'Modifier la faculté' : 'Coordonnées'}
+              </h2>
+              {!editing && (
+                <button
+                  type="button"
+                  onClick={() => setEditing(true)}
+                  className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+                >
+                  <MdEdit size={14} aria-hidden="true" />
+                  Modifier
+                </button>
+              )}
+            </div>
+
+            {editing ? (
+              <form onSubmit={handleSave} className="space-y-4">
+                {CHAMPS.map(({ cle, libelle, Icone, type, multiligne }) => (
+                  <div key={cle}>
+                    <label htmlFor={`etablissement-${cle}`} className="libelle">
+                      {libelle}
+                    </label>
+                    <div className="relative">
+                      <Icone
+                        className={`pointer-events-none absolute left-3.5 text-on-surface-variant ${multiligne ? 'top-3' : 'top-1/2 -translate-y-1/2'}`}
+                        size={16}
+                        aria-hidden="true"
+                      />
+                      {multiligne ? (
+                        <textarea
+                          id={`etablissement-${cle}`}
+                          value={form[cle]}
+                          onChange={(e) => setForm({ ...form, [cle]: e.target.value })}
+                          rows={2}
+                          className="champ resize-none pl-10"
+                        />
+                      ) : (
+                        <input
+                          id={`etablissement-${cle}`}
+                          type={type || 'text'}
+                          value={form[cle]}
+                          onChange={(e) => setForm({ ...form, [cle]: e.target.value })}
+                          className="champ pl-10"
+                        />
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
+                  <button type="button" onClick={() => setEditing(false)} disabled={saving} className="btn-fantome">
+                    Annuler
+                  </button>
+                  <button type="submit" disabled={saving} className="btn-primaire">
+                    {saving && (
+                      <span
+                        className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+                        aria-hidden="true"
+                      />
+                    )}
+                    Enregistrer
+                  </button>
+                </div>
+              </form>
+            ) : (
+              // Un <dl> n'admet que des groupes <div> de <dt>/<dd>.
+              <dl className="space-y-4">
+                <div className="min-w-0">
+                  <dt className="flex items-center gap-2 text-xs text-on-surface-variant">
+                    <MdEmail size={16} aria-hidden="true" />
+                    Email
+                  </dt>
+                  <dd className="mt-0.5 flex min-w-0 items-center gap-2 pl-6">
+                    <a
+                      href={`mailto:${etablissement.email}`}
+                      className="truncate text-sm text-primary underline-offset-2 hover:underline"
+                    >
+                      {etablissement.email}
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(etablissement.email)}
+                      className="shrink-0 rounded-lg p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-primary"
+                      aria-label="Copier l'email"
+                      title="Copier l'email"
+                    >
+                      <MdContentCopy size={14} aria-hidden="true" />
+                    </button>
+                  </dd>
+                </div>
+                <div>
+                  <dt className="flex items-center gap-2 text-xs text-on-surface-variant">
+                    <MdPhone size={16} aria-hidden="true" />
+                    Téléphone
+                  </dt>
+                  <dd className="mt-0.5 pl-6 text-sm text-on-surface">{etablissement.telephone || 'Non renseigné'}</dd>
+                </div>
+                <div>
+                  <dt className="flex items-center gap-2 text-xs text-on-surface-variant">
+                    <MdLocationOn size={16} aria-hidden="true" />
+                    Adresse
+                  </dt>
+                  <dd className="mt-0.5 break-words pl-6 text-sm text-on-surface">
+                    {etablissement.adresse || 'Non renseignée'}
+                  </dd>
+                </div>
+              </dl>
+            )}
+          </section>
+
+          <section aria-labelledby="titre-compte" className="carte p-5 sm:p-6">
+            <h2 id="titre-compte" className="font-headline text-base font-bold text-primary">
+              Compte administrateur
+            </h2>
+            <p className="mt-2 text-sm text-on-surface-variant">
+              Il se connecte avec l&apos;email de la faculté. Le renvoi génère un nouveau mot de passe, l&apos;envoie
+              par email et ferme ses sessions ouvertes.
+            </p>
+            <button type="button" onClick={handleResendCredentials} className="btn-secondaire mt-4 w-full">
+              <MdVpnKey size={16} aria-hidden="true" />
               Renvoyer les identifiants
             </button>
+          </section>
+
+          <section aria-labelledby="titre-sensible" className="carte border-statut-erreur/25 p-5 sm:p-6">
+            <h2 id="titre-sensible" className="font-headline text-base font-bold text-statut-erreur">
+              Zone sensible
+            </h2>
+            <p className="mt-2 text-sm text-on-surface-variant">
+              La suppression retire la faculté de la liste. Elle est définitive.
+            </p>
             <button
-              onClick={() => copyToClipboard(etablissement.email)}
-              className="w-full px-4 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
+              type="button"
+              onClick={handleDelete}
+              className="btn mt-4 w-full border border-statut-erreur/40 text-statut-erreur hover:bg-statut-erreur-fond"
             >
-              <MdContentCopy size={14} />
-              Copier l'email
+              <MdDeleteOutline size={18} aria-hidden="true" />
+              Supprimer la faculté
             </button>
-          </div>
-        </div>
+          </section>
+        </aside>
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import ProgressBar from '../../components/charts/ProgressBar';
 import Badge from '../../components/ui/Badge';
 import { listerAnnees } from '../../api/resources/reference';
 import { rapportFiliereStats } from '../../api/resources/rapports';
+import { couleurTaux } from '../../utils/taux';
 
 export default function ProgramComparison() {
   const [selectedAnnee, setSelectedAnnee] = useState('');
@@ -19,7 +20,7 @@ export default function ProgramComparison() {
   if (annees.length > 0 && annees !== anneesVues) {
     setAnneesVues(annees);
     if (!selectedAnnee) {
-      const active = annees.find(y => y.active);
+      const active = annees.find((y) => y.active);
       setSelectedAnnee(String(active?.id || annees[annees.length - 1]?.id || ''));
     }
   }
@@ -65,21 +66,25 @@ export default function ProgramComparison() {
           <select
             aria-label="Année académique"
             value={selectedAnnee}
-            onChange={e => setSelectedAnnee(e.target.value)}
+            onChange={(e) => setSelectedAnnee(e.target.value)}
             className="w-full px-4 py-2.5 bg-surface-container-high rounded-xl border-b-2 border-transparent focus:border-primary focus:bg-surface-container-lowest transition-all text-on-surface focus:outline-none text-sm"
           >
             <option value="">Sélectionner une année</option>
-            {annees.map(a => (
-              <option key={a.id} value={a.id}>{a.libelle}</option>
+            {annees.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.libelle}
+              </option>
             ))}
           </select>
         </div>
       </div>
 
       {loading ? (
-        <div className="flex justify-center p-12"><FiLoader className="animate-spin text-primary w-8 h-8" /></div>
+        <div className="flex justify-center p-12">
+          <FiLoader className="animate-spin text-primary w-8 h-8" />
+        </div>
       ) : error ? (
-        <div className="flex items-start gap-2.5 p-4 bg-error/10 rounded-xl text-error border border-error/10">
+        <div className="flex items-start gap-2.5 p-4 bg-statut-erreur-fond rounded-xl text-statut-erreur border border-error/10">
           <FiAlertCircle className="text-lg shrink-0 mt-0.5" />
           <p className="text-sm">{error}</p>
         </div>
@@ -97,27 +102,36 @@ export default function ProgramComparison() {
               </tr>
             </thead>
             <tbody>
-              {programs.length > 0 ? programs.map((p, i) => (
-                <tr key={i} className="border-b last:border-0 hover:bg-surface-container-low/50 transition-colors">
-                  <td className="p-4">
-                    <Badge variant={i === 0 ? 'success' : i < 3 ? 'info' : 'neutral'}>
-                      #{p.rank}
-                    </Badge>
-                  </td>
-                  <td className="p-4 font-medium">{p.name}</td>
-                  <td className="p-4 text-right font-mono text-xs text-on-surface-variant">{p.niveau}</td>
-                  <td className="p-4 text-right font-bold" style={{ color: p.rate >= 80 ? '#2E7D32' : p.rate >= 50 ? '#A65207' : '#C62828' }}>
-                    {p.rate}%
-                  </td>
-                  <td className="p-4">
-                    <ProgressBar value={p.rate} size="sm" showValue={false} color={p.rate >= 80 ? 'success' : p.rate >= 50 ? 'warning' : 'error'} />
-                  </td>
-                  <td className="p-4 text-right text-on-surface-variant">
-                    {p.presences} <span className="text-xs">/ {p.evenements} séances</span>
+              {programs.length > 0 ? (
+                programs.map((p, i) => (
+                  <tr key={i} className="border-b last:border-0 hover:bg-surface-container-low/50 transition-colors">
+                    <td className="p-4">
+                      <Badge variant={i === 0 ? 'success' : i < 3 ? 'info' : 'neutral'}>#{p.rank}</Badge>
+                    </td>
+                    <td className="p-4 font-medium">{p.name}</td>
+                    <td className="p-4 text-right font-mono text-xs text-on-surface-variant">{p.niveau}</td>
+                    <td className="p-4 text-right font-bold" style={{ color: couleurTaux(p.rate) }}>
+                      {p.rate}%
+                    </td>
+                    <td className="p-4">
+                      <ProgressBar
+                        value={p.rate}
+                        size="sm"
+                        showValue={false}
+                        color={p.rate >= 80 ? 'success' : p.rate >= 50 ? 'warning' : 'error'}
+                      />
+                    </td>
+                    <td className="p-4 text-right text-on-surface-variant">
+                      {p.presences} <span className="text-xs">/ {p.evenements} séances</span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-on-surface-variant">
+                    Aucune filière trouvée
                   </td>
                 </tr>
-              )) : (
-                <tr><td colSpan={6} className="p-8 text-center text-on-surface-variant">Aucune filière trouvée</td></tr>
               )}
             </tbody>
           </table>

@@ -9,10 +9,10 @@ const icons = {
 };
 
 const colors = {
-  success: 'bg-[#E8F5E9] border-l-4 border-[#2E7D32] text-[#2E7D32]',
-  error: 'bg-[#FFEBEE] border-l-4 border-[#C62828] text-[#C62828]',
-  warning: 'bg-[#FFF8E1] border-l-4 border-[#A65207] text-[#A65207]',
-  info: 'bg-[#E3F2FD] border-l-4 border-[#1565C0] text-[#1565C0]',
+  success: 'bg-statut-succes-fond border-l-4 border-statut-succes text-statut-succes',
+  error: 'bg-statut-erreur-fond border-l-4 border-statut-erreur text-statut-erreur',
+  warning: 'bg-statut-alerte-fond border-l-4 border-statut-alerte text-statut-alerte',
+  info: 'bg-statut-info-fond border-l-4 border-statut-info text-statut-info',
 };
 
 const liveRegions = {
@@ -26,15 +26,19 @@ export default function Toaster({ toasts, onRemove }) {
   if (!toasts || toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 max-w-sm w-full pointer-events-none" aria-live="polite" aria-atomic="true">
-      {toasts.map(toast => {
+    <div
+      className="fixed top-4 right-4 z-[100] flex flex-col gap-2 max-w-sm w-full pointer-events-none"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      {toasts.map((toast) => {
         const Icon = icons[toast.type] || FiInfo;
         const region = liveRegions[toast.type] || 'polite';
         return (
           <div
             key={toast.id}
             className={cn(
-              'pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-xl shadow-lg animate-in slide-in-from-right-2 fade-in duration-200',
+              'pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-xl shadow-lg animate-apparaitre',
               colors[toast.type] || colors.info,
             )}
             role="alert"

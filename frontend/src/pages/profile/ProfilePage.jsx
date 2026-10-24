@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { FiUser, FiSave, FiMail, FiRefreshCw, FiAlertTriangle } from 'react-icons/fi';
+import { FiSave, FiRefreshCw, FiAlertTriangle, FiCheck } from 'react-icons/fi';
 import { obtenirProfil, modifierProfil } from '../../api/resources/profil';
 import SecuriteCompte from '../../components/profile/SecuriteCompte';
 import ActiveSessionsPanel from '../../components/settings/ActiveSessionsPanel';
 import { libelleRole } from '../../utils/roles';
+import { initialesPersonne, tonalitePersonne } from '../../utils/identitePersonne';
 
 export default function ProfilePage() {
   const [searchParams] = useSearchParams();
@@ -71,9 +72,10 @@ export default function ProfilePage() {
         setError(data.message || 'Erreur lors de la mise à jour.');
       }
     } catch (err) {
-      const msg = err.response?.data?.message
-        || (err.response?.data?.errors ? Object.values(err.response.data.errors).flat().join(', ') : null)
-        || 'Erreur lors de la mise à jour.';
+      const msg =
+        err.response?.data?.message ||
+        (err.response?.data?.errors ? Object.values(err.response.data.errors).flat().join(', ') : null) ||
+        'Erreur lors de la mise à jour.';
       setError(msg);
     } finally {
       setSaving(false);
@@ -82,85 +84,115 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto py-12">
-        <div className="bg-surface-container-lowest rounded-xl p-12 shadow-sm text-center">
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-            <FiRefreshCw className="text-primary animate-spin" size={28} />
-          </div>
-          <p className="text-on-surface-variant">Chargement du profil...</p>
-        </div>
+      <div className="flex items-center justify-center py-16">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
 
+  const { fond, texte } = tonalitePersonne(profile?.email || profile?.name || '');
+
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
-      {/* En-tête */}
-      <div>
-        <h1 className="text-2xl font-bold text-primary font-headline">Profil</h1>
-        <p className="text-sm text-on-surface-variant">Vos informations personnelles et la sécurité de votre compte</p>
+    <div className="mx-auto max-w-3xl space-y-6">
+      {/* Bandeau d'identité : avatar généré, nom, rôle, ancienneté — un seul
+          endroit pour ces faits, au lieu d'un titre de page suivi d'une carte
+          « Compte » redondante plus bas. */}
+      <div className="flex flex-col gap-5 rounded-xxl border border-outline-variant/15 bg-surface-container-lowest p-7 sm:flex-row sm:items-center">
+        <div
+          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl font-headline text-2xl font-bold"
+          style={{ backgroundColor: fond, color: texte }}
+          aria-hidden="true"
+        >
+          {initialesPersonne(profile?.name)}
+        </div>
+        <div className="min-w-0">
+          <h1 className="font-headline text-2xl font-bold text-primary">{profile?.name || 'Profil'}</h1>
+          <p className="mt-1 text-sm text-on-surface-variant">
+            <span className="font-medium text-primary">{libelleRole(profile?.role)}</span>
+            {' · '}
+            {profile?.email}
+            {profile?.created_at && (
+              <>
+                {' · membre depuis le '}
+                {new Date(profile.created_at).toLocaleDateString('fr-FR', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </>
+            )}
+          </p>
+        </div>
       </div>
 
       {/* Alertes */}
       {error && (
-        <div className="flex items-center gap-2 p-3 bg-error-container/30 rounded-xl text-on-error-container text-sm">
-          <FiAlertTriangle size={16} className="flex-shrink-0" />
+        <div className="flex items-center gap-2 rounded-xl border border-statut-erreur/20 bg-statut-erreur-fond p-3 text-sm text-statut-erreur">
+          <FiAlertTriangle size={16} className="shrink-0" />
           <span>{error}</span>
-          <button onClick={() => setError('')} className="ml-auto text-on-error-container/60 hover:text-on-error-container">&times;</button>
+          <button onClick={() => setError('')} className="ml-auto text-error/60 hover:text-error">
+            &times;
+          </button>
         </div>
       )}
       {success && (
-        <div className="flex items-center gap-2 p-3 bg-secondary-container/30 rounded-xl text-on-secondary-container text-sm border border-secondary/10">
-          <FiSave size={16} className="flex-shrink-0" />
+        <div className="flex items-center gap-2 rounded-xl border border-success/20 bg-statut-succes-fond p-3 text-sm text-statut-succes">
+          <FiCheck size={16} className="shrink-0" />
           <span>{success}</span>
-          <button onClick={() => setSuccess('')} className="ml-auto text-on-secondary-container/60 hover:text-on-secondary-container">&times;</button>
+          <button onClick={() => setSuccess('')} className="ml-auto text-success/60 hover:text-success">
+            &times;
+          </button>
         </div>
       )}
 
-      {/* Carte informations personnelles */}
-      <div className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-            <FiUser className="text-primary" size={22} />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-on-surface">Informations personnelles</h2>
-            <p className="text-xs text-on-surface-variant">Mettez à jour votre nom et votre adresse email</p>
-          </div>
+      {/* Informations personnelles */}
+      <div className="rounded-xxl border border-outline-variant/15 bg-surface-container-lowest p-7">
+        <div className="mb-6">
+          <h2 className="font-headline text-base font-bold text-primary">Informations personnelles</h2>
+          <p className="mt-1 text-sm text-on-surface-variant">Mettez à jour votre nom et votre adresse email.</p>
         </div>
 
-        <form onSubmit={handleUpdateProfile} className="space-y-5">
-          <div>
-            <label htmlFor="name" className="block text-sm font-semibold text-on-surface mb-1.5">Nom complet</label>
+        <form onSubmit={handleUpdateProfile} className="max-w-md space-y-5">
+          <div className="space-y-1.5">
+            <label
+              htmlFor="name"
+              className="ml-1 text-xs font-semibold uppercase tracking-wider text-on-surface-variant"
+            >
+              Nom complet
+            </label>
             <input
               id="name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full px-4 py-2.5 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              className="w-full rounded-xl border-b-2 border-transparent bg-surface-container-high px-4 py-3 text-sm text-on-surface transition-colors focus:border-primary focus:bg-surface-container-lowest focus:outline-none"
               placeholder="Votre nom"
             />
           </div>
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-semibold text-on-surface mb-1.5">Adresse email</label>
+          <div className="space-y-1.5">
+            <label
+              htmlFor="email"
+              className="ml-1 text-xs font-semibold uppercase tracking-wider text-on-surface-variant"
+            >
+              Adresse email
+            </label>
             <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-2.5 bg-surface-container-high border border-outline-variant/30 rounded-xl text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              className="w-full rounded-xl border-b-2 border-transparent bg-surface-container-high px-4 py-3 text-sm text-on-surface transition-colors focus:border-primary focus:bg-surface-container-lowest focus:outline-none"
               placeholder="email@exemple.com"
             />
           </div>
 
-
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-br from-primary to-primary-container text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-primary/20 active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-br from-marque to-marque-fonce px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition-transform hover:scale-[0.99] active:scale-[0.98] disabled:opacity-60"
           >
             {saving ? <FiRefreshCw className="animate-spin" size={16} /> : <FiSave size={16} />}
             {saving ? 'Enregistrement...' : 'Enregistrer'}
@@ -172,29 +204,13 @@ export default function ProfilePage() {
           l'établissement ; elle concerne la personne connectée. */}
       <SecuriteCompte
         deuxFacteursActive={Boolean(profile?.two_factor_enabled)}
-        onDeuxFacteursChange={(actif) => queryClient.setQueryData(['profil'], (prev) => (prev ? { ...prev, two_factor_enabled: actif } : prev))}
+        onDeuxFacteursChange={(actif) =>
+          queryClient.setQueryData(['profil'], (prev) => (prev ? { ...prev, two_factor_enabled: actif } : prev))
+        }
       />
 
       {/* Sessions actives : révoquer les autres appareils connectés. */}
       <ActiveSessionsPanel />
-
-      {/* Métadonnées compte */}
-      {profile?.created_at && (
-        <div className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-              <FiMail className="text-primary" size={22} />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-on-surface">Compte</h2>
-              <p className="text-xs text-on-surface-variant mt-0.5">
-                Rôle : <span className="font-semibold text-primary">{libelleRole(profile?.role)}</span>
-                {' · '}Membre depuis le {new Date(profile.created_at).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

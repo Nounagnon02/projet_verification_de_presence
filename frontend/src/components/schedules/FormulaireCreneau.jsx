@@ -12,11 +12,21 @@ import { finApresNouveauDebut } from '../../utils/heures';
 import { JOURS } from '../../utils/emploiDuTemps';
 
 const VIDE = {
-  ec_id: '', jour_semaine: '1', heure_debut: '08:00', heure_fin: '10:00', type_cours: 'cm',
-  groupe_id: '', salle_id: '', enseignant: '', valide_du: '', valide_au: '',
+  ec_id: '',
+  jour_semaine: '1',
+  heure_debut: '08:00',
+  heure_fin: '10:00',
+  type_cours: 'cm',
+  groupe_id: '',
+  salle_id: '',
+  enseignant: '',
+  valide_du: '',
+  valide_au: '',
 };
 
-const CHAMP = 'w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20';
+const CHAMP =
+  // Classe partagée (index.css) : rayon, bordure, focus et état désactivé communs.
+  'champ';
 const LIBELLE = 'text-xs font-semibold text-on-surface-variant';
 
 const messageErreur = (err, defaut) => {
@@ -42,7 +52,15 @@ const depuisCreneau = (c) => ({
  * les règles des imports : un conflit de salle, de promotion ou d'enseignant
  * revient ici en clair.
  */
-export default function FormulaireCreneau({ ouvert, creneau = null, anneeId = '', filiereId = '', semestre = '', onFermer, onEnregistre }) {
+export default function FormulaireCreneau({
+  ouvert,
+  creneau = null,
+  anneeId = '',
+  filiereId = '',
+  semestre = '',
+  onFermer,
+  onEnregistre,
+}) {
   const [form, setForm] = useState(VIDE);
   const [erreur, setErreur] = useState('');
   const [enCours, setEnCours] = useState(false);
@@ -59,8 +77,14 @@ export default function FormulaireCreneau({ ouvert, creneau = null, anneeId = ''
 
   // Listes laissées vides en cas d'échec : le serveur tranche à l'enregistrement.
   const ecsQuery = useQuery({ queryKey: ['ecs'], queryFn: () => listerEcs(), enabled: ouvert });
-  const sallesQuery = useQuery({ queryKey: ['salles-disponibles'], queryFn: () => listerSallesDisponibles(), enabled: ouvert });
-  const salles = Array.isArray(sallesQuery.data?.data ?? sallesQuery.data) ? (sallesQuery.data?.data ?? sallesQuery.data) : [];
+  const sallesQuery = useQuery({
+    queryKey: ['salles-disponibles'],
+    queryFn: () => listerSallesDisponibles(),
+    enabled: ouvert,
+  });
+  const salles = Array.isArray(sallesQuery.data?.data ?? sallesQuery.data)
+    ? (sallesQuery.data?.data ?? sallesQuery.data)
+    : [];
 
   // Les cours de l'année, que suit la filière choisie (cours communs compris),
   // du semestre choisi ; celui du créneau modifié, toujours.
@@ -68,12 +92,15 @@ export default function FormulaireCreneau({ ouvert, creneau = null, anneeId = ''
     const ecs = Array.isArray(ecsQuery.data?.data ?? ecsQuery.data) ? (ecsQuery.data?.data ?? ecsQuery.data) : [];
 
     return ecs
-      .filter((ec) => String(ec.id) === String(creneau?.ec_id ?? '') || (
-        (!anneeId || String(ec.ue?.annee_id) === String(anneeId))
-        && (!filiereId || String(ec.ue?.filiere_id) === String(filiereId)
-          || (ec.ue?.filieres || []).some((f) => String(f.id) === String(filiereId)))
-        && (!semestre || String(ec.ue?.semestre) === String(semestre))
-      ))
+      .filter(
+        (ec) =>
+          String(ec.id) === String(creneau?.ec_id ?? '') ||
+          ((!anneeId || String(ec.ue?.annee_id) === String(anneeId)) &&
+            (!filiereId ||
+              String(ec.ue?.filiere_id) === String(filiereId) ||
+              (ec.ue?.filieres || []).some((f) => String(f.id) === String(filiereId))) &&
+            (!semestre || String(ec.ue?.semestre) === String(semestre))),
+      )
       .sort((a, b) => String(a.code).localeCompare(String(b.code), 'fr'));
   }, [ecsQuery.data, creneau, anneeId, filiereId, semestre]);
 
@@ -95,9 +122,7 @@ export default function FormulaireCreneau({ ouvert, creneau = null, anneeId = ''
       valide_au: form.valide_au || null,
     };
     try {
-      const data = creneau
-        ? await modifierCreneau(creneau.id, corps)
-        : await creerCreneau(corps);
+      const data = creneau ? await modifierCreneau(creneau.id, corps) : await creerCreneau(corps);
       onEnregistre?.(data?.message || 'Créneau enregistré.');
     } catch (err) {
       setErreur(messageErreur(err, "Le créneau n'a pas été enregistré."));
@@ -107,7 +132,13 @@ export default function FormulaireCreneau({ ouvert, creneau = null, anneeId = ''
   };
 
   const supprimer = async () => {
-    if (!creneau || !window.confirm('Supprimer ce créneau ? Ses séances à venir, jamais ouvertes et sans présence, sont retirées avec lui.')) return;
+    if (
+      !creneau ||
+      !window.confirm(
+        'Supprimer ce créneau ? Ses séances à venir, jamais ouvertes et sans présence, sont retirées avec lui.',
+      )
+    )
+      return;
     setEnCours(true);
     try {
       const data = await supprimerCreneau(creneau.id);
@@ -123,19 +154,26 @@ export default function FormulaireCreneau({ ouvert, creneau = null, anneeId = ''
     <Modal isOpen={ouvert} onClose={onFermer} title={creneau ? 'Modifier le créneau' : 'Ajouter un créneau'} size="lg">
       <form onSubmit={enregistrer} className="space-y-4">
         {erreur && (
-          <p role="alert" className="flex items-start gap-2 p-3 bg-error/10 text-error rounded-lg text-sm">
+          <p
+            role="alert"
+            className="flex items-start gap-2 p-3 bg-statut-erreur-fond text-statut-erreur rounded-lg text-sm"
+          >
             <FiAlertTriangle className="mt-0.5 shrink-0" aria-hidden="true" /> <span>{erreur}</span>
           </p>
         )}
 
         <div className="space-y-1.5">
-          <label htmlFor="creneau-ec" className={LIBELLE}>Cours *</label>
+          <label htmlFor="creneau-ec" className={LIBELLE}>
+            Cours *
+          </label>
           <select id="creneau-ec" required value={form.ec_id} onChange={champ('ec_id')} className={CHAMP}>
             <option value="">Sélectionner un cours</option>
             {cours.map((ec) => (
               <option key={ec.id} value={ec.id}>
-                {ec.code} — {ec.intitule}
-                {(ec.ue?.filieres?.length ?? 0) > 1 ? ` (commun à ${ec.ue.filieres.map((f) => f.code).join(', ')})` : ''}
+                {ec.code} : {ec.intitule}
+                {(ec.ue?.filieres?.length ?? 0) > 1
+                  ? ` (commun à ${ec.ue.filieres.map((f) => f.code).join(', ')})`
+                  : ''}
               </option>
             ))}
           </select>
@@ -143,49 +181,106 @@ export default function FormulaireCreneau({ ouvert, creneau = null, anneeId = ''
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="space-y-1.5">
-            <label htmlFor="creneau-jour" className={LIBELLE}>Jour *</label>
+            <label htmlFor="creneau-jour" className={LIBELLE}>
+              Jour *
+            </label>
             <select id="creneau-jour" value={form.jour_semaine} onChange={champ('jour_semaine')} className={CHAMP}>
-              {JOURS.slice(1).map((jour, i) => <option key={jour} value={i + 1}>{jour}</option>)}
+              {JOURS.slice(1).map((jour, i) => (
+                <option key={jour} value={i + 1}>
+                  {jour}
+                </option>
+              ))}
             </select>
           </div>
           <div className="space-y-1.5">
-            <label htmlFor="creneau-debut" className={LIBELLE}>Début *</label>
-            <SelecteurHeure id="creneau-debut" required value={form.heure_debut} className={CHAMP}
+            <label htmlFor="creneau-debut" className={LIBELLE}>
+              Début *
+            </label>
+            <SelecteurHeure
+              id="creneau-debut"
+              required
+              value={form.heure_debut}
+              className={CHAMP}
               // La fin suit le début en gardant la durée.
-              onChange={(v) => setForm((f) => ({
-                ...f,
-                heure_debut: v,
-                heure_fin: finApresNouveauDebut({ ancienDebut: f.heure_debut, ancienneFin: f.heure_fin, nouveauDebut: v, limiteMinutes: null }),
-              }))} />
+              onChange={(v) =>
+                setForm((f) => ({
+                  ...f,
+                  heure_debut: v,
+                  heure_fin: finApresNouveauDebut({
+                    ancienDebut: f.heure_debut,
+                    ancienneFin: f.heure_fin,
+                    nouveauDebut: v,
+                    limiteMinutes: null,
+                  }),
+                }))
+              }
+            />
           </div>
           <div className="space-y-1.5">
-            <label htmlFor="creneau-fin" className={LIBELLE}>Fin *</label>
-            <SelecteurHeure id="creneau-fin" required value={form.heure_fin} apres={form.heure_debut || null} className={CHAMP}
-              onChange={(v) => setForm((f) => ({ ...f, heure_fin: v }))} />
+            <label htmlFor="creneau-fin" className={LIBELLE}>
+              Fin *
+            </label>
+            <SelecteurHeure
+              id="creneau-fin"
+              required
+              value={form.heure_fin}
+              apres={form.heure_debut || null}
+              className={CHAMP}
+              onChange={(v) => setForm((f) => ({ ...f, heure_fin: v }))}
+            />
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <label htmlFor="creneau-type" className={LIBELLE}>Type de séance</label>
+            <label htmlFor="creneau-type" className={LIBELLE}>
+              Type de séance
+            </label>
             <select id="creneau-type" value={form.type_cours} onChange={champ('type_cours')} className={CHAMP}>
-              {TYPES_SEANCE.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+              {TYPES_SEANCE.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
             </select>
           </div>
-          <SelecteurGroupe id="creneau-groupe" ecId={form.ec_id} type={form.type_cours} value={form.groupe_id}
-            onChange={choisirGroupe} wrapperClassName="space-y-1.5" labelClassName={LIBELLE} className={CHAMP} />
+          <SelecteurGroupe
+            id="creneau-groupe"
+            ecId={form.ec_id}
+            type={form.type_cours}
+            value={form.groupe_id}
+            onChange={choisirGroupe}
+            wrapperClassName="space-y-1.5"
+            labelClassName={LIBELLE}
+            className={CHAMP}
+          />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <label htmlFor="creneau-salle" className={LIBELLE}>Salle</label>
-            <SelecteurSalle id="creneau-salle" salles={salles} value={form.salle_id}
-              onChange={(id) => setForm((f) => ({ ...f, salle_id: id }))} className={CHAMP} />
+            <label htmlFor="creneau-salle" className={LIBELLE}>
+              Salle
+            </label>
+            <SelecteurSalle
+              id="creneau-salle"
+              salles={salles}
+              value={form.salle_id}
+              onChange={(id) => setForm((f) => ({ ...f, salle_id: id }))}
+              className={CHAMP}
+            />
           </div>
           <div className="space-y-1.5">
-            <label htmlFor="creneau-enseignant" className={LIBELLE}>Enseignant</label>
-            <input id="creneau-enseignant" maxLength={255} placeholder="HOUNDJI / AGBO" value={form.enseignant}
-              onChange={champ('enseignant')} className={CHAMP} />
+            <label htmlFor="creneau-enseignant" className={LIBELLE}>
+              Enseignant
+            </label>
+            <input
+              id="creneau-enseignant"
+              maxLength={255}
+              placeholder="HOUNDJI / AGBO"
+              value={form.enseignant}
+              onChange={champ('enseignant')}
+              className={CHAMP}
+            />
           </div>
         </div>
 
@@ -193,33 +288,60 @@ export default function FormulaireCreneau({ ouvert, creneau = null, anneeId = ''
           <legend className={LIBELLE}>Validité</legend>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label htmlFor="creneau-du" className={LIBELLE}>Valable du</label>
-              <input id="creneau-du" type="date" value={form.valide_du} onChange={champ('valide_du')} className={CHAMP} />
+              <label htmlFor="creneau-du" className={LIBELLE}>
+                Valable du
+              </label>
+              <input
+                id="creneau-du"
+                type="date"
+                value={form.valide_du}
+                onChange={champ('valide_du')}
+                className={CHAMP}
+              />
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="creneau-au" className={LIBELLE}>au</label>
-              <input id="creneau-au" type="date" min={form.valide_du || undefined} value={form.valide_au} onChange={champ('valide_au')} className={CHAMP} />
+              <label htmlFor="creneau-au" className={LIBELLE}>
+                au
+              </label>
+              <input
+                id="creneau-au"
+                type="date"
+                min={form.valide_du || undefined}
+                value={form.valide_au}
+                onChange={champ('valide_au')}
+                className={CHAMP}
+              />
             </div>
           </div>
           <p className="text-xs text-on-surface-variant">
-            Vide : sans limite. Une nouvelle version de l'emploi du temps commence le lendemain de la fin de la précédente.
+            Vide : sans limite. Une nouvelle version de l'emploi du temps commence le lendemain de la fin de la
+            précédente.
           </p>
         </fieldset>
 
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
           {creneau ? (
-            <button type="button" onClick={supprimer} disabled={enCours}
-              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-error hover:bg-error/10 rounded-xl disabled:opacity-50">
+            <button
+              type="button"
+              onClick={supprimer}
+              disabled={enCours}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-statut-erreur hover:bg-error/10 rounded-xl disabled:opacity-50"
+            >
               <FiTrash2 aria-hidden="true" /> Supprimer
             </button>
-          ) : <span />}
+          ) : (
+            <span />
+          )}
           <div className="flex gap-3">
-            <button type="button" onClick={onFermer} disabled={enCours}
-              className="px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl">
+            <button
+              type="button"
+              onClick={onFermer}
+              disabled={enCours}
+              className="px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl"
+            >
               Annuler
             </button>
-            <button type="submit" disabled={enCours}
-              className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 disabled:opacity-50">
+            <button type="submit" disabled={enCours} className="btn-primaire">
               {enCours && <FiLoader className="animate-spin" aria-hidden="true" />} Enregistrer
             </button>
           </div>

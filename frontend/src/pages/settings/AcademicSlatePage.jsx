@@ -11,7 +11,10 @@ export default function AcademicSlatePage() {
   const filieresQuery = useQuery({ queryKey: ['filieres'], queryFn: () => listerFilieres() });
   const uesQuery = useQuery({ queryKey: ['ues'], queryFn: () => listerUes() });
   // Seul le total importe ici : une page suffit.
-  const etudiantsQuery = useQuery({ queryKey: ['etudiants', { per_page: 1 }], queryFn: () => listerEtudiants({ per_page: 1 }) });
+  const etudiantsQuery = useQuery({
+    queryKey: ['etudiants', { per_page: 1 }],
+    queryFn: () => listerEtudiants({ per_page: 1 }),
+  });
 
   const loading = anneesQuery.isLoading || filieresQuery.isLoading || uesQuery.isLoading || etudiantsQuery.isLoading;
 
@@ -29,7 +32,7 @@ export default function AcademicSlatePage() {
   const ues = uesQuery.data?.data ?? [];
 
   const stats = {
-    anneeActive: annees.find(a => a.active) || annees[0] || null,
+    anneeActive: annees.find((a) => a.active) || annees[0] || null,
     totalAnnees: annees.length,
     totalFilieres: filieres.length,
     totalUes: ues.length,
@@ -49,22 +52,34 @@ export default function AcademicSlatePage() {
           <div className="flex items-center gap-3 mb-2">
             <FiCalendar className="text-primary" size={24} />
             <div>
-              <p className="text-xs text-on-surface-variant font-semibold uppercase tracking-wider">Année académique active</p>
+              <p className="text-xs text-on-surface-variant font-semibold uppercase tracking-wider">
+                Année académique active
+              </p>
               <h2 className="text-xl font-bold text-primary">{stats.anneeActive.libelle}</h2>
             </div>
-            <span className="ml-auto px-3 py-1 bg-secondary/10 text-secondary rounded-full text-xs font-bold">Active</span>
+            <span className="ml-auto px-3 py-1 bg-statut-succes-fond text-statut-succes rounded-full text-xs font-bold">
+              Active
+            </span>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-on-surface-variant">Début :</span>{' '}
               <span className="font-semibold text-on-surface">
-                {new Date(stats.anneeActive.date_debut).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                {new Date(stats.anneeActive.date_debut).toLocaleDateString('fr-FR', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })}
               </span>
             </div>
             <div>
               <span className="text-on-surface-variant">Fin :</span>{' '}
               <span className="font-semibold text-on-surface">
-                {new Date(stats.anneeActive.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                {new Date(stats.anneeActive.date_fin).toLocaleDateString('fr-FR', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })}
               </span>
             </div>
           </div>
@@ -72,7 +87,7 @@ export default function AcademicSlatePage() {
       )}
 
       {/* Stats cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-surface-container-lowest rounded-xl p-5 shadow-sm border border-outline-variant/10">
           <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center mb-3">
             <FiCalendar className="text-primary" size={20} />
@@ -107,18 +122,24 @@ export default function AcademicSlatePage() {
       <div className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10">
         <h2 className="text-lg font-bold text-on-surface mb-4">Gestion rapide</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <a href="/settings/academic-years"
-            className="flex items-center gap-3 p-3 bg-surface-container-high rounded-xl hover:bg-primary/5 transition-all">
+          <a
+            href="/settings/academic-years"
+            className="flex items-center gap-3 p-3 bg-surface-container-high rounded-xl hover:bg-primary/5 transition-all"
+          >
             <FiCalendar className="text-primary" size={18} />
             <span className="text-sm font-semibold text-on-surface">Gérer les années académiques</span>
           </a>
-          <a href="/settings/filieres"
-            className="flex items-center gap-3 p-3 bg-surface-container-high rounded-xl hover:bg-primary/5 transition-all">
+          <a
+            href="/settings/filieres"
+            className="flex items-center gap-3 p-3 bg-surface-container-high rounded-xl hover:bg-primary/5 transition-all"
+          >
             <FiBook className="text-primary" size={18} />
             <span className="text-sm font-semibold text-on-surface">Gérer les filières</span>
           </a>
-          <a href="/courses/ues"
-            className="flex items-center gap-3 p-3 bg-surface-container-high rounded-xl hover:bg-primary/5 transition-all">
+          <a
+            href="/courses/ues"
+            className="flex items-center gap-3 p-3 bg-surface-container-high rounded-xl hover:bg-primary/5 transition-all"
+          >
             <FiCheckCircle className="text-primary" size={18} />
             <span className="text-sm font-semibold text-on-surface">Gérer les UE / EC</span>
           </a>

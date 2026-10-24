@@ -30,7 +30,7 @@ export default function DepartmentFilterReport1() {
   const loading = filiereStatsQuery.isLoading;
   const filieresBrutes = filiereStatsQuery.data?.data ?? filiereStatsQuery.data;
   const data = Array.isArray(filieresBrutes)
-    ? filieresBrutes.map(f => ({
+    ? filieresBrutes.map((f) => ({
         id: f.id,
         code: f.code,
         department: f.intitule || f.code,
@@ -60,11 +60,14 @@ export default function DepartmentFilterReport1() {
     }
   };
 
-  const filtered = selected
-    ? data.filter(d => d.id === selected)
-    : data;
+  const filtered = selected ? data.filter((d) => d.id === selected) : data;
 
-  if (loading) return <div className="flex justify-center p-12"><FiLoader className="animate-spin text-primary w-8 h-8" /></div>;
+  if (loading)
+    return (
+      <div className="flex justify-center p-12">
+        <FiLoader className="animate-spin text-primary w-8 h-8" />
+      </div>
+    );
 
   return (
     <div>
@@ -88,13 +91,18 @@ export default function DepartmentFilterReport1() {
       </div>
 
       <div className="flex gap-3 mb-6 overflow-x-auto">
-        <button onClick={() => setSelected(null)}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${!selected ? 'bg-primary text-white shadow-sm' : 'bg-surface-container-high text-on-surface-variant hover:text-primary'}`}>
+        <button
+          onClick={() => setSelected(null)}
+          className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${!selected ? 'bg-marque text-white shadow-sm' : 'bg-surface-container-high text-on-surface-variant hover:text-primary'}`}
+        >
           Tous
         </button>
-        {data.map(f => (
-          <button key={f.id} onClick={() => setSelected(f.id)}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${selected === f.id ? 'bg-primary text-white shadow-sm' : 'bg-surface-container-high text-on-surface-variant hover:text-primary'}`}>
+        {data.map((f) => (
+          <button
+            key={f.id}
+            onClick={() => setSelected(f.id)}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${selected === f.id ? 'bg-marque text-white shadow-sm' : 'bg-surface-container-high text-on-surface-variant hover:text-primary'}`}
+          >
             {f.code}
           </button>
         ))}
@@ -111,15 +119,21 @@ export default function DepartmentFilterReport1() {
             </tr>
           </thead>
           <tbody>
-            {filtered.length > 0 ? filtered.map((row) => (
-              <tr key={row.id} className="border-b last:border-0 hover:bg-surface-container-low/50 transition-colors">
-                <td className="p-4 font-medium">{row.department}</td>
-                <td className="p-4 text-right">{row.students}</td>
-                <td className="p-4 text-right font-mono text-xs">{row.code}</td>
-                <td className="p-4 text-right">{row.rate}%</td>
+            {filtered.length > 0 ? (
+              filtered.map((row) => (
+                <tr key={row.id} className="border-b last:border-0 hover:bg-surface-container-low/50 transition-colors">
+                  <td className="p-4 font-medium">{row.department}</td>
+                  <td className="p-4 text-right">{row.students}</td>
+                  <td className="p-4 text-right font-mono text-xs">{row.code}</td>
+                  <td className="p-4 text-right">{row.rate}%</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={4} className="p-8 text-center text-on-surface-variant">
+                  Aucune donnée
+                </td>
               </tr>
-            )) : (
-              <tr><td colSpan={4} className="p-8 text-center text-on-surface-variant">Aucune donnée</td></tr>
             )}
           </tbody>
         </table>

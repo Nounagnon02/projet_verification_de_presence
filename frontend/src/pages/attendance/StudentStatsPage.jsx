@@ -54,7 +54,7 @@ export default function StudentStatsPage() {
         <div className="lg:col-span-2 grid grid-cols-3 gap-4">
           {[
             { label: 'Présences', value: s.total_presences || 0, icon: FiCheckCircle, color: 'text-secondary' },
-            { label: 'Absences', value: s.total_absences || 0, icon: FiX, color: 'text-warning' },
+            { label: 'Absences', value: s.total_absences || 0, icon: FiX, color: 'text-statut-alerte' },
             { label: 'Total cours', value: s.total_evenements || 0, icon: FiClock, color: 'text-primary' },
           ].map((item, i) => (
             <div key={i} className="bg-surface-container-lowest rounded-xxl p-5 shadow-sm">
@@ -81,15 +81,17 @@ export default function StudentStatsPage() {
           />
         </div>
         <div className="space-y-4">
-          {courseStats.length > 0 ? courseStats.map((c, i) => (
-            <ProgressBar
-              key={i}
-              label={`${c.cours || 'N/A'} (${c.total || 0} séances)`}
-              value={c.total || 0}
-              max={Math.max(...courseStats.map(x => x.total || 0), 1)}
-              color={c.total >= 5 ? 'success' : c.total >= 3 ? 'warning' : 'error'}
-            />
-          )) : (
+          {courseStats.length > 0 ? (
+            courseStats.map((c, i) => (
+              <ProgressBar
+                key={i}
+                label={`${c.cours || 'N/A'} (${c.total || 0} séances)`}
+                value={c.total || 0}
+                max={Math.max(...courseStats.map((x) => x.total || 0), 1)}
+                color={c.total >= 5 ? 'success' : c.total >= 3 ? 'warning' : 'error'}
+              />
+            ))
+          ) : (
             <p className="text-sm text-on-surface-variant text-center py-4">Aucune donnée de cours disponible</p>
           )}
         </div>
@@ -99,17 +101,28 @@ export default function StudentStatsPage() {
       <div className="bg-surface-container-lowest rounded-xxl p-6 shadow-sm">
         <h2 className="text-lg font-bold font-headline text-primary mb-6">Historique Récent</h2>
         <div className="space-y-3">
-          {history.length > 0 ? history.map((h, i) => (
-            <div key={i} className="flex items-center justify-between py-2 border-b border-outline-variant/5 last:border-0">
-              <div>
-                <p className="text-sm font-medium text-primary">{h.cours || 'N/A'}</p>
-                <p className="text-xs text-on-surface-variant">{h.date || ''}</p>
+          {history.length > 0 ? (
+            history.map((h, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between py-2 border-b border-outline-variant/5 last:border-0"
+              >
+                <div>
+                  <p className="text-sm font-medium text-primary">{h.cours || 'N/A'}</p>
+                  <p className="text-xs text-on-surface-variant">{h.date || ''}</p>
+                </div>
+                <Badge variant={h.statut === 'valide' ? 'success' : h.statut === 'suspect' ? 'warning' : 'error'}>
+                  {h.statut === 'valide'
+                    ? 'Présent'
+                    : h.statut === 'suspect'
+                      ? 'Suspect'
+                      : h.statut === 'en_retard'
+                        ? 'Retard'
+                        : 'Absent'}
+                </Badge>
               </div>
-              <Badge variant={h.statut === 'valide' ? 'success' : h.statut === 'suspect' ? 'warning' : 'error'}>
-                {h.statut === 'valide' ? 'Présent' : h.statut === 'suspect' ? 'Suspect' : h.statut === 'en_retard' ? 'Retard' : 'Absent'}
-              </Badge>
-            </div>
-          )) : (
+            ))
+          ) : (
             <p className="text-sm text-on-surface-variant text-center py-4">Aucun historique disponible</p>
           )}
         </div>

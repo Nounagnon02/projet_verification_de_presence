@@ -34,7 +34,9 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', '
   const onCloseRef = useRef(onClose);
 
   // Garder la référence à jour sans déclencher de re-render
-  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Escape') {
@@ -98,15 +100,20 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', '
 
   if (!isOpen) return null;
 
-  const sizes = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' };
+  // Panneau latéral plutôt que boîte centrée : les largeurs servent maintenant
+  // de plafond à un panneau plein hauteur ancré au bord droit, pas à une boîte
+  // qui se centre dans la page.
+  const sizes = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-xl', xl: 'max-w-3xl' };
 
   // Rendue dans <body> : placée dans la page, la modale héritait de la marge de
   // son conteneur (space-y) et son voile laissait une bande découverte en haut.
   return createPortal(
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
+      className="fixed inset-0 z-50 flex justify-end bg-ink/30 backdrop-blur-sm animate-apparaitre"
+      onClick={(e) => {
+        if (e.target === overlayRef.current) onClose();
+      }}
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? 'modal-title' : undefined}
@@ -115,19 +122,23 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', '
       <div
         ref={contentRef}
         tabIndex={-1}
-        className={`bg-surface w-full ${sizes[size]} rounded-xxl shadow-[0_12px_32px_rgba(25,28,31,0.06)] animate-in fade-in zoom-in-95 duration-200`}
+        className={`relative flex h-full w-full ${sizes[size]} flex-col bg-surface-container-lowest shadow-[-16px_0_48px_rgba(1,21,73,0.18)] animate-glisser-depuis-droite`}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant/10">
-          {title && <h2 id="modal-title" className="text-lg font-bold text-primary font-headline">{title}</h2>}
+        <div className="flex items-center justify-between gap-4 shrink-0 bg-gradient-to-br from-marque to-marque-fonce px-6 py-5 text-white">
+          {title && (
+            <h2 id="modal-title" className="font-headline text-lg font-bold">
+              {title}
+            </h2>
+          )}
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-surface-container-high rounded-xl transition-colors"
+            className="shrink-0 rounded-xl p-1.5 text-on-primary/80 transition-colors hover:bg-white/10 hover:text-on-primary"
             aria-label="Fermer la fenêtre modale"
           >
-            <FiX className="text-on-surface-variant" size={18} aria-hidden="true" />
+            <FiX size={18} aria-hidden="true" />
           </button>
         </div>
-        <div className="p-6 max-h-[70vh] overflow-y-auto">{children}</div>
+        <div className="flex-1 overflow-y-auto p-6">{children}</div>
       </div>
     </div>,
     document.body,

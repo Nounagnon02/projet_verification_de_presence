@@ -22,15 +22,17 @@ import SearchInput from '../../components/ui/SearchInput';
  */
 
 const ETATS = {
-  valide: { libelle: 'Présent', classe: 'bg-secondary/10 text-secondary' },
-  suspect: { libelle: "Suspect — file d'attente", classe: 'bg-warning-container/30 text-warning' },
-  rejete: { libelle: 'Rejeté', classe: 'bg-error/10 text-error' },
+  valide: { libelle: 'Présent', classe: 'bg-statut-succes-fond text-statut-succes' },
+  suspect: { libelle: "Suspect : file d'attente", classe: 'bg-statut-alerte-fond text-statut-alerte' },
+  rejete: { libelle: 'Rejeté', classe: 'bg-statut-erreur-fond text-statut-erreur' },
 };
 const ABSENT = { libelle: 'Absent', classe: 'bg-surface-container-high text-on-surface-variant' };
 
 const MOTIF_MAX = 500;
 
-const classeChamp = 'w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20';
+const classeChamp =
+  // Classe partagée (index.css) : rayon, bordure, focus et état désactivé communs.
+  'champ py-2';
 const classeLibelle = 'text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider';
 
 const nomComplet = (etudiant) => `${etudiant?.prenom || ''} ${etudiant?.nom || ''}`.trim() || 'Étudiant inconnu';
@@ -108,7 +110,7 @@ export default function SaisieManuellePage() {
     seance: etudiantsQuery.data?.data?.seance ?? null,
     etudiants: Array.isArray(etudiantsQuery.data?.data?.etudiants) ? etudiantsQuery.data.data.etudiants : [],
     erreur: etudiantsQuery.isError
-      ? (etudiantsQuery.error?.response?.data?.message || 'Impossible de charger les étudiants de cette séance.')
+      ? etudiantsQuery.error?.response?.data?.message || 'Impossible de charger les étudiants de cette séance.'
       : '',
   };
 
@@ -134,15 +136,20 @@ export default function SaisieManuellePage() {
   const etudiantsAffiches = useMemo(() => {
     const terme = recherche.trim().toLowerCase();
     if (!terme) return liste.etudiants;
-    return liste.etudiants.filter((e) => [e.nom, e.prenom, e.matricule, nomComplet(e)]
-      .some((valeur) => (valeur || '').toLowerCase().includes(terme)));
+    return liste.etudiants.filter((e) =>
+      [e.nom, e.prenom, e.matricule, nomComplet(e)].some((valeur) => (valeur || '').toLowerCase().includes(terme)),
+    );
   }, [liste.etudiants, recherche]);
 
-  const compteurs = useMemo(() => liste.etudiants.reduce((acc, e) => {
-    const cle = e.presence?.statut || 'absent';
-    acc[cle] = (acc[cle] || 0) + 1;
-    return acc;
-  }, {}), [liste.etudiants]);
+  const compteurs = useMemo(
+    () =>
+      liste.etudiants.reduce((acc, e) => {
+        const cle = e.presence?.statut || 'absent';
+        acc[cle] = (acc[cle] || 0) + 1;
+        return acc;
+      }, {}),
+    [liste.etudiants],
+  );
 
   const ouvrir = (etudiant) => {
     setMotif('');
@@ -176,9 +183,9 @@ export default function SaisieManuellePage() {
           ...precedent,
           data: {
             ...precedent.data,
-            etudiants: (precedent.data.etudiants ?? []).map((e) => (e.id === cible.id
-              ? { ...e, presence: { id: presence?.id, statut: 'valide' } }
-              : e)),
+            etudiants: (precedent.data.etudiants ?? []).map((e) =>
+              e.id === cible.id ? { ...e, presence: { id: presence?.id, statut: 'valide' } } : e,
+            ),
           },
         };
       });
@@ -212,9 +219,11 @@ export default function SaisieManuellePage() {
       key: 'presence',
       label: 'Présence',
       render: (_, e) => {
-        const etat = e.presence ? (ETATS[e.presence.statut] || ETATS.valide) : ABSENT;
+        const etat = e.presence ? ETATS[e.presence.statut] || ETATS.valide : ABSENT;
         return (
-          <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap ${etat.classe}`}>
+          <span
+            className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap ${etat.classe}`}
+          >
             {etat.libelle}
           </span>
         );
@@ -223,13 +232,14 @@ export default function SaisieManuellePage() {
     {
       key: 'action',
       label: 'Action',
-      render: (_, e) => (e.presence ? (
-        <span className="text-[11px] text-on-surface-variant/70">—</span>
-      ) : (
-        <Button variant="primary" size="sm" className="whitespace-nowrap" onClick={() => ouvrir(e)}>
-          Marquer présent
-        </Button>
-      )),
+      render: (_, e) =>
+        e.presence ? (
+          <span className="text-[11px] text-on-surface-variant">—</span>
+        ) : (
+          <Button variant="primary" size="sm" className="whitespace-nowrap" onClick={() => ouvrir(e)}>
+            Marquer présent
+          </Button>
+        ),
     },
   ];
 
@@ -240,15 +250,17 @@ export default function SaisieManuellePage() {
       <div>
         <h1 className="text-2xl font-bold text-primary font-headline">Saisie manuelle</h1>
         <p className="text-sm text-on-surface-variant">
-          Enregistrez un étudiant qui n'a pas pu scanner (téléphone déchargé, application en panne).
-          Choisissez la séance, puis marquez l'étudiant présent en indiquant le motif.
+          Enregistrez un étudiant qui n'a pas pu scanner (téléphone déchargé, application en panne). Choisissez la
+          séance, puis marquez l'étudiant présent en indiquant le motif.
         </p>
       </div>
 
       <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/10">
         <div className="flex flex-wrap items-end gap-4">
           <div className="space-y-1 min-w-[160px]">
-            <label htmlFor="saisie-date" className={classeLibelle}>Date de la séance</label>
+            <label htmlFor="saisie-date" className={classeLibelle}>
+              Date de la séance
+            </label>
             <input
               id="saisie-date"
               type="date"
@@ -259,11 +271,20 @@ export default function SaisieManuellePage() {
             />
           </div>
           <div className="space-y-1 min-w-[160px] flex-1 max-w-xs">
-            <label htmlFor="saisie-filiere" className={classeLibelle}>Filière</label>
-            <select id="saisie-filiere" value={filtreFiliere} onChange={(e) => choisirFiliere(e.target.value)} className={classeChamp}>
+            <label htmlFor="saisie-filiere" className={classeLibelle}>
+              Filière
+            </label>
+            <select
+              id="saisie-filiere"
+              value={filtreFiliere}
+              onChange={(e) => choisirFiliere(e.target.value)}
+              className={classeChamp}
+            >
               <option value="">Toutes</option>
               {filieres.map((filiere) => (
-                <option key={filiere.id} value={filiere.id}>{filiere.code}</option>
+                <option key={filiere.id} value={filiere.id}>
+                  {filiere.code}
+                </option>
               ))}
             </select>
           </div>
@@ -274,7 +295,7 @@ export default function SaisieManuellePage() {
           {seances.chargement ? (
             <p className="text-sm text-on-surface-variant">Chargement des séances…</p>
           ) : seances.erreur ? (
-            <p className="text-sm text-error">{seances.erreur}</p>
+            <p className="text-sm text-statut-erreur">{seances.erreur}</p>
           ) : seances.liste.length === 0 ? (
             <p className="text-sm text-on-surface-variant">Aucune séance ce jour-là.</p>
           ) : (
@@ -295,14 +316,18 @@ export default function SaisieManuellePage() {
                         : 'border-outline-variant/30 hover:bg-surface-container-high'
                     }`}
                   >
-                    <span className="block text-sm font-semibold text-on-surface">{s.ec?.intitule || s.ec?.code || 'Cours'}</span>
+                    <span className="block text-sm font-semibold text-on-surface">
+                      {s.ec?.intitule || s.ec?.code || 'Cours'}
+                    </span>
                     <span className="flex items-center gap-1.5 text-[11px] text-on-surface-variant mt-0.5">
                       <FiClock size={11} aria-hidden="true" />
                       {hhmm(s.heure_debut)} – {hhmm(s.heure_fin)}
                       {s.filiere?.code ? ` · ${s.filiere.code}` : ''}
                       {s.salle_ref?.nom || s.salle ? ` · ${s.salle_ref?.nom || s.salle}` : ''}
                     </span>
-                    {raison && <span className="block text-[11px] font-semibold text-on-surface-variant mt-0.5">{raison}</span>}
+                    {raison && (
+                      <span className="block text-[11px] font-semibold text-on-surface-variant mt-0.5">{raison}</span>
+                    )}
                   </button>
                 );
               })}
@@ -311,10 +336,10 @@ export default function SaisieManuellePage() {
         </div>
       </div>
 
-      {seanceId && (
-        liste.erreur ? (
+      {seanceId &&
+        (liste.erreur ? (
           <div className="bg-surface-container-lowest rounded-xxl p-8 shadow-sm border border-outline-variant/10 text-center">
-            <FiAlertTriangle className="text-error mx-auto mb-3" size={24} aria-hidden="true" />
+            <FiAlertTriangle className="text-statut-erreur mx-auto mb-3" size={24} aria-hidden="true" />
             <p className="text-sm text-on-surface-variant mb-4">{liste.erreur}</p>
             <Button variant="outline" size="sm" onClick={rafraichir} className="mx-auto">
               <FiRefreshCw size={14} aria-hidden="true" /> Réessayer
@@ -325,12 +350,15 @@ export default function SaisieManuellePage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div>
                 <h2 className="text-lg font-bold text-primary font-headline">
-                  {seance ? `${seance.cours || seance.code || 'Cours'} · ${hhmm(seance.heure_debut)} – ${hhmm(seance.heure_fin)}` : 'Séance'}
+                  {seance
+                    ? `${seance.cours || seance.code || 'Cours'} · ${hhmm(seance.heure_debut)} – ${hhmm(seance.heure_fin)}`
+                    : 'Séance'}
                 </h2>
                 {!liste.chargement && (
                   <p className="flex items-center gap-1.5 text-xs text-on-surface-variant">
                     <FiUsers size={12} aria-hidden="true" />
-                    {liste.etudiants.length} attendu(s) · {compteurs.valide || 0} présent(s) · {compteurs.absent || 0} absent(s)
+                    {liste.etudiants.length} attendu(s) · {compteurs.valide || 0} présent(s) · {compteurs.absent || 0}{' '}
+                    absent(s)
                     {compteurs.suspect ? ` · ${compteurs.suspect} à arbitrer` : ''}
                   </p>
                 )}
@@ -349,14 +377,15 @@ export default function SaisieManuellePage() {
                 loading={liste.chargement}
                 aria-label="Étudiants attendus à la séance"
                 caption="Étudiants attendus à la séance et leur présence"
-                emptyMessage={recherche.trim()
-                  ? 'Aucun étudiant ne correspond à cette recherche.'
-                  : "Aucun étudiant n'est inscrit au cours de cette séance."}
+                emptyMessage={
+                  recherche.trim()
+                    ? 'Aucun étudiant ne correspond à cette recherche.'
+                    : "Aucun étudiant n'est inscrit au cours de cette séance."
+                }
               />
             </div>
           </div>
-        )
-      )}
+        ))}
 
       {cible && (
         <Modal isOpen onClose={fermer} title="Marquer présent">
@@ -366,19 +395,20 @@ export default function SaisieManuellePage() {
               <p className="text-[11px] font-mono text-on-surface-variant">{cible.matricule || 'Matricule inconnu'}</p>
               {seance && (
                 <p className="text-xs text-on-surface-variant">
-                  {seance.cours || seance.code} · {seance.date?.split('-').reverse().join('/')} · {hhmm(seance.heure_debut)} – {hhmm(seance.heure_fin)}
+                  {seance.cours || seance.code} · {seance.date?.split('-').reverse().join('/')} ·{' '}
+                  {hhmm(seance.heure_debut)} – {hhmm(seance.heure_fin)}
                 </p>
               )}
             </div>
 
             <p className="text-sm text-on-surface-variant">
-              L'étudiant sera compté présent. Pendant la séance, l'heure retenue est celle de la saisie ;
-              après, l'heure de fin de la séance. L'opération est tracée à votre nom dans le journal d'audit.
+              L'étudiant sera compté présent. Pendant la séance, l'heure retenue est celle de la saisie ; après, l'heure
+              de fin de la séance. L'opération est tracée à votre nom dans le journal d'audit.
             </p>
 
             <div className="space-y-1.5">
               <label htmlFor={idMotif} className="text-xs font-semibold text-on-surface-variant">
-                Motif <span className="text-error">*</span>
+                Motif <span className="text-statut-erreur">*</span>
               </label>
               <textarea
                 id={idMotif}
@@ -386,16 +416,24 @@ export default function SaisieManuellePage() {
                 maxLength={MOTIF_MAX}
                 value={motif}
                 onChange={(e) => setMotif(e.target.value)}
-                placeholder="Ex. : téléphone déchargé, présent en salle — confirmé par l'enseignant."
+                placeholder="Ex. : téléphone déchargé, présent en salle, confirmé par l'enseignant."
                 className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-colors resize-none"
               />
-              <p className="text-[10px] text-on-surface-variant text-right">{motif.length}/{MOTIF_MAX} caractères</p>
+              <p className="text-[10px] text-on-surface-variant text-right">
+                {motif.length}/{MOTIF_MAX} caractères
+              </p>
             </div>
 
-            {erreurModale && <p role="alert" className="text-sm text-error">{erreurModale}</p>}
+            {erreurModale && (
+              <p role="alert" className="text-sm text-statut-erreur">
+                {erreurModale}
+              </p>
+            )}
 
             <div className="flex justify-end gap-3 pt-2">
-              <Button variant="ghost" size="sm" onClick={fermer} disabled={envoi}>Annuler</Button>
+              <Button variant="ghost" size="sm" onClick={fermer} disabled={envoi}>
+                Annuler
+              </Button>
               <Button variant="primary" size="sm" onClick={enregistrer} loading={envoi} disabled={!motif.trim()}>
                 <FiCheckCircle size={14} aria-hidden="true" /> Marquer présent
               </Button>

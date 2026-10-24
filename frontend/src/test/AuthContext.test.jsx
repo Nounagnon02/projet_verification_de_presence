@@ -1,14 +1,14 @@
-import { useEffect } from 'react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, act } from '@testing-library/react'
+import { useEffect } from 'react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, act } from '@testing-library/react';
 
-const { api } = vi.hoisted(() => ({ api: { post: vi.fn() } }))
+const { api } = vi.hoisted(() => ({ api: { post: vi.fn() } }));
 
-vi.mock('../api/axios', () => ({ default: api, TOKEN_KEY: 'auth_token' }))
-vi.mock('../api/cache', () => ({ invalidateApiCache: vi.fn() }))
+vi.mock('../api/axios', () => ({ default: api, TOKEN_KEY: 'auth_token' }));
+vi.mock('../api/cache', () => ({ invalidateApiCache: vi.fn() }));
 
-import { AuthProvider, useAuth } from '../context/AuthContext'
-import { invalidateApiCache } from '../api/cache'
+import { AuthProvider, useAuth } from '../context/AuthContext';
+import { invalidateApiCache } from '../api/cache';
 
 /**
  * Jusqu'ici couvert seulement par ricochet, à travers les tests de la page de
@@ -18,13 +18,13 @@ import { invalidateApiCache } from '../api/cache'
  */
 // Le contexte courant, relevé dans un effet : réaffecter une variable de module
 // pendant le rendu serait un effet de bord (react-hooks/globals).
-const capture = { courant: null }
+const capture = { courant: null };
 function Sonde() {
-  const auth = useAuth()
+  const auth = useAuth();
   useEffect(() => {
-    capture.courant = auth
-  })
-  return <div>{auth.user ? `connecté : ${auth.user.email}` : 'anonyme'}</div>
+    capture.courant = auth;
+  });
+  return <div>{auth.user ? `connecté : ${auth.user.email}` : 'anonyme'}</div>;
 }
 
 const monter = () =>
@@ -32,50 +32,50 @@ const monter = () =>
     <AuthProvider>
       <Sonde />
     </AuthProvider>,
-  )
+  );
 
 describe('AuthContext', () => {
   beforeEach(() => {
-    localStorage.clear()
-    api.post.mockReset()
-    invalidateApiCache.mockReset()
-  })
+    localStorage.clear();
+    api.post.mockReset();
+    invalidateApiCache.mockReset();
+  });
 
   it('démarre anonyme sans session stockée', () => {
-    monter()
+    monter();
 
-    expect(screen.getByText('anonyme')).toBeInTheDocument()
-  })
+    expect(screen.getByText('anonyme')).toBeInTheDocument();
+  });
 
   it('restaure la session stockée dès le premier rendu, sans attendre le réseau', () => {
     localStorage.setItem(
       'presence_user',
       JSON.stringify({ id: 7, name: 'Admin', email: 'admin@uac.bj', role: 'faculte_admin', extra: 'ignoré' }),
-    )
-    monter()
+    );
+    monter();
 
-    expect(screen.getByText('connecté : admin@uac.bj')).toBeInTheDocument()
+    expect(screen.getByText('connecté : admin@uac.bj')).toBeInTheDocument();
     // Seuls les champs d'interface sont conservés.
-    expect(capture.courant.user).toEqual({ id: 7, name: 'Admin', email: 'admin@uac.bj', role: 'faculte_admin' })
-    expect(api.post).not.toHaveBeenCalled()
-  })
+    expect(capture.courant.user).toEqual({ id: 7, name: 'Admin', email: 'admin@uac.bj', role: 'faculte_admin' });
+    expect(api.post).not.toHaveBeenCalled();
+  });
 
   it('purge un stockage illisible et le jeton avec lui plutôt que de restaurer à moitié', () => {
-    localStorage.setItem('presence_user', '{pas du json')
-    localStorage.setItem('auth_token', 'jeton-orphelin')
-    monter()
+    localStorage.setItem('presence_user', '{pas du json');
+    localStorage.setItem('auth_token', 'jeton-orphelin');
+    monter();
 
-    expect(screen.getByText('anonyme')).toBeInTheDocument()
-    expect(localStorage.getItem('presence_user')).toBeNull()
-    expect(localStorage.getItem('auth_token')).toBeNull()
-  })
+    expect(screen.getByText('anonyme')).toBeInTheDocument();
+    expect(localStorage.getItem('presence_user')).toBeNull();
+    expect(localStorage.getItem('auth_token')).toBeNull();
+  });
 
   it('ignore un utilisateur stocké sans identifiant', () => {
-    localStorage.setItem('presence_user', JSON.stringify({ name: 'Sans id' }))
-    monter()
+    localStorage.setItem('presence_user', JSON.stringify({ name: 'Sans id' }));
+    monter();
 
-    expect(screen.getByText('anonyme')).toBeInTheDocument()
-  })
+    expect(screen.getByText('anonyme')).toBeInTheDocument();
+  });
 
   it('login range le jeton et l’utilisateur, et ne garde que les champs d’interface', async () => {
     api.post.mockResolvedValue({
@@ -83,41 +83,95 @@ describe('AuthContext', () => {
         success: true,
         data: {
           token: 'jeton-123',
-          user: { id: 3, name: 'Kofi', email: 'kofi@uac.bj', role: 'super_admin', two_factor_secret: 'NE-DOIT-PAS-FUIR' },
+          user: {
+            id: 3,
+            name: 'Kofi',
+            email: 'kofi@uac.bj',
+            role: 'super_admin',
+            two_factor_secret: 'NE-DOIT-PAS-FUIR',
+          },
         },
       },
-    })
-    monter()
+    });
+    monter();
 
     await act(async () => {
-      await capture.courant.login('kofi@uac.bj', 'motdepasse')
-    })
+      await capture.courant.login('kofi@uac.bj', 'motdepasse');
+    });
 
-    expect(api.post).toHaveBeenCalledWith('/login', { email: 'kofi@uac.bj', password: 'motdepasse' }, expect.any(Object))
-    expect(localStorage.getItem('auth_token')).toBe('jeton-123')
+    expect(api.post).toHaveBeenCalledWith(
+      '/login',
+      { email: 'kofi@uac.bj', password: 'motdepasse' },
+      expect.any(Object),
+    );
+    expect(localStorage.getItem('auth_token')).toBe('jeton-123');
     expect(JSON.parse(localStorage.getItem('presence_user'))).toEqual({
       id: 3,
       name: 'Kofi',
       email: 'kofi@uac.bj',
       role: 'super_admin',
-    })
-    expect(screen.getByText('connecté : kofi@uac.bj')).toBeInTheDocument()
-  })
+    });
+    expect(screen.getByText('connecté : kofi@uac.bj')).toBeInTheDocument();
+  });
 
-  it('logout efface la session et vide le cache, même si le serveur échoue', async () => {
-    localStorage.setItem('presence_user', JSON.stringify({ id: 1, name: 'A', email: 'a@uac.bj', role: 'faculte_admin' }))
-    localStorage.setItem('auth_token', 'jeton')
-    api.post.mockRejectedValue(new Error('réseau coupé'))
-    monter()
+  it('login signale la 2FA requise sans jamais créer de session fantôme', async () => {
+    // AuthenticatedSessionController répond ainsi en HTTP 200 (mot de passe
+    // correct, code TOTP encore attendu) : axios ne lève donc rien tout seul.
+    // Avant ce correctif, cette réponse était lue comme un succès — utilisateur
+    // aux champs tous `undefined` stocké, aucun jeton, « connecté » en apparence.
+    api.post.mockResolvedValue({
+      data: { success: false, two_factor_required: true, message: 'Code requis.' },
+    });
+    monter();
+
+    await expect(
+      act(async () => {
+        await capture.courant.login('kofi@uac.bj', 'motdepasse');
+      }),
+    ).rejects.toThrow('Code requis.');
+
+    expect(screen.getByText('anonyme')).toBeInTheDocument();
+    expect(localStorage.getItem('auth_token')).toBeNull();
+    expect(localStorage.getItem('presence_user')).toBeNull();
+  });
+
+  it('login renvoie le code TOTP au deuxième appel', async () => {
+    api.post.mockResolvedValue({
+      data: {
+        success: true,
+        data: { token: 'jeton-456', user: { id: 1, name: 'A', email: 'a@uac.bj', role: 'super_admin' } },
+      },
+    });
+    monter();
 
     await act(async () => {
-      await capture.courant.logout()
-    })
+      await capture.courant.login('a@uac.bj', 'motdepasse', '123456');
+    });
 
-    expect(screen.getByText('anonyme')).toBeInTheDocument()
-    expect(localStorage.getItem('presence_user')).toBeNull()
-    expect(localStorage.getItem('auth_token')).toBeNull()
+    expect(api.post).toHaveBeenCalledWith(
+      '/login',
+      { email: 'a@uac.bj', password: 'motdepasse', code: '123456' },
+      expect.any(Object),
+    );
+  });
+
+  it('logout efface la session et vide le cache, même si le serveur échoue', async () => {
+    localStorage.setItem(
+      'presence_user',
+      JSON.stringify({ id: 1, name: 'A', email: 'a@uac.bj', role: 'faculte_admin' }),
+    );
+    localStorage.setItem('auth_token', 'jeton');
+    api.post.mockRejectedValue(new Error('réseau coupé'));
+    monter();
+
+    await act(async () => {
+      await capture.courant.logout();
+    });
+
+    expect(screen.getByText('anonyme')).toBeInTheDocument();
+    expect(localStorage.getItem('presence_user')).toBeNull();
+    expect(localStorage.getItem('auth_token')).toBeNull();
     // Sans ce vidage, l'utilisateur suivant du navigateur verrait le cache du précédent.
-    expect(invalidateApiCache).toHaveBeenCalledTimes(1)
-  })
-})
+    expect(invalidateApiCache).toHaveBeenCalledTimes(1);
+  });
+});

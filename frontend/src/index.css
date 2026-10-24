@@ -9,12 +9,12 @@
 :root {
   --background: 244 247 249;
   --foreground: 30 41 59;
-  
+
   --primary: 0 51 102;
   --on-primary: 255 255 255;
   --primary-container: 26 75 130;
   --on-primary-container: 255 255 255;
-  
+
   --secondary: 0 135 81;
   --on-secondary: 255 255 255;
   --secondary-container: 230 246 239;
@@ -28,7 +28,7 @@
   --on-success: 255 255 255;
   --success-container: 230 246 239;
   --on-success-container: 0 43 25;
-  
+
   --warning: 252 209 22;
   --on-warning: 74 60 0;
   --warning-container: 255 244 206;
@@ -42,17 +42,17 @@
   --on-tertiary: 74 60 0;
   --tertiary-container: 255 244 206;
   --on-tertiary-container: 38 31 0;
-  
+
   --error: 232 17 45;
   --on-error: 255 255 255;
   --error-container: 255 218 214;
   --on-error-container: 147 0 10;
-  
+
   --surface: 244 247 249;
   --on-surface: 30 41 59;
   --surface-variant: 226 232 240;
   --on-surface-variant: 71 85 105;
-  
+
   --surface-dim: 203 213 225;
   --surface-bright: 244 247 249;
   --surface-container-lowest: 255 255 255;
@@ -66,28 +66,53 @@
      ils n'étaient définis nulle part : ces classes ne produisaient rien. */
   --outline: 148 163 184;
   --outline-variant: 203 213 225;
+
+  /* Couleurs de l'identité jusqu'ici codées en dur dans les composants
+     (sidebars, voile des modales, dégradés d'authentification) : mêmes
+     valeurs en clair, mais elles suivent désormais le thème sombre. */
+  --ink: 1 21 73; /* #011549 */
+  --ink-deep: 10 26 58; /* #0A1A3A */
+  /* Dégradé des boutons de marque, texte blanc. En clair : primary → primary-container. */
+  --marque: 0 51 102; /* #003366 */
+  --marque-fonce: 26 75 130; /* #1A4B82 */
+  --nav: 247 249 253; /* #F7F9FD, fond des barres latérales */
+  --nav-hover: 230 232 236; /* #E6E8EC */
+
+  /* Couleurs de statut lisibles en texte sur fond clair (Badge, Toast,
+     taux) : le jaune --warning (#FCD116) n'atteint pas 4,5:1 en texte. */
+  --statut-succes: 46 125 50; /* #2E7D32 */
+  --statut-succes-fond: 232 245 233; /* #E8F5E9 */
+  --statut-erreur: 198 40 40; /* #C62828 */
+  --statut-erreur-fond: 255 235 238; /* #FFEBEE */
+  --statut-alerte: 166 82 7; /* #A65207 */
+  --statut-alerte-fond: 255 248 225; /* #FFF8E1 */
+  --statut-info: 21 101 192; /* #1565C0 */
+  --statut-info-fond: 227 242 253; /* #E3F2FD */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: 15 23 42;
     --foreground: 248 250 252;
-    
-    --primary: 59 130 246;
+
+    /* #7DB4FB et non #3B82F6 : employé en TEXTE (titres, liens) sur
+       surface-container-high, #3B82F6 tombait à 2,8:1. Les boutons à texte
+       blanc passent par --marque. */
+    --primary: 125 180 251;
     --on-primary: 0 30 64;
     --primary-container: 0 51 102;
     --on-primary-container: 147 197 253;
-    
+
     --secondary: 16 185 129;
     --on-secondary: 0 56 32;
     --secondary-container: 0 92 54;
-    --on-secondary-container: 52 211 153;
+    --on-secondary-container: 110 231 183; /* #6EE7B7 : 4,2:1 seulement avec #34D399 */
 
     --success: 16 185 129;
     --on-success: 0 56 32;
     --success-container: 0 92 54;
     --on-success-container: 52 211 153;
-    
+
     --warning: 251 191 36;
     --on-warning: 56 44 0;
     --warning-container: 92 73 0;
@@ -97,17 +122,18 @@
     --on-tertiary: 56 44 0;
     --tertiary-container: 92 73 0;
     --on-tertiary-container: 253 230 138;
-    
+
     --error: 248 113 113;
     --on-error: 76 0 11;
     --error-container: 122 0 19;
     --on-error-container: 252 165 165;
-    
+
     --surface: 30 41 59;
     --on-surface: 241 245 249;
     --surface-variant: 51 65 85;
-    --on-surface-variant: 148 163 184;
-    
+    /* #AAB6C7 et non #94A3B8 : 4,0:1 seulement sur surface-container-high. */
+    --on-surface-variant: 170 182 199;
+
     --surface-dim: 15 23 42;
     --surface-bright: 30 41 59;
     --surface-container-lowest: 2 6 23;
@@ -119,12 +145,94 @@
 
     --outline: 100 116 139;
     --outline-variant: 71 85 105;
+
+    --ink: 59 130 246;
+    --ink-deep: 10 26 58;
+    /* primary sombre (#3B82F6) sous du blanc : 3,7:1. #1D4ED8 : 6,7:1. */
+    --marque: 29 78 216;
+    --marque-fonce: 0 51 102;
+    --nav: 15 23 42;
+    --nav-hover: 51 65 85;
+
+    --statut-succes: 52 211 153;
+    --statut-succes-fond: 6 78 59;
+    --statut-erreur: 252 165 165;
+    --statut-erreur-fond: 127 29 29;
+    --statut-alerte: 253 186 116;
+    --statut-alerte-fond: 120 53 15;
+    --statut-info: 147 197 253;
+    --statut-info-fond: 30 58 138;
   }
 }
+/* Feuille imprimable (aperçu de rapport) : toujours en thème clair, comme le
+   papier. Sans elle, en thème sombre, le texte suivait les tokens sombres
+   (bleu clair, gris clair) sur la feuille blanche : 2,1:1. Valeurs copiées de
+   :root ci-dessus. */
+.theme-clair {
+  --background: 244 247 249;
+  --foreground: 30 41 59;
+  --primary: 0 51 102;
+  --on-primary: 255 255 255;
+  --primary-container: 26 75 130;
+  --on-primary-container: 255 255 255;
+  --secondary: 0 135 81;
+  --on-secondary: 255 255 255;
+  --secondary-container: 230 246 239;
+  --on-secondary-container: 0 43 25;
+  --success: 0 135 81;
+  --on-success: 255 255 255;
+  --success-container: 230 246 239;
+  --on-success-container: 0 43 25;
+  --warning: 252 209 22;
+  --on-warning: 74 60 0;
+  --warning-container: 255 244 206;
+  --on-warning-container: 38 31 0;
+  --tertiary: 252 209 22;
+  --on-tertiary: 74 60 0;
+  --tertiary-container: 255 244 206;
+  --on-tertiary-container: 38 31 0;
+  --error: 232 17 45;
+  --on-error: 255 255 255;
+  --error-container: 255 218 214;
+  --on-error-container: 147 0 10;
+  --surface: 244 247 249;
+  --on-surface: 30 41 59;
+  --surface-variant: 226 232 240;
+  --on-surface-variant: 71 85 105;
+  --surface-dim: 203 213 225;
+  --surface-bright: 244 247 249;
+  --surface-container-lowest: 255 255 255;
+  --surface-container-low: 248 250 252;
+  --surface-container: 241 245 249;
+  --surface-container-high: 226 232 240;
+  --surface-container-highest: 203 213 225;
+  --surface-tint: 26 75 130;
+  --outline: 148 163 184;
+  --outline-variant: 203 213 225;
+  --ink: 1 21 73; /* #011549 */
+  --ink-deep: 10 26 58; /* #0A1A3A */
+  --marque: 0 51 102; /* #003366 */
+  --marque-fonce: 26 75 130; /* #1A4B82 */
+  --nav: 247 249 253; /* #F7F9FD, fond des barres latérales */
+  --nav-hover: 230 232 236; /* #E6E8EC */
+  --statut-succes: 46 125 50; /* #2E7D32 */
+  --statut-succes-fond: 232 245 233; /* #E8F5E9 */
+  --statut-erreur: 198 40 40; /* #C62828 */
+  --statut-erreur-fond: 255 235 238; /* #FFEBEE */
+  --statut-alerte: 166 82 7; /* #A65207 */
+  --statut-alerte-fond: 255 248 225; /* #FFF8E1 */
+  --statut-info: 21 101 192; /* #1565C0 */
+  --statut-info-fond: 227 242 253; /* #E3F2FD */
+  color-scheme: light;
+  color: rgb(var(--foreground));
+}
 
+/* Fond blanc en clair, comme jusqu'ici (le navigateur le fournissait par
+   défaut) ; en sombre, il manquait : les pages gardaient un fond blanc
+   derrière des cartes sombres. */
 body {
   color: rgb(var(--foreground));
-  /* background: rgb(var(--background)); */
+  background: rgb(var(--surface-container-lowest));
   font-family: 'Inter', sans-serif;
 }
 
@@ -137,23 +245,41 @@ body {
 }
 
 .material-symbols-outlined {
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
 }
 
 @layer base {
-  *::-webkit-scrollbar { width: 6px; height: 6px; }
-  *::-webkit-scrollbar-track { background: transparent; }
-  *::-webkit-scrollbar-thumb { background: rgb(var(--surface-container-high)); border-radius: 9999px; }
-  *::-webkit-scrollbar-thumb:hover { background: rgb(var(--surface-variant)); }
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: rgb(var(--surface-container-high));
+    border-radius: 9999px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--surface-variant));
+  }
 
-  ::selection { background: rgba(1, 21, 73, 0.15); }
+  ::selection {
+    background: rgb(var(--ink) / 0.15);
+  }
 
   /* Focus visible — limité aux éléments interactifs (pas tous les éléments) */
   a:focus-visible,
   button:focus-visible,
   summary:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px rgb(var(--surface)), 0 0 0 4px rgb(var(--primary));
+    box-shadow:
+      0 0 0 2px rgb(var(--surface)),
+      0 0 0 4px rgb(var(--primary));
   }
 
   /* Inputs gardent le comportement natif du navigateur */
@@ -177,7 +303,7 @@ body {
     border-radius: 8px;
     z-index: 10000;
     text-decoration: none;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
   .skip-link:focus {
     top: 16px;
@@ -204,6 +330,70 @@ body {
       --surface-container-highest: 192 192 192;
       --on-surface-variant: 0 0 0;
     }
+  }
+}
+
+/* Composants partagés du système de design. Ils fixent UNE forme pour ce qui
+   existait en 4 à 5 variantes selon les pages (champs, boutons, cartes,
+   tableaux) ; les couleurs restent celles des tokens existants. */
+@layer components {
+  .titre-page {
+    @apply font-headline text-2xl font-bold text-primary;
+  }
+  .sous-titre-page {
+    @apply mt-1 text-sm text-on-surface-variant;
+  }
+
+  .carte {
+    @apply rounded-xxl border border-outline-variant/20 bg-surface-container-lowest shadow-sm;
+  }
+
+  .libelle {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wider text-on-surface-variant;
+  }
+  .champ {
+    @apply w-full rounded-xl border border-outline-variant/30 bg-surface-container-high px-3.5 py-2.5 text-sm text-on-surface
+      placeholder:text-on-surface-variant/60 transition-colors
+      focus:border-primary focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary/20
+      disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold
+      transition-all active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-primaire {
+    @apply btn bg-primary text-on-primary shadow-sm hover:bg-primary/90;
+  }
+  .btn-secondaire {
+    @apply btn border border-outline-variant/40 bg-surface-container-lowest text-on-surface hover:bg-surface-container-high;
+  }
+  .btn-danger {
+    @apply btn bg-error text-on-error hover:bg-error/90;
+  }
+  .btn-fantome {
+    @apply btn text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface;
+  }
+  .btn-icone {
+    @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-outline-variant/40 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface;
+  }
+
+  /* relative : un .sr-only (position absolue) dans un en-tête sortait sinon du
+     conteneur défilant et élargissait toute la page sur mobile. */
+  .tableau {
+    @apply relative w-full text-sm;
+  }
+  .tableau thead th {
+    @apply whitespace-nowrap border-b border-outline-variant/20 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant;
+  }
+  .tableau tbody td {
+    @apply border-b border-outline-variant/10 px-4 py-3 text-on-surface;
+  }
+  .tableau tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  .tableau tbody tr {
+    @apply transition-colors hover:bg-surface-container-low;
   }
 }
 
@@ -234,5 +424,5 @@ body {
   font-weight: 600;
   border-radius: 8px;
   z-index: 10000;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }

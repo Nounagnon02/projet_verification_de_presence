@@ -1,41 +1,48 @@
 const TodaysEvents = ({ events }) => {
   if (!events || events.length === 0) {
-    return <p className="text-surface-variant">Aucun événement prévu pour aujourd'hui</p>;
+    return <p className="text-on-surface-variant">Aucun événement prévu pour aujourd'hui</p>;
   }
 
   return (
     <div className="space-y-6">
       {events.map((event, index) => {
+        // « Terminé » écrivait text-secondary-container sur bg-secondary-container :
+        // le libellé avait la couleur exacte de son fond.
         const statusClasses = {
-          Terminé: 'text-[10px] font-mono text-secondary-container bg-secondary-container px-2 py-0.5 rounded',
-          'En cours': 'text-[10px] font-mono text-white bg-primary px-2 py-0.5 rounded',
-          'À venir': 'text-[10px] font-mono text-slate-500 bg-surface-container-high px-2 py-0.5 rounded'
+          Terminé: 'text-[10px] font-mono text-on-secondary-container bg-secondary-container px-2 py-0.5 rounded',
+          'En cours': 'text-[10px] font-mono text-on-primary bg-primary px-2 py-0.5 rounded',
+          'À venir': 'text-[10px] font-mono text-on-surface-variant bg-surface-container-high px-2 py-0.5 rounded',
         };
 
         return (
-          <div key={index} className={`relative pl-6 border-l-2 ${
-            event.status === 'Terminé' ? 'border-secondary-container' :
-            event.status === 'En cours' ? 'border-primary-fixed-dim' :
-            'border-surface-container-high'
-          }`}>
-            <div className={`absolute -left-[9px] top-0 w-4 h-4 ${
-              event.status === 'Terminé' ? 'bg-secondary-container' :
-              event.status === 'En cours' ? 'bg-primary' :
-              'bg-surface-container-high'
-            } rounded-full border-4 border-white ${
-              event.status === 'En cours' ? 'animate-pulse' : ''
-            }`}></div>
+          <div
+            key={index}
+            className={`relative pl-6 border-l-2 ${
+              event.status === 'Terminé'
+                ? 'border-secondary-container'
+                : event.status === 'En cours'
+                  ? 'border-primary/40'
+                  : 'border-surface-container-high'
+            }`}
+          >
+            <div
+              className={`absolute -left-[9px] top-0 w-4 h-4 ${
+                event.status === 'Terminé'
+                  ? 'bg-secondary-container'
+                  : event.status === 'En cours'
+                    ? 'bg-primary'
+                    : 'bg-surface-container-high'
+              } rounded-full border-4 border-surface-container-lowest ${
+                event.status === 'En cours' ? 'animate-pulse' : ''
+              }`}
+            ></div>
             <div className="mb-2">
               <div className="flex justify-between items-center">
-                <span className={statusClasses[event.status]}>
-                  {event.status}
-                </span>
-                <span className="text-[10px] text-on-surface-variant font-mono">
-                  {event.time}
-                </span>
+                <span className={statusClasses[event.status]}>{event.status}</span>
+                <span className="text-[10px] text-on-surface-variant font-mono">{event.time}</span>
               </div>
               <p className="text-xs font-bold text-primary mt-1">{event.title}</p>
-              <p className="text-[10px] text-slate-500">{event.location}</p>
+              <p className="text-[10px] text-on-surface-variant">{event.location}</p>
               {event.progress && (
                 <>
                   <div className="mt-3">

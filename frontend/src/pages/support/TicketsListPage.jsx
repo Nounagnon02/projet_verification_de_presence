@@ -3,12 +3,19 @@ import { Link } from 'react-router-dom';
 import { FiPlus, FiSearch, FiChevronRight, FiClock, FiMessageSquare } from 'react-icons/fi';
 import Badge from '../../components/ui/Badge';
 import useApi from '../../hooks/useApi';
+import { usePrefixAide } from '../../hooks/usePrefixAide';
 
 const statusMap = { ouvert: 'success', en_cours: 'warning', resolu: 'info', ferme: 'neutral' };
 const statusLabels = { ouvert: 'Ouvert', en_cours: 'En cours', resolu: 'Résolu', ferme: 'Fermé' };
-const priorityColors = { basse: 'text-on-surface-variant', moyenne: 'text-primary', haute: 'text-warning', critique: 'text-error' };
+const priorityColors = {
+  basse: 'text-on-surface-variant',
+  moyenne: 'text-primary',
+  haute: 'text-statut-alerte',
+  critique: 'text-statut-erreur',
+};
 
 export default function TicketsListPage() {
+  const prefix = usePrefixAide();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const params = {};
@@ -30,16 +37,21 @@ export default function TicketsListPage() {
           <h1 className="text-2xl font-bold text-primary font-headline">Mes Tickets</h1>
           <p className="text-sm text-on-surface-variant">{pagination?.total ?? 0} tickets au total</p>
         </div>
-        <Link to="/support/contact" className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 transition-all">
+        <Link to={`${prefix}/support/contact`} className="btn-primaire">
           <FiPlus /> Nouveau ticket
         </Link>
       </div>
 
       <div className="flex flex-wrap items-center gap-3 mb-6">
         <div className="relative flex-1 max-w-md">
-          <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-outline" />
-          <input className="w-full pl-10 pr-4 py-2.5 bg-surface-container-low rounded-xl border border-outline-variant/20 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-            placeholder="Rechercher un ticket..." aria-label="Rechercher un ticket" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+          <input
+            className="w-full pl-10 pr-4 py-2.5 bg-surface-container-low rounded-xl border border-outline-variant/20 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            placeholder="Rechercher un ticket..."
+            aria-label="Rechercher un ticket"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
         <div className="flex gap-2">
           {[
@@ -48,8 +60,11 @@ export default function TicketsListPage() {
             { key: 'en_cours', label: 'En cours' },
             { key: 'resolu', label: 'Résolus' },
           ].map((f) => (
-            <button key={f.key} onClick={() => setFilter(f.key)}
-              className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all ${filter === f.key ? 'bg-primary text-white' : 'bg-surface-container-high text-on-surface-variant hover:text-primary'}`}>
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all ${filter === f.key ? 'bg-marque text-white' : 'bg-surface-container-high text-on-surface-variant hover:text-primary'}`}
+            >
               {f.label}
             </button>
           ))}
@@ -66,24 +81,40 @@ export default function TicketsListPage() {
       ) : (
         <div className="space-y-3">
           {filtered.map((ticket) => (
-            <Link key={ticket.id} to={`/support/tickets/${ticket.id}`}
-              className="flex items-start gap-4 bg-surface-container-lowest rounded-xxl p-5 shadow-sm border border-outline-variant/10 hover:shadow-md hover:border-primary/20 transition-all group">
-              <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${priorityColors[ticket.priority] || 'text-primary'}`} style={{ backgroundColor: 'currentColor' }} />
+            <Link
+              key={ticket.id}
+              to={`${prefix}/support/tickets/${ticket.id}`}
+              className="flex items-start gap-4 bg-surface-container-lowest rounded-xxl p-5 shadow-sm border border-outline-variant/10 hover:shadow-md hover:border-primary/20 transition-all group"
+            >
+              <div
+                className={`w-2 h-2 rounded-full mt-2 shrink-0 ${priorityColors[ticket.priority] || 'text-primary'}`}
+                style={{ backgroundColor: 'currentColor' }}
+              />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 mb-1">
                   <span className="text-[10px] font-mono text-on-surface-variant">#{ticket.id}</span>
-                  <Badge variant={statusMap[ticket.status] || 'neutral'}>{statusLabels[ticket.status] || ticket.status}</Badge>
+                  <Badge variant={statusMap[ticket.status] || 'neutral'}>
+                    {statusLabels[ticket.status] || ticket.status}
+                  </Badge>
                   {ticket.priority === 'critique' && <Badge variant="error">Critique</Badge>}
                   {ticket.priority === 'haute' && <Badge variant="warning">Haute</Badge>}
                 </div>
-                <h3 className="font-semibold text-sm text-primary group-hover:text-primary transition-colors">{ticket.subject}</h3>
+                <h3 className="font-semibold text-sm text-primary group-hover:text-primary transition-colors">
+                  {ticket.subject}
+                </h3>
                 <div className="flex items-center gap-4 mt-2 text-[10px] text-on-surface-variant">
                   <span>{ticket.category}</span>
-                  <span className="flex items-center gap-1"><FiClock size={12} />{ticket.created_at}</span>
-                  <span className="flex items-center gap-1"><FiMessageSquare size={12} />{ticket.messages_count}</span>
+                  <span className="flex items-center gap-1">
+                    <FiClock size={12} />
+                    {ticket.created_at}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <FiMessageSquare size={12} />
+                    {ticket.messages_count}
+                  </span>
                 </div>
               </div>
-              <FiChevronRight className="text-outline shrink-0 mt-2 group-hover:text-primary transition-colors" />
+              <FiChevronRight className="text-on-surface-variant shrink-0 mt-2 group-hover:text-primary transition-colors" />
             </Link>
           ))}
         </div>

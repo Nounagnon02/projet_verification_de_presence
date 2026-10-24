@@ -13,7 +13,10 @@ export default function ProgramReportDetail() {
   // presence, et affichait « rate: 85 » ECRIT EN DUR — pour la filiere
   // comme pour chacun de ses cours. Deux GET indépendants, chacun sa clé.
   const filiereQuery = useQuery({ queryKey: ['filiere', id], queryFn: ({ signal }) => obtenirFiliere(id, signal) });
-  const rapportQuery = useQuery({ queryKey: ['rapport-departement', id], queryFn: ({ signal }) => rapportDepartement(id, signal) });
+  const rapportQuery = useQuery({
+    queryKey: ['rapport-departement', id],
+    queryFn: ({ signal }) => rapportDepartement(id, signal),
+  });
 
   const loading = filiereQuery.isLoading || rapportQuery.isLoading;
   const echec = filiereQuery.isError || rapportQuery.isError;
@@ -34,13 +37,14 @@ export default function ProgramReportDetail() {
   // Le rapport donne les presences par seance passee, pas un taux par
   // cours : on affiche donc ce decompte, plutot qu'un pourcentage qu'aucun
   // endpoint ne fournit.
-  const courses = !echec && Array.isArray(rapport.presences_par_cours)
-    ? rapport.presences_par_cours.map(l => ({
-        name: l.cours,
-        date: l.date,
-        presences: l.presences_count ?? 0,
-      }))
-    : [];
+  const courses =
+    !echec && Array.isArray(rapport.presences_par_cours)
+      ? rapport.presences_par_cours.map((l) => ({
+          name: l.cours,
+          date: l.date,
+          presences: l.presences_count ?? 0,
+        }))
+      : [];
 
   const exporter = async () => {
     setExportEnCours(true);
@@ -58,20 +62,23 @@ export default function ProgramReportDetail() {
     }
   };
 
-  if (loading) return <div className="flex justify-center p-12"><FiLoader className="animate-spin text-primary w-8 h-8" /></div>;
+  if (loading)
+    return (
+      <div className="flex justify-center p-12">
+        <FiLoader className="animate-spin text-primary w-8 h-8" />
+      </div>
+    );
 
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold font-headline text-primary">{program.name}</h1>
-          <p className="text-sm text-on-surface-variant">Code: {program.code} · {program.students} étudiants</p>
+          <p className="text-sm text-on-surface-variant">
+            Code: {program.code} · {program.students} étudiants
+          </p>
         </div>
-        <button
-          onClick={exporter}
-          disabled={exportEnCours}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
-        >
+        <button onClick={exporter} disabled={exportEnCours} className="btn-primaire">
           {exportEnCours ? <FiLoader className="animate-spin" /> : <FiDownload />}
           {exportEnCours ? 'Export…' : 'Exporter'}
         </button>
@@ -101,17 +108,23 @@ export default function ProgramReportDetail() {
             </tr>
           </thead>
           <tbody>
-            {courses.length > 0 ? courses.map((c, i) => (
-              <tr key={i} className="border-b last:border-0 hover:bg-surface-container-low/50 transition-colors">
-                <td className="p-4 font-medium">{c.name}</td>
-                <td className="p-4 font-mono text-xs">{c.date ?? '—'}</td>
-                {/* Le rapport donne un decompte de presences par seance, pas un
+            {courses.length > 0 ? (
+              courses.map((c, i) => (
+                <tr key={i} className="border-b last:border-0 hover:bg-surface-container-low/50 transition-colors">
+                  <td className="p-4 font-medium">{c.name}</td>
+                  <td className="p-4 font-mono text-xs whitespace-nowrap">{c.date ?? '—'}</td>
+                  {/* Le rapport donne un decompte de presences par seance, pas un
                     taux : afficher une barre de progression exigerait un total
                     d'attendus qu'aucun endpoint ne fournit par cours. */}
-                <td className="p-4 text-right font-semibold">{c.presences}</td>
+                  <td className="p-4 text-right font-semibold">{c.presences}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={3} className="p-8 text-center text-on-surface-variant">
+                  Aucune séance passée pour cette filière
+                </td>
               </tr>
-            )) : (
-              <tr><td colSpan={3} className="p-8 text-center text-on-surface-variant">Aucune séance passée pour cette filière</td></tr>
             )}
           </tbody>
         </table>

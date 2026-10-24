@@ -63,7 +63,6 @@ const LegalNoticePage = lazy(() => import('./pages/auth/LegalNoticePage'));
 
 // Phase 8 - Support pages
 const HelpCenterDetailPage = lazy(() => import('./pages/help/HelpCenterDetailPage'));
-const FAQDetailPage = lazy(() => import('./pages/faq/FAQDetailPage'));
 const KnowledgeBaseArticle = lazy(() => import('./pages/help/KnowledgeBaseArticle'));
 const ContactFormPage = lazy(() => import('./pages/support/ContactFormPage'));
 const TicketsListPage = lazy(() => import('./pages/support/TicketsListPage'));
@@ -81,11 +80,10 @@ const ScansRefusesPage = lazy(() => import('./pages/attendance/ScansRefusesPage'
 // Super Admin pages
 const SuperAdminDashboardPage = lazy(() => import('./pages/super-admin/SuperAdminDashboardPage'));
 const EtablissementManagementPage = lazy(() => import('./pages/super-admin/EtablissementManagementPage'));
-const CreateEtablissementPage = lazy(() => import('./pages/super-admin/CreateEtablissementPage'));
 const EtablissementDetailPage = lazy(() => import('./pages/super-admin/EtablissementDetailPage'));
-const BulkImportPage = lazy(() => import('./pages/super-admin/BulkImportPage'));
 const AnneesUniversitairesPage = lazy(() => import('./pages/super-admin/AnneesUniversitairesPage'));
 const JoursFeriesPage = lazy(() => import('./pages/super-admin/JoursFeriesPage'));
+const ParametresGlobauxPage = lazy(() => import('./pages/super-admin/ParametresGlobauxPage'));
 
 function LoadingFallback() {
   return (
@@ -127,15 +125,46 @@ function App() {
         ) : (
           <Routes>
             {/* Super Admin routes */}
-            <Route path="/super-admin" element={<ProtectedRoute role="super_admin"><SuperAdminLayout /></ProtectedRoute>}>
+            <Route
+              path="/super-admin"
+              element={
+                <ProtectedRoute role="super_admin">
+                  <SuperAdminLayout />
+                </ProtectedRoute>
+              }
+            >
               <Route index element={<SuperAdminDashboardPage />} />
               <Route path="etablissements" element={<EtablissementManagementPage />} />
-              <Route path="etablissements/create" element={<CreateEtablissementPage />} />
               <Route path="etablissements/:id" element={<EtablissementDetailPage />} />
-              <Route path="import" element={<BulkImportPage />} />
               <Route path="annees" element={<AnneesUniversitairesPage />} />
               <Route path="jours-feries" element={<JoursFeriesPage />} />
-              <Route path="settings" element={<div className="text-center py-16 text-on-surface-variant">Paramètres globaux (à venir)</div>} />
+              <Route path="settings" element={<ParametresGlobauxPage />} />
+              {/* Même page que /profile (admin de faculté) : ProfilePage ne
+                  suppose aucun rôle particulier, et c'est elle qui active la
+                  2FA qu'exige RequireTwoFactorForSuperAdmin. Sans cette route,
+                  le lien « Profil » de la barre latérale, et la redirection de
+                  src/api/axios.js sur « two_factor_setup_required », renvoyaient
+                  vers /profile — gardée par role="faculte_admin" — qui
+                  rebondissait aussitôt sur /super-admin : un super admin sans
+                  2FA ne pouvait jamais l'activer, et le tableau de bord
+                  affichait silencieusement des statistiques à zéro. */}
+              <Route path="profile" element={<ProfilePage />} />
+              {/* Même bug que /profile ci-dessus, pour le lien « Aide » de la
+                  barre latérale : /help, /faq et /support/* sont gardées par
+                  role="faculte_admin", donc un super admin qui cliquait
+                  « Aide » rebondissait aussitôt sur /super-admin — aucune de
+                  ces pages ne suppose de rôle ni n'appelle de route backend
+                  restreinte à faculte_admin. */}
+              <Route path="help" element={<HelpCenterPage />} />
+              <Route path="help/category/:id" element={<HelpCenterDetailPage />} />
+              <Route path="help/article/:id" element={<KnowledgeBaseArticle />} />
+              <Route path="faq" element={<FAQPage />} />
+              <Route path="support/contact" element={<ContactFormPage />} />
+              <Route path="support/tickets" element={<TicketsListPage />} />
+              <Route path="support/tickets/:id" element={<TicketDetailPage />} />
+              {/* Sans elle, une adresse inconnue sous /super-admin tombait sur
+                  le * de l'espace faculté, gardé par role="faculte_admin". */}
+              <Route path="*" element={<NotFoundPage />} />
             </Route>
 
             {/* Page publique de validation, hors de toute coquille.
@@ -146,7 +175,14 @@ function App() {
             <Route path="/attendance/validate" element={<PresenceValidationPage />} />
 
             {/* Faculté Admin routes */}
-            <Route path="/" element={<ProtectedRoute role="faculte_admin"><MainLayout /></ProtectedRoute>}>
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute role="faculte_admin">
+                  <MainLayout />
+                </ProtectedRoute>
+              }
+            >
               <Route index element={<DashboardPage />} />
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="students" element={<StudentManagementPage />} />
@@ -202,7 +238,6 @@ function App() {
               <Route path="help/category/:id" element={<HelpCenterDetailPage />} />
               <Route path="help/article/:id" element={<KnowledgeBaseArticle />} />
               <Route path="faq" element={<FAQPage />} />
-              <Route path="faq/category/:id" element={<FAQDetailPage />} />
               <Route path="support/contact" element={<ContactFormPage />} />
               <Route path="support/tickets" element={<TicketsListPage />} />
               <Route path="support/tickets/:id" element={<TicketDetailPage />} />

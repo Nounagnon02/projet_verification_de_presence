@@ -1,18 +1,35 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-  FiFilter, FiLoader, FiRefreshCw, FiBarChart2, FiCalendar, FiUsers,
-  FiCheckCircle, FiAlertTriangle, FiDownload, FiFileText, FiChevronDown, FiChevronUp,
-  FiChevronLeft, FiChevronRight
+  FiFilter,
+  FiLoader,
+  FiRefreshCw,
+  FiBarChart2,
+  FiCalendar,
+  FiUsers,
+  FiCheckCircle,
+  FiAlertTriangle,
+  FiDownload,
+  FiFileText,
+  FiChevronDown,
+  FiChevronUp,
+  FiChevronLeft,
+  FiChevronRight,
 } from 'react-icons/fi';
 import { enregistrer, nomFichierServeur } from '../../utils/telechargement';
 import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 import BarChart from '../../components/charts/BarChart';
+import { classeTaux, couleurTaux, libelleTaux } from '../../utils/taux';
 import GaugeChart from '../../components/charts/GaugeChart';
 import { listerAnnees } from '../../api/resources/reference';
 import {
-  listerUes, rapportFiltre, rapportSemestre, rapportComparaisonSemestres, rapportFiliereStats,
-  exporterPresencesCsv, exporterRapportDepartementPdf,
+  listerUes,
+  rapportFiltre,
+  rapportSemestre,
+  rapportComparaisonSemestres,
+  rapportFiliereStats,
+  exporterPresencesCsv,
+  exporterRapportDepartementPdf,
 } from '../../api/resources/rapports';
 
 const TRIMESTRES = [
@@ -21,7 +38,6 @@ const TRIMESTRES = [
   { value: 3, label: 'T3 (Mar-Mai)' },
   { value: 4, label: 'T4 (Jun-Aoû)' },
 ];
-
 
 /**
  * En-tête de section repliable.
@@ -32,7 +48,7 @@ const TRIMESTRES = [
 const SectionToggle = ({ open, setOpen, title, badge }) => (
   <button
     onClick={() => setOpen(!open)}
-    className="flex items-center justify-between w-full px-4 py-2.5 bg-surface-container-high rounded-xl hover:bg-surface-container-higher transition-all text-sm font-bold text-primary"
+    className="flex items-center justify-between w-full px-4 py-2.5 bg-surface-container-high rounded-xl hover:bg-surface-container-highest transition-all text-sm font-bold text-primary"
   >
     <span>{title}</span>
     <span className="flex items-center gap-2 text-xs text-on-surface-variant font-normal">
@@ -113,7 +129,7 @@ export default function FilteredReportsPage() {
   // ECs de l'UE choisie : une valeur calculée, pas un état à synchroniser.
   const ecs = useMemo(() => {
     if (!ueId) return [];
-    return ues.find(u => String(u.id) === ueId)?.ecs || [];
+    return ues.find((u) => String(u.id) === ueId)?.ecs || [];
   }, [ueId, ues]);
 
   // L'EC sélectionné se remet à zéro quand l'UE change, sinon on garderait un EC
@@ -130,7 +146,7 @@ export default function FilteredReportsPage() {
   // Même raison un cran plus haut : changer d'année ou de filière peut retirer
   // l'UE choisie de la liste. La garder interrogerait le serveur sur une UE que
   // l'écran ne propose plus.
-  if (ueId && ues.length > 0 && !ues.some(u => String(u.id) === ueId)) {
+  if (ueId && ues.length > 0 && !ues.some((u) => String(u.id) === ueId)) {
     setUeId('');
   }
 
@@ -188,11 +204,16 @@ export default function FilteredReportsPage() {
             };
           } catch {
             return {
-              id: a.id, year: a.libelle || 'N/A',
-              rate: 0, students: 0, presences: 0, evenements: 0, active: a.active || false,
+              id: a.id,
+              year: a.libelle || 'N/A',
+              rate: 0,
+              students: 0,
+              presences: 0,
+              evenements: 0,
+              active: a.active || false,
             };
           }
-        })
+        }),
       );
     },
   });
@@ -247,7 +268,7 @@ export default function FilteredReportsPage() {
 
         case 'filiere-pdf':
           if (!filiereId) {
-            setExportError('Sélectionnez une filière avant d\'exporter son rapport.');
+            setExportError("Sélectionnez une filière avant d'exporter son rapport.");
             return;
           }
           filename = `rapport_filiere_${Date.now()}.pdf`;
@@ -262,7 +283,7 @@ export default function FilteredReportsPage() {
       // Le nom donné par le serveur résume les filtres ; le nom local n'est qu'un repli.
       enregistrer(blobData, nomFichierServeur(headers, filename));
     } catch {
-      setExportError('L\'export a échoué. Réessayez dans un instant.');
+      setExportError("L'export a échoué. Réessayez dans un instant.");
     } finally {
       setExporting(null);
     }
@@ -278,28 +299,38 @@ export default function FilteredReportsPage() {
   const uePaginated = statsParUe.slice((uePage - 1) * UE_PER_PAGE, uePage * UE_PER_PAGE);
 
   // Évolution hebdomadaire du taux (voir ReportController::filteredStats).
-  const chartData = evolution.map(s => ({
+  const chartData = evolution.map((s) => ({
     label: typeof s.semaine === 'string' ? `${s.semaine.slice(8, 10)}/${s.semaine.slice(5, 7)}` : '',
     value: s.taux ?? 0,
   }));
 
-  const ueChartData = statsParUe.map(ue => ({
+  const ueChartData = statsParUe.map((ue) => ({
     label: ue.code || '',
     value: ue.taux || 0,
     name: ue.intitule || '',
   }));
 
   const resetFilters = () => {
-    setFiliereId(''); setAnneeId(''); setSemestre('');
-    setTrimestre(''); setUeId(''); setEcId('');
-    setJours(30); setDateDebut(''); setDateFin('');
+    setFiliereId('');
+    setAnneeId('');
+    setSemestre('');
+    setTrimestre('');
+    setUeId('');
+    setEcId('');
+    setJours(30);
+    setDateDebut('');
+    setDateFin('');
     setUePage(1);
   };
 
   //Composant toggle pour une section
 
   if (initialLoading) {
-    return <div className="flex justify-center p-16"><FiLoader className="animate-spin text-primary w-8 h-8" /></div>;
+    return (
+      <div className="flex justify-center p-16">
+        <FiLoader className="animate-spin text-primary w-8 h-8" />
+      </div>
+    );
   }
 
   return (
@@ -308,19 +339,22 @@ export default function FilteredReportsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-primary font-headline">Rapports de Présence</h1>
-          <p className="text-sm text-on-surface-variant">
-            Analyse, filtres, exports et comparaisons des présences
-          </p>
+          <p className="text-sm text-on-surface-variant">Analyse, filtres, exports et comparaisons des présences</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={resetFilters}
-            className="px-3 py-2 text-xs font-semibold text-on-surface-variant bg-surface-container-high rounded-xl hover:bg-surface-container-higher transition-all">
+          <button
+            onClick={resetFilters}
+            className="px-3 py-2 text-xs font-semibold text-on-surface-variant bg-surface-container-high rounded-xl hover:bg-surface-container-highest transition-all"
+          >
             Réinitialiser
           </button>
           <button
-            onClick={() => setAppliedFiltres((prev) => ({ params: construireParamsFiltres(), version: prev.version + 1 }))}
+            onClick={() =>
+              setAppliedFiltres((prev) => ({ params: construireParamsFiltres(), version: prev.version + 1 }))
+            }
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-xl text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-50">
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-xl text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-50"
+          >
             {loading ? <FiLoader className="animate-spin" /> : <FiRefreshCw />}
             Appliquer
           </button>
@@ -335,76 +369,188 @@ export default function FilteredReportsPage() {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-2.5">
           <div>
-            <label htmlFor="rapport-filtre-filiere" className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Filière</label>
-            <select id="rapport-filtre-filiere" value={filiereId} onChange={e => setFiliereId(e.target.value)}
+            <label
+              htmlFor="rapport-filtre-filiere"
+              className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5"
+            >
+              Filière
+            </label>
+            <select
+              id="rapport-filtre-filiere"
+              value={filiereId}
+              onChange={(e) => setFiliereId(e.target.value)}
               disabled={filtres.anneeVide}
-              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface disabled:opacity-40">
+              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface disabled:opacity-40"
+            >
               <option value="">{filtres.anneeVide ? 'Aucune' : 'Toutes'}</option>
-              {filieres.map(f => <option key={f.id} value={f.id}>{f.code}</option>)}
+              {filieres.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.code}
+                </option>
+              ))}
             </select>
           </div>
           <div>
-            <label htmlFor="rapport-filtre-annee" className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Année</label>
-            <select id="rapport-filtre-annee" value={anneeId} onChange={e => setAnneeId(e.target.value)}
-              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface">
+            <label
+              htmlFor="rapport-filtre-annee"
+              className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5"
+            >
+              Année
+            </label>
+            <select
+              id="rapport-filtre-annee"
+              value={anneeId}
+              onChange={(e) => setAnneeId(e.target.value)}
+              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface"
+            >
               <option value="">Toutes</option>
-              {annees.map(a => <option key={a.id} value={a.id}>{a.libelle}</option>)}
+              {annees.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.libelle}
+                </option>
+              ))}
             </select>
           </div>
           <div>
-            <label htmlFor="rapport-filtre-semestre" className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Semestre</label>
-            <select id="rapport-filtre-semestre" value={semestre} onChange={e => setSemestre(e.target.value)}
-              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface">
+            <label
+              htmlFor="rapport-filtre-semestre"
+              className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5"
+            >
+              Semestre
+            </label>
+            <select
+              id="rapport-filtre-semestre"
+              value={semestre}
+              onChange={(e) => setSemestre(e.target.value)}
+              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface"
+            >
               <option value="">Tous</option>
-              {filtres.semestres.map(s => <option key={s} value={s}>S{s}</option>)}
+              {filtres.semestres.map((s) => (
+                <option key={s} value={s}>
+                  S{s}
+                </option>
+              ))}
             </select>
           </div>
           <div>
-            <label htmlFor="rapport-filtre-trimestre" className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Trimestre</label>
-            <select id="rapport-filtre-trimestre" value={trimestre} onChange={e => setTrimestre(e.target.value)}
-              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface">
+            <label
+              htmlFor="rapport-filtre-trimestre"
+              className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5"
+            >
+              Trimestre
+            </label>
+            <select
+              id="rapport-filtre-trimestre"
+              value={trimestre}
+              onChange={(e) => setTrimestre(e.target.value)}
+              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface"
+            >
               <option value="">Tous</option>
-              {TRIMESTRES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              {TRIMESTRES.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
             </select>
           </div>
           <div>
-            <label htmlFor="rapport-filtre-ue" className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">UE</label>
-            <select id="rapport-filtre-ue" value={ueId} onChange={e => setUeId(e.target.value)}
-              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface">
+            <label
+              htmlFor="rapport-filtre-ue"
+              className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5"
+            >
+              UE
+            </label>
+            <select
+              id="rapport-filtre-ue"
+              value={ueId}
+              onChange={(e) => setUeId(e.target.value)}
+              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface"
+            >
               <option value="">Toutes</option>
-              {ues.map(u => <option key={u.id} value={u.id}>{u.code}</option>)}
+              {ues.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.code}
+                </option>
+              ))}
             </select>
           </div>
           <div>
-            <label htmlFor="rapport-filtre-ec" className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">EC</label>
-            <select id="rapport-filtre-ec" value={ecId} onChange={e => setEcId(e.target.value)} disabled={!ueId}
-              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface disabled:opacity-40">
+            <label
+              htmlFor="rapport-filtre-ec"
+              className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5"
+            >
+              EC
+            </label>
+            <select
+              id="rapport-filtre-ec"
+              value={ecId}
+              onChange={(e) => setEcId(e.target.value)}
+              disabled={!ueId}
+              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface disabled:opacity-40"
+            >
               <option value="">Tous</option>
-              {ecs.map(e => <option key={e.id} value={e.id}>{e.code || e.intitule}</option>)}
+              {ecs.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.code || e.intitule}
+                </option>
+              ))}
             </select>
           </div>
           <div>
-            <label htmlFor="rapport-filtre-jours" className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Jours</label>
-            <input id="rapport-filtre-jours" type="number" min="1" max="365" value={jours}
-              onChange={e => setJours(Math.max(1, parseInt(e.target.value) || 30))}
-              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface" />
+            <label
+              htmlFor="rapport-filtre-jours"
+              className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5"
+            >
+              Jours
+            </label>
+            <input
+              id="rapport-filtre-jours"
+              type="number"
+              min="1"
+              max="365"
+              value={jours}
+              onChange={(e) => setJours(Math.max(1, parseInt(e.target.value) || 30))}
+              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface"
+            />
           </div>
           <div>
-            <label htmlFor="rapport-filtre-du" className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Du</label>
-            <input id="rapport-filtre-du" type="date" value={dateDebut} onChange={e => setDateDebut(e.target.value)}
-              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface" />
+            <label
+              htmlFor="rapport-filtre-du"
+              className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5"
+            >
+              Du
+            </label>
+            <input
+              id="rapport-filtre-du"
+              type="date"
+              value={dateDebut}
+              onChange={(e) => setDateDebut(e.target.value)}
+              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface"
+            />
           </div>
           <div>
-            <label htmlFor="rapport-filtre-au" className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5">Au</label>
-            <input id="rapport-filtre-au" type="date" value={dateFin} onChange={e => setDateFin(e.target.value)}
-              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface" />
+            <label
+              htmlFor="rapport-filtre-au"
+              className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant block mb-0.5"
+            >
+              Au
+            </label>
+            <input
+              id="rapport-filtre-au"
+              type="date"
+              value={dateFin}
+              onChange={(e) => setDateFin(e.target.value)}
+              className="w-full px-2 py-1.5 bg-surface-container-high rounded-lg border-b-2 border-transparent focus:border-primary text-xs focus:outline-none text-on-surface"
+            />
           </div>
         </div>
       </div>
 
       {/* ==Loading / No data ==*/}
       {loading ? (
-        <div className="flex justify-center p-16"><FiLoader className="animate-spin text-primary w-8 h-8" /></div>
+        <div className="flex justify-center p-16">
+          <FiLoader className="animate-spin text-primary w-8 h-8" />
+        </div>
       ) : !data ? (
         <div className="text-center py-16 text-on-surface-variant bg-surface-container-lowest rounded-2xl border border-outline-variant/10 mb-6">
           <FiBarChart2 className="mx-auto text-4xl mb-3 opacity-40" />
@@ -412,30 +558,46 @@ export default function FilteredReportsPage() {
         </div>
       ) : (
         <>
-
           {/* ==KPIs ==*/}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10">
-              <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider mb-1">Taux Global</p>
-              <p className="text-2xl font-bold font-headline" style={{ color: d.taux_global >= 80 ? '#2E7D32' : d.taux_global >= 50 ? '#A65207' : '#C62828' }}>
-                {d.taux_global ?? '—'}%
+              <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider mb-1">
+                Taux Global
+              </p>
+              <p className="text-2xl font-bold font-headline" style={{ color: couleurTaux(d.taux_global) }}>
+                {/* « —% » et un rouge d'alerte s'affichaient quand aucun taux n'existait. */}
+                {libelleTaux(d.taux_global)}
               </p>
             </div>
             <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10">
-              <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider mb-1"><FiUsers className="inline mr-1" />Présences</p>
+              <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider mb-1">
+                <FiUsers className="inline mr-1" />
+                Présences
+              </p>
               <p className="text-2xl font-bold font-headline text-primary">{d.total_presences ?? '—'}</p>
             </div>
             <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10">
-              <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider mb-1"><FiCalendar className="inline mr-1" />Séances</p>
+              <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider mb-1">
+                <FiCalendar className="inline mr-1" />
+                Séances
+              </p>
               <p className="text-2xl font-bold font-headline text-primary">{d.total_evenements ?? '—'}</p>
             </div>
             <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10">
-              <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider mb-1"><FiCheckCircle className="inline mr-1" />Valides</p>
+              <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider mb-1">
+                <FiCheckCircle className="inline mr-1" />
+                Valides
+              </p>
               <p className="text-2xl font-bold font-headline text-success">{d.presences_valides ?? '—'}</p>
             </div>
             <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10">
-              <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider mb-1"><FiAlertTriangle className="inline mr-1" />Suspectes</p>
-              <p className="text-2xl font-bold font-headline" style={{ color: (d.presences_suspectes || 0) > 0 ? '#C62828' : '#2E7D32' }}>
+              <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider mb-1">
+                <FiAlertTriangle className="inline mr-1" />
+                Suspectes
+              </p>
+              <p
+                className={`text-2xl font-bold font-headline ${(d.presences_suspectes || 0) > 0 ? 'text-statut-erreur' : 'text-statut-succes'}`}
+              >
                 {d.presences_suspectes ?? 0}
               </p>
             </div>
@@ -448,12 +610,18 @@ export default function FilteredReportsPage() {
               <span className="text-sm font-bold text-primary">Exports</span>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button onClick={() => exportReport('presences-csv')} disabled={exporting}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-success/10 text-success rounded-lg text-xs font-semibold hover:bg-success/20 transition-all disabled:opacity-50">
+              <button
+                onClick={() => exportReport('presences-csv')}
+                disabled={exporting}
+                className="flex items-center gap-1.5 px-3 py-2 bg-statut-succes-fond text-statut-succes rounded-lg text-xs font-semibold hover:bg-statut-succes/15 transition-all disabled:opacity-50"
+              >
                 <FiFileText /> {exporting === 'presences-csv' ? '...' : 'Liste Présences CSV'}
               </button>
-              <button onClick={() => exportReport('filiere-pdf')} disabled={exporting || !filiereId}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-warning/10 text-warning rounded-lg text-xs font-semibold hover:bg-warning/20 transition-all disabled:opacity-50">
+              <button
+                onClick={() => exportReport('filiere-pdf')}
+                disabled={exporting || !filiereId}
+                className="flex items-center gap-1.5 px-3 py-2 bg-statut-alerte-fond text-statut-alerte rounded-lg text-xs font-semibold hover:bg-statut-alerte/15 transition-all disabled:opacity-50"
+              >
                 <FiFileText /> {exporting === 'filiere-pdf' ? '...' : 'Rapport Filière PDF'}
               </button>
             </div>
@@ -462,9 +630,7 @@ export default function FilteredReportsPage() {
                 Le rapport PDF porte sur une filière : sélectionnez-en une dans les filtres.
               </p>
             )}
-            {exportError && (
-              <p className="text-xs text-error font-medium mt-2">{exportError}</p>
-            )}
+            {exportError && <p className="text-xs text-statut-erreur font-medium mt-2">{exportError}</p>}
           </div>
 
           {/* ==Graphiques ==*/}
@@ -475,7 +641,9 @@ export default function FilteredReportsPage() {
               {chartData.length > 0 ? (
                 <BarChart data={chartData.slice(-Math.min(jours, 60))} bars="value" height={180} />
               ) : (
-                <div className="h-[180px] flex items-center justify-center text-on-surface-variant text-sm">Aucune donnée</div>
+                <div className="h-[180px] flex items-center justify-center text-on-surface-variant text-sm">
+                  Aucune donnée
+                </div>
               )}
             </div>
             <div className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10">
@@ -483,7 +651,9 @@ export default function FilteredReportsPage() {
               {ueChartData.length > 0 ? (
                 <BarChart data={ueChartData} bars="value" height={180} />
               ) : (
-                <div className="h-[180px] flex items-center justify-center text-on-surface-variant text-sm">Aucune UE</div>
+                <div className="h-[180px] flex items-center justify-center text-on-surface-variant text-sm">
+                  Aucune UE
+                </div>
               )}
             </div>
           </div>
@@ -502,10 +672,12 @@ export default function FilteredReportsPage() {
               <div className="p-4 border-b border-outline-variant/10 flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-bold font-headline text-primary">Détail par UE</h2>
-                  <p className="text-[10px] text-on-surface-variant mt-0.5">{statsParUe.length} UE{statsParUe.length > 1 ? 's' : ''}</p>
+                  <p className="text-[10px] text-on-surface-variant mt-0.5">
+                    {statsParUe.length} UE{statsParUe.length > 1 ? 's' : ''}
+                  </p>
                 </div>
               </div>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Détail par UE">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-xs text-on-surface-variant uppercase tracking-wider">
@@ -519,13 +691,16 @@ export default function FilteredReportsPage() {
                   </thead>
                   <tbody>
                     {uePaginated.map((ue, i) => (
-                      <tr key={i} className="border-b last:border-0 hover:bg-surface-container-low/50 transition-colors">
+                      <tr
+                        key={i}
+                        className="border-b last:border-0 hover:bg-surface-container-low/50 transition-colors"
+                      >
                         <td className="p-3 font-mono text-xs">{ue.code}</td>
                         <td className="p-3">{ue.intitule}</td>
                         <td className="p-3 text-right text-on-surface-variant">S{ue.semestre}</td>
                         <td className="p-3 text-right">{ue.total_evenements}</td>
                         <td className="p-3 text-right">{ue.total_presences}</td>
-                        <td className="p-3 text-right font-bold" style={{ color: ue.taux >= 80 ? '#2E7D32' : ue.taux >= 50 ? '#A65207' : '#C62828' }}>
+                        <td className="p-3 text-right font-bold" style={{ color: couleurTaux(ue.taux) }}>
                           {ue.taux}%
                         </td>
                       </tr>
@@ -540,24 +715,39 @@ export default function FilteredReportsPage() {
                     Page {uePage} / {ueTotalPages} ({statsParUe.length} UE{statsParUe.length > 1 ? 's' : ''})
                   </p>
                   <div className="flex items-center gap-1">
-                    <button onClick={() => setUePage(p => Math.max(1, p - 1))} disabled={uePage <= 1}
-                      className="p-1.5 text-outline hover:text-primary hover:bg-primary/10 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed">
-                      <FiChevronLeft size={16} />
+                    <button
+                      type="button"
+                      onClick={() => setUePage((p) => Math.max(1, p - 1))}
+                      disabled={uePage <= 1}
+                      aria-label="Page précédente"
+                      className="p-2 text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <FiChevronLeft size={16} aria-hidden="true" />
                     </button>
                     {Array.from({ length: Math.min(ueTotalPages, 5) }, (_, i) => {
                       const start = Math.max(1, Math.min(uePage - 2, ueTotalPages - 4));
                       const page = start + i;
                       if (page > ueTotalPages) return null;
                       return (
-                        <button key={page} onClick={() => setUePage(page)}
-                          className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${page === uePage ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container-high'}`}>
+                        <button
+                          type="button"
+                          key={page}
+                          onClick={() => setUePage(page)}
+                          aria-current={page === uePage ? 'page' : undefined}
+                          className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${page === uePage ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container-high'}`}
+                        >
                           {page}
                         </button>
                       );
                     })}
-                    <button onClick={() => setUePage(p => Math.min(ueTotalPages, p + 1))} disabled={uePage >= ueTotalPages}
-                      className="p-1.5 text-outline hover:text-primary hover:bg-primary/10 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed">
-                      <FiChevronRight size={16} />
+                    <button
+                      type="button"
+                      onClick={() => setUePage((p) => Math.min(ueTotalPages, p + 1))}
+                      disabled={uePage >= ueTotalPages}
+                      aria-label="Page suivante"
+                      className="p-2 text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <FiChevronRight size={16} aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -572,25 +762,40 @@ export default function FilteredReportsPage() {
       {/*  */}
 
       <div className="space-y-3 mt-4">
-
         {/*Comparaison Semestrielle*/}
-        <SectionToggle open={showSemComp} setOpen={setShowSemComp} title="Comparaison Semestrielle"
-          badge={semComp?.semestres?.length ? `${semComp.semestres.length} semestres` : ''} />
+        <SectionToggle
+          open={showSemComp}
+          setOpen={setShowSemComp}
+          title="Comparaison Semestrielle"
+          badge={semComp?.semestres?.length ? `${semComp.semestres.length} semestres` : ''}
+        />
         {showSemComp && (
           <div className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10">
             {!filiereId || !anneeId ? (
-              <p className="text-on-surface-variant text-sm">Sélectionnez une filière et une année dans les filtres pour voir la comparaison.</p>
+              <p className="text-on-surface-variant text-sm">
+                Sélectionnez une filière et une année dans les filtres pour voir la comparaison.
+              </p>
             ) : loadingSem ? (
-              <div className="flex justify-center p-6"><FiLoader className="animate-spin text-primary w-6 h-6" /></div>
+              <div className="flex justify-center p-6">
+                <FiLoader className="animate-spin text-primary w-6 h-6" />
+              </div>
             ) : semComp?.semestres?.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <BarChart data={semComp.semestres.map(s => ({ label: s.label, value: s.taux }))} bars="value" height={200} />
+                <BarChart
+                  data={semComp.semestres.map((s) => ({ label: s.label, value: s.taux }))}
+                  bars="value"
+                  height={200}
+                />
                 <div className="space-y-2">
-                  {semComp.semestres.map(s => (
-                    <div key={s.semestre} className="flex items-center justify-between p-2.5 bg-surface-container-high rounded-lg">
+                  {semComp.semestres.map((s) => (
+                    <div
+                      key={s.semestre}
+                      className="flex items-center justify-between p-2.5 bg-surface-container-high rounded-lg"
+                    >
                       <span className="font-bold text-primary text-sm">{s.label}</span>
-                      <span className={`font-bold ${s.taux >= 80 ? 'text-success' : s.taux >= 50 ? 'text-warning' : 'text-error'}`}>
-                        {s.taux}% <span className="text-xs text-on-surface-variant font-normal">({s.total_presences} prés.)</span>
+                      <span className={`font-bold ${classeTaux(s.taux)}`}>
+                        {s.taux}%{' '}
+                        <span className="text-xs text-on-surface-variant font-normal">({s.total_presences} prés.)</span>
                       </span>
                     </div>
                   ))}
@@ -603,16 +808,24 @@ export default function FilteredReportsPage() {
         )}
 
         {/*Comparaison Filières*/}
-        <SectionToggle open={showFiliereComp} setOpen={setShowFiliereComp} title="Comparaison Filières (classement)"
-          badge={filiereStats?.length ? `${filiereStats.length} filières` : ''} />
+        <SectionToggle
+          open={showFiliereComp}
+          setOpen={setShowFiliereComp}
+          title="Comparaison Filières (classement)"
+          badge={filiereStats?.length ? `${filiereStats.length} filières` : ''}
+        />
         {showFiliereComp && (
           <div className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10">
             {!anneeId ? (
-              <p className="text-on-surface-variant text-sm">Sélectionnez une année dans les filtres pour voir le classement.</p>
+              <p className="text-on-surface-variant text-sm">
+                Sélectionnez une année dans les filtres pour voir le classement.
+              </p>
             ) : loadingFiliere ? (
-              <div className="flex justify-center p-6"><FiLoader className="animate-spin text-primary w-6 h-6" /></div>
+              <div className="flex justify-center p-6">
+                <FiLoader className="animate-spin text-primary w-6 h-6" />
+              </div>
             ) : filiereStats?.length > 0 ? (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Classement des filières">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-xs text-on-surface-variant uppercase tracking-wider">
@@ -627,13 +840,15 @@ export default function FilteredReportsPage() {
                     {filiereStats.map((f, i) => (
                       <tr key={i} className="border-b last:border-0 hover:bg-surface-container-low/50 transition-all">
                         <td className="p-2">
-                          <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${i === 0 ? 'bg-success/20 text-success' : i < 3 ? 'bg-primary/20 text-primary' : 'bg-surface-container-high text-on-surface-variant'}`}>
+                          <span
+                            className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${i === 0 ? 'bg-statut-succes-fond text-statut-succes' : i < 3 ? 'bg-primary/20 text-primary' : 'bg-surface-container-high text-on-surface-variant'}`}
+                          >
                             #{f.rank}
                           </span>
                         </td>
                         <td className="p-2 font-medium">{f.intitule || f.code}</td>
                         <td className="p-2 text-right text-on-surface-variant">{f.niveau}</td>
-                        <td className="p-2 text-right font-bold" style={{ color: f.taux >= 80 ? '#2E7D32' : f.taux >= 50 ? '#A65207' : '#C62828' }}>
+                        <td className="p-2 text-right font-bold" style={{ color: couleurTaux(f.taux) }}>
                           {f.taux}%
                         </td>
                         <td className="p-2 text-right text-on-surface-variant">{f.total_presences}</td>
@@ -649,35 +864,53 @@ export default function FilteredReportsPage() {
         )}
 
         {/*Comparaison Années*/}
-        <SectionToggle open={showYearComp} setOpen={setShowYearComp} title="Comparaison Années Académiques"
-          badge={yearStats?.filter(y => y.rate > 0).length ? `${yearStats.filter(y => y.rate > 0).length} années` : ''} />
+        <SectionToggle
+          open={showYearComp}
+          setOpen={setShowYearComp}
+          title="Comparaison Années Académiques"
+          badge={
+            yearStats?.filter((y) => y.rate > 0).length ? `${yearStats.filter((y) => y.rate > 0).length} années` : ''
+          }
+        />
         {showYearComp && (
           <div className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10">
             {loadingYear ? (
-              <div className="flex justify-center p-6"><FiLoader className="animate-spin text-primary w-6 h-6" /></div>
-            ) : yearStats?.filter(y => y.rate > 0).length > 0 ? (
+              <div className="flex justify-center p-6">
+                <FiLoader className="animate-spin text-primary w-6 h-6" />
+              </div>
+            ) : yearStats?.filter((y) => y.rate > 0).length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Taux par Année</h3>
-                  <BarChart data={yearStats.filter(y => y.rate > 0).map(y => ({ label: y.year, value: y.rate }))} bars="value" height={200} />
+                  <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">
+                    Taux par Année
+                  </h3>
+                  <BarChart
+                    data={yearStats.filter((y) => y.rate > 0).map((y) => ({ label: y.year, value: y.rate }))}
+                    bars="value"
+                    height={200}
+                  />
                 </div>
                 <div className="space-y-2">
-                  {yearStats.filter(y => y.rate > 0).map((y, i) => (
-                    <div key={i} className="flex items-center justify-between p-2.5 bg-surface-container-high rounded-lg">
-                      <span className="font-bold text-primary text-sm">{y.year}</span>
-                      <span className={`font-bold ${y.rate >= 80 ? 'text-success' : y.rate >= 50 ? 'text-warning' : 'text-error'}`}>
-                        {y.rate}%
-                      </span>
-                    </div>
-                  ))}
+                  {yearStats
+                    .filter((y) => y.rate > 0)
+                    .map((y, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between p-2.5 bg-surface-container-high rounded-lg"
+                      >
+                        <span className="font-bold text-primary text-sm">{y.year}</span>
+                        <span className={`font-bold ${classeTaux(y.rate)}`}>{y.rate}%</span>
+                      </div>
+                    ))}
                 </div>
               </div>
             ) : (
-              <p className="text-on-surface-variant text-sm">Les données de présence ne sont disponibles que pour l'année active.</p>
+              <p className="text-on-surface-variant text-sm">
+                Les données de présence ne sont disponibles que pour l'année active.
+              </p>
             )}
           </div>
         )}
-
       </div>
     </div>
   );

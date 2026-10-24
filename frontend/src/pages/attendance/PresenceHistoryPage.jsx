@@ -10,7 +10,6 @@ import { listerHistoriquePresences, exporterHistoriquePresences } from '../../ap
 import { enregistrer, nomFichierServeur } from '../../utils/telechargement';
 import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 
-
 const PresenceHistoryPage = () => {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
@@ -47,7 +46,19 @@ const PresenceHistoryPage = () => {
     params.tri = tri.champ;
     params.sens = tri.sens;
     return params;
-  }, [page, search, filter, filtres.annee, filtres.filiere, filtres.niveau, filtres.semestre, dateDebut, dateFin, tri.champ, tri.sens]);
+  }, [
+    page,
+    search,
+    filter,
+    filtres.annee,
+    filtres.filiere,
+    filtres.niveau,
+    filtres.semestre,
+    dateDebut,
+    dateFin,
+    tri.champ,
+    tri.sens,
+  ]);
 
   const historiqueQuery = useQuery({
     queryKey: ['historique-presences', parametresListe],
@@ -69,7 +80,8 @@ const PresenceHistoryPage = () => {
     setPage(1);
   };
 
-  const hasActiveFilters = filtres.annee || filtres.filiere || filtres.niveau || filtres.semestre || dateDebut || dateFin;
+  const hasActiveFilters =
+    filtres.annee || filtres.filiere || filtres.niveau || filtres.semestre || dateDebut || dateFin;
 
   // Fermer le menu d'export si on clique ailleurs
   useEffect(() => {
@@ -112,7 +124,13 @@ const PresenceHistoryPage = () => {
     }
   };
 
-  const badgeVariant = { valide: 'success', suspect: 'warning', rejete: 'error', absent: 'error', en_retard: 'warning' };
+  const badgeVariant = {
+    valide: 'success',
+    suspect: 'warning',
+    rejete: 'error',
+    absent: 'error',
+    en_retard: 'warning',
+  };
   const badgeLabel = { valide: 'Présent', suspect: 'Suspect', rejete: 'Rejeté', absent: 'Absent', en_retard: 'Retard' };
 
   // Colonne -> critère de tri accepté par le serveur. Les en-têtes affichaient
@@ -133,23 +151,42 @@ const PresenceHistoryPage = () => {
       key: 'etudiant',
       label: 'Étudiant',
       sortable: true,
-      render: (val) => val ? `${val.prenom || ''} ${val.nom || ''}`.trim() || '—' : '—',
+      render: (val) => (val ? `${val.prenom || ''} ${val.nom || ''}`.trim() || '—' : '—'),
     },
-    { key: 'matricule', label: 'Matricule', className: 'hidden md:table-cell',
-      render: (_, row) => row.etudiant?.matricule || '—' },
-    { key: 'evenement', label: 'Cours', sortable: true,
+    {
+      key: 'matricule',
+      label: 'Matricule',
+      className: 'hidden md:table-cell',
+      render: (_, row) => row.etudiant?.matricule || '—',
+    },
+    {
+      key: 'evenement',
+      label: 'Cours',
+      sortable: true,
       render: (val) => (
         <div>
           <p>{val?.cours || '—'}</p>
           {val?.heure_debut && val?.heure_fin && (
-            <p className="text-[11px] text-on-surface-variant">Séance {val.heure_debut} – {val.heure_fin}</p>
+            <p className="text-[11px] text-on-surface-variant">
+              Séance {val.heure_debut} – {val.heure_fin}
+            </p>
           )}
         </div>
-      ) },
-    { key: 'date', label: 'Date', className: 'hidden lg:table-cell', sortable: true,
-      render: (_, row) => formaterDate(row.heure_scan?.split(' ')[0] || row.evenement?.date) },
-    { key: 'heure', label: 'Heure', className: 'hidden sm:table-cell',
-      render: (_, row) => row.heure_scan?.split(' ')[1]?.slice(0, 5) || '—' },
+      ),
+    },
+    {
+      key: 'date',
+      label: 'Date',
+      className: 'hidden lg:table-cell',
+      sortable: true,
+      render: (_, row) => formaterDate(row.heure_scan?.split(' ')[0] || row.evenement?.date),
+    },
+    {
+      key: 'heure',
+      label: 'Heure',
+      className: 'hidden sm:table-cell',
+      render: (_, row) => row.heure_scan?.split(' ')[1]?.slice(0, 5) || '—',
+    },
     {
       key: 'statut',
       label: 'Statut',
@@ -164,13 +201,17 @@ const PresenceHistoryPage = () => {
         <div className="min-w-[140px] max-w-[220px]">
           <p className="text-xs text-on-surface">{val?.libelle || 'Scan'}</p>
           {val?.decide_par && <p className="text-[11px] text-on-surface-variant">par {val.decide_par}</p>}
-          {val?.motif && <p className="text-[11px] text-on-surface-variant italic truncate" title={val.motif}>« {val.motif} »</p>}
+          {val?.motif && (
+            <p className="text-[11px] text-on-surface-variant italic truncate" title={val.motif}>
+              « {val.motif} »
+            </p>
+          )}
         </div>
       ),
     },
   ];
 
-  const mappedRecords = records.map(r => ({
+  const mappedRecords = records.map((r) => ({
     ...r,
     matricule: r.etudiant?.matricule,
     date: r.heure_scan?.split(' ')[0] || r.evenement?.date,
@@ -186,39 +227,47 @@ const PresenceHistoryPage = () => {
         </div>
         <div ref={exportRef} className="relative">
           <button
-            onClick={() => setExportMenuOpen(prev => !prev)}
+            onClick={() => setExportMenuOpen((prev) => !prev)}
             disabled={exporting}
             className="flex items-center gap-2 px-4 py-2 bg-surface-container-low rounded-xl text-sm text-on-surface-variant hover:bg-surface-container-high transition-colors disabled:opacity-50"
           >
-            {exporting ? (
-              <FiRefreshCw className="animate-spin" size={16} />
-            ) : (
-              <FiDownload size={16} />
-            )}
+            {exporting ? <FiRefreshCw className="animate-spin" size={16} /> : <FiDownload size={16} />}
             {exporting ? 'Export en cours...' : 'Exporter'}
             <FiChevronDown size={14} className={`transition-transform ${exportMenuOpen ? 'rotate-180' : ''}`} />
           </button>
           {exportMenuOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant/10 overflow-hidden z-50">
-              <button onClick={() => handleExport('csv')}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-high transition-colors text-left">
-                <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">CSV</span>
+              <button
+                onClick={() => handleExport('csv')}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-high transition-colors text-left"
+              >
+                <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
+                  CSV
+                </span>
                 <div>
                   <p className="font-medium">Fichier CSV</p>
                   <p className="text-[10px] text-on-surface-variant">Tableur (texte)</p>
                 </div>
               </button>
-              <button onClick={() => handleExport('xlsx')}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-high transition-colors text-left border-t border-outline-variant/5">
-                <span className="w-7 h-7 rounded-lg bg-success-container text-on-success-container flex items-center justify-center text-xs font-bold">XLSX</span>
+              <button
+                onClick={() => handleExport('xlsx')}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-high transition-colors text-left border-t border-outline-variant/5"
+              >
+                <span className="w-7 h-7 rounded-lg bg-success-container text-on-success-container flex items-center justify-center text-xs font-bold">
+                  XLSX
+                </span>
                 <div>
                   <p className="font-medium">Fichier Excel</p>
                   <p className="text-[10px] text-on-surface-variant">Tableur (formaté)</p>
                 </div>
               </button>
-              <button onClick={() => handleExport('pdf')}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-high transition-colors text-left border-t border-outline-variant/5">
-                <span className="w-7 h-7 rounded-lg bg-error/10 text-error flex items-center justify-center text-xs font-bold">PDF</span>
+              <button
+                onClick={() => handleExport('pdf')}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-high transition-colors text-left border-t border-outline-variant/5"
+              >
+                <span className="w-7 h-7 rounded-lg bg-statut-erreur-fond text-statut-erreur flex items-center justify-center text-xs font-bold">
+                  PDF
+                </span>
                 <div>
                   <p className="font-medium">Fichier PDF</p>
                   <p className="text-[10px] text-on-surface-variant">Document imprimable</p>
@@ -233,51 +282,134 @@ const PresenceHistoryPage = () => {
       <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/10 mb-4">
         <div className="flex flex-wrap items-end gap-4">
           <div className="space-y-1 min-w-[160px] flex-1">
-            <label htmlFor="historique-annee" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Année académique</label>
-            <select id="historique-annee" value={filtres.annee} onChange={e => filtres.setAnnee(e.target.value)}
-              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20">
+            <label
+              htmlFor="historique-annee"
+              className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Année académique
+            </label>
+            <select
+              id="historique-annee"
+              value={filtres.annee}
+              onChange={(e) => filtres.setAnnee(e.target.value)}
+              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
               <option value="">Toutes</option>
-              {annees.map(a => <option key={a.id} value={a.id}>{a.libelle}</option>)}
+              {annees.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.libelle}
+                </option>
+              ))}
             </select>
           </div>
           <div className="space-y-1 min-w-[160px] flex-1">
-            <label htmlFor="historique-filiere" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Filière</label>
-            <select id="historique-filiere" value={filtres.filiere} onChange={e => filtres.setFiliere(e.target.value)}
-              disabled={filtres.anneeVide} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
+            <label
+              htmlFor="historique-filiere"
+              className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Filière
+            </label>
+            <select
+              id="historique-filiere"
+              value={filtres.filiere}
+              onChange={(e) => filtres.setFiliere(e.target.value)}
+              disabled={filtres.anneeVide}
+              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <option value="">{filtres.anneeVide ? 'Aucune filière cette année' : 'Toutes'}</option>
-              {filieres.map(f => <option key={f.id} value={f.id}>{f.code}</option>)}
+              {filieres.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.code}
+                </option>
+              ))}
             </select>
           </div>
           <div className="space-y-1 min-w-[140px] flex-1">
-            <label htmlFor="historique-niveau" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Niveau</label>
-            <select id="historique-niveau" value={filtres.niveau} onChange={e => filtres.setNiveau(e.target.value)}
-              disabled={filtres.niveaux.length === 0} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
+            <label
+              htmlFor="historique-niveau"
+              className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Niveau
+            </label>
+            <select
+              id="historique-niveau"
+              value={filtres.niveau}
+              onChange={(e) => filtres.setNiveau(e.target.value)}
+              disabled={filtres.niveaux.length === 0}
+              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <option value="">Tous</option>
-              {filtres.niveaux.map(n => <option key={n} value={n}>{n}</option>)}
+              {filtres.niveaux.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
             </select>
           </div>
           <div className="space-y-1 min-w-[140px] flex-1">
-            <label htmlFor="historique-semestre" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Semestre</label>
-            <select id="historique-semestre" value={filtres.semestre} onChange={e => filtres.setSemestre(e.target.value)}
-              disabled={filtres.semestres.length === 0} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed">
+            <label
+              htmlFor="historique-semestre"
+              className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Semestre
+            </label>
+            <select
+              id="historique-semestre"
+              value={filtres.semestre}
+              onChange={(e) => filtres.setSemestre(e.target.value)}
+              disabled={filtres.semestres.length === 0}
+              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <option value="">Tous</option>
-              {filtres.semestres.map(s => <option key={s} value={s}>S{s}</option>)}
+              {filtres.semestres.map((s) => (
+                <option key={s} value={s}>
+                  S{s}
+                </option>
+              ))}
             </select>
           </div>
           <div className="space-y-1 min-w-[140px] flex-1">
-            <label htmlFor="historique-date-debut" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Date début</label>
-            <input id="historique-date-debut" type="date" value={dateDebut} onChange={e => { setDateDebut(e.target.value); setPage(1); }}
-              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            <label
+              htmlFor="historique-date-debut"
+              className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Date début
+            </label>
+            <input
+              id="historique-date-debut"
+              type="date"
+              value={dateDebut}
+              onChange={(e) => {
+                setDateDebut(e.target.value);
+                setPage(1);
+              }}
+              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
           </div>
           <div className="space-y-1 min-w-[140px] flex-1">
-            <label htmlFor="historique-date-fin" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Date fin</label>
-            <input id="historique-date-fin" type="date" value={dateFin} onChange={e => { setDateFin(e.target.value); setPage(1); }}
-              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            <label
+              htmlFor="historique-date-fin"
+              className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider"
+            >
+              Date fin
+            </label>
+            <input
+              id="historique-date-fin"
+              type="date"
+              value={dateFin}
+              onChange={(e) => {
+                setDateFin(e.target.value);
+                setPage(1);
+              }}
+              className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
           </div>
           {hasActiveFilters && (
             <div className="min-w-[100px]">
-              <button onClick={resetFilters}
-                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-surface-container-high text-on-surface-variant rounded-lg text-sm font-semibold hover:bg-surface-container-high/80 transition-all">
+              <button
+                onClick={resetFilters}
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-surface-container-high text-on-surface-variant rounded-lg text-sm font-semibold hover:bg-surface-container-high/80 transition-all"
+              >
                 <FiRefreshCw size={14} /> Réinitialiser
               </button>
             </div>
@@ -287,11 +419,30 @@ const PresenceHistoryPage = () => {
 
       {/* Barre de recherche et statuts */}
       <div className="flex flex-col md:flex-row gap-4 mb-2">
-        <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Rechercher par nom ou matricule..." className="flex-1 max-w-md" />
+        <SearchInput
+          value={search}
+          onChange={(v) => {
+            setSearch(v);
+            setPage(1);
+          }}
+          placeholder="Rechercher par nom ou matricule..."
+          className="flex-1 max-w-md"
+        />
         <div className="flex gap-2">
-          {[['all', 'Tous'], ['valide', 'Présents'], ['suspect', 'Suspects'], ['rejete', 'Rejetés']].map(([key, label]) => (
-            <button key={key} onClick={() => { setFilter(key); setPage(1); }}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${filter === key ? 'bg-primary text-on-primary shadow-sm' : 'bg-surface-container-high text-on-surface-variant hover:text-primary'}`}>
+          {[
+            ['all', 'Tous'],
+            ['valide', 'Présents'],
+            ['suspect', 'Suspects'],
+            ['rejete', 'Rejetés'],
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => {
+                setFilter(key);
+                setPage(1);
+              }}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${filter === key ? 'bg-primary text-on-primary shadow-sm' : 'bg-surface-container-high text-on-surface-variant hover:text-primary'}`}
+            >
               {label}
             </button>
           ))}
@@ -301,7 +452,10 @@ const PresenceHistoryPage = () => {
       <p className="flex items-center gap-1.5 text-[11px] text-on-surface-variant mb-6">
         <FiInfo size={12} aria-hidden="true" />
         Un absent n'a pas de ligne ici, faute de scan. Les absences se consultent séance par séance dans la{' '}
-        <Link to="/attendance/scan" className="font-semibold text-primary hover:underline">saisie manuelle</Link>.
+        <Link to="/attendance/scan" className="font-semibold text-primary hover:underline">
+          saisie manuelle
+        </Link>
+        .
       </p>
 
       <div className="bg-surface-container-lowest rounded-xxl shadow-sm border border-outline-variant/10 overflow-hidden">

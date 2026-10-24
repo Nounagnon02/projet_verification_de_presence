@@ -62,7 +62,9 @@ export default function SelecteurHeure({
     >
       <option value="">{placeholder}</option>
       {minutes.map((m) => (
-        <option key={m} value={enHeure(m)}>{enHeure(m)}</option>
+        <option key={m} value={enHeure(m)}>
+          {enHeure(m)}
+        </option>
       ))}
     </select>
   );

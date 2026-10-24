@@ -1,11 +1,16 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { MdAdd, MdSchool, MdSearch, MdChevronRight, MdRefresh } from 'react-icons/md';
+import { MdAdd, MdSearch, MdChevronRight, MdRefresh, MdCloudUpload } from 'react-icons/md';
 import { listerEtablissements } from '../../api/resources/etablissements';
+import NouvelleFaculteModal from '../../components/super-admin/NouvelleFaculteModal';
+import ImporterFacultesModal from '../../components/super-admin/ImporterFacultesModal';
+import { monogrammeInstitution, tonaliteInstitution } from '../../utils/identiteInstitution';
 
 export default function EtablissementManagementPage() {
   const [search, setSearch] = useState('');
+  const [modalOuvert, setModalOuvert] = useState(false);
+  const [modalImportOuvert, setModalImportOuvert] = useState(false);
   const queryClient = useQueryClient();
 
   const etablissementsQuery = useQuery({
@@ -14,54 +19,69 @@ export default function EtablissementManagementPage() {
   });
   const etablissements = etablissementsQuery.data?.data ?? [];
   const loading = etablissementsQuery.isLoading;
-  const rafraichir = useCallback(
-    () => queryClient.invalidateQueries({ queryKey: ['etablissements'] }),
-    [queryClient],
-  );
+  const rafraichir = useCallback(() => queryClient.invalidateQueries({ queryKey: ['etablissements'] }), [queryClient]);
 
   const filtered = etablissements.filter(
     (e) =>
       e.nom?.toLowerCase().includes(search.toLowerCase()) ||
       e.code?.toLowerCase().includes(search.toLowerCase()) ||
-      e.email?.toLowerCase().includes(search.toLowerCase())
+      e.email?.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#011549] font-headline">Facultés & Écoles</h1>
-          <p className="text-sm text-slate-500 mt-1">Gérer les établissements de l'UAC</p>
+          <h1 className="titre-page">Facultés & Écoles</h1>
+          <p className="sous-titre-page">Le registre des établissements membres de l'UAC</p>
         </div>
-        <div className="flex items-center gap-3">
+        {/* Sur téléphone, l'action principale prend toute la largeur au-dessus
+            des actions secondaires : les trois boutons sur une ligne coupaient
+            « Importer CSV » et « Ajouter une faculté » en deux. */}
+        <div className="flex flex-wrap items-center gap-3">
           <button
-            onClick={rafraichir}
-            className="p-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
-            title="Rafraîchir"
+            type="button"
+            onClick={() => setModalOuvert(true)}
+            className="btn-primaire order-first w-full sm:order-last sm:w-auto"
           >
-            <MdRefresh size={18} />
-          </button>
-          <Link
-            to="/super-admin/etablissements/create"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#011549] text-white text-sm font-semibold hover:bg-[#011549]/90 transition-colors"
-          >
-            <MdAdd size={16} />
+            <MdAdd size={16} aria-hidden="true" />
             Ajouter une faculté
-          </Link>
+          </button>
+          <button
+            type="button"
+            onClick={() => setModalImportOuvert(true)}
+            className="btn-secondaire flex-1 sm:flex-none"
+          >
+            <MdCloudUpload size={16} aria-hidden="true" />
+            Importer CSV
+          </button>
+          <button
+            type="button"
+            onClick={rafraichir}
+            className="btn-icone"
+            title="Rafraîchir"
+            aria-label="Rafraîchir la liste"
+          >
+            <MdRefresh size={18} aria-hidden="true" />
+          </button>
         </div>
       </div>
 
       {/* Search */}
       <div className="relative max-w-md">
-        <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant" size={18} />
+        <MdSearch
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant"
+          size={18}
+          aria-hidden="true"
+        />
         <input
-          type="text"
+          type="search"
           aria-label="Rechercher une faculté par nom, code ou email"
           placeholder="Rechercher par nom, code ou email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#011549]/20 focus:border-[#011549] transition-all"
+          className="champ pl-10"
         />
       </div>
 
@@ -72,63 +92,83 @@ export default function EtablissementManagementPage() {
         </div>
       )}
 
-      {/* Liste */}
-      {!loading && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          {filtered.length > 0 ? (
-            <div className="divide-y divide-slate-50">
-              {filtered.map((etablissement) => (
+      {/* Registre : chaque faculté porte son propre sceau (monogramme + teinte
+          dérivés de son code), pour qu'une liste de lignes identiques devienne
+          un vrai répertoire d'institutions distinctes. */}
+      {!loading &&
+        (filtered.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filtered.map((etablissement) => {
+              const { fond, texte } = tonaliteInstitution(etablissement.code);
+              return (
                 <Link
                   key={etablissement.id}
                   to={`/super-admin/etablissements/${etablissement.id}`}
-                  className="flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors"
+                  className="group flex flex-col gap-4 rounded-xxl border border-outline-variant/15 bg-surface-container-lowest p-5 transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(1,21,73,0.08)]"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-[#011549]/5 rounded-xl flex items-center justify-center text-[#011549]">
-                      <MdSchool size={20} />
+                  <div className="flex items-start justify-between">
+                    <div
+                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl font-headline text-base font-bold"
+                      style={{ backgroundColor: fond, color: texte }}
+                      aria-hidden="true"
+                    >
+                      {monogrammeInstitution(etablissement.code)}
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-[#011549]">{etablissement.nom}</p>
-                      <div className="flex items-center gap-3 mt-0.5">
-                        <span className="text-xs font-mono text-on-surface-variant bg-slate-50 px-1.5 py-0.5 rounded">
-                          {etablissement.code}
-                        </span>
-                        <span className="text-xs text-on-surface-variant">{etablissement.email}</span>
-                        {etablissement.telephone && (
-                          <span className="text-xs text-on-surface-variant">{etablissement.telephone}</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
                     {etablissement.actif ? (
-                      <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Actif</span>
+                      <span className="rounded-full bg-statut-succes-fond px-2 py-0.5 text-[11px] font-semibold text-statut-succes">
+                        Actif
+                      </span>
                     ) : (
-                      <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">Inactif</span>
+                      <span className="rounded-full bg-surface-container-high px-2 py-0.5 text-[11px] font-semibold text-on-surface-variant">
+                        Inactif
+                      </span>
                     )}
-                    <MdChevronRight className="text-on-surface-variant" />
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="truncate font-headline text-base font-bold text-primary">{etablissement.nom}</p>
+                    <p className="mt-0.5 truncate text-xs text-on-surface-variant">{etablissement.email}</p>
+                  </div>
+
+                  <div className="mt-auto flex items-center gap-4 border-t border-outline-variant/10 pt-3 text-xs text-on-surface-variant">
+                    <span className="font-mono font-semibold text-primary">{etablissement.code}</span>
+                    <span>
+                      {etablissement.filieres_count ?? 0} filière{(etablissement.filieres_count ?? 0) > 1 ? 's' : ''}
+                    </span>
+                    <span>
+                      {etablissement.users_count ?? 0} admin{(etablissement.users_count ?? 0) > 1 ? 's' : ''}
+                    </span>
+                    <MdChevronRight
+                      className="ml-auto shrink-0 text-on-surface-variant transition-transform group-hover:translate-x-0.5"
+                      size={16}
+                    />
                   </div>
                 </Link>
-              ))}
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-xxl border border-dashed border-outline-variant/30 py-16 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-dashed border-outline-variant/40 font-headline text-lg font-bold text-outline-variant">
+              ?
             </div>
-          ) : (
-            <div className="px-6 py-12 text-center">
-              <MdSchool size={40} className="mx-auto text-slate-200 mb-3" />
-              <p className="text-sm text-slate-500 mb-2">Aucune faculté trouvée</p>
-              {search ? (
-                <p className="text-xs text-on-surface-variant">Essayez de modifier votre recherche</p>
-              ) : (
-                <Link
-                  to="/super-admin/etablissements/create"
-                  className="text-sm text-blue-600 hover:underline font-medium"
-                >
-                  Ajouter la première faculté
-                </Link>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+            <p className="text-sm text-on-surface-variant mb-2">Aucune faculté trouvée</p>
+            {search ? (
+              <p className="text-xs text-on-surface-variant">Essayez de modifier votre recherche</p>
+            ) : (
+              <button onClick={() => setModalOuvert(true)} className="text-sm text-primary hover:underline font-medium">
+                Ajouter la première faculté
+              </button>
+            )}
+          </div>
+        ))}
+
+      <NouvelleFaculteModal isOpen={modalOuvert} onClose={() => setModalOuvert(false)} onCreated={rafraichir} />
+      <ImporterFacultesModal
+        isOpen={modalImportOuvert}
+        onClose={() => setModalImportOuvert(false)}
+        onImported={rafraichir}
+      />
     </div>
   );
 }

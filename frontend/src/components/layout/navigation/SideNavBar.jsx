@@ -1,4 +1,3 @@
-import { NavLink } from 'react-router-dom';
 import {
   MdDashboard,
   MdGroup,
@@ -7,85 +6,34 @@ import {
   MdHowToReg,
   MdAssessment,
   MdSettings,
-  MdHelp,
-  MdAccountCircle,
   MdEvent,
-  MdLogout,
 } from 'react-icons/md';
-import { useAuth } from '../../../context/AuthContext';
+import { BarreLaterale, NavigationMobile } from './NavigationAdmin';
 
-const links = [
+// Pas de « end » sur ces liens : il imposait une correspondance EXACTE, si
+// bien que « Présences » et « Paramètres » ne s'allumaient jamais — leur index
+// redirige vers une sous-route. Aucun chemin n'est préfixe d'un autre : la
+// correspondance par préfixe ne peut pas allumer deux entrées.
+const LIENS_FACULTE = [
   { to: '/dashboard', icon: <MdDashboard />, label: 'Dashboard' },
   { to: '/students', icon: <MdGroup />, label: 'Étudiants' },
   { to: '/courses', icon: <MdBook />, label: 'Cours & UE/EC' },
   { to: '/schedules/weekly', icon: <MdCalendarMonth />, label: 'Emploi du temps' },
   { to: '/schedules/events', icon: <MdEvent />, label: 'Séances' },
-  // Une seule entree pour la section : elle mene a la file d'attente, et les
-  // onglets de AttendanceLayout donnent acces au reste. « Présences » pointait
-  // auparavant vers /attendance/validate, la page publique de l'etudiant.
+  // Mène à la file d'attente ; les onglets de AttendanceLayout donnent accès
+  // au reste. Pointait auparavant vers /attendance/validate, page étudiante.
   { to: '/attendance', icon: <MdHowToReg />, label: 'Présences' },
   { to: '/reports', icon: <MdAssessment />, label: 'Rapports' },
   { to: '/settings', icon: <MdSettings />, label: 'Paramètres' },
 ];
 
-const linkClass = ({ isActive }) =>
-  `flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all ${
-    isActive
-      ? 'bg-white text-[#011549] font-semibold shadow-sm translate-x-1'
-      : 'text-slate-500 hover:bg-[#e6e8ec] hover:text-[#011549] hover:translate-x-1'
-  }`;
+const SOUS_TITRE_FACULTE = 'Portail Académique';
 
 export default function SideNavBar() {
-  const { logout } = useAuth();
+  return <BarreLaterale liens={LIENS_FACULTE} sousTitre={SOUS_TITRE_FACULTE} />;
+}
 
-  const handleLogout = async () => {
-    await logout();
-  };
-
-  return (
-    <aside className="hidden md:flex flex-col h-screen p-5 fixed left-0 top-0 bg-[#f7f9fd] w-64 z-50">
-      <div className="mb-8 px-2">
-        <img src="/images/logo-couleur-compact.png" alt="UAC Présences"
-            className="h-7 w-auto mb-1" />
-        <p className="text-[10px] text-slate-500 font-medium tracking-widest uppercase">
-          Portail Académique
-        </p>
-      </div>
-
-      <nav className="flex-1 space-y-0.5">
-        {links.map((link) => (
-          // Pas de « end » : il imposait une correspondance EXACTE, si bien que
-          // « Présences » et « Paramètres » ne s'allumaient jamais — leur index
-          // redirige vers une sous-route, leur chemin nu n'est donc jamais
-          // atteint. « Cours » et « Rapports » s'eteignaient de meme des qu'on
-          // ouvrait une de leurs sous-pages.
-          //
-          // Aucun chemin de cette liste n'est prefixe d'un autre : la
-          // correspondance par prefixe ne peut pas allumer deux entrees.
-          <NavLink key={link.to} to={link.to} className={linkClass}>
-            <span className="text-lg">{link.icon}</span>
-            <span>{link.label}</span>
-          </NavLink>
-        ))}
-      </nav>
-
-      <div className="pt-4 border-t border-outline-variant/10 space-y-0.5">
-        <NavLink to="/help" className={linkClass}>
-          <MdHelp className="text-lg" />
-          <span>Aide</span>
-        </NavLink>
-        <NavLink to="/profile" end className={linkClass}>
-          <MdAccountCircle className="text-lg" />
-          <span>Profil</span>
-        </NavLink>
-        <button
-          onClick={handleLogout}
-          className="flex w-full items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all text-slate-500 hover:bg-red-50 hover:text-red-600"
-        >
-          <MdLogout className="text-lg" />
-          <span>Déconnexion</span>
-        </button>
-      </div>
-    </aside>
-  );
+// Même menu sous 768 px, dans un tiroir : la barre du bas n'en montre que cinq entrées.
+export function SideNavBarMobile() {
+  return <NavigationMobile liens={LIENS_FACULTE} sousTitre={SOUS_TITRE_FACULTE} />;
 }

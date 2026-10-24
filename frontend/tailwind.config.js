@@ -4,10 +4,7 @@ module.exports = {
   // Avec « class », les variantes dark: ne s'activaient JAMAIS : rien dans
   // l'application n'ajoute la classe « dark » — 4 classes mortes le prouvaient.
   darkMode: 'media',
-  content: [
-    './index.html',
-    './src/**/*.{js,jsx,ts,tsx}',
-  ],
+  content: ['./index.html', './src/**/*.{js,jsx,ts,tsx}'],
   theme: {
     extend: {
       colors: {
@@ -52,28 +49,69 @@ module.exports = {
         'surface-container-highest': 'rgb(var(--surface-container-highest) / <alpha-value>)',
         'surface-tint': 'rgb(var(--surface-tint) / <alpha-value>)',
         outline: 'rgb(var(--outline) / <alpha-value>)',
-        'outline-variant': 'rgb(var(--outline-variant) / <alpha-value>)'
+        'outline-variant': 'rgb(var(--outline-variant) / <alpha-value>)',
+        ink: 'rgb(var(--ink) / <alpha-value>)',
+        'ink-deep': 'rgb(var(--ink-deep) / <alpha-value>)',
+        marque: 'rgb(var(--marque) / <alpha-value>)',
+        'marque-fonce': 'rgb(var(--marque-fonce) / <alpha-value>)',
+        nav: 'rgb(var(--nav) / <alpha-value>)',
+        'nav-hover': 'rgb(var(--nav-hover) / <alpha-value>)',
+        'statut-succes': 'rgb(var(--statut-succes) / <alpha-value>)',
+        'statut-succes-fond': 'rgb(var(--statut-succes-fond) / <alpha-value>)',
+        'statut-erreur': 'rgb(var(--statut-erreur) / <alpha-value>)',
+        'statut-erreur-fond': 'rgb(var(--statut-erreur-fond) / <alpha-value>)',
+        'statut-alerte': 'rgb(var(--statut-alerte) / <alpha-value>)',
+        'statut-alerte-fond': 'rgb(var(--statut-alerte-fond) / <alpha-value>)',
+        'statut-info': 'rgb(var(--statut-info) / <alpha-value>)',
+        'statut-info-fond': 'rgb(var(--statut-info-fond) / <alpha-value>)',
       },
       borderRadius: {
-        'DEFAULT': '0.25rem',
-        'lg': '0.5rem',
-        'xl': '0.75rem',
-        'xxl': '1.5rem',
-        'full': '9999px'
+        DEFAULT: '0.25rem',
+        lg: '0.5rem',
+        xl: '0.75rem',
+        xxl: '1.5rem',
+        full: '9999px',
       },
       fontFamily: {
         headline: ['Sora', 'sans-serif'],
         body: ['Inter', 'sans-serif'],
         label: ['Inter', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace']
+        mono: ['JetBrains Mono', 'monospace'],
       },
       keyframes: {
         'pulse-slow': {
           '0%, 100%': { opacity: '1' },
-          '50%': { opacity: '0.5' }
-        }
-      }
+          '50%': { opacity: '0.5' },
+        },
+        'glisser-depuis-droite': {
+          '0%': { transform: 'translateX(100%)' },
+          '100%': { transform: 'translateX(0)' },
+        },
+        'glisser-vers-droite': {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
+        'glisser-depuis-gauche': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(0)' },
+        },
+        apparaitre: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        disparaitre: {
+          '0%': { opacity: '1' },
+          '100%': { opacity: '0' },
+        },
+      },
+      animation: {
+        'glisser-depuis-droite': 'glisser-depuis-droite 300ms ease-out forwards',
+        'glisser-vers-droite': 'glisser-vers-droite 250ms ease-in forwards',
+        'glisser-depuis-gauche': 'glisser-depuis-gauche 250ms ease-out forwards',
+        apparaitre: 'apparaitre 300ms ease-out forwards',
+        disparaitre: 'disparaitre 250ms ease-in forwards',
+      },
     },
   },
   plugins: [require('@tailwindcss/container-queries')],
-}
+};

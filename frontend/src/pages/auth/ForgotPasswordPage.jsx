@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiMail, FiArrowLeft, FiCheckCircle, FiAlertTriangle, FiLoader } from 'react-icons/fi';
 import { demanderReinitialisationMotDePasse } from '../../api/resources/auth';
 import { assets } from '../../utils/assets';
+import Logo from '../../components/ui/Logo';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -13,7 +14,10 @@ export default function ForgotPasswordPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email.trim()) { setError('Veuillez saisir votre adresse email.'); return; }
+    if (!email.trim()) {
+      setError('Veuillez saisir votre adresse email.');
+      return;
+    }
 
     setLoading(true);
     setError('');
@@ -22,12 +26,13 @@ export default function ForgotPasswordPage() {
       if (data.success) {
         setSent(true);
       } else {
-        setError(data.message || 'Erreur lors de l\'envoi du lien.');
+        setError(data.message || "Erreur lors de l'envoi du lien.");
       }
     } catch (err) {
-      const msg = err.response?.data?.message
-        || (err.response?.data?.errors?.email ? err.response.data.errors.email.join(', ') : null)
-        || 'Erreur lors de l\'envoi du lien. Veuillez réessayer.';
+      const msg =
+        err.response?.data?.message ||
+        (err.response?.data?.errors?.email ? err.response.data.errors.email.join(', ') : null) ||
+        "Erreur lors de l'envoi du lien. Veuillez réessayer.";
       setError(msg);
     } finally {
       setLoading(false);
@@ -38,14 +43,22 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen bg-surface flex">
       {/* Bannière gauche */}
       <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden">
-        <img src={assets.rectoratUac} alt="Campus universitaire" width={assets.rectoratUacTaille.width} height={assets.rectoratUacTaille.height} loading="lazy" decoding="async"
-          className="absolute inset-0 w-full h-full object-cover" />
+        <img
+          src={assets.rectoratUac}
+          alt="Campus universitaire"
+          width={assets.rectoratUacTaille.width}
+          height={assets.rectoratUacTaille.height}
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
         <div className="absolute inset-0 bg-gradient-to-br from-[#011549]/90 via-[#011549]/75 to-[#0a1a3a]/90"></div>
         <div className="relative flex flex-col justify-between p-12 w-full">
           <div className="flex items-center gap-3">
-            <img src="/images/logo-blanc.png" alt="UAC Présences"
-                className="h-9 w-auto" />
-            <div><p className="text-[10px] font-medium text-white/50 uppercase tracking-[0.2em]">Portail Académique</p></div>
+            <img src="/images/logo-blanc.png" alt="UAC Présences" className="h-9 w-auto" />
+            <div>
+              <p className="text-[10px] font-medium text-white/50 uppercase tracking-[0.2em]">Portail Académique</p>
+            </div>
           </div>
           <div>
             <h2 className="text-3xl font-bold text-white font-headline leading-tight">Mot de passe oublié ?</h2>
@@ -53,21 +66,22 @@ export default function ForgotPasswordPage() {
               Saisissez votre adresse email académique. Un lien de réinitialisation vous sera envoyé.
             </p>
           </div>
-          <p className="text-xs text-white/30">© {new Date().getFullYear()} — Tous droits réservés</p>
+          <p className="text-xs text-white/30">© {new Date().getFullYear()}. Tous droits réservés</p>
         </div>
       </div>
 
       {/* Partie droite */}
       <div className="flex-1 flex flex-col">
         <div className="lg:hidden w-full px-6 py-5 flex items-center gap-3 border-b border-outline-variant/10">
-          <img src="/images/logo-couleur-compact.png" alt="UAC Présences"
-              className="h-7 w-auto" />
+          <Logo className="h-7 w-auto" />
         </div>
 
         <main className="flex-1 flex items-center justify-center px-6 py-8">
           <div className="w-full max-w-md">
-            <button onClick={() => navigate('/login')}
-              className="inline-flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-primary mb-8 transition-colors">
+            <button
+              onClick={() => navigate('/login')}
+              className="inline-flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-primary mb-8 transition-colors"
+            >
               <FiArrowLeft size={14} /> Retour à la connexion
             </button>
 
@@ -79,10 +93,10 @@ export default function ForgotPasswordPage() {
                   </div>
                   <h1 className="text-2xl font-bold text-primary text-center mb-3">Email envoyé !</h1>
                   <p className="text-sm text-on-surface-variant text-center mb-8">
-                    Si un compte existe avec cette adresse, vous recevrez un email contenant un lien pour réinitialiser votre mot de passe.
+                    Si un compte existe avec cette adresse, vous recevrez un email contenant un lien pour réinitialiser
+                    votre mot de passe.
                   </p>
-                  <button onClick={() => navigate('/login')}
-                    className="w-full py-3 bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all">
+                  <button onClick={() => navigate('/login')} className="btn-primaire w-full py-3">
                     Retour à la connexion
                   </button>
                 </>
@@ -96,7 +110,7 @@ export default function ForgotPasswordPage() {
                   </div>
 
                   {error && (
-                    <div className="flex items-start gap-2.5 p-4 bg-error/10 rounded-xl text-error border border-error/10 mb-5">
+                    <div className="flex items-start gap-2.5 p-4 bg-statut-erreur-fond rounded-xl text-statut-erreur border border-error/10 mb-5">
                       <FiAlertTriangle className="text-lg shrink-0 mt-0.5" />
                       <p className="text-sm">{error}</p>
                     </div>
@@ -104,11 +118,14 @@ export default function ForgotPasswordPage() {
 
                   <form onSubmit={handleSubmit} className="space-y-5">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant ml-1" htmlFor="email">
+                      <label
+                        className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant ml-1"
+                        htmlFor="email"
+                      >
                         Email académique
                       </label>
                       <div className="relative group">
-                        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-on-surface-variant/60">
+                        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-on-surface-variant">
                           <FiMail size={16} />
                         </div>
                         <input
@@ -124,8 +141,11 @@ export default function ForgotPasswordPage() {
                       </div>
                     </div>
 
-                    <button type="submit" disabled={loading}
-                      className="w-full bg-gradient-to-br from-primary to-primary-container text-white py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[0.99] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-70">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-gradient-to-br from-marque to-marque-fonce text-white py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[0.99] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+                    >
                       {loading ? <FiLoader className="animate-spin" /> : null}
                       {loading ? 'Envoi en cours...' : 'Envoyer le lien'}
                     </button>

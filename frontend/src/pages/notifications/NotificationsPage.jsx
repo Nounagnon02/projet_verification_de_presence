@@ -1,9 +1,21 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { FiBell, FiCheck, FiTrash2, FiRefreshCw, FiAlertTriangle, FiCheckCircle, FiInfo, FiAlertCircle } from 'react-icons/fi';
 import {
-  listerNotifications, compterNotificationsNonLues, marquerNotificationLue,
-  marquerToutesNotificationsLues, supprimerNotification,
+  FiBell,
+  FiCheck,
+  FiTrash2,
+  FiRefreshCw,
+  FiAlertTriangle,
+  FiCheckCircle,
+  FiInfo,
+  FiAlertCircle,
+} from 'react-icons/fi';
+import {
+  listerNotifications,
+  compterNotificationsNonLues,
+  marquerNotificationLue,
+  marquerToutesNotificationsLues,
+  supprimerNotification,
 } from '../../api/resources/notifications';
 
 export default function NotificationsPage() {
@@ -87,21 +99,31 @@ export default function NotificationsPage() {
 
   const getTypeIcon = (type) => {
     switch (type) {
-      case 'info': return <FiInfo className="text-info" />;
-      case 'success': return <FiCheckCircle className="text-secondary" />;
-      case 'warning': return <FiAlertTriangle className="text-warning" />;
-      case 'error': return <FiAlertCircle className="text-error" />;
-      default: return <FiBell className="text-primary" />;
+      case 'info':
+        return <FiInfo className="text-info" />;
+      case 'success':
+        return <FiCheckCircle className="text-secondary" />;
+      case 'warning':
+        return <FiAlertTriangle className="text-statut-alerte" />;
+      case 'error':
+        return <FiAlertCircle className="text-statut-erreur" />;
+      default:
+        return <FiBell className="text-primary" />;
     }
   };
 
   const getTypeBg = (type) => {
     switch (type) {
-      case 'info': return 'bg-info/5 border-info/10';
-      case 'success': return 'bg-secondary-container/30 border-secondary/10';
-      case 'warning': return 'bg-warning-container/30 border-warning/10';
-      case 'error': return 'bg-error-container/30 border-error/10';
-      default: return 'bg-primary/5 border-primary/10';
+      case 'info':
+        return 'bg-info/5 border-info/10';
+      case 'success':
+        return 'bg-secondary-container/30 border-secondary/10';
+      case 'warning':
+        return 'bg-warning-container/30 border-warning/10';
+      case 'error':
+        return 'bg-error-container/30 border-error/10';
+      default:
+        return 'bg-primary/5 border-primary/10';
     }
   };
 
@@ -120,7 +142,7 @@ export default function NotificationsPage() {
         {unreadCount > 0 && (
           <button
             onClick={handleMarkAllRead}
-            className="flex items-center gap-1.5 px-4 py-2 bg-secondary/10 text-secondary rounded-xl text-xs font-semibold hover:bg-secondary/20 transition-all"
+            className="flex items-center gap-1.5 px-4 py-2 bg-statut-succes-fond text-statut-succes rounded-xl text-xs font-semibold hover:bg-statut-succes/15 transition-all"
           >
             <FiCheckCircle size={14} />
             Tout marquer comme lu
@@ -153,7 +175,12 @@ export default function NotificationsPage() {
         <div className="flex items-center gap-2 p-3 mb-6 bg-error-container/30 rounded-xl text-on-error-container text-sm">
           <FiAlertTriangle size={16} className="flex-shrink-0" />
           <span>{error || 'Erreur lors du chargement des notifications.'}</span>
-          <button onClick={() => setError('')} className="ml-auto text-on-error-container/60 hover:text-on-error-container">&times;</button>
+          <button
+            onClick={() => setError('')}
+            className="ml-auto text-on-error-container/60 hover:text-on-error-container"
+          >
+            &times;
+          </button>
         </div>
       )}
 
@@ -166,7 +193,7 @@ export default function NotificationsPage() {
       ) : notifications.length === 0 ? (
         <div className="bg-surface-container-lowest rounded-xl p-12 shadow-sm text-center border border-dashed border-outline-variant/30">
           <div className="w-16 h-16 bg-surface-container-high rounded-full flex items-center justify-center mx-auto mb-6">
-            <FiBell className="text-outline" size={28} />
+            <FiBell className="text-on-surface-variant" size={28} />
           </div>
           <h3 className="text-lg font-semibold text-on-surface mb-2">Aucune notification</h3>
           <p className="text-sm text-on-surface-variant">
@@ -185,25 +212,27 @@ export default function NotificationsPage() {
               }`}
             >
               <div className="flex items-start gap-3">
-                <div className={`p-2 rounded-lg flex-shrink-0 ${
-                  notif.is_read ? 'bg-surface-container-high text-outline' : ''
-                }`}>
+                <div
+                  className={`p-2 rounded-lg flex-shrink-0 ${
+                    notif.is_read ? 'bg-surface-container-high text-on-surface-variant' : ''
+                  }`}
+                >
                   {getTypeIcon(notif.type)}
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <h4 className={`text-sm ${notif.is_read ? 'font-medium text-on-surface' : 'font-bold text-on-surface'}`}>
+                    <h4
+                      className={`text-sm ${notif.is_read ? 'font-medium text-on-surface' : 'font-bold text-on-surface'}`}
+                    >
                       {notif.title}
-                      {!notif.is_read && (
-                        <span className="ml-2 inline-block w-2 h-2 bg-primary rounded-full" />
-                      )}
+                      {!notif.is_read && <span className="ml-2 inline-block w-2 h-2 bg-primary rounded-full" />}
                     </h4>
                     <div className="flex items-center gap-1 flex-shrink-0">
                       {!notif.is_read && (
                         <button
                           onClick={() => handleMarkRead(notif.id)}
-                          className="p-1.5 text-outline hover:text-secondary hover:bg-secondary/10 rounded-lg transition-all"
+                          className="p-1.5 text-on-surface-variant hover:text-secondary hover:bg-secondary/10 rounded-lg transition-all"
                           title="Marquer comme lu"
                         >
                           <FiCheck size={14} />
@@ -211,17 +240,15 @@ export default function NotificationsPage() {
                       )}
                       <button
                         onClick={() => handleDelete(notif.id)}
-                        className="p-1.5 text-outline hover:text-error hover:bg-error/10 rounded-lg transition-all"
+                        className="p-1.5 text-on-surface-variant hover:text-error hover:bg-error/10 rounded-lg transition-all"
                         title="Supprimer"
                       >
                         <FiTrash2 size={14} />
                       </button>
                     </div>
                   </div>
-                  {notif.message && (
-                    <p className="text-xs text-on-surface-variant mt-1">{notif.message}</p>
-                  )}
-                  <p className="text-[10px] text-outline mt-2">{notif.created_at}</p>
+                  {notif.message && <p className="text-xs text-on-surface-variant mt-1">{notif.message}</p>}
+                  <p className="text-[10px] text-on-surface-variant mt-2">{notif.created_at}</p>
                 </div>
               </div>
 

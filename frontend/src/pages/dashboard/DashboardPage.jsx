@@ -18,47 +18,87 @@ const DashboardPage = () => {
   const { data: todayEventsData } = useApi('/admin/dashboard/today-events');
 
   const kpis = [
-    { label: 'Total Étudiants', value: dashData?.total_etudiants ?? '—', change: null, icon: <MdOutlineGroup size={20} />, trend: 'up' },
-    { label: 'Présences Aujourd\'hui', value: dashData?.presences_aujourd_hui ?? '—', change: null, icon: <FiCheckCircle size={20} />, trend: 'up' },
-    { label: 'Taux Présence Global', value: dashData?.taux_presence_global ? `${dashData.taux_presence_global}%` : '—', change: null, icon: <FiBarChart2 size={20} />, trend: 'up' },
+    {
+      label: 'Total Étudiants',
+      value: dashData?.total_etudiants ?? '—',
+      change: null,
+      icon: <MdOutlineGroup size={20} />,
+      trend: 'up',
+    },
+    {
+      label: "Présences Aujourd'hui",
+      value: dashData?.presences_aujourd_hui ?? '—',
+      change: null,
+      icon: <FiCheckCircle size={20} />,
+      trend: 'up',
+    },
+    {
+      label: 'Taux Présence Global',
+      value: dashData?.taux_presence_global ? `${dashData.taux_presence_global}%` : '—',
+      change: null,
+      icon: <FiBarChart2 size={20} />,
+      trend: 'up',
+    },
     // Les refus du jour sont donnés pour information : aucune présence n'a été
     // créée, il n'y a rien à trancher. Seuls les scans suspects attendent une décision.
-    { label: 'Scans à arbitrer', value: dashData?.scans_a_arbitrer ?? '—', change: dashData ? `${dashData.scans_refuses_du_jour ?? 0} refus aujourd'hui` : null, icon: <FiAlertTriangle size={20} />, trend: 'neutral' },
+    {
+      label: 'Scans à arbitrer',
+      value: dashData?.scans_a_arbitrer ?? '—',
+      change: dashData ? `${dashData.scans_refuses_du_jour ?? 0} refus aujourd'hui` : null,
+      icon: <FiAlertTriangle size={20} />,
+      trend: 'neutral',
+    },
   ];
 
-  const attendanceData = (Array.isArray(trendData) ? trendData : []).map(item => ({
-    label: item.date ? new Date(item.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }).toUpperCase() : '',
+  const attendanceData = (Array.isArray(trendData) ? trendData : []).map((item) => ({
+    label: item.date
+      ? new Date(item.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }).toUpperCase()
+      : '',
     value: item.total,
   }));
 
   const topAbsences = Array.isArray(topAbsencesData) ? topAbsencesData.slice(0, 3) : [];
 
-  const events = (Array.isArray(todayEventsData) ? todayEventsData : []).map(item => ({
+  const events = (Array.isArray(todayEventsData) ? todayEventsData : []).map((item) => ({
     time: `${item.heure_debut || '--:--'} - ${item.heure_fin || '--:--'}`,
     title: item.cours || 'N/A',
-    location: `Salle ${item.salle || 'N/A'} — ${item.filiere || ''}`,
+    location: `Salle ${item.salle || 'N/A'} : ${item.filiere || ''}`,
     status: item.statut === 'termine' ? 'Terminé' : item.statut === 'en_cours' ? 'En cours' : 'À venir',
-    statusColor: item.statut === 'termine' ? 'secondary-container' : item.statut === 'en_cours' ? 'primary' : 'surface-container-high',
+    statusColor:
+      item.statut === 'termine'
+        ? 'secondary-container'
+        : item.statut === 'en_cours'
+          ? 'primary'
+          : 'surface-container-high',
     progress: item.statut === 'en_cours' ? 45 : undefined,
   }));
 
-  const scans = (Array.isArray(todayEventsData) ? todayEventsData : []).filter(e => e.statut === 'en_cours').slice(0, 4).map(e => ({
-    name: `${e.filiere || ''}`,
-    course: e.cours || 'N/A',
-    time: e.heure_debut || '',
-    status: 'SUCCÈS',
-    statusColor: '#006d43',
-    image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" fill="%23e0e0e0" rx="16"/%3E%3Ctext x="16" y="20" text-anchor="middle" font-size="14" fill="%23999"%3E%3F%3C/text%3E%3C/svg%3E',
-  }));
+  const scans = (Array.isArray(todayEventsData) ? todayEventsData : [])
+    .filter((e) => e.statut === 'en_cours')
+    .slice(0, 4)
+    .map((e) => ({
+      name: `${e.filiere || ''}`,
+      course: e.cours || 'N/A',
+      time: e.heure_debut || '',
+      status: 'SUCCÈS',
+      statusColor: '#006d43',
+      image:
+        'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" fill="%23e0e0e0" rx="16"/%3E%3Ctext x="16" y="20" text-anchor="middle" font-size="14" fill="%23999"%3E%3F%3C/text%3E%3C/svg%3E',
+    }));
 
   // Bandeau : les scans suspects attendent une décision dans la file d'attente.
   // Il reprenait toutes les anomalies ouvertes, scans refusés compris, qui ne
   // demandent aucune décision et ne se fermaient jamais.
   const aArbitrer = Number(dashData?.scans_a_arbitrer ?? 0);
-  const alerts = aArbitrer > 0 ? [{
-    title: `${aArbitrer} scan${aArbitrer > 1 ? 's' : ''} suspect${aArbitrer > 1 ? 's' : ''} à arbitrer`,
-    message: 'Un même téléphone a servi à plusieurs étudiants pendant une séance.',
-  }] : [];
+  const alerts =
+    aArbitrer > 0
+      ? [
+          {
+            title: `${aArbitrer} scan${aArbitrer > 1 ? 's' : ''} suspect${aArbitrer > 1 ? 's' : ''} à arbitrer`,
+            message: 'Un même téléphone a servi à plusieurs étudiants pendant une séance.',
+          },
+        ]
+      : [];
 
   if (loading) return <LoadingSkeleton type="card" cols={4} />;
 
@@ -67,8 +107,10 @@ const DashboardPage = () => {
       {alerts.length > 0 && <AlertsBanner alerts={alerts} to="/attendance/queue" />}
       <AlerteCalendrier className="mb-8" />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {kpis.map((kpi, i) => (<KPICard key={i} {...kpi} />))}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-8">
+        {kpis.map((kpi, i) => (
+          <KPICard key={i} {...kpi} />
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -80,21 +122,43 @@ const DashboardPage = () => {
                 <p className="text-xs text-on-surface-variant">Évolution de la participation académique</p>
               </div>
             </div>
-            <BarChart data={attendanceData.length > 0 ? attendanceData : [{ label: 'Aucune donnée', value: 0 }]} bars="value" height={200} />
+            <BarChart
+              data={attendanceData.length > 0 ? attendanceData : [{ label: 'Aucune donnée', value: 0 }]}
+              bars="value"
+              height={200}
+            />
           </div>
 
           <div className="bg-surface-container-lowest p-6 rounded-xxl shadow-sm">
             <h2 className="text-lg font-bold font-headline text-primary mb-6">Top Absences par Étudiant</h2>
             <div className="space-y-5">
-              {topAbsences.length > 0 ? topAbsences.map((item, i) => (
-                <ProgressBar
-                  key={i}
-                  label={`${item.prenom || ''} ${item.nom || ''} (${item.matricule || ''})`}
-                  value={item.absences || 0}
-                  max={(topAbsences[0]?.absences || 10) * 1.2}
-                  color={i === 0 ? 'error' : i === 1 ? 'warning' : 'primary'}
-                />
-              )) : (
+              {/* La barre affichait absences / (absences du premier × 1,2) en
+                  pourcentage : le premier montrait toujours « 83 % », un chiffre
+                  sans signification. On affiche le nombre réel d'absences ; la
+                  barre reste relative au premier, sans pourcentage. */}
+              {topAbsences.length > 0 ? (
+                topAbsences.map((item, i) => {
+                  const absences = item.absences || 0;
+                  return (
+                    <div key={i}>
+                      <div className="flex justify-between gap-3 text-xs mb-1">
+                        <span className="text-on-surface-variant truncate">
+                          {`${item.prenom || ''} ${item.nom || ''} (${item.matricule || ''})`}
+                        </span>
+                        <span className="text-on-surface font-medium shrink-0">
+                          {absences} absence{absences > 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <ProgressBar
+                        value={absences}
+                        max={topAbsences[0]?.absences || 1}
+                        showValue={false}
+                        color="error"
+                      />
+                    </div>
+                  );
+                })
+              ) : (
                 <p className="text-sm text-on-surface-variant text-center py-4">Aucune donnée d'absence disponible</p>
               )}
             </div>
@@ -106,7 +170,9 @@ const DashboardPage = () => {
             <h2 className="text-sm font-bold font-headline text-primary mb-6 flex items-center gap-2">
               <MdOutlineCalendarToday /> Cours du Jour
             </h2>
-            {events.length > 0 ? <TodaysEvents events={events} /> : (
+            {events.length > 0 ? (
+              <TodaysEvents events={events} />
+            ) : (
               <p className="text-sm text-on-surface-variant text-center py-4">Aucun cours aujourd'hui</p>
             )}
           </div>
@@ -115,7 +181,9 @@ const DashboardPage = () => {
             <h2 className="text-sm font-bold font-headline text-primary mb-6 flex items-center gap-2">
               <FiActivity /> Derniers Scans QR
             </h2>
-            {scans.length > 0 ? <RecentQRScans scans={scans} /> : (
+            {scans.length > 0 ? (
+              <RecentQRScans scans={scans} />
+            ) : (
               <p className="text-sm text-on-surface-variant text-center py-4">Aucun scan récent</p>
             )}
             {/* Un <button> sans gestionnaire : le clic ne menait nulle part.

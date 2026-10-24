@@ -4,10 +4,16 @@ import { FiMail, FiLock, FiAlertTriangle, FiLoader, FiArrowLeft } from 'react-ic
 import { MdQrCodeScanner, MdAutoAwesome, MdGroups } from 'react-icons/md';
 import { useAuth } from '../../context/AuthContext';
 import { assets } from '../../utils/assets';
+import Logo from '../../components/ui/Logo';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
+  // Le mot de passe seul a été accepté, mais le compte a la 2FA activée :
+  // AuthContext.login() lève alors une erreur marquée twoFactorRequired,
+  // et c'est ce second passage dans le formulaire qui collecte le code.
+  const [requiresCode, setRequiresCode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
@@ -26,14 +32,19 @@ function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!email.trim() || !password.trim()) {
-      setError('Veuillez remplir tous les champs');
-      return;
-    }
+    if (!requiresCode) {
+      if (!email.trim() || !password.trim()) {
+        setError('Veuillez remplir tous les champs');
+        return;
+      }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError('Veuillez saisir une adresse email valide');
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        setError('Veuillez saisir une adresse email valide');
+        return;
+      }
+    } else if (code.length !== 6) {
+      setError('Entrez le code à 6 chiffres.');
       return;
     }
 
@@ -41,7 +52,7 @@ function LoginPage() {
     setError('');
 
     try {
-      const userData = await login(email, password);
+      const userData = await login(email, password, requiresCode ? code : undefined);
       // Rediriger selon le rôle
       if (userData?.role === 'super_admin') {
         navigate('/super-admin', { replace: true });
@@ -49,14 +60,31 @@ function LoginPage() {
         navigate('/dashboard', { replace: true });
       }
     } catch (err) {
-      const data = err.response?.data;
-      const msg = data?.message
-        || (data?.errors && Object.values(data.errors).flat()[0])
-        || 'Identifiants invalides. Veuillez réessayer.';
-      setError(msg);
+      if (err.twoFactorRequired) {
+        setRequiresCode(true);
+        setCode('');
+        setError('');
+      } else {
+        const data = err.response?.data;
+        const msg =
+          data?.message ||
+          (data?.errors && Object.values(data.errors).flat()[0]) ||
+          err.message ||
+          'Identifiants invalides. Veuillez réessayer.';
+        setError(msg);
+        // Un code invalide (422) reste sur l'étape code : revenir au mot de
+        // passe ferait recommencer une vérification déjà réussie.
+        if (requiresCode) setCode('');
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const retourMotDePasse = () => {
+    setRequiresCode(false);
+    setCode('');
+    setError('');
   };
 
   return (
@@ -80,18 +108,22 @@ function LoginPage() {
         <div className="relative flex flex-col justify-between p-12 w-full">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <img src="/images/logo-blanc.png" alt="UAC Présences"
-                className="h-9 w-auto" />
-            <div><p className="text-[10px] font-medium text-white/50 uppercase tracking-[0.2em]">Portail Académique</p></div>
+            <img src="/images/logo-blanc.png" alt="UAC Présences" className="h-9 w-auto" />
+            <div>
+              <p className="text-[10px] font-medium text-white/50 uppercase tracking-[0.2em]">Portail Académique</p>
+            </div>
           </div>
 
           {/* Texte central */}
           <div className="space-y-6">
             <h2 className="text-3xl font-bold text-white font-headline leading-tight">
-              Plateforme de gestion<br />des présences académiques
+              Plateforme de gestion
+              <br />
+              des présences académiques
             </h2>
             <p className="text-white/60 text-sm leading-relaxed max-w-sm">
-              Accédez au tableau de bord pour gérer les cours, suivre les présences en temps réel et analyser les statistiques.
+              Accédez au tableau de bord pour gérer les cours, suivre les présences en temps réel et analyser les
+              statistiques.
             </p>
 
             {/* Petites cartes d'info */}
@@ -112,7 +144,7 @@ function LoginPage() {
           </div>
 
           {/* Footer */}
-          <p className="text-xs text-white/30">© {new Date().getFullYear()} — Tous droits réservés</p>
+          <p className="text-xs text-white/30">© {new Date().getFullYear()}. Tous droits réservés</p>
         </div>
       </div>
 
@@ -121,10 +153,9 @@ function LoginPage() {
         {/* Header mobile/tablette */}
         <div className="lg:hidden w-full px-6 py-5 flex items-center justify-between border-b border-outline-variant/10">
           <div className="flex items-center gap-3">
-            <img src="/images/logo-couleur-compact.png" alt="UAC Présences"
-              className="h-7 w-auto" />
+            <Logo className="h-7 w-auto" />
           </div>
-          <span className="text-xs text-on-surface-variant">Academic Portal</span>
+          <span className="text-xs text-on-surface-variant">Portail académique</span>
         </div>
 
         {/* Contenu principal centré */}
@@ -146,89 +177,136 @@ function LoginPage() {
 
             <div className="bg-surface-container-lowest rounded-3xl p-10 shadow-[0_12px_32px_rgba(25,28,31,0.04)] border border-outline-variant/10">
               <div className="mb-8">
-                <h1 className="text-2xl font-bold text-primary tracking-tight mb-1.5">
-                  Accès Administrateur
-                </h1>
-                <p className="text-sm text-on-surface-variant">
-                  Renseignez vos identifiants pour accéder au portail.
-                </p>
+                <h1 className="text-2xl font-bold text-primary tracking-tight mb-1.5">Accès Administrateur</h1>
+                <p className="text-sm text-on-surface-variant">Renseignez vos identifiants pour accéder au portail.</p>
               </div>
 
               {(error || initialError) && (
-                <div className="flex items-start gap-2.5 p-4 bg-error/10 rounded-xl text-error border border-error/10 mb-5">
+                <div className="flex items-start gap-2.5 p-4 bg-statut-erreur-fond rounded-xl text-statut-erreur border border-error/10 mb-5">
                   <FiAlertTriangle className="text-lg shrink-0 mt-0.5" />
                   <p className="text-sm">{error || initialError}</p>
                 </div>
               )}
 
               <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant ml-1" htmlFor="email">
-                    Email académique
-                  </label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-on-surface-variant/60">
-                      <FiMail size={16} />
+                {!requiresCode ? (
+                  <>
+                    <div className="space-y-1.5">
+                      <label
+                        className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant ml-1"
+                        htmlFor="email"
+                      >
+                        Email académique
+                      </label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-on-surface-variant">
+                          <FiMail size={16} />
+                        </div>
+                        <input
+                          className="w-full pl-11 pr-4 py-3.5 bg-surface-container-high rounded-xl border-b-2 border-transparent focus:border-primary focus:bg-surface-container-lowest transition-colors text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none text-sm"
+                          id="email"
+                          placeholder="nom.prenom@uac.bj"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          type="email"
+                          disabled={loading}
+                          autoComplete="email"
+                        />
+                      </div>
                     </div>
-                    <input
-                      className="w-full pl-11 pr-4 py-3.5 bg-surface-container-high rounded-xl border-b-2 border-transparent focus:border-primary focus:bg-surface-container-lowest transition-colors text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none text-sm"
-                      id="email"
-                      placeholder="nom.prenom@uac.bj"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      type="email"
-                      disabled={loading}
-                      autoComplete="email"
-                    />
-                  </div>
-                </div>
 
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-center">
-                    <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant ml-1" htmlFor="password">
-                      Mot de passe
-                    </label>
-                    <button type="button" onClick={() => navigate('/forgot-password')} className="text-xs font-semibold text-primary hover:underline cursor-pointer">
-                      Mot de passe oublié?
-                    </button>
-                  </div>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-on-surface-variant/60">
-                      <FiLock size={16} />
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <label
+                          className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant ml-1"
+                          htmlFor="password"
+                        >
+                          Mot de passe
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => navigate('/forgot-password')}
+                          className="text-xs font-semibold text-primary hover:underline cursor-pointer"
+                        >
+                          Mot de passe oublié?
+                        </button>
+                      </div>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-on-surface-variant">
+                          <FiLock size={16} />
+                        </div>
+                        <input
+                          className="w-full pl-11 pr-4 py-3.5 bg-surface-container-high rounded-xl border-b-2 border-transparent focus:border-primary focus:bg-surface-container-lowest transition-colors text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none text-sm"
+                          id="password"
+                          placeholder="••••••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          type="password"
+                          disabled={loading}
+                          autoComplete="current-password"
+                        />
+                      </div>
                     </div>
+                  </>
+                ) : (
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <label
+                        className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant ml-1"
+                        htmlFor="code"
+                      >
+                        Code de vérification
+                      </label>
+                      <button
+                        type="button"
+                        onClick={retourMotDePasse}
+                        className="text-xs font-semibold text-primary hover:underline cursor-pointer flex items-center gap-1"
+                      >
+                        <FiArrowLeft size={12} /> Retour
+                      </button>
+                    </div>
+                    <p className="text-xs text-on-surface-variant">
+                      Entrez le code à 6 chiffres de votre application d'authentification.
+                    </p>
                     <input
-                      className="w-full pl-11 pr-4 py-3.5 bg-surface-container-high rounded-xl border-b-2 border-transparent focus:border-primary focus:bg-surface-container-lowest transition-colors text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none text-sm"
-                      id="password"
-                      placeholder="••••••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      type="password"
+                      className="w-full px-4 py-3.5 bg-surface-container-high rounded-xl border-b-2 border-transparent focus:border-primary focus:bg-surface-container-lowest transition-colors text-on-surface text-center text-2xl font-mono tracking-widest focus:outline-none"
+                      id="code"
+                      placeholder="000000"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
                       disabled={loading}
-                      autoComplete="current-password"
+                      autoComplete="one-time-code"
+                      autoFocus
                     />
                   </div>
-                </div>
+                )}
 
                 <button
-                  className={`w-full bg-gradient-to-br from-primary to-primary-container text-white py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[0.99] active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  className={`w-full bg-gradient-to-br from-marque to-marque-fonce text-white py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[0.99] active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || (requiresCode && code.length !== 6)}
                 >
                   {loading ? <FiLoader className="animate-spin" /> : null}
-                  Se connecter
+                  {requiresCode ? 'Vérifier' : 'Se connecter'}
                 </button>
               </form>
             </div>
 
-            <p className="text-center text-xs text-on-surface-variant/70 mt-6">
+            <p className="text-center text-xs text-on-surface-variant mt-6">
               En vous connectant, vous acceptez les{' '}
-              <Link to="/terms" className="underline hover:text-primary">Conditions d'Utilisation</Link>.
+              <Link to="/terms" className="underline hover:text-primary">
+                Conditions d'Utilisation
+              </Link>
+              .
             </p>
           </div>
         </main>
       </div>
     </div>
   );
-};
+}
 
 export default LoginPage;

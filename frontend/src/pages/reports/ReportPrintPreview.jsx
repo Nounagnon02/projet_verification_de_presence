@@ -9,9 +9,14 @@ export default function ReportPrintPreview() {
     queryFn: ({ signal }) => rapportPresenceStats(signal),
   });
 
-  if (statsQuery.isLoading) return <div className="flex justify-center p-12"><FiLoader className="animate-spin text-primary w-8 h-8" /></div>;
+  if (statsQuery.isLoading)
+    return (
+      <div className="flex justify-center p-12">
+        <FiLoader className="animate-spin text-primary w-8 h-8" />
+      </div>
+    );
 
-  const s = statsQuery.isError ? {} : (statsQuery.data?.data || statsQuery.data || {});
+  const s = statsQuery.isError ? {} : statsQuery.data?.data || statsQuery.data || {};
   const totalEtudiants = s.total_etudiants || 0;
   const totalPresences = s.total_presences || 0;
   const tauxGlobal = s.taux_global !== undefined ? `${s.taux_global}%` : '—';
@@ -25,7 +30,7 @@ export default function ReportPrintPreview() {
           <p className="text-sm text-on-surface-variant">Rapport de synthèse</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => window.print()} className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 transition-all">
+          <button onClick={() => window.print()} className="btn-primaire">
             <FiPrinter /> Imprimer
           </button>
           {/* Le bouton « PDF » n'avait aucun gestionnaire. Il est retire plutot
@@ -36,20 +41,20 @@ export default function ReportPrintPreview() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xxl shadow-sm p-8 print:p-0 print:shadow-none max-w-4xl mx-auto">
+      <div className="theme-clair bg-white rounded-xxl shadow-sm p-5 sm:p-8 print:p-0 print:shadow-none max-w-4xl mx-auto">
         <div className="text-center mb-8 border-b pb-6">
           <h1 className="text-xl font-bold text-primary font-headline">Rapport de Présence</h1>
           <p className="text-sm text-on-surface-variant">Rapport de Présence - Synthèse Générale</p>
           <p className="text-xs text-on-surface-variant mt-1">Généré le {formatDate(new Date())}</p>
         </div>
 
-        <div className="grid grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 print:grid-cols-4 gap-3 sm:gap-4 mb-8">
           {[
             { label: 'Total étudiants', value: totalEtudiants },
             { label: 'Taux présence', value: tauxGlobal },
             { label: 'Présences', value: totalPresences },
             { label: 'Événements', value: totalEvenements },
-            { label: 'Taux', value: tauxGlobal },
+            // « Taux » répétait « Taux présence » (même valeur, tauxGlobal).
           ].map((s, i) => (
             <div key={i} className="text-center p-4 bg-surface rounded-xl">
               <p className="text-xl font-bold font-headline text-primary">{s.value}</p>
@@ -60,10 +65,18 @@ export default function ReportPrintPreview() {
 
         <h2 className="text-base font-bold font-headline text-primary mb-4">Résumé</h2>
         <div className="text-sm text-on-surface-variant space-y-2 mb-8">
-          <p>Total étudiants : <strong>{totalEtudiants}</strong></p>
-          <p>Total présences enregistrées : <strong>{totalPresences}</strong></p>
-          <p>Nombre d'événements : <strong>{totalEvenements}</strong></p>
-          <p>Taux de présence global : <strong>{tauxGlobal}</strong></p>
+          <p>
+            Total étudiants : <strong>{totalEtudiants}</strong>
+          </p>
+          <p>
+            Total présences enregistrées : <strong>{totalPresences}</strong>
+          </p>
+          <p>
+            Nombre d'événements : <strong>{totalEvenements}</strong>
+          </p>
+          <p>
+            Taux de présence global : <strong>{tauxGlobal}</strong>
+          </p>
         </div>
 
         <div className="text-center text-xs text-on-surface-variant pt-6 border-t">

@@ -4,11 +4,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiArrowLeft, FiSend, FiUser, FiClock, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import Badge from '../../components/ui/Badge';
 import { obtenirTicket, repondreTicket, changerStatutTicket } from '../../api/resources/support';
+import { usePrefixAide } from '../../hooks/usePrefixAide';
 
 const statusMap = { ouvert: 'success', en_cours: 'warning', resolu: 'info', ferme: 'neutral' };
 const statusLabels = { ouvert: 'Ouvert', en_cours: 'En cours', resolu: 'Résolu', ferme: 'Fermé' };
 
 export default function TicketDetailPage() {
+  const prefix = usePrefixAide();
   const { id } = useParams();
   const queryClient = useQueryClient();
 
@@ -51,7 +53,7 @@ export default function TicketDetailPage() {
       await changerStatutTicket(id, status);
       refetch();
     } catch (err) {
-      alert(err.response?.data?.message || "Erreur lors du changement de statut");
+      alert(err.response?.data?.message || 'Erreur lors du changement de statut');
     }
   };
 
@@ -66,7 +68,10 @@ export default function TicketDetailPage() {
   return (
     <div className="max-w-4xl">
       <div className="mb-6">
-        <Link to="/support/tickets" className="inline-flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-primary transition-colors">
+        <Link
+          to={`${prefix}/support/tickets`}
+          className="inline-flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-primary transition-colors"
+        >
           <FiArrowLeft size={16} /> Retour aux tickets
         </Link>
       </div>
@@ -75,8 +80,12 @@ export default function TicketDetailPage() {
         <div className="flex items-start justify-between mb-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <span className="text-[10px] font-mono text-on-surface-variant bg-surface-container-high px-2 py-0.5 rounded">#{ticket.id}</span>
-              <Badge variant={statusMap[ticket.status] || 'neutral'}>{statusLabels[ticket.status] || ticket.status}</Badge>
+              <span className="text-[10px] font-mono text-on-surface-variant bg-surface-container-high px-2 py-0.5 rounded">
+                #{ticket.id}
+              </span>
+              <Badge variant={statusMap[ticket.status] || 'neutral'}>
+                {statusLabels[ticket.status] || ticket.status}
+              </Badge>
               {ticket.priority === 'haute' && <Badge variant="warning">Haute</Badge>}
               {ticket.priority === 'critique' && <Badge variant="error">Critique</Badge>}
             </div>
@@ -88,16 +97,25 @@ export default function TicketDetailPage() {
           <div className="flex gap-2">
             {(ticket.status === 'ouvert' || ticket.status === 'en_cours') && (
               <>
-                <button onClick={() => updateStatus('resolu')} className="flex items-center gap-1.5 px-4 py-2 bg-surface-container-high text-on-surface rounded-xl text-xs font-semibold hover:bg-surface-container transition-all">
+                <button
+                  onClick={() => updateStatus('resolu')}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-surface-container-high text-on-surface rounded-xl text-xs font-semibold hover:bg-surface-container transition-all"
+                >
                   <FiCheckCircle size={14} /> Marquer résolu
                 </button>
-                <button onClick={() => updateStatus('ferme')} className="flex items-center gap-1.5 px-4 py-2 bg-error/10 text-error rounded-xl text-xs font-semibold hover:bg-error/20 transition-all">
+                <button
+                  onClick={() => updateStatus('ferme')}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-statut-erreur-fond text-statut-erreur rounded-xl text-xs font-semibold hover:bg-statut-erreur/15 transition-all"
+                >
                   <FiAlertCircle size={14} /> Fermer
                 </button>
               </>
             )}
             {ticket.status === 'resolu' && (
-              <button onClick={() => updateStatus('ferme')} className="flex items-center gap-1.5 px-4 py-2 bg-error/10 text-error rounded-xl text-xs font-semibold hover:bg-error/20 transition-all">
+              <button
+                onClick={() => updateStatus('ferme')}
+                className="flex items-center gap-1.5 px-4 py-2 bg-statut-erreur-fond text-statut-erreur rounded-xl text-xs font-semibold hover:bg-statut-erreur/15 transition-all"
+              >
                 <FiAlertCircle size={14} /> Fermer
               </button>
             )}
@@ -121,7 +139,10 @@ export default function TicketDetailPage() {
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-xs font-semibold text-primary">{msg.user?.name || 'Utilisateur'}</span>
                   <span className="text-[10px] text-on-surface-variant">·</span>
-                  <span className="text-[10px] text-on-surface-variant flex items-center gap-1"><FiClock size={10} />{msg.created_at}</span>
+                  <span className="text-[10px] text-on-surface-variant flex items-center gap-1">
+                    <FiClock size={10} />
+                    {msg.created_at}
+                  </span>
                 </div>
                 <p className="text-sm text-on-surface leading-relaxed">{msg.message}</p>
               </div>
@@ -131,12 +152,23 @@ export default function TicketDetailPage() {
       </div>
 
       {ticket.status !== 'ferme' && (
-        <form onSubmit={handleReply} className="bg-surface-container-lowest rounded-xxl p-6 shadow-sm border border-outline-variant/10">
-          <h3 id="ticket-reponse-titre" className="text-sm font-bold text-primary mb-4">Votre réponse</h3>
-          <textarea aria-labelledby="ticket-reponse-titre" rows="4" className="w-full px-4 py-3 bg-surface-container-high rounded-xl text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all resize-none"
-            value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Écrivez votre message..." />
+        <form
+          onSubmit={handleReply}
+          className="bg-surface-container-lowest rounded-xxl p-6 shadow-sm border border-outline-variant/10"
+        >
+          <h3 id="ticket-reponse-titre" className="text-sm font-bold text-primary mb-4">
+            Votre réponse
+          </h3>
+          <textarea
+            aria-labelledby="ticket-reponse-titre"
+            rows="4"
+            className="w-full px-4 py-3 bg-surface-container-high rounded-xl text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-all resize-none"
+            value={reply}
+            onChange={(e) => setReply(e.target.value)}
+            placeholder="Écrivez votre message..."
+          />
           <div className="flex justify-end mt-4">
-            <button type="submit" disabled={sending || !reply.trim()} className="flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 disabled:opacity-50 transition-all">
+            <button type="submit" disabled={sending || !reply.trim()} className="btn-primaire px-6">
               <FiSend size={16} /> {sending ? 'Envoi...' : 'Envoyer'}
             </button>
           </div>

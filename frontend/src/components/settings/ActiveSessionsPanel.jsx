@@ -55,8 +55,14 @@ const SessionRow = ({ session }) => {
           : 'border-outline-variant/10 bg-surface-container-lowest'
       }`}
     >
-      <div className={`p-2.5 rounded-xl shrink-0 ${session.is_current ? 'bg-primary/10' : 'bg-surface-container-high'}`}>
-        <Icone size={18} className={session.is_current ? 'text-primary' : 'text-on-surface-variant'} aria-hidden="true" />
+      <div
+        className={`p-2.5 rounded-xl shrink-0 ${session.is_current ? 'bg-primary/10' : 'bg-surface-container-high'}`}
+      >
+        <Icone
+          size={18}
+          className={session.is_current ? 'text-primary' : 'text-on-surface-variant'}
+          aria-hidden="true"
+        />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
@@ -67,9 +73,7 @@ const SessionRow = ({ session }) => {
           <FiClock size={12} aria-hidden="true" />
           Dernière activité : {session.last_active || '—'}
         </p>
-        <p className="text-xs text-on-surface-variant">
-          Connectée le {formatConnexion(session.created_at)}
-        </p>
+        <p className="text-xs text-on-surface-variant">Connectée le {formatConnexion(session.created_at)}</p>
       </div>
     </li>
   );
@@ -99,7 +103,7 @@ export default function ActiveSessionsPanel() {
   const liste = sessionsQuery.data?.data ?? [];
   const loading = sessionsQuery.isLoading;
   const error = sessionsQuery.isError
-    ? (sessionsQuery.error?.response?.data?.message || sessionsQuery.error?.message || 'Erreur de connexion')
+    ? sessionsQuery.error?.response?.data?.message || sessionsQuery.error?.message || 'Erreur de connexion'
     : null;
   const nbAutres = liste.filter((s) => !s.is_current).length;
 
@@ -111,27 +115,21 @@ export default function ActiveSessionsPanel() {
       addToast?.(data?.message || 'Les autres appareils ont été déconnectés.', 'success');
       await queryClient.invalidateQueries({ queryKey: ['sessions'] });
     } catch (err) {
-      addToast?.(
-        err.response?.data?.message || 'Erreur lors de la déconnexion des autres appareils',
-        'error'
-      );
+      addToast?.(err.response?.data?.message || 'Erreur lors de la déconnexion des autres appareils', 'error');
     } finally {
       setRevoking(false);
     }
   };
 
   return (
-    <div className="bg-surface-container-lowest rounded-xxl p-6 shadow-sm border border-outline-variant/5">
-      {/* En-tête */}
-      <div className="flex flex-wrap items-center gap-3 mb-6">
-        <div className="p-2.5 bg-primary/5 rounded-xl">
-          <FiMonitor className="text-primary" size={20} aria-hidden="true" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h2 className="text-base font-bold font-headline text-primary">Sessions actives</h2>
-          <p className="text-xs text-on-surface-variant mt-0.5">
-            Les appareils actuellement connectés à votre compte.
-          </p>
+    <div className="rounded-xxl border border-outline-variant/15 bg-surface-container-lowest p-5 sm:p-7">
+      {/* En-tête. basis-64 : avec flex-1 seul (base nulle), la ligne ne
+          passait jamais à la ligne et le texte s'écrasait à un mot par ligne,
+          sous le bouton, à 390 px. */}
+      <div className="mb-6 flex flex-wrap items-center gap-3">
+        <div className="min-w-0 flex-1 basis-64">
+          <h2 className="font-headline text-base font-bold text-primary">Sessions actives</h2>
+          <p className="mt-1 text-sm text-on-surface-variant">Les appareils actuellement connectés à votre compte.</p>
         </div>
         <Button
           variant="destructive"
@@ -152,11 +150,16 @@ export default function ActiveSessionsPanel() {
         </div>
       ) : error ? (
         <div className="p-4 bg-error/10 rounded-xl">
-          <p className="flex items-center gap-2 text-sm text-error">
+          <p className="flex items-center gap-2 text-sm text-statut-erreur">
             <FiAlertTriangle size={16} aria-hidden="true" />
             {error}
           </p>
-          <Button variant="outline" size="sm" onClick={() => sessionsQuery.refetch()} className="mt-3 rounded-xl font-semibold">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => sessionsQuery.refetch()}
+            className="mt-3 rounded-xl font-semibold"
+          >
             <FiRefreshCw size={14} aria-hidden="true" />
             Réessayer
           </Button>
@@ -181,8 +184,8 @@ export default function ActiveSessionsPanel() {
       >
         <div className="space-y-5">
           <div className="flex items-start gap-3 p-3 bg-error/10 rounded-xl">
-            <FiAlertTriangle className="text-error shrink-0 mt-0.5" size={18} aria-hidden="true" />
-            <p id="revoke-sessions-description" className="text-sm text-error">
+            <FiAlertTriangle className="text-statut-erreur shrink-0 mt-0.5" size={18} aria-hidden="true" />
+            <p id="revoke-sessions-description" className="text-sm text-statut-erreur">
               {nbAutres === 1
                 ? '1 autre appareil sera déconnecté immédiatement et devra se reconnecter.'
                 : `${nbAutres} autres appareils seront déconnectés immédiatement et devront se reconnecter.`}

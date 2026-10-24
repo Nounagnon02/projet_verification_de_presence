@@ -34,15 +34,17 @@ const RAISON_INCONNUE = { libelle: 'Scan refusé', Icone: FiAlertTriangle };
 
 // Présence de l'étudiant à la séance visée, quand il en a une.
 const ETATS_PRESENCE = {
-  valide: { libelle: 'Présent', classe: 'bg-secondary/10 text-secondary' },
-  suspect: { libelle: "Présence suspecte — file d'attente", classe: 'bg-warning-container/30 text-warning' },
-  rejete: { libelle: 'Présence rejetée', classe: 'bg-error/10 text-error' },
+  valide: { libelle: 'Présent', classe: 'bg-statut-succes-fond text-statut-succes' },
+  suspect: { libelle: "Présence suspecte : file d'attente", classe: 'bg-statut-alerte-fond text-statut-alerte' },
+  rejete: { libelle: 'Présence rejetée', classe: 'bg-statut-erreur-fond text-statut-erreur' },
 };
 
 const PAR_PAGE = 20;
 const MOTIF_MAX = 500;
 
-const classeChamp = 'w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20';
+const classeChamp =
+  // Classe partagée (index.css) : rayon, bordure, focus et état désactivé communs.
+  'champ py-2';
 const classeLibelle = 'text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider';
 
 /** Nom affichable d'un étudiant, sans laisser passer « undefined ». */
@@ -57,8 +59,11 @@ const formaterDateHeure = (valeur) => {
   const date = new Date(valeur);
   if (Number.isNaN(date.getTime())) return null;
   return date.toLocaleString('fr-FR', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 };
 
@@ -66,11 +71,14 @@ const formaterDateHeure = (valeur) => {
 const formaterDate = (iso) => (iso ? iso.split('-').reverse().join('/') : '');
 
 /** « Programmation en C · 25/08/2026 · 08:00 – 10:00 » */
-const decrireSeance = (seance) => [
-  seance?.cours || seance?.code || 'Cours inconnu',
-  formaterDate(seance?.date),
-  seance?.heure_debut && seance?.heure_fin ? `${seance.heure_debut} – ${seance.heure_fin}` : '',
-].filter(Boolean).join(' · ');
+const decrireSeance = (seance) =>
+  [
+    seance?.cours || seance?.code || 'Cours inconnu',
+    formaterDate(seance?.date),
+    seance?.heure_debut && seance?.heure_fin ? `${seance.heure_debut} – ${seance.heure_fin}` : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
 export default function ScansRefusesPage() {
   const { addToast } = useToastCtx();
@@ -90,10 +98,7 @@ export default function ScansRefusesPage() {
   const [erreurModale, setErreurModale] = useState('');
 
   const queryClient = useQueryClient();
-  const rafraichir = useCallback(
-    () => queryClient.invalidateQueries({ queryKey: ['scans-refuses'] }),
-    [queryClient],
-  );
+  const rafraichir = useCallback(() => queryClient.invalidateQueries({ queryKey: ['scans-refuses'] }), [queryClient]);
 
   // Liste des filières pour le filtre. Son échec n'empêche pas de consulter.
   const filieresQuery = useQuery({ queryKey: ['filieres'], queryFn: () => listerFilieres() });
@@ -115,8 +120,8 @@ export default function ScansRefusesPage() {
 
   const chargement = refusQuery.isFetching;
   const erreur = refusQuery.isError
-    ? (refusQuery.error?.response?.data?.message
-      || 'Impossible de charger les scans refusés. Vérifiez votre connexion puis réessayez.')
+    ? refusQuery.error?.response?.data?.message ||
+      'Impossible de charger les scans refusés. Vérifiez votre connexion puis réessayez.'
     : '';
 
   // Copie locale : la fenêtre d'enregistrement marque directement la ligne
@@ -164,9 +169,13 @@ export default function ScansRefusesPage() {
       const data = await enregistrerPresenceDepuisRefus(cible.id, { motif: motifNettoye });
       const presence = data?.data?.presence;
 
-      setRefus((precedent) => precedent.map((ligne) => (ligne.id === cible.id
-        ? { ...ligne, presence: { id: presence?.id, statut: 'valide', depuis_ce_refus: true } }
-        : ligne)));
+      setRefus((precedent) =>
+        precedent.map((ligne) =>
+          ligne.id === cible.id
+            ? { ...ligne, presence: { id: presence?.id, statut: 'valide', depuis_ce_refus: true } }
+            : ligne,
+        ),
+      );
       addToast?.(data?.message || 'Présence enregistrée.', 'success');
       setCible(null);
       setMotif('');
@@ -204,12 +213,10 @@ export default function ScansRefusesPage() {
         return (
           <div className="min-w-[220px] max-w-md">
             <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-on-surface">
-              <Icone size={13} className="text-warning shrink-0" aria-hidden="true" />
+              <Icone size={13} className="text-statut-alerte shrink-0" aria-hidden="true" />
               {libelle}
             </p>
-            {ligne.description && (
-              <p className="text-[11px] text-on-surface-variant mt-0.5">{ligne.description}</p>
-            )}
+            {ligne.description && <p className="text-[11px] text-on-surface-variant mt-0.5">{ligne.description}</p>}
           </div>
         );
       },
@@ -221,7 +228,7 @@ export default function ScansRefusesPage() {
         const seance = ligne.evenement;
         if (!seance) {
           // Refus enregistré avant que la séance ne soit notée.
-          return <span className="text-[11px] text-on-surface-variant/70">Séance non enregistrée</span>;
+          return <span className="text-[11px] text-on-surface-variant">Séance non enregistrée</span>;
         }
         return (
           <div className="min-w-[150px]">
@@ -247,14 +254,16 @@ export default function ScansRefusesPage() {
         if (ligne.presence) {
           const etat = ETATS_PRESENCE[ligne.presence.statut] || ETATS_PRESENCE.valide;
           return (
-            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap ${etat.classe}`}>
+            <span
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap ${etat.classe}`}
+            >
               <FiCheckCircle size={12} aria-hidden="true" />
               {ligne.presence.depuis_ce_refus ? 'Présence enregistrée depuis ce refus' : etat.libelle}
             </span>
           );
         }
         if (!ligne.evenement) {
-          return <span className="text-[11px] text-on-surface-variant/70">Séance inconnue : rien à rattacher</span>;
+          return <span className="text-[11px] text-on-surface-variant">Séance inconnue : rien à rattacher</span>;
         }
         return (
           <Button variant="primary" size="sm" className="whitespace-nowrap" onClick={() => ouvrir(ligne)}>
@@ -273,9 +282,8 @@ export default function ScansRefusesPage() {
         <div>
           <h1 className="text-2xl font-bold text-primary font-headline">Scans refusés</h1>
           <p className="text-sm text-on-surface-variant">
-            Tentatives rejetées par le serveur : aucune présence n'a été enregistrée. Si l'étudiant était
-            bien en salle, enregistrez sa présence avec un motif. Les scans suspects se tranchent dans la
-            file d'attente.
+            Tentatives rejetées par le serveur : aucune présence n'a été enregistrée. Si l'étudiant était bien en salle,
+            enregistrez sa présence avec un motif. Les scans suspects se tranchent dans la file d'attente.
           </p>
         </div>
         <button
@@ -291,36 +299,53 @@ export default function ScansRefusesPage() {
       <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/10">
         <div className="flex flex-wrap items-end gap-4">
           <div className="space-y-1 min-w-[160px] flex-1">
-            <label htmlFor="refus-filiere" className={classeLibelle}>Filière</label>
+            <label htmlFor="refus-filiere" className={classeLibelle}>
+              Filière
+            </label>
             <select
               id="refus-filiere"
               value={filtreFiliere}
-              onChange={(e) => { setFiltreFiliere(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setFiltreFiliere(e.target.value);
+                setPage(1);
+              }}
               className={classeChamp}
             >
               <option value="">Toutes</option>
               {filieres.map((filiere) => (
-                <option key={filiere.id} value={filiere.id}>{filiere.code}</option>
+                <option key={filiere.id} value={filiere.id}>
+                  {filiere.code}
+                </option>
               ))}
             </select>
           </div>
           <div className="space-y-1 min-w-[150px] flex-1">
-            <label htmlFor="refus-date-debut" className={classeLibelle}>Du</label>
+            <label htmlFor="refus-date-debut" className={classeLibelle}>
+              Du
+            </label>
             <input
               id="refus-date-debut"
               type="date"
               value={dateDebut}
-              onChange={(e) => { setDateDebut(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setDateDebut(e.target.value);
+                setPage(1);
+              }}
               className={classeChamp}
             />
           </div>
           <div className="space-y-1 min-w-[150px] flex-1">
-            <label htmlFor="refus-date-fin" className={classeLibelle}>Au</label>
+            <label htmlFor="refus-date-fin" className={classeLibelle}>
+              Au
+            </label>
             <input
               id="refus-date-fin"
               type="date"
               value={dateFin}
-              onChange={(e) => { setDateFin(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setDateFin(e.target.value);
+                setPage(1);
+              }}
               className={classeChamp}
             />
           </div>
@@ -329,7 +354,10 @@ export default function ScansRefusesPage() {
 
       <SearchInput
         value={recherche}
-        onChange={(valeur) => { setRecherche(valeur); setPage(1); }}
+        onChange={(valeur) => {
+          setRecherche(valeur);
+          setPage(1);
+        }}
         placeholder="Rechercher un étudiant (nom ou matricule)..."
         className="max-w-md"
       />
@@ -337,7 +365,7 @@ export default function ScansRefusesPage() {
       {erreur ? (
         <div className="bg-surface-container-lowest rounded-xxl p-10 shadow-sm border border-outline-variant/10 text-center">
           <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-error-container/30 flex items-center justify-center">
-            <FiAlertTriangle className="text-error" size={26} aria-hidden="true" />
+            <FiAlertTriangle className="text-statut-erreur" size={26} aria-hidden="true" />
           </div>
           <h2 className="text-base font-semibold text-on-surface mb-1">Chargement impossible</h2>
           <p className="text-sm text-on-surface-variant mb-5">{erreur}</p>
@@ -353,14 +381,18 @@ export default function ScansRefusesPage() {
             loading={chargement}
             aria-label="Scans refusés"
             caption="Tentatives de scan rejetées par le serveur"
-            emptyMessage={filtresActifs
-              ? 'Aucun scan refusé ne correspond à ces critères.'
-              : 'Aucun scan refusé. Les tentatives rejetées apparaîtront ici.'}
-            emptyAction={filtresActifs ? (
-              <Button variant="outline" size="sm" onClick={reinitialiser}>
-                Effacer les critères
-              </Button>
-            ) : null}
+            emptyMessage={
+              filtresActifs
+                ? 'Aucun scan refusé ne correspond à ces critères.'
+                : 'Aucun scan refusé. Les tentatives rejetées apparaîtront ici.'
+            }
+            emptyAction={
+              filtresActifs ? (
+                <Button variant="outline" size="sm" onClick={reinitialiser}>
+                  Effacer les critères
+                </Button>
+              ) : null
+            }
             pagination={pagination}
             onPageChange={setPage}
           />
@@ -373,7 +405,9 @@ export default function ScansRefusesPage() {
           <div className="space-y-4">
             <div className="rounded-xl bg-surface-container-high p-4 space-y-0.5">
               <p className="text-sm font-semibold text-on-surface">{nomComplet(cible.etudiant)}</p>
-              <p className="text-[11px] font-mono text-on-surface-variant">{cible.etudiant?.matricule || 'Matricule inconnu'}</p>
+              <p className="text-[11px] font-mono text-on-surface-variant">
+                {cible.etudiant?.matricule || 'Matricule inconnu'}
+              </p>
               <p className="text-xs text-on-surface-variant">{decrireSeance(cible.evenement)}</p>
               <p className="text-xs text-on-surface-variant">
                 Refusé : {raisonCible}, le {formaterDateHeure(cible.creee_le) || '—'}
@@ -381,14 +415,13 @@ export default function ScansRefusesPage() {
             </div>
 
             <p className="text-sm text-on-surface-variant">
-              L'étudiant sera compté présent, à l'heure de sa tentative. Ne le faites que s'il était bien
-              en cours — par exemple, confirmé par l'enseignant. L'opération est tracée à votre nom dans le
-              journal d'audit.
+              L'étudiant sera compté présent, à l'heure de sa tentative. Ne le faites que s'il était bien en cours, par
+              exemple, confirmé par l'enseignant. L'opération est tracée à votre nom dans le journal d'audit.
             </p>
 
             <div className="space-y-1.5">
               <label htmlFor={idMotif} className="text-xs font-semibold text-on-surface-variant">
-                Motif <span className="text-error">*</span>
+                Motif <span className="text-statut-erreur">*</span>
               </label>
               <textarea
                 id={idMotif}
@@ -396,13 +429,19 @@ export default function ScansRefusesPage() {
                 maxLength={MOTIF_MAX}
                 value={motif}
                 onChange={(e) => setMotif(e.target.value)}
-                placeholder="Ex. : présent en salle, GPS du téléphone imprécis — confirmé par l'enseignant."
+                placeholder="Ex. : présent en salle, GPS du téléphone imprécis, confirmé par l'enseignant."
                 className="w-full px-3 py-2.5 bg-surface-container-high rounded-lg text-sm border-b-2 border-transparent focus:border-primary focus:outline-none transition-colors resize-none"
               />
-              <p className="text-[10px] text-on-surface-variant text-right">{motif.length}/{MOTIF_MAX} caractères</p>
+              <p className="text-[10px] text-on-surface-variant text-right">
+                {motif.length}/{MOTIF_MAX} caractères
+              </p>
             </div>
 
-            {erreurModale && <p role="alert" className="text-sm text-error">{erreurModale}</p>}
+            {erreurModale && (
+              <p role="alert" className="text-sm text-statut-erreur">
+                {erreurModale}
+              </p>
+            )}
 
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="ghost" size="sm" onClick={fermer} disabled={envoi}>

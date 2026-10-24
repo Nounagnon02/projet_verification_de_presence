@@ -1,11 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { FiChevronRight, FiSave, FiAlertCircle, FiInfo, FiZoomIn, FiCheck, FiLoader } from 'react-icons/fi';
+import { FiChevronRight, FiSave, FiAlertCircle, FiInfo, FiFileText, FiCheck, FiLoader } from 'react-icons/fi';
 import { MdAutoAwesome } from 'react-icons/md';
 import { listerSallesDisponibles } from '../../api/resources/reference';
 import {
-  reconnaitreSalles, creerSalleDepuisNom, verifierImportEmploiDuTemps, confirmerImportEmploiDuTemps,
+  reconnaitreSalles,
+  creerSalleDepuisNom,
+  verifierImportEmploiDuTemps,
+  confirmerImportEmploiDuTemps,
 } from '../../api/resources/imports';
 import useFiltresAcademiques from '../../hooks/useFiltresAcademiques';
 import BandeauAnneeClose from '../../components/ui/BandeauAnneeClose';
@@ -19,9 +22,13 @@ const AUCUNE = 'aucune';
 const CREER = 'creer';
 
 /** Clé de comparaison d'un nom de salle, alignée sur CorrespondanceSalles::cle() côté serveur. */
-const cleSalle = (nom) => String(nom ?? '')
-  .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+const cleSalle = (nom) =>
+  String(nom ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 
 const controles = (salle) => [salle?.verifie_gps && 'GPS', salle?.verifie_wifi && 'Wi-Fi'].filter(Boolean);
 
@@ -32,7 +39,7 @@ const controles = (salle) => [salle?.verifie_gps && 'GPS', salle?.verifie_wifi &
  * lecture fautive (« Amhpi C ») devenait une salle fantôme, et un nom seul ne
  * permet ni le contrôle au scan ni la détection de double réservation. On
  * choisit donc une salle configurée, on crée celle que le document nomme, ou
- * l'on retient « Aucune — QR seul ».
+ * l'on retient « Aucune : QR seul ».
  */
 function ChoixSalle({ id, nomLu, valeur, salles, onChange, occupe }) {
   const choisie = salles.find((s) => String(s.id) === valeur);
@@ -51,15 +58,23 @@ function ChoixSalle({ id, nomLu, valeur, salles, onChange, occupe }) {
       >
         {valeur === A_CHOISIR && <option value={A_CHOISIR}>À choisir…</option>}
         {nomLu && !choisie && <option value={CREER}>Créer « {nomLu} »</option>}
-        <option value={AUCUNE}>Aucune — QR seul</option>
+        <option value={AUCUNE}>Aucune : QR seul</option>
         {protegees.length > 0 && (
           <optgroup label="Avec contrôle au scan">
-            {protegees.map((s) => <option key={s.id} value={s.id}>{s.nom} · {controles(s).join(' + ')}</option>)}
+            {protegees.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.nom} · {controles(s).join(' + ')}
+              </option>
+            ))}
           </optgroup>
         )}
         {qrSeul.length > 0 && (
-          <optgroup label="QR seul — GPS et Wi-Fi à configurer">
-            {qrSeul.map((s) => <option key={s.id} value={s.id}>{s.nom}</option>)}
+          <optgroup label="QR seul : GPS et Wi-Fi à configurer">
+            {qrSeul.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.nom}
+              </option>
+            ))}
           </optgroup>
         )}
       </select>
@@ -127,10 +142,7 @@ function lireAnalyseEnSession() {
     // l'extraction. CourseValidationPage, lui, regardait bien « result ».
     const root = parsed?.result || parsed?.data || parsed;
 
-    const eventsData = root?.events
-      || root?.data?.events
-      || (Array.isArray(root?.data) ? root.data : [])
-      || [];
+    const eventsData = root?.events || root?.data?.events || (Array.isArray(root?.data) ? root.data : []) || [];
 
     const events = Array.isArray(eventsData) ? eventsData : [];
 
@@ -144,8 +156,12 @@ function lireAnalyseEnSession() {
         diagnostic: root?.diagnostic ?? root?.data?.diagnostic ?? null,
         // Date à partir de laquelle le document dit s'appliquer, s'il la donne.
         valideDu: root?.valide_du ?? root?.data?.valide_du ?? null,
-        score: parsed?.score_de_confiance ?? root?.score_de_confiance ?? root?.confidence ?? 0.9,
-        filename: root?.metadata?.filename || 'Emploi du temps',
+        // Pas de valeur par défaut : un « 90 % Confiance » s'affichait quand
+        // l'analyse n'avait fourni aucun score.
+        score: parsed?.score_de_confiance ?? root?.score_de_confiance ?? root?.confidence ?? null,
+        // metadata est à la racine de la réponse, à côté de result : lu seulement
+        // dans result, le nom du fichier n'apparaissait jamais.
+        filename: parsed?.metadata?.filename || root?.metadata?.filename || null,
       },
       // Tout est sélectionné par défaut.
       selection: Object.fromEntries(events.map((_, i) => [i, true])),
@@ -181,9 +197,9 @@ export default function ScheduleValidationPage() {
   // Salle de chaque ligne. Une ligne sans salle lue part sur « Aucune — QR
   // seul » ; une ligne qui en nomme une attend la reconnaissance du serveur,
   // puis, si le nom n'est pas reconnu, le choix de l'administrateur.
-  const [choixSalles, setChoixSalles] = useState(() => Object.fromEntries(
-    (initial?.analyse?.events ?? []).map((e, i) => [i, e.salle ? A_CHOISIR : AUCUNE]),
-  ));
+  const [choixSalles, setChoixSalles] = useState(() =>
+    Object.fromEntries((initial?.analyse?.events ?? []).map((e, i) => [i, e.salle ? A_CHOISIR : AUCUNE])),
+  );
   const [creationEnCours, setCreationEnCours] = useState(false);
   const [infoSalle, setInfoSalle] = useState('');
 
@@ -216,9 +232,10 @@ export default function ScheduleValidationPage() {
   // Seules les salles de l'établissement de la filière de destination sont
   // acceptées par le serveur : un super admin voit celles de tous.
   const sallesProposees = useMemo(
-    () => (filiereChoisie?.etablissement_id
-      ? salles.filter((s) => s.etablissement_id === filiereChoisie.etablissement_id)
-      : salles),
+    () =>
+      filiereChoisie?.etablissement_id
+        ? salles.filter((s) => s.etablissement_id === filiereChoisie.etablissement_id)
+        : salles,
     [salles, filiereChoisie],
   );
 
@@ -241,13 +258,19 @@ export default function ScheduleValidationPage() {
           const connues = new Set(prev.map((s) => s.id));
           return [...prev, ...[...reconnues.values()].filter((s) => !connues.has(s.id))];
         });
-        setChoixSalles((prev) => Object.fromEntries(Object.entries(prev).map(([i, valeur]) => {
-          if (valeur !== A_CHOISIR) return [i, valeur];
-          const salle = reconnues.get(cleSalle(events[i]?.salle));
-          return [i, salle ? String(salle.id) : valeur];
-        })));
+        setChoixSalles((prev) =>
+          Object.fromEntries(
+            Object.entries(prev).map(([i, valeur]) => {
+              if (valeur !== A_CHOISIR) return [i, valeur];
+              const salle = reconnues.get(cleSalle(events[i]?.salle));
+              return [i, salle ? String(salle.id) : valeur];
+            }),
+          ),
+        );
       })
-      .catch(() => { /* les salles restent à choisir */ });
+      .catch(() => {
+        /* les salles restent à choisir */
+      });
 
     return () => controleur.abort();
   }, [filtres.filiere, nomsLus, events]);
@@ -259,7 +282,10 @@ export default function ScheduleValidationPage() {
 
     setChoixSalles((prev) => {
       const suivant = { ...prev, [idx]: valeur };
-      if (cle) events.forEach((e, i) => { if (cleSalle(e.salle) === cle) suivant[i] = valeur; });
+      if (cle)
+        events.forEach((e, i) => {
+          if (cleSalle(e.salle) === cle) suivant[i] = valeur;
+        });
       return suivant;
     });
     setRapport(null);
@@ -297,19 +323,22 @@ export default function ScheduleValidationPage() {
 
   // Ce qui part au serveur : l'identifiant de la salle choisie, ou « aucune »
   // explicitement. Le nom lu reste joint, pour les motifs, mais n'engage rien.
-  const creneauxAEnvoyer = () => events.flatMap((event, i) => {
-    if (!selected[i]) return [];
-    const choix = choixSalles[i];
-    const salleId = choix && choix !== A_CHOISIR && choix !== AUCUNE ? Number(choix) : null;
-    return [{ ...event, salle_id: salleId, sans_salle: choix === AUCUNE }];
-  });
+  const creneauxAEnvoyer = () =>
+    events.flatMap((event, i) => {
+      if (!selected[i]) return [];
+      const choix = choixSalles[i];
+      const salleId = choix && choix !== A_CHOISIR && choix !== AUCUNE ? Number(choix) : null;
+      return [{ ...event, salle_id: salleId, sans_salle: choix === AUCUNE }];
+    });
 
   const sallesAChoisir = events.filter((_, i) => selected[i] && choixSalles[i] === A_CHOISIR).length;
 
   const toggleAll = () => {
     const allSelected = Object.values(selected).every(Boolean);
     const newSelected = {};
-    events.forEach((_, i) => { newSelected[i] = !allSelected; });
+    events.forEach((_, i) => {
+      newSelected[i] = !allSelected;
+    });
     setSelected(newSelected);
   };
 
@@ -331,7 +360,7 @@ export default function ScheduleValidationPage() {
     if (conflicts.has(idx)) {
       return { label: 'Conflit', color: 'bg-error-container text-on-error-container', icon: FiAlertCircle };
     }
-    // Une ligne sans salle n'est pas incomplète : « Aucune — QR seul » est un
+    // Une ligne sans salle n'est pas incomplète : « Aucune : QR seul » est un
     // choix légitime. Seule une salle lue et pas encore traitée est à reprendre.
     if (!event.heure_debut || !event.heure_fin) {
       return { label: 'Incomplet', color: 'bg-warning-container text-on-surface', icon: FiAlertCircle };
@@ -370,7 +399,9 @@ export default function ScheduleValidationPage() {
     }
 
     if (sallesAChoisir > 0) {
-      setError(`${sallesAChoisir} créneau(x) ont une salle à choisir : sélectionnez une salle, créez-la, ou choisissez « Aucune — QR seul ».`);
+      setError(
+        `${sallesAChoisir} créneau(x) ont une salle à choisir : sélectionnez une salle, créez-la, ou choisissez « Aucune : QR seul ».`,
+      );
       return;
     }
 
@@ -453,11 +484,12 @@ export default function ScheduleValidationPage() {
             {rapport?.valides ?? selectedCount} créneau(x) ajouté(s) à l&apos;emploi du temps.
           </p>
           {conflictCount > 0 && (
-            <p className="text-xs text-warning mb-8">{conflictCount} chevauchement(s) repéré(s) à l&apos;écran.</p>
+            <p className="text-xs text-statut-alerte mb-8">
+              {conflictCount} chevauchement(s) repéré(s) à l&apos;écran.
+            </p>
           )}
           <div className="flex gap-3 justify-center">
-            <button onClick={() => navigate('/schedules/weekly')}
-              className="bg-primary text-white px-8 py-3 rounded-xl font-semibold hover:opacity-90 transition-all">
+            <button onClick={() => navigate('/schedules/weekly')} className="btn-primaire px-8 py-3">
               Voir l'emploi du temps
             </button>
           </div>
@@ -482,16 +514,18 @@ export default function ScheduleValidationPage() {
             <h1 className="text-3xl font-extrabold text-primary tracking-tight">Valider les événements</h1>
             <p className="text-on-surface-variant mt-1">Vérifiez les cours extraits avant de finaliser.</p>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1 bg-secondary-container/30 text-on-secondary-container rounded-full text-xs font-semibold">
-            <MdAutoAwesome className="text-sm" />
-            {Math.round((analysisData.score || 0) * 100)}% Confiance
-          </div>
+          {analysisData.score !== null && (
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-xs font-semibold">
+              <MdAutoAwesome className="text-sm" aria-hidden="true" />
+              {Math.round(analysisData.score * 100)}% Confiance
+            </div>
+          )}
         </div>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Main table */}
-        <div className="flex-1 space-y-6">
+        <div className="flex-1 min-w-0 space-y-6">
           <div className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -528,7 +562,10 @@ export default function ScheduleValidationPage() {
                     const intitule = event.ec || event.ec_libelle || event.cours || 'Cours sans nom';
                     const jour = getDayName(event.date, event.jour_semaine);
                     return (
-                      <tr key={idx} className={`hover:bg-surface-bright transition-colors group ${isConflict ? 'bg-red-50/20' : ''}`}>
+                      <tr
+                        key={idx}
+                        className={`hover:bg-surface-bright transition-colors group ${isConflict ? 'bg-red-50/20' : ''}`}
+                      >
                         <td className="py-5 px-6 text-center">
                           <input
                             type="checkbox"
@@ -544,12 +581,18 @@ export default function ScheduleValidationPage() {
                             {/* L'extraction rend « ec_libelle » et « ec_code » : ne lire que
                                 « ec » affichait « Cours sans nom » sur toute la liste. */}
                             <span className="font-semibold text-on-surface">{intitule}</span>
-                            {(event.code || event.ec_code) && <span className="text-xs text-on-surface-variant font-mono">{event.code || event.ec_code}</span>}
+                            {(event.code || event.ec_code) && (
+                              <span className="text-xs text-on-surface-variant font-mono">
+                                {event.code || event.ec_code}
+                              </span>
+                            )}
                           </div>
                         </td>
                         <td className="py-5 px-6">
                           <span className="text-sm font-medium">{jour}</span>
-                          <span className="text-xs text-on-surface-variant block">{event.date || 'chaque semaine'}</span>
+                          <span className="text-xs text-on-surface-variant block">
+                            {event.date || 'chaque semaine'}
+                          </span>
                         </td>
                         <td className="py-5 px-6">
                           <div className="flex items-center gap-2 font-mono text-sm text-primary">
@@ -569,7 +612,9 @@ export default function ScheduleValidationPage() {
                           />
                         </td>
                         <td className="py-5 px-6">
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${status.color}`}>
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${status.color}`}
+                          >
                             <StatusIcon className="text-[14px]" />
                             {status.label}
                           </span>
@@ -600,14 +645,19 @@ export default function ScheduleValidationPage() {
               </p>
               {sallesAChoisir > 0 && (
                 <p className="text-sm text-on-surface-variant mt-1">
-                  {sallesAChoisir} créneau(x) nomment une salle non reconnue : choisissez-la, créez-la, ou retenez « Aucune — QR seul ».
+                  {sallesAChoisir} créneau(x) nomment une salle non reconnue : choisissez-la, créez-la, ou retenez «
+                  Aucune : QR seul ».
                 </p>
               )}
               {infoSalle && (
                 <p role="status" className="text-sm text-secondary font-medium mt-1">
-                  {infoSalle}{' '}
-                  {/* Nouvel onglet : quitter cette page perdrait les choix de salle en cours. */}
-                  <Link to="/settings/salles?filtre=a-configurer" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                  {infoSalle} {/* Nouvel onglet : quitter cette page perdrait les choix de salle en cours. */}
+                  <Link
+                    to="/settings/salles?filtre=a-configurer"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary underline"
+                  >
                     Configurer les salles (nouvel onglet)
                   </Link>
                 </p>
@@ -617,19 +667,34 @@ export default function ScheduleValidationPage() {
         </div>
 
         {/* Sidebar */}
-        <aside className="w-full lg:w-80 space-y-6">
+        <aside className="w-full min-w-0 lg:w-80 lg:shrink-0 space-y-6">
           {/* Destination. L'ancien chemin n'en demandait aucune, alors que le
               serveur exige filiere_id et annee_id : l'appel repartait en 422. */}
           <div className="bg-surface-container-lowest rounded-xl p-5 shadow-sm space-y-4">
             <h3 className="font-bold text-primary text-sm">Destination</h3>
 
             <div className="space-y-1">
-              <label htmlFor="edt-annee" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Année académique</label>
-              <select id="edt-annee" value={filtres.annee} onChange={(e) => { filtres.setAnnee(e.target.value); setRapport(null); }}
-                className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50">
+              <label
+                htmlFor="edt-annee"
+                className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider"
+              >
+                Année académique
+              </label>
+              <select
+                id="edt-annee"
+                value={filtres.annee}
+                onChange={(e) => {
+                  filtres.setAnnee(e.target.value);
+                  setRapport(null);
+                }}
+                className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+              >
                 <option value="">Choisir une année…</option>
                 {filtres.annees.map((a) => (
-                  <option key={a.id} value={a.id}>{a.libelle}{a.active ? ' (active)' : ''}</option>
+                  <option key={a.id} value={a.id}>
+                    {a.libelle}
+                    {a.active ? ' (active)' : ''}
+                  </option>
                 ))}
               </select>
             </div>
@@ -637,30 +702,66 @@ export default function ScheduleValidationPage() {
             {filtres.anneeClose && <BandeauAnneeClose annee={filtres.anneeChoisie} />}
 
             <div className="space-y-1">
-              <label htmlFor="edt-filiere" className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Filière</label>
-              <select id="edt-filiere" value={filtres.filiere} onChange={(e) => { filtres.setFiliere(e.target.value); setRapport(null); }}
-                disabled={!filtres.annee} className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50">
+              <label
+                htmlFor="edt-filiere"
+                className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider"
+              >
+                Filière
+              </label>
+              <select
+                id="edt-filiere"
+                value={filtres.filiere}
+                onChange={(e) => {
+                  filtres.setFiliere(e.target.value);
+                  setRapport(null);
+                }}
+                disabled={!filtres.annee}
+                className="w-full px-3 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+              >
                 <option value="">Choisir une filière…</option>
                 {filtres.filieres.map((f) => (
-                  <option key={f.id} value={f.id}>{f.code} — {f.intitule}</option>
+                  <option key={f.id} value={f.id}>
+                    {f.code} : {f.intitule}
+                  </option>
                 ))}
               </select>
             </div>
 
             <fieldset className="space-y-2">
-              <legend className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Version du document</legend>
+              <legend className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">
+                Version du document
+              </legend>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <label htmlFor="edt-valide-du" className="text-[11px] text-on-surface-variant">Valable du</label>
-                  <input id="edt-valide-du" type="date" value={validite.du}
-                    onChange={(e) => { setValidite((v) => ({ ...v, du: e.target.value })); setRapport(null); }}
-                    className="w-full px-2 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  <label htmlFor="edt-valide-du" className="text-[11px] text-on-surface-variant">
+                    Valable du
+                  </label>
+                  <input
+                    id="edt-valide-du"
+                    type="date"
+                    value={validite.du}
+                    onChange={(e) => {
+                      setValidite((v) => ({ ...v, du: e.target.value }));
+                      setRapport(null);
+                    }}
+                    className="w-full px-2 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
                 </div>
                 <div className="space-y-1">
-                  <label htmlFor="edt-valide-au" className="text-[11px] text-on-surface-variant">au</label>
-                  <input id="edt-valide-au" type="date" min={validite.du || undefined} value={validite.au}
-                    onChange={(e) => { setValidite((v) => ({ ...v, au: e.target.value })); setRapport(null); }}
-                    className="w-full px-2 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  <label htmlFor="edt-valide-au" className="text-[11px] text-on-surface-variant">
+                    au
+                  </label>
+                  <input
+                    id="edt-valide-au"
+                    type="date"
+                    min={validite.du || undefined}
+                    value={validite.au}
+                    onChange={(e) => {
+                      setValidite((v) => ({ ...v, au: e.target.value }));
+                      setRapport(null);
+                    }}
+                    className="w-full px-2 py-2 bg-surface-container-high rounded-lg text-sm border border-outline-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
                 </div>
               </div>
               <p className="text-[11px] text-on-surface-variant">
@@ -669,8 +770,11 @@ export default function ScheduleValidationPage() {
               </p>
             </fieldset>
 
-            <button onClick={handleVerify} disabled={saving || !filtres.filiere || !filtres.annee}
-              className="w-full py-2.5 rounded-lg bg-surface-container-high text-on-surface font-bold text-sm hover:bg-surface-container transition-colors disabled:opacity-50">
+            <button
+              onClick={handleVerify}
+              disabled={saving || !filtres.filiere || !filtres.annee}
+              className="w-full py-2.5 rounded-lg bg-surface-container-high text-on-surface font-bold text-sm hover:bg-surface-container transition-colors disabled:opacity-50"
+            >
               {saving ? 'Vérification…' : 'Vérifier sans enregistrer'}
             </button>
           </div>
@@ -686,21 +790,29 @@ export default function ScheduleValidationPage() {
               </p>
 
               <ul className="space-y-2 max-h-64 overflow-y-auto">
-                {(rapport.lignes ?? []).filter((l) => l.statut !== 'valide').map((l) => (
-                  <li key={l.rang} className="text-xs p-2 rounded-lg bg-error-container/20 text-on-error-container">
-                    <span className="font-bold">Ligne {l.rang} — {l.statut}</span>
-                    <span className="block mt-0.5">{l.motifs.join(' ')}</span>
-                  </li>
-                ))}
+                {(rapport.lignes ?? [])
+                  .filter((l) => l.statut !== 'valide')
+                  .map((l) => (
+                    <li key={l.rang} className="text-xs p-2 rounded-lg bg-error-container/20 text-on-error-container">
+                      <span className="font-bold">
+                        Ligne {l.rang} : {l.statut}
+                      </span>
+                      <span className="block mt-0.5">{l.motifs.join(' ')}</span>
+                    </li>
+                  ))}
               </ul>
 
               {(rapport.valides ?? 0) < (rapport.total ?? 0) && (
                 <label className="flex items-start gap-2 text-xs text-on-surface-variant cursor-pointer">
-                  <input type="checkbox" checked={ignorerRefuses} onChange={(e) => setIgnorerRefuses(e.target.checked)}
-                    className="mt-0.5" />
+                  <input
+                    type="checkbox"
+                    checked={ignorerRefuses}
+                    onChange={(e) => setIgnorerRefuses(e.target.checked)}
+                    className="mt-0.5"
+                  />
                   <span>
-                    N&apos;enregistrer que les {rapport.valides ?? 0} ligne(s) valide(s) et ignorer les autres.
-                    Sans cette case, rien ne sera écrit tant qu&apos;une ligne est refusée.
+                    N&apos;enregistrer que les {rapport.valides ?? 0} ligne(s) valide(s) et ignorer les autres. Sans
+                    cette case, rien ne sera écrit tant qu&apos;une ligne est refusée.
                   </span>
                 </label>
               )}
@@ -710,19 +822,23 @@ export default function ScheduleValidationPage() {
           <div className="bg-surface-container-low rounded-xl p-1 shadow-sm">
             <div className="bg-surface-container-lowest rounded-lg p-5">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-primary flex items-center gap-2 text-sm">
-                  Document Source
-                </h3>
+                <h3 className="font-bold text-primary flex items-center gap-2 text-sm">Document Source</h3>
               </div>
-              <div className="relative rounded-lg overflow-hidden border border-outline-variant/10 bg-surface-container-high h-48 flex items-center justify-center">
-                <div className="text-center p-4">
-                  <FiZoomIn className="text-3xl text-on-surface-variant/40 mx-auto mb-2" />
-                  <p className="text-xs text-on-surface-variant font-medium">{analysisData.filename}</p>
-                  <p className="text-[10px] text-on-surface-variant/60 mt-1">Analysé par IA</p>
+              {/* Un cadre de 192 px avec une loupe imitait un aperçu du document,
+                  qui n'existe pas : seule la ligne du fichier est réelle. */}
+              <div className="flex items-center gap-3 rounded-lg bg-surface-container-low p-3">
+                <FiFileText className="shrink-0 text-primary" size={20} aria-hidden="true" />
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-medium text-on-surface">
+                    {analysisData.filename || 'Fichier importé'}
+                  </p>
+                  <p className="text-[10px] text-on-surface-variant mt-0.5">Analysé par l&apos;IA</p>
                 </div>
               </div>
               <div className="mt-6 space-y-4">
-                <h4 className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Stats d'extraction</h4>
+                <h4 className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
+                  Stats d'extraction
+                </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-surface-container-low p-3 rounded-lg">
                     <p className="text-[10px] text-on-surface-variant font-medium">Événements</p>
@@ -730,7 +846,9 @@ export default function ScheduleValidationPage() {
                   </div>
                   <div className="bg-surface-container-low p-3 rounded-lg">
                     <p className="text-[10px] text-on-surface-variant font-medium">Confiance</p>
-                    <p className="text-xl font-bold text-secondary font-mono">{Math.round((analysisData.score || 0) * 100)}%</p>
+                    <p className="text-xl font-bold text-statut-succes font-mono">
+                      {analysisData.score === null ? '—' : `${Math.round(analysisData.score * 100)}%`}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -752,22 +870,42 @@ export default function ScheduleValidationPage() {
       )}
 
       {/* Bottom bar */}
-      <footer className="mt-8 bg-surface-container-lowest border border-outline-variant/10 rounded-xl p-6">
-        <div className="flex items-center justify-between">
+      {/* Empilée sous 640 px : les deux boutons côte à côte avec le décompte
+          dépassaient de 28 px à 390 px. */}
+      <footer className="mt-8 bg-surface-container-lowest border border-outline-variant/10 rounded-xl p-5 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-col">
             <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Emploi du temps</span>
             <span className="text-sm font-semibold text-primary">{selectedCount} événement(s) sélectionné(s)</span>
           </div>
-          <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/schedules/weekly')}
-              className="px-6 py-2.5 rounded-lg font-bold text-sm text-on-surface hover:bg-surface-container transition-all active:scale-95">
+          <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <button
+              type="button"
+              onClick={() => navigate('/schedules/weekly')}
+              className="px-6 py-2.5 rounded-lg font-bold text-sm text-on-surface hover:bg-surface-container transition-all active:scale-95"
+            >
               Annuler
             </button>
-            <button onClick={handleSave}
-              disabled={saving || selectedCount === 0 || !filtres.filiere || !filtres.annee || rapport === null || filtres.anneeClose}
-              className="px-8 py-2.5 rounded-lg font-bold text-sm text-white bg-gradient-to-br from-primary to-primary-container shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2">
+            <button
+              onClick={handleSave}
+              disabled={
+                saving ||
+                selectedCount === 0 ||
+                !filtres.filiere ||
+                !filtres.annee ||
+                rapport === null ||
+                filtres.anneeClose
+              }
+              className="px-8 py-2.5 rounded-lg font-bold text-sm text-white bg-gradient-to-br from-marque to-marque-fonce shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
               <FiSave className="text-sm" />
-              {saving ? <><FiLoader className="animate-spin" /> Enregistrement...</> : 'Valider et enregistrer'}
+              {saving ? (
+                <>
+                  <FiLoader className="animate-spin" /> Enregistrement...
+                </>
+              ) : (
+                'Valider et enregistrer'
+              )}
             </button>
           </div>
         </div>

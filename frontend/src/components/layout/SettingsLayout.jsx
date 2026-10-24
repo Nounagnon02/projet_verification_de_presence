@@ -15,10 +15,8 @@ const onglets = [
 ];
 
 const classeLien = ({ isActive }) =>
-  `flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
-    isActive
-      ? 'bg-primary text-white shadow-sm'
-      : 'text-on-surface-variant hover:text-primary hover:bg-primary/5'
+  `flex items-center justify-center sm:justify-start gap-2 px-3 sm:px-4 py-2.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+    isActive ? 'bg-marque text-white shadow-sm' : 'text-on-surface-variant hover:text-primary hover:bg-primary/5'
   }`;
 
 /**
@@ -30,9 +28,11 @@ const classeLien = ({ isActive }) =>
 export default function SettingsLayout() {
   return (
     <div>
+      {/* Grille 2×2 sous 640 px : en ligne, le 3e onglet était coupé à 390 px
+          et le 4e (Calendrier) n'apparaissait qu'en faisant défiler. */}
       <nav
         aria-label="Paramètres"
-        className="flex items-center gap-1 bg-surface-container-lowest rounded-xxl p-1.5 shadow-sm border border-outline-variant/5 mb-6 overflow-x-auto"
+        className="grid grid-cols-2 gap-1 sm:flex sm:items-center bg-surface-container-lowest rounded-xxl p-1.5 shadow-sm border border-outline-variant/5 mb-6 sm:overflow-x-auto"
       >
         {onglets.map(({ to, label, icon: Icon }) => (
           <NavLink key={to} to={to} end className={classeLien}>
