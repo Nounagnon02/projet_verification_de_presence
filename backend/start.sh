@@ -24,5 +24,17 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
+# Le plan gratuit de Render n'offre ni worker ni cron : sans ce processus, la
+# file `jobs` (e-mails d'identifiants, import IA) n'est jamais consommée et le
+# planificateur (QR codes, clôture des séances) ne tourne pas. `schedule:run`
+# exécute les tâches de routes/console.php, dont le drainage de la file.
+# Lancé en www-data pour ne pas créer de fichiers root dans storage/.
+(
+    while true; do
+        runuser -u www-data -- php artisan schedule:run >> /dev/null 2>&1 || true
+        sleep 60
+    done
+) &
+
 echo "✓ Application ready!"
 apache2-foreground
