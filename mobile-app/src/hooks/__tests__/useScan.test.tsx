@@ -96,6 +96,33 @@ describe('useScan — corps de la requête', () => {
     expect(corps).not.toHaveProperty('scan_challenge');
   });
 
+  it('extrait_le_jeton_de_l_url_que_contient_le_qr_du_web', async () => {
+    clientMock.post.mockResolvedValue({ data: { success: true, message: 'ok' } });
+
+    const { result } = await monter();
+    await act(async () => {
+      await result.current.submitScan(
+        `https://presence-uac.vercel.app/attendance/validate?token=${JETON_QR}`,
+      );
+    });
+
+    // Poster l'URL entière était refusé par le serveur (« token » doit être un
+    // UUID) : aucune présence ne pouvait être validée depuis l'application.
+    expect(clientMock.post.mock.calls[0][1]).toMatchObject({ token: JETON_QR });
+  });
+
+  it('refuse_un_qr_qui_ne_contient_aucun_jeton_sans_appeler_le_serveur', async () => {
+    const { result } = await monter();
+    await act(async () => {
+      await expect(result.current.submitScan('https://exemple.test/autre-chose')).rejects.toThrow(
+        'QR code non reconnu',
+      );
+    });
+
+    expect(clientMock.post).not.toHaveBeenCalled();
+    expect(toastMock).toHaveBeenCalledWith('error', 'QR code non reconnu', expect.any(String));
+  });
+
   it('n_interroge_plus_course_by_token_avant_le_scan', async () => {
     clientMock.post.mockResolvedValue({ data: { success: true, message: 'ok' } });
 

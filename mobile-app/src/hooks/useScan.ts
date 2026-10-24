@@ -8,6 +8,7 @@ import apiClient from '../api/client';
 import { showToast } from '../utils/toast-config';
 import type { ScanPayload, ScanResponse } from '../types';
 import { CONFIG } from '../constants/config';
+import { extraireJetonQr } from '../utils/qr-token';
 
 export function useScan() {
   const { sessionExpiree } = useAuth();
@@ -24,6 +25,14 @@ export function useScan() {
         throw new Error('Empreinte appareil non disponible.');
       }
 
+      // Le QR du web contient l'URL de validation, pas le jeton seul : c'est
+      // le jeton que le serveur attend (voir src/utils/qr-token.ts).
+      const jeton = extraireJetonQr(qrToken);
+      if (!jeton) {
+        showToast('error', 'QR code non reconnu', "Ce QR code n'est pas un code de présence.");
+        throw new Error('QR code non reconnu');
+      }
+
       setScanning(true);
       try {
         // 1. Relever les facteurs de vérification, en parallèle.
@@ -37,7 +46,7 @@ export function useScan() {
         //    serveur le lit dans le jeton Bearer (injecté par src/api/client.ts).
         //    Envoyer son identifiant permettait de scanner au nom d'un autre.
         const payload: ScanPayload = {
-          token: qrToken,
+          token: jeton,
           device_fingerprint: fingerprint,
           latitude: position?.latitude,
           longitude: position?.longitude,
