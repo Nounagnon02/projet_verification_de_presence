@@ -68,8 +68,10 @@ développement et ne voient pas ce manque : `symfony/yaml`, tiré seulement par
 ## Architecture
 
 API REST consommée par le SPA React et l'application mobile Expo. Les règles de
-présence vivent dans `config/presence.php` (fenêtre de scan ancrée sur la fin du
-cours, durée de vie du QR Code, durée maximale d'une séance) et nulle part
+présence (fenêtre de scan ancrée sur la fin du cours, durée de vie du QR Code,
+durée maximale d'une séance, limites de débit anti-fraude) vivent dans la table
+`parametres_globaux` (modèle `ParametreGlobal`, une seule ligne), modifiable
+par le super administrateur depuis l'écran « Paramètres », et nulle part
 ailleurs. Les traitements longs — analyse IA d'un PDF, envoi d'identifiants —
 passent par la file d'attente.
 
