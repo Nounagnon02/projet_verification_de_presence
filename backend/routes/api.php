@@ -311,6 +311,9 @@ Route::middleware(['auth:sanctum', 'role:super_admin', 'password.changed', 'thro
     Route::delete('/jours-feries/{fermeture}', [\App\Http\Controllers\Api\SuperAdmin\JourFerieController::class, 'destroy']);
     Route::post('/etablissements/{etablissement}/resend-credentials', [EtablissementController::class, 'resendCredentials']);
 
+    // Réglages anti-fraude et de scan de l'université (ParametreGlobal).
+    Route::get('/parametres', [\App\Http\Controllers\Api\SuperAdmin\ParametresGlobauxController::class, 'index']);
+    Route::put('/parametres', [\App\Http\Controllers\Api\SuperAdmin\ParametresGlobauxController::class, 'update']);
 });
 
 // Auth User Info & Logout

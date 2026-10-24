@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Etudiant;
+use App\Models\ParametreGlobal;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -76,7 +77,7 @@ class ScanRateLimitTest extends TestCase
     {
         // Un filet contre l'inondation, pas une règle de fraude : il doit
         // toujours couper, mais à un niveau que les salles n'atteignent pas.
-        config(['presence.limites.scan_par_ip' => 5]);
+        ParametreGlobal::actuel()->update(['limite_scan_par_ip' => 5]);
 
         foreach (range(1, 5) as $n) {
             $this->assertNotSame(429, $this->scanner($this->unEtudiant($n))->status(), "étudiant n° {$n}");
@@ -93,7 +94,8 @@ class ScanRateLimitTest extends TestCase
         // H3 : 500 scans simultanés. Un plafond proche de 500 bloquerait une salle
         // qui les atteint depuis une seule adresse, dès que des retardataires
         // s'ajoutent dans la même minute (constaté à 600).
-        $this->assertGreaterThanOrEqual(1000, config('presence.limites.scan_par_ip'));
-        $this->assertSame(3, config('presence.limites.scan_par_etudiant'));
+        $parametres = ParametreGlobal::actuel();
+        $this->assertGreaterThanOrEqual(1000, $parametres->limite_scan_par_ip);
+        $this->assertSame(3, $parametres->limite_scan_par_etudiant);
     }
 }

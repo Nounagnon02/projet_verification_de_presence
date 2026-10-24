@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Contracts\AiProviderInterface;
 use App\Models\Ec;
+use App\Models\ParametreGlobal;
 use App\Models\Ue;
 use App\Observers\EcObserver;
 use App\Observers\UeObserver;
@@ -76,8 +77,9 @@ class AppServiceProvider extends ServiceProvider
 
         // Rate Limiting pour le scan de présence (CDC 9.2.4)
         // Limite : 3 requêtes par minute par étudiant authentifié, et un plafond
-        // large par IP (config/presence.php, « limites » : pourquoi l'IP ne peut
-        // pas être limitée à 3).
+        // large par IP (ParametreGlobal::actuel(), réglable depuis l'écran
+        // « Paramètres » du super admin — pourquoi l'IP ne peut pas être
+        // limitée à 3 : voir le commentaire de la migration qui crée la table).
         //
         // Indexée sur « device_fingerprint » auparavant — une valeur fournie
         // par le client, qu'une empreinte aléatoire par requête suffisait à
@@ -95,10 +97,12 @@ class AppServiceProvider extends ServiceProvider
                 ], 429, $headers);
             };
 
+            $parametres = ParametreGlobal::actuel();
+
             return [
-                Limit::perMinute((int) config('presence.limites.scan_par_etudiant'))
+                Limit::perMinute($parametres->limite_scan_par_etudiant)
                     ->by('scan:etudiant:' . $request->user()?->id)->response($reponseSaturee),
-                Limit::perMinute((int) config('presence.limites.scan_par_ip'))
+                Limit::perMinute($parametres->limite_scan_par_ip)
                     ->by('scan:ip:' . $request->ip())->response($reponseSaturee),
             ];
         });

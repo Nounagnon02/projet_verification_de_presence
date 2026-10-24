@@ -98,7 +98,11 @@ return [
             'options' => array_filter([
                 PDO::ATTR_TIMEOUT => env('DB_TIMEOUT', 30),
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                defined('PDO::PGSQL_ATTR_DISABLE_PREPARES') ? PDO::PGSQL_ATTR_DISABLE_PREPARES : null => true,
+                // PHP 8.4 a déplacé la constante vers Pdo\Pgsql et déprécie l'ancienne ;
+                // sous 8.5 chaque connexion émettait donc un avertissement de dépréciation.
+                (class_exists(\Pdo\Pgsql::class)
+                    ? \Pdo\Pgsql::ATTR_DISABLE_PREPARES
+                    : (defined('PDO::PGSQL_ATTR_DISABLE_PREPARES') ? PDO::PGSQL_ATTR_DISABLE_PREPARES : null)) => true,
             ]),
         ],
 
