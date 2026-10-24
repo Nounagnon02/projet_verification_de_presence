@@ -77,11 +77,15 @@ cronJobs:
       - key: GEMINI_API_KEY
         sync: false
       - key: MAIL_MAILER
-        value: resend
-      - key: RESEND_KEY
+        value: gmail
+      - key: GMAIL_CLIENT_ID
+        sync: false
+      - key: GMAIL_CLIENT_SECRET
+        sync: false
+      - key: GMAIL_REFRESH_TOKEN
         sync: false
       - key: MAIL_FROM_ADDRESS
-        value: onboarding@resend.dev
+        sync: false
       - key: MAIL_FROM_NAME
         value: "UAC Présences - Validation de présence"
 
@@ -140,11 +144,15 @@ services:
 
       # Mail (copié du service web — nécessaire pour l'envoi depuis le worker)
       - key: MAIL_MAILER
-        value: resend
-      - key: RESEND_KEY
+        value: gmail
+      - key: GMAIL_CLIENT_ID
+        sync: false
+      - key: GMAIL_CLIENT_SECRET
+        sync: false
+      - key: GMAIL_REFRESH_TOKEN
         sync: false
       - key: MAIL_FROM_ADDRESS
-        value: onboarding@resend.dev
+        sync: false
       - key: MAIL_FROM_NAME
         value: "UAC Présences - Validation de présence"
 
@@ -212,16 +220,21 @@ services:
       - key: FRONTEND_URL
         value: https://presence-uac.vercel.app
 
-      # Mail — Resend API HTTP (le SMTP sortant est bloqué sur Render free)
+      # Mail — API Gmail en HTTPS (le SMTP sortant est bloqué sur Render free).
+      # Identifiants OAuth2 à définir manuellement dans le dashboard Render :
+      # voir backend/README.md, section « E-mails (Gmail) ».
       - key: MAIL_MAILER
-        value: resend
-      # Clé API à définir manuellement dans le dashboard Render
-      - key: RESEND_KEY
+        value: gmail
+      - key: GMAIL_CLIENT_ID
         sync: false
-      # Doit appartenir à un domaine vérifié dans Resend.
-      # onboarding@resend.dev ne permet d'écrire qu'au propriétaire du compte.
+      - key: GMAIL_CLIENT_SECRET
+        sync: false
+      - key: GMAIL_REFRESH_TOKEN
+        sync: false
+      # Adresse Gmail autorisée : Gmail réécrit de toute façon l'expéditeur avec
+      # le compte qui a délivré le refresh token.
       - key: MAIL_FROM_ADDRESS
-        value: onboarding@resend.dev
+        sync: false
       - key: MAIL_FROM_NAME
         value: "UAC Présences - Validation de présence"
 

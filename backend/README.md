@@ -84,8 +84,38 @@ Voir `.env.example`, qui les documente toutes. Les plus structurantes :
 | `DB_*`, `DB_SSLMODE` | PostgreSQL (Supabase en production) |
 | `APP_ENV`, `APP_DEBUG` | `production` / `false` en service. Trois protections (HTTPS forcé, CSP stricte, URL en https) dépendent de cette seule valeur |
 | `AI_PROVIDER`, `GEMINI_API_KEY`, `GEMINI_MODEL` | extraction des maquettes et emplois du temps |
-| `MAIL_MAILER`, `RESEND_KEY`, `MAIL_FROM_*` | envoi des identifiants (SMTP sortant bloqué sur Render, d'où l'API HTTP Resend) |
+| `MAIL_MAILER`, `GMAIL_*`, `MAIL_FROM_*` | envoi des identifiants par l'API Gmail (SMTP sortant bloqué sur Render, voir ci-dessous) |
 | `SUPABASE_*`, `FILESYSTEM_DISK` | stockage des documents importés |
 | `ALLOWED_ORIGINS`, `FRONTEND_URL` | CORS et liens des courriels |
 | `SEED_ADMIN_PASSWORD`, `SEED_SUPERADMIN_PASSWORD` | comptes initiaux |
 | `PRESENCE_*` | règles métier de la fenêtre de présence et du QR Code |
+
+## E-mails (Gmail)
+
+Render gratuit bloque le SMTP sortant (ports 25, 465, 587) : `smtp.gmail.com`
+est injoignable. Le pilote `gmail` (`App\Mail\Transport\GmailApiTransport`)
+passe donc par l'API Gmail en HTTPS, avec un jeton OAuth2 renouvelé à partir
+d'un *refresh token*. Aucun mot de passe de compte n'est stocké.
+
+Obtenir les trois valeurs `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET` et
+`GMAIL_REFRESH_TOKEN` (une seule fois, avec le compte Gmail expéditeur) :
+
+1. Console Google Cloud → nouveau projet → *API et services* → activer
+   **Gmail API**.
+2. *Écran de consentement OAuth* : type « Externe », ajouter le compte comme
+   utilisateur test, ajouter la portée `https://www.googleapis.com/auth/gmail.send`,
+   puis **publier l'application** (statut « En production »). En mode « Test »,
+   le refresh token expire au bout de 7 jours.
+3. *Identifiants* → *Créer des identifiants* → ID client OAuth, type
+   « Application Web », avec l'URI de redirection
+   `https://developers.google.com/oauthplayground`.
+4. Sur <https://developers.google.com/oauthplayground> : roue dentée →
+   « Use your own OAuth credentials » → coller l'ID et le secret → autoriser la
+   portée `https://www.googleapis.com/auth/gmail.send` → *Exchange authorization
+   code for tokens* → copier le **Refresh token**.
+5. Dans Render : `MAIL_MAILER=gmail`, les trois variables `GMAIL_*` et
+   `MAIL_FROM_ADDRESS` (l'adresse Gmail autorisée).
+
+Plafond Gmail : environ 500 messages par jour pour un compte gratuit. Les
+échecs d'envoi sont journalisés (`Erreur envoi email à …`) ; un refresh token
+révoqué s'y reconnaît à `invalid_grant`.

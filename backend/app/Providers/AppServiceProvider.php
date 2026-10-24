@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Contracts\AiProviderInterface;
+use App\Mail\Transport\GmailApiTransport;
 use App\Models\Ec;
 use App\Models\ParametreGlobal;
 use App\Models\Ue;
@@ -16,6 +17,7 @@ use App\Services\Providers\GroqProvider;
 use App\Services\Providers\OpenRouterProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -74,6 +76,13 @@ class AppServiceProvider extends ServiceProvider
         // Les vues publiées sont dans resources/views/vendor/mail/
         View::addNamespace('mail', resource_path('views/vendor/mail/html'));
 
+        // Pilote « gmail » : envoi par l'API Gmail (HTTPS), le SMTP sortant
+        // étant bloqué sur Render gratuit.
+        Mail::extend('gmail', fn (array $config) => new GmailApiTransport(
+            $config['client_id'] ?? null,
+            $config['client_secret'] ?? null,
+            $config['refresh_token'] ?? null,
+        ));
 
         // Rate Limiting pour le scan de présence (CDC 9.2.4)
         // Limite : 3 requêtes par minute par étudiant authentifié, et un plafond
