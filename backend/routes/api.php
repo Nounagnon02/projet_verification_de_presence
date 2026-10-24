@@ -63,13 +63,13 @@ Route::get('/health', function () {
 Route::post('/auth/student/login', [StudentAuthController::class, 'login'])
     ->middleware('throttle:student-login');
 Route::get('/auth/student/me', [StudentAuthController::class, 'me'])
-    ->middleware(['auth:sanctum', 'ability:etudiant', 'throttle:api']);
+    ->middleware(['auth:sanctum', 'ability:etudiant', 'etudiant.seul', 'throttle:api']);
 Route::post('/auth/student/logout', [StudentAuthController::class, 'logout'])
-    ->middleware(['auth:sanctum', 'ability:etudiant', 'throttle:api']);
+    ->middleware(['auth:sanctum', 'ability:etudiant', 'etudiant.seul', 'throttle:api']);
 
 // Consultation du QR Code par l'étudiant responsable (lecture seule).
 Route::get('/student/qrcode/current', [StudentQrCodeController::class, 'current'])
-    ->middleware(['auth:sanctum', 'ability:etudiant', 'throttle:api']);
+    ->middleware(['auth:sanctum', 'ability:etudiant', 'etudiant.seul', 'throttle:api']);
 
 // Route de login nommée — nécessaire pour les redirections de Sanctum
 // Rate limiting : 5 tentatives/min/IP (CDC 9.1)
@@ -100,7 +100,7 @@ Route::prefix('presence')->group(function () {
 // jeton, capacité « etudiant », qui désigne désormais l'étudiant.
 // Rate limiting : par étudiant ET par IP (CDC 9.2.4) — voir AppServiceProvider.
 Route::post('/presence/scan', [PresenceController::class, 'scan'])
-    ->middleware(['auth:sanctum', 'ability:etudiant', 'throttle:scan-presence'])
+    ->middleware(['auth:sanctum', 'ability:etudiant', 'etudiant.seul', 'throttle:scan-presence'])
     ->name('api.presence.scan');
 
 // Routes protégées pour l'administration (faculté scope via scoped.etablissement)
@@ -310,6 +310,7 @@ Route::middleware(['auth:sanctum', 'role:super_admin', 'password.changed', 'thro
     Route::post('/jours-feries', [\App\Http\Controllers\Api\SuperAdmin\JourFerieController::class, 'store']);
     Route::delete('/jours-feries/{fermeture}', [\App\Http\Controllers\Api\SuperAdmin\JourFerieController::class, 'destroy']);
     Route::post('/etablissements/{etablissement}/resend-credentials', [EtablissementController::class, 'resendCredentials']);
+
 });
 
 // Auth User Info & Logout

@@ -97,7 +97,10 @@ class AuthenticatedSessionController extends Controller
                 }
 
                 // Créer un token Sanctum API pour les clients mobiles / SPA JSON
-                $token = $user->createToken('api-token')->plainTextToken;
+                // Capacité « admin » explicite : sans elle, Sanctum accorde « * »,
+                // et un jeton du personnel passait « ability:etudiant » sur la
+                // route de scan, qui doit rester réservée aux étudiants.
+                $token = $user->createToken('api-token', ['admin'])->plainTextToken;
 
                 return response()->json([
                     'success' => true,

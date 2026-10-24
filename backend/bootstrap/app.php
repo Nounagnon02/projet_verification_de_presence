@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // un jeton d'étudiant sur une route d'administration, et l'inverse.
             'ability'            => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
             'abilities'          => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
+            'etudiant.seul'      => \App\Http\Middleware\ReserveAuxEtudiants::class,
             '2fa.super_admin'    => \App\Http\Middleware\RequireTwoFactorForSuperAdmin::class,
             'cloisonnement.modeles' => \App\Http\Middleware\RestrictModelsToEtablissement::class,
         ]);

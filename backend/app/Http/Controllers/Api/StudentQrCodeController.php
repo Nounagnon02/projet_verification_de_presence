@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Etudiant;
 use App\Models\Evenement;
+use App\Models\ParametreGlobal;
 use App\Models\QrCode;
 use App\Services\QrCodeImageService;
 use Illuminate\Http\JsonResponse;
@@ -42,7 +43,7 @@ class StudentQrCodeController extends Controller
         }
 
         $maintenant = now();
-        $visibleAvantFin = (int) config('presence.qr.visible_delegue_avant_fin');
+        $visibleAvantFin = ParametreGlobal::actuel()->qr_visible_delegue_avant_fin;
 
         // Les ECs auxquels l'étudiant est inscrit délimitent sa promotion : le
         // cloisonnement découle de la table pivot, sans filtre supplémentaire à
