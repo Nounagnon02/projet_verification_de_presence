@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Models\AnneeAcademique;
 use App\Models\Ec;
 use App\Models\Evenement;
+use App\Models\ParametreGlobal;
 use App\Models\Ue;
 use App\Models\User;
 use Illuminate\Support\Str;
@@ -209,7 +210,7 @@ class EventAndYearRulesTest extends TestCase
     {
         // Volume largement suffisant : seule la durée de la séance est en cause.
         $ec = $this->unEcDeVolume(40);
-        $max = (float) config('presence.seance.duree_max_heures');
+        $max = ParametreGlobal::actuel()->seance_duree_max_heures;
 
         $trop = (int) $max + 1;
         $this->creerEvenement($ec, '08:00', sprintf('%02d:00', 8 + $trop), 1)

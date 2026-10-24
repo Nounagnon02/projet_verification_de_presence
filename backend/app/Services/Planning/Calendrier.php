@@ -111,13 +111,15 @@ class Calendrier
     }
 
     /**
-     * Valide une fermeture : un type permis, des dates dans l'année. Sans fin,
-     * un seul jour.
+     * Valide une fermeture : un type permis, des dates dans l'année, qui ne
+     * chevauchent aucune fermeture existante du même périmètre (même
+     * établissement, ou toute l'université pour un jour férié). Sans fin, un
+     * seul jour.
      *
      * @param  list<string>  $types
      * @return array{annee_id: int, type: string, libelle: string, date_debut: string, date_fin: string}
      */
-    public function validerFermeture(array $donnees, array $types): array
+    public function validerFermeture(array $donnees, array $types, ?int $etablissementId = null): array
     {
         $valeurs = Validator::make($donnees, [
             'annee_id'   => 'required|integer|exists:annees_academiques,id',
@@ -132,8 +134,32 @@ class Calendrier
 
         $valeurs['date_fin'] ??= $valeurs['date_debut'];
         $this->verifierDansAnnee(AnneeAcademique::findOrFail($valeurs['annee_id']), $valeurs);
+        $this->verifierSansChevauchement($valeurs, $etablissementId);
 
         return $valeurs;
+    }
+
+    /**
+     * Deux fermetures du même périmètre ne doivent jamais se recouvrir : rien
+     * ne distingue alors la déclarée en double d'une faute de frappe, et la
+     * liste s'en trouve brouillée sans qu'aucune génération ne s'en aperçoive.
+     *
+     * @param  array{annee_id: int, date_debut: string, date_fin: string}  $valeurs
+     */
+    private function verifierSansChevauchement(array $valeurs, ?int $etablissementId): void
+    {
+        $chevauchee = Fermeture::query()
+            ->where('annee_id', $valeurs['annee_id'])
+            ->when($etablissementId, fn ($q) => $q->where('etablissement_id', $etablissementId), fn ($q) => $q->whereNull('etablissement_id'))
+            ->whereDate('date_debut', '<=', $valeurs['date_fin'])
+            ->whereDate('date_fin', '>=', $valeurs['date_debut'])
+            ->first();
+
+        if ($chevauchee) {
+            throw ValidationException::withMessages([
+                'date_debut' => "Ces dates chevauchent « {$chevauchee->libelle} » (du {$chevauchee->date_debut->format('d/m/Y')} au {$chevauchee->date_fin->format('d/m/Y')}).",
+            ]);
+        }
     }
 
     /** @param array{date_debut: string, date_fin: string} $valeurs */

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Ec;
 use App\Models\Evenement;
+use App\Models\ParametreGlobal;
 use App\Models\QrCode;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,7 @@ class FuseauHoraireTest extends TestCase
 
     public function test_un_cours_saisi_a_l_heure_locale_recoit_son_qr_avant_sa_fin(): void
     {
-        config(['presence.scan.minutes_avant_fin' => 15, 'presence.scan.minutes_apres_fin' => 10]);
+        ParametreGlobal::actuel()->update(['scan_minutes_avant_fin' => 15, 'scan_minutes_apres_fin' => 10]);
 
         // 10h20 au Bénin, soit 09h20 UTC.
         $this->travelTo(Carbon::parse('2026-03-10 10:20:00', 'Africa/Porto-Novo'));

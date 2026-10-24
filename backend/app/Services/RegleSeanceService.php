@@ -6,12 +6,13 @@ namespace App\Services;
 
 use App\Models\Ec;
 use App\Models\Evenement;
+use App\Models\ParametreGlobal;
 use App\Support\TypeCours;
 
 /**
  * Les règles qu'une séance doit respecter, réunies en un seul endroit.
  *
- *  1. Durée : une séance ne dépasse pas le plafond de config/presence.php.
+ *  1. Durée : une séance ne dépasse pas le plafond de ParametreGlobal::actuel().
  *  2. Volume : la somme des séances d'un EC ne dépasse pas son volume horaire.
  *  3. Chevauchement : deux séances d'un même cours ne se superposent pas.
  *
@@ -219,7 +220,7 @@ class RegleSeanceService
         // 1. Durée de la séance. Contrainte distincte du volume : celui-ci borne
         //    le TOTAL des séances, celle-là borne CHACUNE. Un cours à qui il
         //    reste dix-huit heures acceptait sinon un créneau de 8h à 23h.
-        $max = (float) config('presence.seance.duree_max_heures');
+        $max = ParametreGlobal::actuel()->seance_duree_max_heures;
         if ($max > 0 && $demandees > $max + self::EPSILON) {
             return sprintf(
                 'Une séance ne peut pas durer plus de %s. Le créneau demandé en dure %s.',

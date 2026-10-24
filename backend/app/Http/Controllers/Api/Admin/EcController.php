@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\EcResource;
 use App\Models\Ec;
 use App\Models\Evenement;
+use App\Models\ParametreGlobal;
 use App\Services\RegleSeanceService;
 use App\Models\Ue;
 use App\Services\Maquette\RegistreMaquette;
@@ -43,8 +44,8 @@ class EcController extends Controller
 
         // Plafond de durée d'une séance : joint à chaque EC plutôt que codé en dur
         // côté client, pour que la valeur reste définie au seul endroit qui fait
-        // foi — config/presence.php, que le serveur applique aussi.
-        $dureeMax = (float) config('presence.seance.duree_max_heures');
+        // foi — ParametreGlobal::actuel(), que le serveur applique aussi.
+        $dureeMax = ParametreGlobal::actuel()->seance_duree_max_heures;
 
         $ecs->each(function ($ec) use ($seances, $dureeMax) {
             $liste = $seances->get($ec->id, collect());

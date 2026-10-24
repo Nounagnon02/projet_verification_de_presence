@@ -119,7 +119,7 @@ class CalendrierController extends Controller
      */
     public function ajouterFermeture(Request $request): JsonResponse
     {
-        $valeurs = $this->calendrier->validerFermeture($request->only(['annee_id', 'type', 'libelle', 'date_debut', 'date_fin']), Fermeture::TYPES_FACULTE);
+        $valeurs = $this->calendrier->validerFermeture($request->only(['annee_id', 'type', 'libelle', 'date_debut', 'date_fin']), Fermeture::TYPES_FACULTE, $this->getEtablissementId($request));
         $this->refuserSiAnneeClose((int) $valeurs['annee_id'], $request);
 
         $resultat = $this->calendrier->apercuOuDeclaration(

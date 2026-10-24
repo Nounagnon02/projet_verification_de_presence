@@ -194,6 +194,35 @@ class CalendrierTest extends TestCase
             ->assertOk()->assertJsonPath('data.0.libelle', 'Journée de test');
     }
 
+    public function test_deux_jours_feries_ne_se_chevauchent_pas(): void
+    {
+        $this->fermeture(null, 'ferie', 'Fête du Vodoun', $this->lundi);
+
+        $this->api($this->jetonSuper, 'POST', 'super-admin/jours-feries', [
+            'annee_id' => $this->annee->id, 'libelle' => 'Doublon', 'date_debut' => $this->lundi,
+        ])->assertStatus(422)->assertJsonValidationErrors('date_debut');
+    }
+
+    public function test_deux_fermetures_de_la_meme_faculte_ne_se_chevauchent_pas(): void
+    {
+        $this->fermeture($this->etabA, 'vacances', 'Vacances de Pâques', $this->lundi, Carbon::parse($this->lundi)->addDays(3)->toDateString());
+
+        $this->api($this->jetonA, 'POST', 'admin/calendrier/fermetures', [
+            'annee_id' => $this->annee->id, 'type' => 'examens', 'libelle' => 'Examens du S3',
+            'date_debut' => Carbon::parse($this->lundi)->addDay()->toDateString(),
+        ])->assertStatus(422)->assertJsonValidationErrors('date_debut');
+    }
+
+    /** Un jour férié (toute l'université) et les vacances d'une faculté sont deux périmètres distincts. */
+    public function test_un_jour_ferie_et_les_vacances_d_une_faculte_peuvent_se_chevaucher(): void
+    {
+        $this->fermeture(null, 'ferie', 'Fête du Vodoun', $this->lundi);
+
+        $this->api($this->jetonA, 'POST', 'admin/calendrier/fermetures', [
+            'annee_id' => $this->annee->id, 'type' => 'vacances', 'libelle' => 'Vacances de Pâques', 'date_debut' => $this->lundi,
+        ])->assertCreated();
+    }
+
     public function test_une_periode_tient_dans_son_annee_et_ne_chevauche_pas_l_autre_parite(): void
     {
         $periode = fn (string $parite, string $du, string $au) => $this->api($this->jetonA, 'PUT', 'admin/calendrier/periodes', [

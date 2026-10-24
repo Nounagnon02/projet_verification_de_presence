@@ -4,6 +4,7 @@ namespace Tests\Feature\Console;
 
 use App\Models\Ec;
 use App\Models\Evenement;
+use App\Models\ParametreGlobal;
 use App\Models\QrCode;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
@@ -25,7 +26,7 @@ class CloreSeancesTermineesTest extends TestCase
         parent::setUp();
 
         // Fenêtre fixée ici : les bornes testées ne doivent pas dépendre du .env.
-        config(['presence.scan.minutes_avant_fin' => 15, 'presence.scan.minutes_apres_fin' => 10]);
+        ParametreGlobal::actuel()->update(['scan_minutes_avant_fin' => 15, 'scan_minutes_apres_fin' => 10]);
         $this->travelTo(Carbon::parse('2026-03-10 12:00:00'));
 
         $this->ec = Ec::create([

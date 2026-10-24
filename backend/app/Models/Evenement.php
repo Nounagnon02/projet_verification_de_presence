@@ -74,7 +74,7 @@ class Evenement extends Model
 
     /*
     |--------------------------------------------------------------------------
-    | Fenêtre de prise de présence (config/presence.php)
+    | Fenêtre de prise de présence (ParametreGlobal::actuel())
     |--------------------------------------------------------------------------
     |
     | Ces trois méthodes sont le seul endroit où la fenêtre est calculée. Le
@@ -115,7 +115,7 @@ class Evenement extends Model
      */
     public function ouvertureScan(): Carbon
     {
-        return $this->finCours()->subMinutes(config('presence.scan.minutes_avant_fin'));
+        return $this->finCours()->subMinutes(ParametreGlobal::actuel()->scan_minutes_avant_fin);
     }
 
     /**
@@ -125,7 +125,7 @@ class Evenement extends Model
      */
     public function fermetureScan(): Carbon
     {
-        return $this->finCours()->addMinutes(config('presence.scan.minutes_apres_fin'));
+        return $this->finCours()->addMinutes(ParametreGlobal::actuel()->scan_minutes_apres_fin);
     }
 
     /**
@@ -134,7 +134,7 @@ class Evenement extends Model
      */
     public function expirationTokenDepuis(Carbon $maintenant): Carbon
     {
-        $expiration = $maintenant->copy()->addSeconds(config('presence.qr.ttl_secondes'));
+        $expiration = $maintenant->copy()->addSeconds(ParametreGlobal::actuel()->qr_ttl_secondes);
         $fermeture  = $this->fermetureScan();
 
         return $expiration->greaterThan($fermeture) ? $fermeture : $expiration;
