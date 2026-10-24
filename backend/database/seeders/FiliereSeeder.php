@@ -14,9 +14,10 @@ class FiliereSeeder extends Seeder
         $etablissementId = $ifri?->id;
 
         $filieres = [
-            ['code' => 'IM-L1',    'intitule' => 'Informatique et Mathématiques (L1)',                  'niveau' => 'L1'],
-            ['code' => 'IM-L2',    'intitule' => 'Informatique et Mathématiques (L2)',                  'niveau' => 'L2'],
-            ['code' => 'IM-L3',    'intitule' => 'Informatique et Mathématiques (L3)',                  'niveau' => 'L3'],
+            // À l'IFRI, « IM » est la licence Internet et Multimédia.
+            ['code' => 'IM-L1',    'intitule' => 'Internet et Multimédia (L1)',                         'niveau' => 'L1'],
+            ['code' => 'IM-L2',    'intitule' => 'Internet et Multimédia (L2)',                         'niveau' => 'L2'],
+            ['code' => 'IM-L3',    'intitule' => 'Internet et Multimédia (L3)',                         'niveau' => 'L3'],
             ['code' => 'MIAGE-M1', 'intitule' => 'Mathématiques, Informatique et Gestion (M1)',        'niveau' => 'M1'],
             ['code' => 'MIAGE-M2', 'intitule' => 'Mathématiques, Informatique et Gestion (M2)',        'niveau' => 'M2'],
             ['code' => 'GL-M1',    'intitule' => 'Génie Logiciel (M1)',                                'niveau' => 'M1'],
