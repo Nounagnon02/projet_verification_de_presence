@@ -3,6 +3,3 @@ node_modules
 .eslintrc*
 .gitignore
 *.md
-postcss.config.*
-tailwind.config.*
-vite.config.*
