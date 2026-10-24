@@ -6,8 +6,10 @@ namespace App\Http\Controllers\Api\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\EtablissementResource;
+use App\Models\AnneeAcademique;
 use App\Models\Etablissement;
 use App\Models\User;
+use App\Services\AttendanceRateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -142,7 +144,7 @@ class EtablissementController extends Controller
     /**
      * Stats détaillées d'une faculté.
      */
-    public function stats(Etablissement $etablissement): JsonResponse
+    public function stats(Etablissement $etablissement, AttendanceRateService $attendance): JsonResponse
     {
         $filiereIds = $etablissement->filieres()->pluck('id');
         $totalEtudiants = \App\Models\Etudiant::whereIn('filiere_id', $filiereIds)->count();
@@ -152,11 +154,47 @@ class EtablissementController extends Controller
         $coursAujourdhui = \App\Models\Evenement::whereIn('filiere_id', $filiereIds)
             ->whereDate('date', today())->count();
 
+        // Même définition que le tableau de bord de la faculté
+        // (DashboardController) : séances passées et terminées, présences
+        // rapportées aux étudiants réellement inscrits à l'EC. null quand aucune
+        // présence n'était attendue — un « 0 % » se lirait comme un échec.
+        $filtreSeancesPassees = function ($q) use ($etablissement) {
+            $q->where('e.date', '<', now())->where('e.statut', 'termine')
+              ->join('filieres as f', 'f.id', '=', 'e.filiere_id')
+              ->where('f.etablissement_id', $etablissement->id);
+        };
+        $taux = $attendance->expected($filtreSeancesPassees) > 0
+            ? $attendance->rate($filtreSeancesPassees)
+            : null;
+
+        // Année sur laquelle travaille l'établissement : la sienne, sinon celle
+        // de l'université (même règle que AnneeAcademique::activePour).
+        $annee = AnneeAcademique::activePour($etablissement->id);
+
+        $filieres = $etablissement->filieres()
+            ->withCount('etudiants')
+            ->orderBy('code')
+            ->get(['id', 'code', 'intitule', 'niveau'])
+            ->map(fn ($f) => [
+                'id'        => $f->getAttribute('id'),
+                'code'      => $f->getAttribute('code'),
+                'intitule'  => $f->getAttribute('intitule'),
+                'niveau'    => $f->getAttribute('niveau'),
+                'etudiants' => $f->getAttribute('etudiants_count'),
+            ]);
+
         return $this->successResponse([
             'total_etudiants'   => $totalEtudiants,
             'total_presences'   => $totalPresences,
             'cours_aujourdhui'  => $coursAujourdhui,
             'total_filieres'    => $filiereIds->count(),
+            'taux_presence'     => $taux,
+            'annee_active'      => $annee ? [
+                'id'              => $annee->id,
+                'libelle'         => $annee->libelle,
+                'suit_universite' => $etablissement->annee_active_id === null,
+            ] : null,
+            'filieres'          => $filieres,
         ]);
     }
 

@@ -13,6 +13,7 @@ use App\Models\Ue;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
@@ -443,6 +444,54 @@ class SuperAdminTest extends TestCase
             ->assertJsonPath('data.total_etudiants', 3)
             ->assertJsonPath('data.total_presences', 0)
             ->assertJsonPath('data.cours_aujourdhui', 1);
+    }
+
+    public function test_les_stats_dune_faculte_portent_taux_annee_et_filieres(): void
+    {
+        // anneeActive() crée l'année de l'université à son premier appel : avant
+        // la requête, sans quoi elle n'existe pas encore.
+        $annee    = $this->anneeActive();
+        $faculte  = $this->creerEtablissement('FICHE');
+        $filiereB = Filiere::create(['code' => 'ZZ-' . Str::random(4), 'intitule' => 'Seconde', 'niveau' => 'M1', 'etablissement_id' => $faculte->id]);
+        $filiereA = Filiere::create(['code' => 'AA-' . Str::random(4), 'intitule' => 'Première', 'niveau' => 'L1', 'etablissement_id' => $faculte->id]);
+
+        // Sans aucune séance attendue : pas de taux, plutôt qu'un « 0 % ».
+        $this->withToken($this->jetonSuperAdmin)
+            ->getJson("/api/super-admin/etablissements/{$faculte->id}/stats")
+            ->assertStatus(200)
+            ->assertJsonPath('data.taux_presence', null)
+            // Aucune année choisie : celle de l'université.
+            ->assertJsonPath('data.annee_active.libelle', $annee->libelle)
+            ->assertJsonPath('data.annee_active.suit_universite', true)
+            // Triées par code, avec leurs effectifs.
+            ->assertJsonPath('data.filieres.0.id', $filiereA->id)
+            ->assertJsonPath('data.filieres.0.etudiants', 0)
+            ->assertJsonPath('data.filieres.1.id', $filiereB->id);
+
+        // Deux étudiants inscrits à l'EC d'une séance passée, un seul présent :
+        // 50 %, avec la définition du tableau de bord (inscrits, pas « tous les
+        // étudiants × toutes les séances »).
+        $present  = $this->creerEtudiant($filiereA);
+        $absent   = $this->creerEtudiant($filiereA);
+        $seance   = $this->creerEvenement($filiereA, today()->subDays(2)->format('Y-m-d'));
+        // insertOrIgnore : la création de l'EC inscrit déjà les étudiants de la
+        // filière (Etudiant::autoEnroll) ; on garantit l'inscription sans en dépendre.
+        foreach ([$present, $absent] as $etudiant) {
+            DB::table('etudiant_ec')->insertOrIgnore([
+                'etudiant_id' => $etudiant->id,
+                'ec_id'       => $seance->ec_id,
+                'annee_id'    => $seance->annee_id,
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ]);
+        }
+        $this->creerPresence($present, $seance);
+
+        $this->withToken($this->jetonSuperAdmin)
+            ->getJson("/api/super-admin/etablissements/{$faculte->id}/stats")
+            ->assertStatus(200)
+            ->assertJsonPath('data.taux_presence', 50)
+            ->assertJsonPath('data.filieres.0.etudiants', 2);
     }
 
     public function test_le_renvoi_des_identifiants_remplace_le_mot_de_passe(): void
