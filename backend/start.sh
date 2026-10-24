@@ -29,12 +29,18 @@ php artisan view:cache
 # planificateur (QR codes, clôture des séances) ne tourne pas. `schedule:run`
 # exécute les tâches de routes/console.php, dont le drainage de la file.
 # Lancé en www-data pour ne pas créer de fichiers root dans storage/.
-(
-    while true; do
-        runuser -u www-data -- php artisan schedule:run >> /dev/null 2>&1 || true
-        sleep 60
-    done
-) &
+#
+# Activé par ENABLE_SCHEDULER=true, une fois le mailer opérationnel : le job
+# d'e-mail journalise ses erreurs au lieu de les relancer, donc drainer la file
+# avec un mailer cassé détruirait les e-mails en attente.
+if [ "${ENABLE_SCHEDULER:-false}" = "true" ]; then
+    (
+        while true; do
+            runuser -u www-data -- php artisan schedule:run >> /dev/null 2>&1 || true
+            sleep 60
+        done
+    ) &
+fi
 
 echo "✓ Application ready!"
 apache2-foreground
